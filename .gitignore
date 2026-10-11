@@ -1,18 +1,31 @@
-*.log
-.DS_Store
+# Environment variables and secrets
 .env
+.env.*
+!.env.example
 .env.backup
 .env.production
-.phpactor.json
+/agent/.env
+
+# Python virtual environments
+/agent/.venv/
+venv/
+.venv/
+
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Laravel logs and environment files
+*.log
 .phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
 /.phpunit.cache
-/.vscode
-/.zed
 /auth.json
+
+# Laravel generated files
+/vendor
 /node_modules
 /public/build
 /public/fonts-manifest.dev.json
@@ -20,8 +33,19 @@
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
 _ide_helper.php
+.phpactor.json
+
+# IDE and editor files
+/.idea
+/.vscode
+/.nova
+/.zed
+/.codex
+/.cursor/
+
+# Operating system files
+.DS_Store
+Thumbs.db
 Homestead.json
 Homestead.yaml
-Thumbs.db
