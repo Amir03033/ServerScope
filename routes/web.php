@@ -3,6 +3,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ServerRegistrationController;
 
 Route::redirect('/', '/dashboard');
 
@@ -26,4 +27,9 @@ Route::middleware('auth')->group(function () {
         AuthenticatedSessionController::class,
         'destroy',
     ])->name('logout');
+
+    Route::post('/servers/register', [
+        ServerRegistrationController::class,
+        'store',
+    ])->name('servers.register');
 });
