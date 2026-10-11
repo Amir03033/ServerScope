@@ -34,3 +34,28 @@ def test_run_once_collects_and_sends_metrics():
 def test_run_forever_rejects_too_short_interval():
     with pytest.raises(ValueError, match="at least 10"):
         run_forever(object(), interval_seconds=5)
+
+
+def test_run_forever_logs_safe_error_and_continues(
+    caplog,
+):
+    sensitive_message = "private token or internal server details"
+
+    with (
+        patch(
+            "serverscope_agent.agent.run_once",
+            side_effect=RuntimeError(sensitive_message),
+        ),
+        patch(
+            "serverscope_agent.agent.time.sleep",
+            side_effect=KeyboardInterrupt,
+        ),
+    ):
+        with pytest.raises(KeyboardInterrupt):
+            run_forever(
+                object(),
+                interval_seconds=10,
+            )
+
+    assert "Metrics submission failed." in caplog.text
+    assert sensitive_message not in caplog.text
