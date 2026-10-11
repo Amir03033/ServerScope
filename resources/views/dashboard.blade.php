@@ -111,7 +111,10 @@
         .muted { color: var(--muted); }
         .small { font-size: 12px; }
 
-        .main { min-width: 0; padding: 28px 34px 40px; }
+        .main {
+            min-width: 0;
+            padding: 28px 34px 40px;
+        }
 
         .topbar {
             display: flex;
@@ -128,7 +131,10 @@
             letter-spacing: -.7px;
         }
 
-        .page-subtitle { margin: 5px 0 0; color: var(--muted); }
+        .page-subtitle {
+            margin: 5px 0 0;
+            color: var(--muted);
+        }
 
         .actions {
             display: flex;
@@ -176,7 +182,11 @@
         }
 
         .section-heading h2 { margin: 0; font-size: 17px; }
-        .section-heading p { margin: 4px 0 0; color: var(--muted); }
+
+        .section-heading p {
+            margin: 4px 0 0;
+            color: var(--muted);
+        }
 
         .stats {
             display: grid;
@@ -288,13 +298,25 @@
         .token-row .token-input { flex: 1; }
         .token-area[hidden] { display: none; }
 
-        .server-list { display: grid; gap: 12px; }
+        .server-list {
+            display: grid;
+            gap: 12px;
+        }
 
         .server-card {
+            display: block;
             padding: 19px;
             border: 1px solid var(--border);
             border-radius: 11px;
             background: #0c1422;
+            color: inherit;
+            text-decoration: none;
+            transition: border-color .15s ease, background .15s ease;
+        }
+
+        .server-card:hover {
+            border-color: #155e75;
+            background: var(--panel-hover);
         }
 
         .server-heading {
@@ -305,7 +327,12 @@
         }
 
         .server-name { margin: 0; font-size: 15px; }
-        .server-host { margin-top: 3px; color: var(--muted); font-size: 12px; }
+
+        .server-host {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 12px;
+        }
 
         .badge {
             display: inline-flex;
@@ -386,7 +413,12 @@
         }
 
         .empty h3 { margin: 0; font-size: 16px; }
-        .empty p { max-width: 390px; margin: 8px auto 18px; color: var(--muted); }
+
+        .empty p {
+            max-width: 390px;
+            margin: 8px auto 18px;
+            color: var(--muted);
+        }
 
         .footer {
             display: flex;
@@ -480,7 +512,10 @@
                         <h2>Nieuwe server registreren</h2>
                         <p>Voeg je Ubuntu VPS of een andere Linux-server toe.</p>
                     </div>
-                    <button class="button" id="close-register" type="button">Sluiten</button>
+
+                    <button class="button" id="close-register" type="button">
+                        Sluiten
+                    </button>
                 </div>
 
                 <form id="register-server-form">
@@ -520,15 +555,22 @@
 
                 <div id="registration-success" class="token-area" hidden>
                     <strong>Server geregistreerd — bewaar het agenttoken</strong>
+
                     <p id="registered-server-details" class="muted small"></p>
+
                     <p class="small">
                         Dit token wordt maar één keer getoond. Bewaar het veilig en deel het niet.
                     </p>
 
                     <div class="token-row">
-                        <input id="registered-agent-token" class="token-input"
-                               type="password" readonly autocomplete="off"
-                               aria-label="Eenmalig agenttoken">
+                        <input
+                            id="registered-agent-token"
+                            class="token-input"
+                            type="password"
+                            readonly
+                            autocomplete="off"
+                            aria-label="Eenmalig agenttoken"
+                        >
 
                         <button class="button" id="toggle-token" type="button">Tonen</button>
                         <button class="button" id="copy-token" type="button">Kopiëren</button>
@@ -577,7 +619,7 @@
 
             <article class="stat">
                 <div class="stat-top">
-                    <span>In afwachting</span>
+                    <span>Pending</span>
                     <span class="stat-icon pending">◷</span>
                 </div>
                 <div class="stat-value pending">{{ $pendingCount }}</div>
@@ -590,6 +632,7 @@
                     <h2>Servers</h2>
                     <p>Beheer en bekijk je geregistreerde infrastructuur.</p>
                 </div>
+
                 <span class="muted small">{{ $serverCount }} totaal</span>
             </div>
 
@@ -597,6 +640,7 @@
                 <div class="empty">
                     <div class="empty-icon">▤</div>
                     <h3>Nog geen servers geregistreerd</h3>
+
                     <p>
                         Voeg je Ubuntu VPS toe om CPU, geheugen, schijven en uptime te monitoren.
                     </p>
@@ -612,23 +656,41 @@
                     @foreach ($servers as $server)
                         @php
                             $sample = $server->latestMetricSample;
+
                             $memoryTotal = $sample?->memory_total_bytes ?? 0;
                             $memoryUsed = $sample?->memory_used_bytes ?? 0;
+
                             $memoryPercent = $memoryTotal > 0
-                                ? min(100, max(0, $memoryUsed / $memoryTotal * 100))
+                                ? min(100, max(0, ($memoryUsed / $memoryTotal) * 100))
                                 : null;
+
                             $cpuPercent = $sample?->cpu_percent;
+
+                            $statusLabels = [
+                                'online' => 'Online',
+                                'offline' => 'Offline',
+                                'pending' => 'Pending',
+                            ];
+
+                            $statusLabel = $statusLabels[$server->display_status] ?? 'Pending';
                         @endphp
 
-                        <article class="server-card">
+                        <a href="{{ route('servers.show', $server) }}" class="server-card">
                             <div class="server-heading">
                                 <div>
                                     <h3 class="server-name">{{ $server->name }}</h3>
                                     <div class="server-host">{{ $server->hostname }}</div>
 
                                     <div class="server-meta">
-                                        <span>Laatste contact: {{ $server->last_seen_at?->diffForHumans() ?? 'Nog nooit' }}</span>
-                                        <span>Agent: {{ $server->agent_version ?? 'Onbekend' }}</span>
+                                        <span>
+                                            Laatste contact:
+                                            {{ $server->last_seen_at?->diffForHumans() ?? 'Nog nooit' }}
+                                        </span>
+
+                                        <span>
+                                            Agent: {{ $server->agent_version ?? 'Onbekend' }}
+                                        </span>
+
                                         @if ($server->operating_system)
                                             <span>{{ $server->operating_system }}</span>
                                         @endif
@@ -636,16 +698,7 @@
                                 </div>
 
                                 <span class="badge {{ $server->display_status }}">
-                                    @switch($server->display_status)
-                                        @case('online')
-                                            Online
-                                            @break
-                                        @case('offline')
-                                            Offline
-                                            @break
-                                        @default
-                                            Pending
-                                    @endswitch
+                                    {{ $statusLabel }}
                                 </span>
                             </div>
 
@@ -654,35 +707,52 @@
                                     <div>
                                         <div class="metric-label">
                                             <span>CPU-gebruik</span>
+
                                             <strong>
-                                                {{ $cpuPercent !== null ? number_format($cpuPercent, 1) . '%' : 'Geen data' }}
+                                                {{ $cpuPercent !== null
+                                                    ? number_format($cpuPercent, 1, '.', '') . '%'
+                                                    : 'Geen data' }}
                                             </strong>
                                         </div>
+
                                         <div class="track">
-                                            <div class="fill" style="width: {{ min(100, max(0, $cpuPercent ?? 0)) }}%"></div>
+                                            <div
+                                                class="fill"
+                                                style="width: {{ min(100, max(0, $cpuPercent ?? 0)) }}%"
+                                            ></div>
                                         </div>
                                     </div>
 
                                     <div>
                                         <div class="metric-label">
                                             <span>RAM-gebruik</span>
+
                                             <strong>
-                                                {{ $memoryPercent !== null ? number_format($memoryPercent, 1) . '%' : 'Geen data' }}
+                                                {{ $memoryPercent !== null
+                                                    ? number_format($memoryPercent, 1, '.', '') . '%'
+                                                    : 'Geen data' }}
                                             </strong>
                                         </div>
+
                                         <div class="track">
-                                            <div class="fill" style="width: {{ $memoryPercent ?? 0 }}%"></div>
+                                            <div
+                                                class="fill"
+                                                style="width: {{ $memoryPercent ?? 0 }}%"
+                                            ></div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <p class="muted small">
-                                    Meting ontvangen {{ $sample->collected_at?->diffForHumans() ?? 'onbekend tijdstip' }}.
+                                    Meting ontvangen
+                                    {{ $sample->collected_at?->diffForHumans() ?? 'onbekend tijdstip' }}.
                                 </p>
                             @else
-                                <p class="muted small">Er zijn nog geen meetgegevens voor deze server.</p>
+                                <p class="muted small">
+                                    Er zijn nog geen meetgegevens voor deze server.
+                                </p>
                             @endif
-                        </article>
+                        </a>
                     @endforeach
                 </div>
             @endif
@@ -709,11 +779,16 @@
             const tokenInput = document.getElementById('registered-agent-token');
             const copyStatus = document.getElementById('copy-status');
 
-            if (!panel || !form) return;
+            if (!panel || !form) {
+                return;
+            }
 
             function openPanel() {
                 panel.hidden = false;
-                panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                panel.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
             }
 
             openButton?.addEventListener('click', openPanel);
@@ -725,15 +800,19 @@
 
             form.addEventListener('submit', async (event) => {
                 event.preventDefault();
+
                 errorBox.hidden = true;
                 errorBox.textContent = '';
+
                 submitButton.disabled = true;
                 submitButton.textContent = 'Registreren...';
 
                 const data = Object.fromEntries(new FormData(form).entries());
 
                 for (const key of ['ip_address', 'operating_system']) {
-                    if (!data[key]) delete data[key];
+                    if (!data[key]) {
+                        delete data[key];
+                    }
                 }
 
                 try {
@@ -743,7 +822,9 @@
                         headers: {
                             'Accept': 'application/json',
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-CSRF-TOKEN': document.querySelector(
+                                'meta[name="csrf-token"]'
+                            ).content,
                         },
                         body: JSON.stringify(data),
                     });
@@ -751,11 +832,20 @@
                     const result = await response.json().catch(() => ({}));
 
                     if (!response.ok) {
-                        const validationMessages = Object.values(result.errors ?? {}).flat().join('\n');
+                        const validationMessages = Object.values(
+                            result.errors ?? {}
+                        ).flat().join('\n');
+
                         throw new Error(
                             validationMessages ||
                             result.message ||
                             `Registratie mislukt (HTTP ${response.status}).`
+                        );
+                    }
+
+                    if (!result.agent_token || !result.server) {
+                        throw new Error(
+                            'De server is geregistreerd, maar het agenttoken ontbreekt in de respons.'
                         );
                     }
 
@@ -768,9 +858,11 @@
                     form.hidden = true;
                     successBox.hidden = false;
                     copyStatus.textContent = '';
+
                 } catch (error) {
                     errorBox.textContent = error.message || 'Registreren is mislukt.';
                     errorBox.hidden = false;
+
                 } finally {
                     submitButton.disabled = false;
                     submitButton.textContent = 'Server registreren';
@@ -779,6 +871,7 @@
 
             document.getElementById('toggle-token').addEventListener('click', (event) => {
                 const showing = tokenInput.type === 'text';
+
                 tokenInput.type = showing ? 'password' : 'text';
                 event.currentTarget.textContent = showing ? 'Tonen' : 'Verbergen';
             });
@@ -790,7 +883,9 @@
                 } catch {
                     tokenInput.type = 'text';
                     tokenInput.select();
-                    copyStatus.textContent = 'Kopiëren lukte niet automatisch. Kopieer het token handmatig.';
+
+                    copyStatus.textContent =
+                        'Kopiëren lukte niet automatisch. Kopieer het token handmatig.';
                 }
             });
 
