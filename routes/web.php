@@ -4,6 +4,8 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServerRegistrationController;
+use App\Http\Middleware\AuthenticateAgent;
+use Illuminate\Http\Request;
 
 Route::redirect('/', '/dashboard');
 
@@ -18,6 +20,18 @@ Route::middleware('guest')->group(function () {
         'store',
     ])->middleware('throttle:10,1');
 });
+
+
+Route::get('/agent/ping', function (Request $request) {
+    $server = $request->attributes->get('agentServer');
+
+    return response()->json([
+        'authenticated' => true,
+        'server_id' => $server->id,
+        'server_name' => $server->name,
+    ]);
+})->middleware(AuthenticateAgent::class)->name('agent.ping');
+
 
 Route::middleware('auth')->group(function () {
     Route::view('/dashboard', 'dashboard')
