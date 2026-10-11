@@ -28,4 +28,9 @@ class Server extends Model
     {
         return $this->hasMany(AgentCredential::class);
     }
+
+    public function metricSamples(): HasMany
+    {
+        return $this->hasMany(MetricSample::class);
+    }
 }
