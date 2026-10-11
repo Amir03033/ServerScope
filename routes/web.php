@@ -6,6 +6,7 @@ use App\Http\Controllers\ServerRegistrationController;
 use App\Http\Middleware\AuthenticateAgent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ServerDetailController;
 
 Route::redirect('/', '/dashboard');
 
@@ -34,6 +35,9 @@ Route::get('/agent/ping', function (Request $request) {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
+
+    Route::get('/servers/{server}', ServerDetailController::class)
+        ->name('servers.show');
 
     Route::post('/logout', [
         AuthenticatedSessionController::class,
