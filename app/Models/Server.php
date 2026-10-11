@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Server extends Model
 {
@@ -32,5 +33,11 @@ class Server extends Model
     public function metricSamples(): HasMany
     {
         return $this->hasMany(MetricSample::class);
+    }
+
+    public function latestMetricSample(): HasOne
+    {
+        return $this->hasOne(MetricSample::class)
+            ->latestOfMany('collected_at');
     }
 }

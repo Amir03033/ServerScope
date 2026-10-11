@@ -1,11 +1,11 @@
-
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ServerRegistrationController;
 use App\Http\Middleware\AuthenticateAgent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
 
@@ -21,7 +21,6 @@ Route::middleware('guest')->group(function () {
     ])->middleware('throttle:10,1');
 });
 
-
 Route::get('/agent/ping', function (Request $request) {
     $server = $request->attributes->get('agentServer');
 
@@ -32,9 +31,8 @@ Route::get('/agent/ping', function (Request $request) {
     ]);
 })->middleware(AuthenticateAgent::class)->name('agent.ping');
 
-
 Route::middleware('auth')->group(function () {
-    Route::view('/dashboard', 'dashboard')
+    Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
     Route::post('/logout', [
