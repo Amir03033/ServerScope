@@ -40,4 +40,9 @@ class Server extends Model
         return $this->hasOne(MetricSample::class)
             ->latestOfMany('collected_at');
     }
+
+    public function alerts(): HasMany
+    {
+        return $this->hasMany(Alert::class);
+    }
 }

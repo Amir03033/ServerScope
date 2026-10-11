@@ -86,4 +86,39 @@ class AuthenticateAgentTest extends TestCase
 
         return [$server, $token, $credential];
     }
+    public function test_last_used_at_is_updated_on_each_authenticated_request(): void
+    {
+        [$server, $token, $credential] = $this->createCredential();
+
+        $firstRequestTime = now()->startOfSecond();
+
+        $this->travelTo($firstRequestTime);
+
+        $this->withToken($token)
+            ->get('/agent/ping')
+            ->assertOk();
+
+        $credential->refresh();
+
+        $this->assertNotNull($credential->last_used_at);
+        $this->assertSame(
+            $firstRequestTime->toDateTimeString(),
+            $credential->last_used_at->toDateTimeString(),
+        );
+
+        $secondRequestTime = $firstRequestTime->copy()->addMinute();
+
+        $this->travelTo($secondRequestTime);
+
+        $this->withToken($token)
+            ->get('/agent/ping')
+            ->assertOk();
+
+        $credential->refresh();
+
+        $this->assertSame(
+            $secondRequestTime->toDateTimeString(),
+            $credential->last_used_at->toDateTimeString(),
+        );
+    }
 }

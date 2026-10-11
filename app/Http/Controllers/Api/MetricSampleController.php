@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\MetricSample;
+use App\Services\AlertDetectionService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,8 +14,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class MetricSampleController extends Controller
 {
-    public function store(Request $request): JsonResponse
-    {
+    public function store(
+        Request $request,
+        AlertDetectionService $alertDetectionService,
+    ): JsonResponse {
         $server = $request->attributes->get('agentServer');
 
         abort_unless($server !== null, 401);
@@ -81,10 +84,11 @@ class MetricSampleController extends Controller
         }
 
         $collectedAt = \Illuminate\Support\Carbon::parse(
-            $validated['collected_at']
+            $validated['collected_at'],
         );
 
         $sampleData = $validated;
+
         unset($sampleData['collected_at']);
 
         try {
@@ -93,6 +97,7 @@ class MetricSampleController extends Controller
                 $sampleData,
                 $collectedAt,
                 $validated,
+                $alertDetectionService,
             ): MetricSample {
                 $sample = $server->metricSamples()->create([
                     ...$sampleData,
@@ -105,6 +110,9 @@ class MetricSampleController extends Controller
                     'agent_version' => $validated['agent_version']
                         ?? $server->agent_version,
                 ])->save();
+
+                // Evaluate alerts as part of the same database transaction.
+                $alertDetectionService->evaluate($sample);
 
                 return $sample;
             });

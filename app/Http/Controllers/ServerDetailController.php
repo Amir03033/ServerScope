@@ -61,7 +61,7 @@ class ServerDetailController extends Controller
 
         $displayStatus = match (true) {
             $server->last_seen_at === null => 'pending',
-            $server->last_seen_at->lt(now()->subMinutes(2)) => 'offline',
+            $server->last_seen_at->lte(now()->subMinutes(2)) => 'offline',
             default => 'online',
         };
 

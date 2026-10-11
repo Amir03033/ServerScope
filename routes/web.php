@@ -7,6 +7,8 @@ use App\Http\Middleware\AuthenticateAgent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServerDetailController;
+use App\Http\Controllers\AlertController;
+use App\Http\Controllers\AlertRuleController;
 
 Route::redirect('/', '/dashboard');
 
@@ -38,6 +40,26 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/servers/{server}', ServerDetailController::class)
         ->name('servers.show');
+
+    Route::get('/alerts', AlertController::class)->name('alerts.index');
+
+    Route::get('/alert-rules', [AlertRuleController::class, 'index'])
+        ->name('alert-rules.index');
+
+    Route::get('/alert-rules/create', [AlertRuleController::class, 'create'])
+        ->name('alert-rules.create');
+
+    Route::post('/alert-rules', [AlertRuleController::class, 'store'])
+        ->name('alert-rules.store');
+
+    Route::get('/alert-rules/{alertRule}/edit', [AlertRuleController::class, 'edit'])
+        ->name('alert-rules.edit');
+
+    Route::put('/alert-rules/{alertRule}', [AlertRuleController::class, 'update'])
+        ->name('alert-rules.update');
+
+    Route::delete('/alert-rules/{alertRule}', [AlertRuleController::class, 'destroy'])
+        ->name('alert-rules.destroy');
 
     Route::post('/logout', [
         AuthenticatedSessionController::class,

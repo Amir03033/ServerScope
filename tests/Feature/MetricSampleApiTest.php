@@ -137,6 +137,35 @@ class MetricSampleApiTest extends TestCase
         ])->assertUnprocessable();
     }
 
+    public function test_invalid_metrics_do_not_change_server_state_or_create_samples(): void
+    {
+        [$server, $token] = $this->createAgent();
+
+        $originalServer = $server->fresh();
+
+        $this->withToken($token)
+            ->postJson('/api/agent/metrics', [
+                'collected_at' => now()->toIso8601String(),
+                'cpu_percent' => 150,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cpu_percent');
+
+        $this->assertDatabaseCount('metric_samples', 0);
+
+        $server->refresh();
+
+        $this->assertSame(
+            $originalServer->status,
+            $server->status,
+        );
+
+        $this->assertSame(
+            $originalServer->last_seen_at,
+            $server->last_seen_at,
+        );
+    }
+
     public function test_old_measurements_are_rejected(): void
     {
         [, $token] = $this->createAgent();
@@ -177,6 +206,7 @@ class MetricSampleApiTest extends TestCase
     public function test_duplicate_sample_timestamp_is_rejected(): void
     {
         [$server, $token] = $this->createAgent();
+
         $timestamp = now()->toIso8601String();
 
         $payload = [
@@ -184,10 +214,22 @@ class MetricSampleApiTest extends TestCase
             'cpu_percent' => 10,
         ];
 
+        // Eerste meting wordt geaccepteerd.
         $this->withToken($token)
             ->postJson('/api/agent/metrics', $payload)
             ->assertCreated();
 
+        $this->assertDatabaseCount('metric_samples', 1);
+
+        // Simuleer dat de server daarna offline is geraakt.
+        $lastSeen = now()->subMinutes(5);
+
+        $server->forceFill([
+            'status' => 'offline',
+            'last_seen_at' => $lastSeen,
+        ])->save();
+
+        // Dezelfde meting mag niet opnieuw worden opgeslagen.
         $this->withToken($token)
             ->postJson('/api/agent/metrics', $payload)
             ->assertStatus(409)
@@ -196,12 +238,23 @@ class MetricSampleApiTest extends TestCase
                 'Voor dit tijdstip bestaat al een meting.',
             );
 
+        // Er mag geen tweede meting zijn aangemaakt.
         $this->assertDatabaseCount('metric_samples', 1);
 
         $this->assertDatabaseHas('metric_samples', [
             'server_id' => $server->id,
             'cpu_percent' => 10,
         ]);
+
+        // De afgewezen duplicaat-request mag de status niet wijzigen.
+        $server->refresh();
+
+        $this->assertSame('offline', $server->status);
+
+        $this->assertSame(
+            $lastSeen->toDateTimeString(),
+            $server->last_seen_at->toDateTimeString(),
+        );
     }
 
     public function test_memory_used_cannot_exceed_memory_total(): void

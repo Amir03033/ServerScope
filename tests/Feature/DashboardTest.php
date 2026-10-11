@@ -7,6 +7,7 @@ use App\Models\Server;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Illuminate\Support\Carbon;
 
 class DashboardTest extends TestCase
 {
@@ -86,5 +87,24 @@ class DashboardTest extends TestCase
             ->assertSee('Old server')
             ->assertSee('Offline')
             ->assertSee('Pending');
+    }
+    public function test_server_is_offline_when_last_seen_is_exactly_two_minutes_old(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-11 12:00:00'));
+
+        $user = User::factory()->create();
+
+        Server::create([
+            'name' => 'Boundary VPS',
+            'hostname' => 'boundary.example.test',
+            'status' => 'online',
+            'last_seen_at' => now()->subMinutes(2),
+        ]);
+
+        $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Boundary VPS')
+            ->assertSee('Offline');
     }
 }
