@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\MetricSample;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -83,37 +84,54 @@ class MetricSampleController extends Controller
             $validated['collected_at']
         );
 
-        $sample = DB::transaction(function () use (
-            $server,
-            $validated,
-            $collectedAt,
-        ): MetricSample {
-            $duplicate = MetricSample::query()
-                ->where('server_id', $server->id)
-                ->where('collected_at', $collectedAt)
-                ->exists();
+        $sampleData = $validated;
+        unset($sampleData['collected_at']);
 
-            if ($duplicate) {
-                abort(409, 'Voor dit tijdstip bestaat al een meting.');
+        try {
+            $sample = DB::transaction(function () use (
+                $server,
+                $sampleData,
+                $collectedAt,
+                $validated,
+            ): MetricSample {
+                $sample = $server->metricSamples()->create([
+                    ...$sampleData,
+                    'collected_at' => $collectedAt,
+                ]);
+
+                $server->forceFill([
+                    'last_seen_at' => now(),
+                    'status' => 'online',
+                    'agent_version' => $validated['agent_version']
+                        ?? $server->agent_version,
+                ])->save();
+
+                return $sample;
+            });
+        } catch (QueryException $exception) {
+            // Only convert duplicate sample timestamps to HTTP 409.
+            // Other database errors must still be reported normally.
+            $isUniqueViolation = in_array(
+                (string) $exception->getCode(),
+                ['23000', '23505'],
+                true,
+            );
+
+            if ($isUniqueViolation) {
+                $duplicateExists = MetricSample::query()
+                    ->where('server_id', $server->id)
+                    ->where('collected_at', $collectedAt)
+                    ->exists();
+
+                if ($duplicateExists) {
+                    return response()->json([
+                        'message' => 'Voor dit tijdstip bestaat al een meting.',
+                    ], Response::HTTP_CONFLICT);
+                }
             }
 
-            $sampleData = $validated;
-            unset($sampleData['collected_at']);
-
-            $sample = $server->metricSamples()->create([
-                ...$sampleData,
-                'collected_at' => $collectedAt,
-            ]);
-
-            $server->forceFill([
-                'last_seen_at' => now(),
-                'status' => 'online',
-                'agent_version' => $validated['agent_version']
-                    ?? $server->agent_version,
-            ])->save();
-
-            return $sample;
-        });
+            throw $exception;
+        }
 
         return response()->json([
             'message' => 'Meting opgeslagen.',

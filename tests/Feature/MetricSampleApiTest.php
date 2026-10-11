@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\AgentCredential;
 use App\Models\Server;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -31,18 +30,15 @@ class MetricSampleApiTest extends TestCase
             ],
         );
 
-        $response->assertCreated();
+        $response->assertCreated()
+            ->assertJsonPath('message', 'Meting opgeslagen.');
 
         $this->assertDatabaseHas('metric_samples', [
             'server_id' => $server->id,
             'cpu_percent' => 42.5,
         ]);
 
-        $this->assertSame(
-            'online',
-            $server->fresh()->status,
-        );
-
+        $this->assertSame('online', $server->fresh()->status);
         $this->assertNotNull($server->fresh()->last_seen_at);
     }
 
@@ -103,7 +99,7 @@ class MetricSampleApiTest extends TestCase
 
     public function test_duplicate_sample_timestamp_is_rejected(): void
     {
-        [, $token] = $this->createAgent();
+        [$server, $token] = $this->createAgent();
         $timestamp = now()->toIso8601String();
 
         $payload = [
@@ -117,7 +113,61 @@ class MetricSampleApiTest extends TestCase
 
         $this->withToken($token)
             ->postJson('/api/agent/metrics', $payload)
-            ->assertStatus(409);
+            ->assertStatus(409)
+            ->assertJsonPath(
+                'message',
+                'Voor dit tijdstip bestaat al een meting.',
+            );
+
+        $this->assertDatabaseCount('metric_samples', 1);
+
+        $this->assertDatabaseHas('metric_samples', [
+            'server_id' => $server->id,
+            'cpu_percent' => 10,
+        ]);
+    }
+
+    public function test_memory_used_cannot_exceed_memory_total(): void
+    {
+        [, $token] = $this->createAgent();
+
+        $this->withToken($token)->postJson('/api/agent/metrics', [
+            'collected_at' => now()->toIso8601String(),
+            'memory_total_bytes' => 1_000,
+            'memory_used_bytes' => 1_001,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('memory_used_bytes');
+    }
+
+    public function test_memory_available_cannot_exceed_memory_total(): void
+    {
+        [, $token] = $this->createAgent();
+
+        $this->withToken($token)->postJson('/api/agent/metrics', [
+            'collected_at' => now()->toIso8601String(),
+            'memory_total_bytes' => 1_000,
+            'memory_available_bytes' => 1_001,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('memory_available_bytes');
+    }
+
+    public function test_disk_values_cannot_exceed_disk_total(): void
+    {
+        [, $token] = $this->createAgent();
+
+        $this->withToken($token)->postJson('/api/agent/metrics', [
+            'collected_at' => now()->toIso8601String(),
+            'disks' => [
+                [
+                    'path' => '/',
+                    'total_bytes' => 1_000,
+                    'used_bytes' => 800,
+                    'available_bytes' => 300,
+                    'percent' => 80,
+                ],
+            ],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('disks.0');
     }
 
     private function createAgent(): array
