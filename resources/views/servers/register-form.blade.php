@@ -1,8 +1,20 @@
-<section class="panel">
-    <h2>Server registreren</h2>
-    <p class="muted small">
-        Voeg een Ubuntu-server of een andere Linux-server toe aan ServerScope.
-    </p>
+<section class="panel register-section">
+    <div class="register-head">
+        <span class="register-icon">
+            <svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="7" rx="2"/>
+                <rect x="3" y="14" width="18" height="7" rx="2"/>
+                <path d="M7 6.5h.01M7 17.5h.01"/>
+            </svg>
+        </span>
+        <div>
+            <h2>Server registreren</h2>
+            <p class="muted small">
+                Voeg een Ubuntu-server of een andere Linux-server toe aan ServerScope.
+            </p>
+        </div>
+    </div>
 
     <form id="register-server-form">
         <div class="registration-grid">
@@ -37,7 +49,7 @@
             </label>
         </div>
 
-        <button class="button" id="register-server-button" type="submit">
+        <button class="button button-primary" id="register-server-button" type="submit">
             Server registreren
         </button>
 
@@ -45,11 +57,11 @@
            role="alert" hidden></p>
     </form>
 
-    <div id="registration-success" hidden>
+    <div id="registration-success" class="token-area" hidden>
         <h3>Server geregistreerd</h3>
         <p id="registered-server-details" class="muted small"></p>
 
-        <p>
+        <p class="token-warning">
             <strong>Agenttoken — bewaar dit nu veilig.</strong>
         </p>
         <p class="muted small">
@@ -73,13 +85,43 @@
 
         <p id="copy-status" class="muted small" role="status"></p>
 
-        <button class="button" id="finish-registration" type="button">
+        <button class="button button-primary" id="finish-registration" type="button">
             Token veilig opgeslagen — terug naar overzicht
         </button>
     </div>
 </section>
 
 <style>
+    .register-section[hidden],
+    .token-area[hidden] { display: none; }
+
+    .register-head {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin-bottom: 4px;
+    }
+
+    .register-head h2 {
+        margin: 0;
+        font-size: 17px;
+    }
+
+    .register-head p { margin: 3px 0 0; }
+
+    .register-icon {
+        display: grid;
+        place-items: center;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        border: 1px solid #25577a;
+        border-radius: 12px;
+        background: #0c2236;
+        color: #38bdf8;
+        font-size: 22px;
+    }
+
     .registration-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -91,8 +133,9 @@
         display: flex;
         flex-direction: column;
         gap: 7px;
-        color: #cbd5e1;
-        font-size: 13px;
+        color: #c3d1e4;
+        font-size: 12px;
+        font-weight: 600;
     }
 
     .registration-grid input,
@@ -100,25 +143,56 @@
         width: 100%;
         min-width: 0;
         padding: 11px 12px;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        background: #080d18;
-        color: #e5e7eb;
+        border: 1px solid #2a3c58;
+        border-radius: 10px;
+        outline: none;
+        background: #080f1c;
+        color: #edf4ff;
         font: inherit;
+        font-weight: 400;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+    .registration-grid input:focus,
+    .token-row input:focus {
+        border-color: #0891b2;
+        box-shadow: 0 0 0 3px #0891b230;
     }
 
     .full-width { grid-column: 1 / -1; }
 
     .registration-error {
+        margin: 12px 0 0;
+        padding: 11px 14px;
+        border: 1px solid #7f1d1d;
+        border-radius: 10px;
+        background: #2a121a;
         color: #fca5a5;
         white-space: pre-line;
     }
+
+    .registration-error[hidden] { display: none; }
+
+    .token-area {
+        margin-top: 8px;
+        padding: 18px;
+        border: 1px solid #854d0e;
+        border-radius: 12px;
+        background: #29200d;
+    }
+
+    .token-area h3 {
+        margin: 0 0 4px;
+        font-size: 16px;
+    }
+
+    .token-warning { margin: 14px 0 4px; }
 
     .token-row {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        margin-bottom: 18px;
+        margin: 14px 0 12px;
     }
 
     .token-row input { flex: 1 1 240px; }
