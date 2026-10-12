@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Alert;
 use App\Models\AlertRule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -62,11 +63,37 @@ class AlertRuleController extends Controller
 
         $validated = $this->validateRule($request);
 
-        $alertRule->update($validated);
+        DB::transaction(function () use ($alertRule, $validated): void {
+            $lockedRule = AlertRule::query()
+                ->whereKey($alertRule->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $wasEnabled = (bool) $lockedRule->is_enabled;
+            $willBeEnabled = (bool) $validated['is_enabled'];
+
+            $lockedRule->update($validated);
+
+            if ($wasEnabled && ! $willBeEnabled) {
+                Alert::query()
+                    ->where('alert_rule_id', $lockedRule->id)
+                    ->where('status', 'active')
+                    ->update([
+                        'status' => 'disabled',
+                        'resolved_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+            }
+        });
 
         return redirect()
             ->route('alert-rules.index')
-            ->with('success', 'Alertregel bijgewerkt.');
+            ->with(
+                'success',
+                $validated['is_enabled']
+                    ? 'Alertregel bijgewerkt en ingeschakeld.'
+                    : 'Alertregel bijgewerkt. Actieve alerts zijn als uitgeschakeld geregistreerd.',
+            );
     }
 
     public function destroy(AlertRule $alertRule): RedirectResponse
@@ -78,7 +105,7 @@ class AlertRuleController extends Controller
                 ->route('alert-rules.index')
                 ->with(
                     'error',
-                    'Deze alertregel heeft meldingsgeschiedenis en kan daarom niet worden verwijderd. Schakel de regel uit als je deze niet meer wilt gebruiken.'
+                    'Deze alertregel heeft meldingsgeschiedenis en kan daarom niet worden verwijderd. Schakel de regel uit als je deze niet meer wilt gebruiken.',
                 );
         }
 

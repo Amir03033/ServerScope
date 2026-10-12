@@ -12,7 +12,11 @@ class AlertController extends Controller
     {
         $status = $request->query('status', 'active');
 
-        if (! in_array($status, ['active', 'resolved', 'all'], true)) {
+        if (! in_array(
+            $status,
+            ['active', 'resolved', 'disabled', 'all'],
+            true,
+        )) {
             $status = 'active';
         }
 
@@ -27,7 +31,14 @@ class AlertController extends Controller
         }
 
         $alerts = $alertsQuery
-            ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
+            ->orderByRaw(
+                "CASE
+                    WHEN status = 'active' THEN 0
+                    WHEN status = 'resolved' THEN 1
+                    WHEN status = 'disabled' THEN 2
+                    ELSE 3
+                END",
+            )
             ->orderByDesc('triggered_at')
             ->paginate(15)
             ->withQueryString();
@@ -40,12 +51,19 @@ class AlertController extends Controller
             ->where('status', 'resolved')
             ->count();
 
+        $disabledCount = Alert::query()
+            ->where('status', 'disabled')
+            ->count();
+
+        $totalCount = $activeCount + $resolvedCount + $disabledCount;
+
         return view('alerts.index', [
             'alerts' => $alerts,
             'status' => $status,
             'activeCount' => $activeCount,
             'resolvedCount' => $resolvedCount,
-            'totalCount' => $activeCount + $resolvedCount,
+            'disabledCount' => $disabledCount,
+            'totalCount' => $totalCount,
         ]);
     }
 }

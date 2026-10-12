@@ -38,8 +38,10 @@ class AlertDetectionService
     }
 
     /** @return array<string, float> */
-    private function getMetricValues(MetricSample $sample, AlertRule $rule): array
-    {
+    private function getMetricValues(
+        MetricSample $sample,
+        AlertRule $rule,
+    ): array {
         return match ($rule->metric) {
             'cpu_percent' => $sample->cpu_percent === null
                 ? []
@@ -115,22 +117,32 @@ class AlertDetectionService
             $dimension,
             $value,
         ): void {
-            // Serialise alert evaluation for the same server.
+            // Serialise evaluations for the same server.
             Server::query()
                 ->whereKey($sample->server_id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            // Re-check the rule while holding its database lock.
+            $lockedRule = AlertRule::query()
+                ->whereKey($rule->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($lockedRule === null || ! $lockedRule->is_enabled) {
+                return;
+            }
+
             $activeAlert = Alert::query()
                 ->where('server_id', $sample->server_id)
-                ->where('alert_rule_id', $rule->id)
+                ->where('alert_rule_id', $lockedRule->id)
                 ->where('metric', $metric)
                 ->where('dimension', $dimension)
                 ->where('status', 'active')
                 ->lockForUpdate()
                 ->first();
 
-            $isTriggered = $this->matchesThreshold($value, $rule);
+            $isTriggered = $this->matchesThreshold($value, $lockedRule);
 
             if (! $isTriggered) {
                 if ($activeAlert !== null) {
@@ -154,7 +166,7 @@ class AlertDetectionService
 
             $startedAt = $this->thresholdStartedAt(
                 sample: $sample,
-                rule: $rule,
+                rule: $lockedRule,
                 metric: $metric,
                 dimension: $dimension,
             );
@@ -165,19 +177,21 @@ class AlertDetectionService
 
             Alert::query()->create([
                 'server_id' => $sample->server_id,
-                'alert_rule_id' => $rule->id,
+                'alert_rule_id' => $lockedRule->id,
                 'metric' => $metric,
                 'dimension' => $dimension,
                 'observed_value' => $value,
-                'threshold' => $rule->threshold,
+                'threshold' => $lockedRule->threshold,
                 'status' => 'active',
                 'triggered_at' => $startedAt,
             ]);
         }, attempts: 3);
     }
 
-    private function matchesThreshold(float $value, AlertRule $rule): bool
-    {
+    private function matchesThreshold(
+        float $value,
+        AlertRule $rule,
+    ): bool {
         return match ($rule->operator) {
             '>=' => $value >= $rule->threshold,
             '>' => $value > $rule->threshold,
