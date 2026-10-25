@@ -18,6 +18,8 @@ use App\Http\Controllers\DomainController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicStatusPageController;
+use App\Http\Controllers\StatusPageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServerController;
@@ -57,6 +59,10 @@ Route::get('/agent/ping', function (Request $request) {
     ]);
 })->middleware(AuthenticateAgent::class)->name('agent.ping');
 
+// Public status pages (no login unless the page is private).
+Route::get('/status/{slug}.json', [PublicStatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.json');
+Route::get('/status/{slug}', [PublicStatusPageController::class, 'show'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.show');
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
@@ -84,6 +90,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/export', [ReportController::class, 'export'])->middleware('throttle:20,1')->name('reports.export');
 
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    Route::get('/status-pages', [StatusPageController::class, 'index'])->name('status-pages.index');
+    Route::get('/status-pages/create', [StatusPageController::class, 'create'])->name('status-pages.create');
+    Route::post('/status-pages', [StatusPageController::class, 'store'])->name('status-pages.store');
+    Route::get('/status-pages/{statusPage}/edit', [StatusPageController::class, 'edit'])->name('status-pages.edit');
+    Route::put('/status-pages/{statusPage}', [StatusPageController::class, 'update'])->name('status-pages.update');
+    Route::delete('/status-pages/{statusPage}', [StatusPageController::class, 'destroy'])->name('status-pages.destroy');
 
     Route::get('/webhooks', [WebhookController::class, 'index'])->name('webhooks.index');
     Route::get('/webhooks/create', [WebhookController::class, 'create'])->name('webhooks.create');
