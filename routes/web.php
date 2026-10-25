@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServerDetailController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\AlertRuleController;
+use App\Http\Controllers\ApiTokenController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AgentCredentialController;
 use App\Http\Controllers\DomainController;
@@ -69,6 +70,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/two-factor/confirm', [TwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('two-factor.confirm');
     Route::post('/profile/two-factor/recovery-codes', [TwoFactorController::class, 'recoveryCodes'])->middleware('throttle:6,1')->name('two-factor.recovery-codes');
     Route::delete('/profile/two-factor', [TwoFactorController::class, 'disable'])->middleware('throttle:6,1')->name('two-factor.show');
+
+    Route::get('/profile/api-tokens', [ApiTokenController::class, 'index'])->name('api-tokens.index');
+    Route::post('/profile/api-tokens', [ApiTokenController::class, 'store'])->middleware('throttle:10,1')->name('api-tokens.store');
+    Route::delete('/profile/api-tokens/{apiToken}', [ApiTokenController::class, 'destroy'])->name('api-tokens.destroy');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');

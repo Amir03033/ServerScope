@@ -67,6 +67,11 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('admin', fn (User $user): bool => (bool) $user->is_admin);
 
+        // Per token (or per IP for unauthenticated calls).
+        \Illuminate\Support\Facades\RateLimiter::for('api-token', fn (\Illuminate\Http\Request $request) => \Illuminate\Cache\RateLimiting\Limit::perMinute((int) config('serverscope.api.requests_per_minute', 120))
+            ->by('api:'.hash('sha256', (string) ($request->bearerToken() ?? $request->ip())))
+            ->response(fn () => response()->json(['message' => 'Te veel verzoeken.'], 429)));
+
         \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(fn (User $user, string $token) => (new \Illuminate\Notifications\Messages\MailMessage)
             ->subject('[ServerScope] Wachtwoord opnieuw instellen')
             ->line('Je ontvangt deze e-mail omdat er een nieuw wachtwoord is aangevraagd voor je ServerScope-account.')

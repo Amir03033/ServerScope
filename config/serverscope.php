@@ -145,4 +145,8 @@ return [
         'audit_logs_days' => env('SERVERSCOPE_RETAIN_AUDIT_LOGS_DAYS'),
     ],
 
+    'api' => [
+        'requests_per_minute' => (int) env('SERVERSCOPE_API_RATE_LIMIT', 120),
+    ],
+
 ];

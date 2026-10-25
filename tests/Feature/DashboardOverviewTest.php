@@ -17,6 +17,9 @@ class DashboardOverviewTest extends TestCase
 
     public function test_overview_uses_real_monitoring_data(): void
     {
+        // Keep the two timed checks below in the same hourly bucket.
+        $this->travelTo(now()->startOfHour()->addMinutes(45));
+
         Server::create(['name' => 'Up', 'hostname' => 'up.example.test', 'last_seen_at' => now()]);
         Server::create(['name' => 'Down', 'hostname' => 'down.example.test', 'last_seen_at' => now()->subHour()]);
         $healthy = Domain::create(['name' => 'ok.example.com']);
