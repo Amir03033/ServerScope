@@ -75,14 +75,15 @@ class AlertRuleController extends Controller
             $lockedRule->update($validated);
 
             if ($wasEnabled && ! $willBeEnabled) {
+                // Per-model updates so the linked incidents are resolved too.
                 Alert::query()
                     ->where('alert_rule_id', $lockedRule->id)
                     ->where('status', 'active')
-                    ->update([
+                    ->get()
+                    ->each(fn (Alert $alert) => $alert->update([
                         'status' => 'disabled',
                         'resolved_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    ]));
             }
         });
 
@@ -150,7 +151,10 @@ class AlertRuleController extends Controller
                 'between:1,1440',
             ],
             'is_enabled' => ['required', 'boolean'],
+            'severity' => ['sometimes', Rule::in(['warning', 'critical'])],
         ]);
+
+        $validated['severity'] ??= $isAgentOffline ? 'critical' : 'warning';
 
         if ($isAgentOffline) {
             // The threshold itself is the duration of silence.

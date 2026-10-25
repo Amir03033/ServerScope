@@ -11,6 +11,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\AlertRuleController;
 use App\Http\Controllers\AgentCredentialController;
 use App\Http\Controllers\DomainController;
+use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServerMaintenanceController;
 
@@ -85,6 +86,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/domains/{domain}/check', [DomainController::class, 'checkNow'])->name('domains.check');
     Route::post('/domains/{domain}/restore', [DomainController::class, 'restore'])->withTrashed()->name('domains.restore');
     Route::delete('/domains/{domain}/permanent', [DomainController::class, 'forceDestroy'])->withTrashed()->name('domains.force-destroy');
+
+    Route::get('/incidents', [IncidentController::class, 'index'])->name('incidents.index');
+    Route::get('/incidents/create', [IncidentController::class, 'create'])->name('incidents.create');
+    Route::post('/incidents', [IncidentController::class, 'store'])->name('incidents.store');
+    Route::get('/incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
+    Route::post('/incidents/{incident}/status', [IncidentController::class, 'transition'])->name('incidents.transition');
+    Route::post('/incidents/{incident}/assign', [IncidentController::class, 'assign'])->name('incidents.assign');
+    Route::post('/incidents/{incident}/severity', [IncidentController::class, 'severity'])->name('incidents.severity');
+    Route::post('/incidents/{incident}/comments', [IncidentController::class, 'comment'])
+        ->middleware('throttle:30,1')
+        ->name('incidents.comment');
 
     Route::get('/alerts', AlertController::class)->name('alerts.index');
 

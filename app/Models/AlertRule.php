@@ -39,6 +39,7 @@ class AlertRule extends Model
         'metric',
         'threshold',
         'operator',
+        'severity',
         'duration_minutes',
         'is_enabled',
     ];

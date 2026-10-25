@@ -153,9 +153,9 @@ class IncidentManager
     /**
      * Automatic recovery: resolve the active incident for a fingerprint.
      */
-    public function recover(string $fingerprint, string $message, array $context = []): ?Incident
+    public function recover(string $fingerprint, string $message, array $context = [], bool $notify = true): ?Incident
     {
-        return DB::transaction(function () use ($fingerprint, $message, $context): ?Incident {
+        return DB::transaction(function () use ($fingerprint, $message, $context, $notify): ?Incident {
             $incident = Incident::query()
                 ->where('active_fingerprint', $fingerprint)
                 ->lockForUpdate()
@@ -174,7 +174,9 @@ class IncidentManager
 
             $this->event($incident, 'recovered', null, $message, $context ?: null);
 
-            DB::afterCommit(fn () => IncidentResolved::dispatch($incident));
+            if ($notify) {
+                DB::afterCommit(fn () => IncidentResolved::dispatch($incident));
+            }
 
             return $incident;
         });

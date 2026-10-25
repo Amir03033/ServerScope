@@ -312,7 +312,13 @@
                                 Geactiveerd:
                                 {{ $alert->triggered_at?->format('d-m-Y H:i:s') ?? 'Onbekend' }}
                             </span>
-                            @if ($alert->resolved_at)
+                            @if ($alert->incident_id)
+                        <span>
+                            <svg class="ico"><use href="#i-siren"/></svg>
+                            <a href="{{ route('incidents.show', $alert->incident_id) }}">Incident #{{ $alert->incident_id }}</a>
+                        </span>
+                    @endif
+                    @if ($alert->resolved_at)
                                 <span>
                                     <svg class="ico"><use href="#i-flag"/></svg>
                                     {{ $isDisabled ? 'Uitgeschakeld:' : 'Opgelost:' }}

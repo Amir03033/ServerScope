@@ -210,6 +210,22 @@
         </div>
 
         <div class="field">
+            <label for="severity">Ernst van het incident</label>
+
+            <select id="severity" name="severity" required>
+                @foreach (['warning' => 'Waarschuwing', 'critical' => 'Kritiek'] as $value => $label)
+                    <option value="{{ $value }}" @selected(old('severity', $rule->severity ?? ($rule->metric === 'agent_offline' ? 'critical' : 'warning')) === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+
+            <span class="field-help">Bepaalt de ernst van incidenten die deze regel opent.</span>
+
+            @error('severity')
+            <span class="field-error">{{ $message }}</span>
+            @enderror
+        </div>
+
+        <div class="field">
             <label for="duration_minutes">Vereiste duur (minuten)</label>
 
             <input

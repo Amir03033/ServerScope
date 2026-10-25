@@ -6,7 +6,7 @@ use App\Models\Alert;
 use App\Models\AlertRule;
 use App\Models\Server;
 use App\Models\User;
-use App\Notifications\AlertStateChanged;
+use App\Notifications\IncidentNotification;
 use App\Services\AgentHeartbeatService;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -44,13 +44,13 @@ class AlertNotificationTest extends TestCase
         $this->travel(1)->minutes();
         $service->check();
 
-        Notification::assertSentToTimes($this->admin, AlertStateChanged::class, 1);
+        Notification::assertSentToTimes($this->admin, IncidentNotification::class, 1);
         Notification::assertSentTo(
             $this->admin,
-            AlertStateChanged::class,
-            fn (AlertStateChanged $n) => $n->transition === AlertStateChanged::TRIGGERED,
+            IncidentNotification::class,
+            fn (IncidentNotification $n) => $n->kind === IncidentNotification::OPENED,
         );
-        Notification::assertNotSentTo($this->viewer, AlertStateChanged::class);
+        Notification::assertNotSentTo($this->viewer, IncidentNotification::class);
     }
 
     public function test_admins_are_notified_on_recovery(): void
@@ -64,11 +64,11 @@ class AlertNotificationTest extends TestCase
         $server->forceFill(['last_seen_at' => now()])->save();
         $service->check();
 
-        Notification::assertSentToTimes($this->admin, AlertStateChanged::class, 2);
+        Notification::assertSentToTimes($this->admin, IncidentNotification::class, 2);
         Notification::assertSentTo(
             $this->admin,
-            AlertStateChanged::class,
-            fn (AlertStateChanged $n) => $n->transition === AlertStateChanged::RESOLVED,
+            IncidentNotification::class,
+            fn (IncidentNotification $n) => $n->kind === IncidentNotification::RESOLVED,
         );
     }
 
@@ -95,12 +95,12 @@ class AlertNotificationTest extends TestCase
 
         $this->assertSame('resolved', Alert::query()->sole()->status);
 
-        $transitions = Notification::sent($this->admin, AlertStateChanged::class)
-            ->map(fn (AlertStateChanged $n) => $n->transition)
+        $transitions = Notification::sent($this->admin, IncidentNotification::class)
+            ->map(fn (IncidentNotification $n) => $n->kind)
             ->all();
 
         $this->assertSame(
-            [AlertStateChanged::TRIGGERED, AlertStateChanged::RESOLVED],
+            [IncidentNotification::OPENED, IncidentNotification::RESOLVED],
             $transitions,
         );
     }
@@ -123,7 +123,7 @@ class AlertNotificationTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame('disabled', Alert::query()->sole()->status);
-        Notification::assertSentToTimes($this->admin, AlertStateChanged::class, 1);
+        Notification::assertSentToTimes($this->admin, IncidentNotification::class, 1);
     }
 
     public function test_notifications_can_be_disabled_by_configuration(): void
@@ -145,20 +145,21 @@ class AlertNotificationTest extends TestCase
         $server->forceFill(['ip_address' => '203.0.113.7'])->save();
         app(AgentHeartbeatService::class)->check();
 
-        $mail = (new AlertStateChanged(Alert::query()->sole(), AlertStateChanged::TRIGGERED))
-            ->toMail($this->admin);
+        $incident = Alert::query()->sole()->incident;
+        $mail = (new IncidentNotification($incident, IncidentNotification::OPENED))->toMail($this->admin);
 
-        $this->assertStringContainsString('Agent offline', $mail->subject);
+        $this->assertStringContainsString('agent offline', $mail->subject);
         $this->assertStringContainsString($server->name, $mail->subject);
 
         $rendered = (string) $mail->render();
-        $this->assertStringContainsString('10,0 min', $rendered);
+        $this->assertStringContainsString('Geen metingen ontvangen', $rendered);
+        $this->assertStringContainsString(route('incidents.show', $incident), $rendered);
         $this->assertStringNotContainsString('203.0.113.7', $rendered);
     }
 
     public function test_notification_is_queued_with_retries(): void
     {
-        $notification = new AlertStateChanged(new Alert, AlertStateChanged::TRIGGERED);
+        $notification = new IncidentNotification(new \App\Models\Incident, IncidentNotification::OPENED);
 
         $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class, $notification);
         $this->assertSame(3, $notification->tries);

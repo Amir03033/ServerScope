@@ -67,6 +67,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('admin', fn (User $user): bool => (bool) $user->is_admin);
 
+        \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\IncidentNotifier::class);
+
         // Short, stable type names in polymorphic columns.
         Relation::morphMap([
             'server' => \App\Models\Server::class,
@@ -82,6 +84,10 @@ class AppServiceProvider extends ServiceProvider
                 $view->with(
                     'sidebarActiveAlerts',
                     Alert::query()->where('status', 'active')->count()
+                );
+                $view->with(
+                    'sidebarOpenIncidents',
+                    \App\Models\Incident::query()->active()->count()
                 );
             }
         );
