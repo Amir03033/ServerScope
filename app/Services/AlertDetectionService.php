@@ -123,7 +123,7 @@ class AlertDetectionService
             $value,
         ): void {
             // Serialise evaluations for the same server.
-            Server::query()
+            $server = Server::query()
                 ->whereKey($sample->server_id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -166,6 +166,12 @@ class AlertDetectionService
                     'observed_value' => $value,
                 ]);
 
+                return;
+            }
+
+            // No new alerts during planned maintenance; existing alerts
+            // still update and recover.
+            if ($server->isInMaintenance()) {
                 return;
             }
 

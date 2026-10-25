@@ -12,7 +12,7 @@
     $navGroups = [
         null => [
             ['route' => 'dashboard', 'match' => 'dashboard', 'icon' => 'i-home', 'label' => 'Dashboard'],
-            ['route' => 'servers.index', 'match' => 'servers.*', 'icon' => 'i-server', 'label' => 'Servers', 'fallback' => route('dashboard').'#servers'],
+            ['route' => 'servers.index', 'match' => 'servers.*', 'icon' => 'i-server', 'label' => 'Servers'],
             ['route' => 'domains.index', 'match' => 'domains.*', 'icon' => 'i-globe', 'label' => 'Domeinen'],
             ['route' => 'incidents.index', 'match' => 'incidents.*', 'icon' => 'i-siren', 'label' => 'Incidenten', 'count' => $sidebarOpenIncidents ?? 0],
             ['route' => 'alerts.index', 'match' => 'alerts.*', 'icon' => 'i-bell', 'label' => 'Alerts', 'count' => $sidebarActiveAlerts ?? 0],
@@ -59,7 +59,7 @@
 
         <nav aria-label="Hoofdnavigatie">
             @foreach ($navGroups as $group => $items)
-                @php $items = array_filter($items, fn ($item) => Route::has($item['route']) || isset($item['fallback'])); @endphp
+                @php $items = array_filter($items, fn ($item) => Route::has($item['route'])); @endphp
                 @continue(empty($items))
 
                 @if ($group)
@@ -69,7 +69,7 @@
                 @foreach ($items as $item)
                     @php $isActive = request()->routeIs(...(array) $item['match']); @endphp
                     <a
-                        href="{{ Route::has($item['route']) ? route($item['route']) : $item['fallback'] }}"
+                        href="{{ route($item['route']) }}"
                         @class(['nav-item', 'active' => $isActive])
                         @if ($isActive) aria-current="page" @endif
                     >

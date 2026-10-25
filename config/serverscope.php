@@ -31,4 +31,16 @@ return [
 
     'scheduler_queue_worker' => (bool) env('SERVERSCOPE_SCHEDULER_QUEUE_WORKER', true),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Display timezone
+    |--------------------------------------------------------------------------
+    |
+    | Timestamps are stored in UTC (config/app.php). Pages show times and
+    | interpret entered dates in this timezone.
+    |
+    */
+
+    'display_timezone' => env('SERVERSCOPE_DISPLAY_TIMEZONE', 'Europe/Amsterdam'),
+
 ];

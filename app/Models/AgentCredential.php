@@ -29,6 +29,12 @@ class AgentCredential extends Model
         ];
     }
 
+    public function isActive(): bool
+    {
+        return $this->revoked_at === null
+            && ($this->expires_at === null || $this->expires_at->isFuture());
+    }
+
     public function server(): BelongsTo
     {
         return $this->belongsTo(Server::class);

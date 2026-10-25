@@ -201,6 +201,7 @@
         .badge.online { color: var(--green); }
         .badge.offline { color: var(--red); }
         .badge.pending { color: var(--yellow); }
+        .badge.maintenance { color: var(--purple); }
         .server-meta { display: flex; flex-wrap: wrap; gap: 8px 17px; margin-top: 12px; color: var(--muted); font-size: 10px; }
         .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
         .metric-label { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 7px; font-size: 11px; }
@@ -283,62 +284,10 @@
         </form>
 
         @if(auth()->user()->is_admin)
-            <button class="button button-primary" id="open-register" type="button">＋ Server toevoegen</button>
+            <a class="button button-primary" href="{{ route('servers.create') }}">＋ Server toevoegen</a>
         @endif
     </x-slot:actions>
 
-    @if(auth()->user()->is_admin)
-        <section class="panel register-panel" id="register-panel" hidden>
-            <div class="section-heading">
-                <div>
-                    <h2>Nieuwe server registreren</h2>
-                    <p>Voeg je Ubuntu VPS of een andere Linux-server toe.</p>
-                </div>
-                <button class="button" id="close-register" type="button">Sluiten</button>
-            </div>
-
-            <form id="register-server-form">
-                <div class="registration-grid">
-                    <label class="field">
-                        Servernaam *
-                        <input name="name" maxlength="100" required placeholder="Production VPS">
-                    </label>
-                    <label class="field">
-                        Hostname *
-                        <input name="hostname" maxlength="255" required placeholder="server.example.com">
-                    </label>
-                    <label class="field">
-                        IP-adres
-                        <input name="ip_address" maxlength="45" placeholder="203.0.113.10">
-                    </label>
-                    <label class="field">
-                        Besturingssysteem
-                        <input name="operating_system" maxlength="100" placeholder="Ubuntu 24.04">
-                    </label>
-                    <label class="field full-width">
-                        Naam agentcredential
-                        <input name="credential_name" maxlength="100" required value="Primary agent">
-                    </label>
-                </div>
-
-                <button class="button button-primary" id="register-server-button" type="submit">Server registreren</button>
-                <p id="registration-error" class="message" role="alert" hidden></p>
-            </form>
-
-            <div id="registration-success" class="token-area" hidden>
-                <strong>Server geregistreerd — bewaar het agenttoken</strong>
-                <p id="registered-server-details" class="muted small"></p>
-                <p class="small">Dit token wordt maar één keer getoond. Bewaar het veilig en deel het niet.</p>
-                <div class="token-row">
-                    <input id="registered-agent-token" class="token-input" type="password" readonly autocomplete="off" aria-label="Eenmalig agenttoken">
-                    <button class="button" id="toggle-token" type="button">Tonen</button>
-                    <button class="button" id="copy-token" type="button">Kopiëren</button>
-                </div>
-                <p id="copy-status" class="muted small" role="status"></p>
-                <button class="button button-primary" id="finish-registration" type="button">Token veilig opgeslagen — klaar</button>
-            </div>
-        </section>
-    @endif
 
     {{-- KPI cards --}}
     <section class="stats" aria-label="Belangrijkste statistieken">
@@ -594,7 +543,7 @@
                 <h3>Nog geen servers geregistreerd</h3>
                 <p>Registreer je eerste server om de prestaties en gezondheid te monitoren.</p>
                 @if(auth()->user()->is_admin)
-                    <button class="button button-primary" id="empty-add-server" type="button">＋ Eerste server toevoegen</button>
+                    <a class="button button-primary" href="{{ route('servers.create') }}">＋ Eerste server toevoegen</a>
                 @endif
             </div>
         @else
@@ -606,7 +555,7 @@
                         $memoryUsed = (float) ($sample?->memory_used_bytes ?? 0);
                         $serverMemoryPercent = $memoryTotal > 0 ? min(100, max(0, ($memoryUsed / $memoryTotal) * 100)) : null;
                         $serverCpu = $sample?->cpu_percent;
-                        $statusLabels = ['online' => 'Online', 'offline' => 'Offline', 'pending' => 'Pending'];
+                        $statusLabels = ['online' => 'Online', 'offline' => 'Offline', 'pending' => 'Pending', 'maintenance' => 'Onderhoud'];
                         $statusLabel = $statusLabels[$server->display_status] ?? 'Pending';
                     @endphp
 
@@ -723,117 +672,6 @@
     window.serverScopeChartData = {{ Illuminate\Support\Js::from($chartData) }};
 </script>
 
-@if(auth()->user()->is_admin)
-    <script>
-        (() => {
-            const panel = document.getElementById('register-panel');
-            const openButton = document.getElementById('open-register');
-            const emptyButton = document.getElementById('empty-add-server');
-            const closeButton = document.getElementById('close-register');
-            const form = document.getElementById('register-server-form');
-            const errorBox = document.getElementById('registration-error');
-            const successBox = document.getElementById('registration-success');
-            const submitButton = document.getElementById('register-server-button');
-            const tokenInput = document.getElementById('registered-agent-token');
-            const copyStatus = document.getElementById('copy-status');
 
-            if (!panel || !form) return;
-
-            function openPanel() {
-                panel.hidden = false;
-                panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-
-            openButton?.addEventListener('click', openPanel);
-            emptyButton?.addEventListener('click', openPanel);
-
-            closeButton?.addEventListener('click', () => {
-                panel.hidden = true;
-            });
-
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
-
-                errorBox.hidden = true;
-                errorBox.textContent = '';
-                submitButton.disabled = true;
-                submitButton.textContent = 'Registreren...';
-
-                const payload = Object.fromEntries(new FormData(form).entries());
-
-                for (const key of ['ip_address', 'operating_system']) {
-                    if (!payload[key]) delete payload[key];
-                }
-
-                try {
-                    const response = await fetch(@json(route('servers.register')), {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        },
-                        body: JSON.stringify(payload),
-                    });
-
-                    const result = await response.json().catch(() => ({}));
-
-                    if (!response.ok) {
-                        const validationMessages = Object.values(result.errors ?? {}).flat().join('\n');
-
-                        throw new Error(
-                            validationMessages ||
-                            result.message ||
-                            `Registratie mislukt (HTTP ${response.status}).`
-                        );
-                    }
-
-                    if (!result.agent_token || !result.server) {
-                        throw new Error('De server is geregistreerd, maar het agenttoken ontbreekt in de respons.');
-                    }
-
-                    tokenInput.value = result.agent_token;
-                    tokenInput.type = 'password';
-
-                    document.getElementById('registered-server-details').textContent =
-                        `${result.server.name} · ${result.server.hostname} · Pending`;
-
-                    form.hidden = true;
-                    successBox.hidden = false;
-                    copyStatus.textContent = '';
-                } catch (error) {
-                    errorBox.textContent = error.message || 'Registreren is mislukt.';
-                    errorBox.hidden = false;
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Server registreren';
-                }
-            });
-
-            document.getElementById('toggle-token').addEventListener('click', (event) => {
-                const showing = tokenInput.type === 'text';
-                tokenInput.type = showing ? 'password' : 'text';
-                event.currentTarget.textContent = showing ? 'Tonen' : 'Verbergen';
-            });
-
-            document.getElementById('copy-token').addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(tokenInput.value);
-                    copyStatus.textContent = 'Token gekopieerd.';
-                } catch {
-                    tokenInput.type = 'text';
-                    tokenInput.select();
-                    copyStatus.textContent = 'Kopiëren lukte niet automatisch. Kopieer het token handmatig.';
-                }
-            });
-
-            document.getElementById('finish-registration').addEventListener('click', () => {
-                tokenInput.value = '';
-                window.location.reload();
-            });
-        })();
-    </script>
-@endif
     </x-slot:scripts>
 </x-layouts.app>

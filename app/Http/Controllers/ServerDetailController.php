@@ -67,11 +67,7 @@ class ServerDetailController extends Controller
             ? round(($memoryUsed / $memoryTotal) * 100, 1)
             : null;
 
-        $displayStatus = match (true) {
-            $server->last_seen_at === null => 'pending',
-            $server->last_seen_at->lte(now()->subMinutes(2)) => 'offline',
-            default => 'online',
-        };
+        $displayStatus = $server->displayStatus();
 
         $disks = collect($latestSample?->disks ?? [])
             ->map(function (array $disk): array {
@@ -203,8 +199,20 @@ class ServerDetailController extends Controller
             }
         }
 
+        $credentials = $request->user()->can('admin')
+            ? $server->agentCredentials()->latest('id')->get()
+            : collect();
+
+        $recentAlerts = $server->alerts()
+            ->with('alertRule:id,name')
+            ->latest('triggered_at')
+            ->limit(5)
+            ->get();
+
         return view('servers.show', [
             'server' => $server,
+            'credentials' => $credentials,
+            'recentAlerts' => $recentAlerts,
             'displayStatus' => $displayStatus,
             'range' => $range,
             'rangeOptions' => $rangeOptions,

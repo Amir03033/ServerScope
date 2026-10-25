@@ -33,7 +33,8 @@ class AuthenticateAgent
             })
             ->first();
 
-        if (! $credential) {
+        // A soft-deleted server's credentials no longer authenticate.
+        if (! $credential || $credential->server === null) {
             return $this->unauthorized();
         }
 

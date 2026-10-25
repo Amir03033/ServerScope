@@ -19,8 +19,7 @@ use Illuminate\Support\Facades\DB;
  */
 class AgentHeartbeatService
 {
-    /** Matches the online/offline display logic in the dashboard. */
-    public const OFFLINE_AFTER_MINUTES = 2;
+    public const OFFLINE_AFTER_MINUTES = Server::OFFLINE_AFTER_MINUTES;
 
     /**
      * @return array{marked_offline: int, triggered: int, resolved: int}
@@ -136,6 +135,12 @@ class AgentHeartbeatService
                     'observed_value' => round($silentMinutes, 2),
                 ]);
 
+                return null;
+            }
+
+            // Planned maintenance must not raise downtime alerts. Once the
+            // window ends a still-silent agent triggers on the next run.
+            if ($server->isInMaintenance($now)) {
                 return null;
             }
 

@@ -61,7 +61,8 @@ class ServerTest extends TestCase
             'token_hash' => hash('sha256', 'temporary-test-token'),
         ]);
 
-        $server->delete();
+        // Permanent deletion; delete() is a soft delete since server management.
+        $server->forceDelete();
 
         $this->assertDatabaseMissing('servers', [
             'id' => $server->id,

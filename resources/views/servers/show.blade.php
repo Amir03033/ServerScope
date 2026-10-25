@@ -124,11 +124,13 @@
     .details-list { grid-template-columns: 1fr; }
     .panel { padding: 15px; }
 }
+        .panel .section-heading { margin-top: 0; }
+        .panel .section-heading h2 { font-size: 16px; font-weight: 600; }
     </x-slot:styles>
 
     <x-slot:breadcrumb>
         <span>›</span>
-        <a href="{{ route('dashboard') }}">Dashboard</a>
+        <a href="{{ route('servers.index') }}">Servers</a>
         <span>›</span>
         <span>{{ $server->name }}</span>
     </x-slot:breadcrumb>
@@ -137,11 +139,94 @@
     <x-slot:subtitle>Serverdetails en historische prestaties.</x-slot:subtitle>
 
     <x-slot:actions>
-
-        <a href="{{ route('dashboard') }}" class="button">
+        <a href="{{ route('servers.index') }}" class="button">
             <svg class="ico"><use href="#i-arrow-left"/></svg> Terug naar overzicht
         </a>
+        @can('admin')
+            @unless ($server->trashed())
+                <a href="{{ route('servers.edit', $server) }}" class="button">
+                    <svg class="ico"><use href="#i-edit"/></svg> Bewerken
+                </a>
+                @if ($server->isInMaintenance() || $server->hasScheduledMaintenance())
+                    <form method="POST" action="{{ route('servers.maintenance.end', $server) }}" class="inline-form">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="button button-warning">
+                            <svg class="ico"><use href="#i-wrench"/></svg>
+                            {{ $server->isInMaintenance() ? 'Onderhoud beëindigen' : 'Gepland onderhoud annuleren' }}
+                        </button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('servers.maintenance.start', $server) }}" class="inline-form maintenance-form">
+                        @csrf
+                        <label class="sr-only" for="duration_minutes">Duur onderhoud</label>
+                        <select id="duration_minutes" name="duration_minutes" class="input" style="width:auto">
+                            <option value="30">30 minuten</option>
+                            <option value="60" selected>1 uur</option>
+                            <option value="240">4 uur</option>
+                            <option value="1440">24 uur</option>
+                        </select>
+                        <button type="submit" class="button">
+                            <svg class="ico"><use href="#i-wrench"/></svg> Onderhoud starten
+                        </button>
+                    </form>
+                @endif
+            @endunless
+        @endcan
     </x-slot:actions>
+
+    @if (session('agent_token'))
+        <x-secret-token :token="session('agent_token')" title="Agenttoken voor {{ $server->name }}">
+            <p class="small" style="margin:8px 0 0">
+                Zet dit token als <code>SERVERSCOPE_TOKEN</code> in <code>agent/.env</code> op de server en herstart de agent.
+            </p>
+        </x-secret-token>
+    @endif
+
+    @if ($server->trashed())
+        <div class="flash warning" role="status">
+            <svg class="ico"><use href="#i-trash"/></svg>
+            <div>
+                <strong>Deze server is verwijderd op {{ \App\Support\Time::format($server->deleted_at) }}.</strong>
+                De agent kan geen metingen meer versturen. De geschiedenis hieronder blijft beschikbaar.
+                @can('admin')
+                    <div class="actions" style="justify-content:flex-start;margin-top:10px">
+                        <form method="POST" action="{{ route('servers.restore', $server) }}" class="inline-form">
+                            @csrf
+                            <button type="submit" class="button button-sm">Server herstellen</button>
+                        </form>
+                        <form method="POST" action="{{ route('servers.force-destroy', $server) }}" class="inline-form"
+                              data-confirm="Server en ALLE metingen, alerts en credentials permanent verwijderen? Dit kan niet ongedaan worden gemaakt.">
+                            @csrf
+                            @method('DELETE')
+                            <label class="sr-only" for="confirm_name">Bevestig servernaam</label>
+                            <input id="confirm_name" name="confirm_name" class="input" style="width:auto;min-height:32px" placeholder="Typ '{{ $server->name }}'" required>
+                            <button type="submit" class="button button-sm button-danger">Permanent verwijderen</button>
+                        </form>
+                    </div>
+                @endcan
+            </div>
+        </div>
+    @elseif ($server->isInMaintenance())
+        <div class="flash info" role="status">
+            <svg class="ico"><use href="#i-wrench"/></svg>
+            <div>
+                <strong>Onderhoudsmodus actief</strong>
+                {{ $server->maintenance_ends_at ? 'tot '.\App\Support\Time::format($server->maintenance_ends_at) : 'zonder eindtijd' }}.
+                Er worden geen nieuwe downtime- of resource-alerts aangemaakt.
+                @if ($server->maintenance_reason) Reden: {{ $server->maintenance_reason }} @endif
+            </div>
+        </div>
+    @elseif ($server->hasScheduledMaintenance())
+        <div class="flash info" role="status">
+            <svg class="ico"><use href="#i-calendar"/></svg>
+            <div>
+                Onderhoud gepland van {{ \App\Support\Time::format($server->maintenance_starts_at) }}
+                {{ $server->maintenance_ends_at ? 'tot '.\App\Support\Time::format($server->maintenance_ends_at) : '' }}.
+                @if ($server->maintenance_reason) Reden: {{ $server->maintenance_reason }} @endif
+            </div>
+        </div>
+    @endif
 
     <section class="server-overview">
         <div class="server-identity">
@@ -156,18 +241,10 @@
             </div>
         </div>
 
-        <span class="badge {{ $displayStatus }}">
-            @switch($displayStatus)
-                @case('online')
-                    Online
-                    @break
-                @case('offline')
-                    Offline
-                    @break
-                @default
-                    In afwachting
-            @endswitch
-        </span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <span class="chip">{{ $server->environmentLabel() }}</span>
+            <x-status :status="$server->trashed() ? 'closed' : $displayStatus" :label="$server->trashed() ? 'Verwijderd' : null" />
+        </div>
     </section>
 
     <section class="stats" aria-label="Actuele serverstatistieken">
@@ -471,12 +548,12 @@
 
             <div class="detail-row">
                 <span><svg class="ico"><use href="#i-clock"/></svg> Laatste contact</span>
-                <strong>{{ $server->last_seen_at?->format('d-m-Y H:i:s') ?? 'Nog nooit' }}</strong>
+                <strong title="{{ \App\Support\Time::relative($server->last_seen_at) }}">{{ $server->last_seen_at ? \App\Support\Time::format($server->last_seen_at, 'd-m-Y H:i:s') : 'Nog nooit' }}</strong>
             </div>
 
             <div class="detail-row">
                 <span><svg class="ico"><use href="#i-metrics"/></svg> Laatste meting</span>
-                <strong>{{ $latestSample?->collected_at?->format('d-m-Y H:i:s') ?? 'Geen metingen' }}</strong>
+                <strong>{{ $latestSample ? \App\Support\Time::format($latestSample->collected_at, 'd-m-Y H:i:s') : 'Geen metingen' }}</strong>
             </div>
 
             <div class="detail-row">
@@ -486,7 +563,105 @@
         </div>
     </section>
 
-    
+    <div class="grid-2" style="margin-top:14px">
+        <section class="panel">
+            <div class="section-heading">
+                <div>
+                    <h2>Recente alerts</h2>
+                    <p>De laatste vijf alerts voor deze server.</p>
+                </div>
+                <a href="{{ route('alerts.index', ['status' => 'all']) }}" class="button button-sm">Alle alerts</a>
+            </div>
+            @if ($recentAlerts->isEmpty())
+                <x-empty-state icon="i-check" title="Geen alerts">Er zijn nog geen alerts voor deze server geregistreerd.</x-empty-state>
+            @else
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead><tr><th>Regel</th><th>Status</th><th>Geactiveerd</th></tr></thead>
+                        <tbody>
+                            @foreach ($recentAlerts as $alert)
+                                <tr>
+                                    <td>
+                                        {{ $alert->alertRule?->name ?? 'Verwijderde regel' }}
+                                        <span class="cell-sub">{{ \App\Models\AlertRule::metricLabel($alert->metric) }}@if ($alert->dimension) · {{ $alert->dimension }}@endif</span>
+                                    </td>
+                                    <td><x-status :status="$alert->status === 'active' ? 'critical' : ($alert->status === 'resolved' ? 'resolved' : 'disabled')" :label="['active' => 'Actief', 'resolved' => 'Opgelost', 'disabled' => 'Uitgeschakeld'][$alert->status] ?? $alert->status" /></td>
+                                    <td class="nowrap">{{ \App\Support\Time::format($alert->triggered_at) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </section>
+
+        @can('admin')
+            <section class="panel" id="credentials">
+                <div class="section-heading">
+                    <div>
+                        <h2>Agentcredentials</h2>
+                        <p>Tokens waarmee de agent zich aanmeldt. Alleen de hash wordt opgeslagen.</p>
+                    </div>
+                </div>
+
+                @if ($credentials->isEmpty())
+                    <x-empty-state icon="i-key" title="Geen credentials">Genereer een token om de agent te koppelen.</x-empty-state>
+                @else
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead><tr><th>Naam</th><th>Status</th><th>Laatst gebruikt</th><th><span class="sr-only">Acties</span></th></tr></thead>
+                            <tbody>
+                                @foreach ($credentials as $credential)
+                                    <tr>
+                                        <td>
+                                            {{ $credential->name }}
+                                            <span class="cell-sub">Aangemaakt {{ \App\Support\Time::format($credential->created_at) }}</span>
+                                        </td>
+                                        <td>
+                                            @if ($credential->revoked_at)
+                                                <x-status status="closed" label="Ingetrokken" title="{{ \App\Support\Time::format($credential->revoked_at) }}" />
+                                            @elseif (! $credential->isActive())
+                                                <x-status status="expired" />
+                                            @else
+                                                <x-status status="valid" label="Actief" />
+                                            @endif
+                                        </td>
+                                        <td class="nowrap">{{ \App\Support\Time::relative($credential->last_used_at) }}</td>
+                                        <td>
+                                            @if ($credential->revoked_at === null && ! $server->trashed())
+                                                <form method="POST" action="{{ route('servers.credentials.destroy', [$server, $credential]) }}" class="row-actions"
+                                                      data-confirm="Credential '{{ $credential->name }}' intrekken? Een agent die dit token gebruikt kan daarna geen metingen meer versturen.">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="button button-sm button-danger">Intrekken</button>
+                                                </form>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+
+                @unless ($server->trashed())
+                    <div class="form-footer">
+                        <form method="POST" action="{{ route('servers.credentials.rotate', $server) }}" class="inline-form"
+                              data-confirm="Alle actieve tokens intrekken en een nieuw token genereren? De agent stopt met rapporteren totdat het nieuwe token is ingesteld.">
+                            @csrf
+                            <button type="submit" class="button button-warning"><svg class="ico"><use href="#i-refresh"/></svg> Token roteren</button>
+                        </form>
+                        <form method="POST" action="{{ route('servers.credentials.store', $server) }}" class="inline-form" style="display:flex;gap:8px">
+                            @csrf
+                            <label class="sr-only" for="credential-name">Naam nieuwe credential</label>
+                            <input id="credential-name" name="name" class="input" style="width:auto" maxlength="100" required placeholder="Naam extra token">
+                            <button type="submit" class="button"><svg class="ico"><use href="#i-plus"/></svg> Extra token</button>
+                        </form>
+                    </div>
+                @endunless
+            </section>
+        @endcan
+    </div>
 
     <x-slot:scripts>
 <script>

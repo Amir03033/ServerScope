@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServerDetailController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\AlertRuleController;
+use App\Http\Controllers\AgentCredentialController;
+use App\Http\Controllers\ServerController;
+use App\Http\Controllers\ServerMaintenanceController;
 
 Route::redirect('/', '/dashboard');
 
@@ -38,8 +41,36 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
+    Route::get('/servers', [ServerController::class, 'index'])->name('servers.index');
+    Route::get('/servers/create', [ServerController::class, 'create'])->name('servers.create');
+    Route::post('/servers', [ServerController::class, 'store'])->name('servers.store');
+
     Route::get('/servers/{server}', ServerDetailController::class)
+        ->withTrashed()
         ->name('servers.show');
+
+    Route::get('/servers/{server}/edit', [ServerController::class, 'edit'])->name('servers.edit');
+    Route::put('/servers/{server}', [ServerController::class, 'update'])->name('servers.update');
+    Route::delete('/servers/{server}', [ServerController::class, 'destroy'])->name('servers.destroy');
+    Route::post('/servers/{server}/restore', [ServerController::class, 'restore'])
+        ->withTrashed()
+        ->name('servers.restore');
+    Route::delete('/servers/{server}/permanent', [ServerController::class, 'forceDestroy'])
+        ->withTrashed()
+        ->name('servers.force-destroy');
+
+    Route::post('/servers/{server}/maintenance', [ServerMaintenanceController::class, 'store'])
+        ->name('servers.maintenance.start');
+    Route::delete('/servers/{server}/maintenance', [ServerMaintenanceController::class, 'destroy'])
+        ->name('servers.maintenance.end');
+
+    Route::post('/servers/{server}/credentials', [AgentCredentialController::class, 'store'])
+        ->name('servers.credentials.store');
+    Route::post('/servers/{server}/credentials/rotate', [AgentCredentialController::class, 'rotate'])
+        ->name('servers.credentials.rotate');
+    Route::delete('/servers/{server}/credentials/{agentCredential}', [AgentCredentialController::class, 'destroy'])
+        ->scopeBindings()
+        ->name('servers.credentials.destroy');
 
     Route::get('/alerts', AlertController::class)->name('alerts.index');
 
