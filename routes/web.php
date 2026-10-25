@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ServerDetailController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\AlertRuleController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AgentCredentialController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\IncidentController;
@@ -59,6 +60,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->middleware('throttle:20,1')->name('reports.export');
+
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 
     Route::get('/search', SearchController::class)->middleware('throttle:60,1')->name('search');
 

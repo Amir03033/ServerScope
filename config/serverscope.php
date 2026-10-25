@@ -126,4 +126,23 @@ return [
         'default_target' => (float) env('SERVERSCOPE_REPORT_TARGET', 99.9),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Data retention
+    |--------------------------------------------------------------------------
+    |
+    | Days to keep each kind of history (serverscope:prune runs daily).
+    | Empty = keep forever (the default). Note that reports can only cover
+    | periods for which data is kept.
+    |
+    */
+
+    'retention' => [
+        'metric_samples_days' => env('SERVERSCOPE_RETAIN_METRICS_DAYS'),
+        'domain_checks_days' => env('SERVERSCOPE_RETAIN_DOMAIN_CHECKS_DAYS'),
+        'notification_logs_days' => env('SERVERSCOPE_RETAIN_NOTIFICATION_LOGS_DAYS'),
+        'notifications_days' => env('SERVERSCOPE_RETAIN_READ_NOTIFICATIONS_DAYS'),
+        'audit_logs_days' => env('SERVERSCOPE_RETAIN_AUDIT_LOGS_DAYS'),
+    ],
+
 ];
