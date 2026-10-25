@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ServerRegistrationController;
 use App\Http\Middleware\AuthenticateAgent;
@@ -32,6 +34,15 @@ Route::middleware('guest')->group(function () {
         AuthenticatedSessionController::class,
         'store',
     ])->middleware('throttle:10,1');
+
+    Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:5,1')->name('password.update');
+
+    Route::get('/two-factor-challenge', [TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
+    Route::post('/two-factor-challenge', [TwoFactorController::class, 'verify'])->middleware('throttle:10,1')->name('two-factor.challenge.store');
+    Route::post('/two-factor-challenge/cancel', [TwoFactorController::class, 'cancel'])->name('two-factor.challenge.cancel');
 });
 
 Route::get('/agent/ping', function (Request $request) {
@@ -53,6 +64,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile/password', [ProfileController::class, 'password'])->middleware('throttle:6,1')->name('profile.password');
     Route::put('/profile/notifications', [ProfileController::class, 'notifications'])->name('profile.notifications');
     Route::post('/profile/notifications/test', [ProfileController::class, 'testNotification'])->name('profile.notifications.test');
+
+    Route::post('/profile/two-factor', [TwoFactorController::class, 'enable'])->name('two-factor.enable');
+    Route::post('/profile/two-factor/confirm', [TwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('two-factor.confirm');
+    Route::post('/profile/two-factor/recovery-codes', [TwoFactorController::class, 'recoveryCodes'])->middleware('throttle:6,1')->name('two-factor.recovery-codes');
+    Route::delete('/profile/two-factor', [TwoFactorController::class, 'disable'])->middleware('throttle:6,1')->name('two-factor.show');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');

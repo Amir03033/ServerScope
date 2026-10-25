@@ -67,6 +67,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('admin', fn (User $user): bool => (bool) $user->is_admin);
 
+        \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(fn (User $user, string $token) => (new \Illuminate\Notifications\Messages\MailMessage)
+            ->subject('[ServerScope] Wachtwoord opnieuw instellen')
+            ->line('Je ontvangt deze e-mail omdat er een nieuw wachtwoord is aangevraagd voor je ServerScope-account.')
+            ->action('Nieuw wachtwoord instellen', route('password.reset', ['token' => $token, 'email' => $user->email]))
+            ->line('Deze link is 60 minuten geldig. Heb je dit niet aangevraagd? Dan hoef je niets te doen.'));
+
         \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\IncidentNotifier::class);
 
         // Short, stable type names in polymorphic columns.
