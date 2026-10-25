@@ -22,6 +22,7 @@
             ['route' => 'alert-rules.index', 'match' => 'alert-rules.*', 'icon' => 'i-sliders', 'label' => 'Alertregels'],
             ['route' => 'status-pages.index', 'match' => 'status-pages.*', 'icon' => 'i-status', 'label' => 'Statuspagina\'s'],
             ['route' => 'webhooks.index', 'match' => 'webhooks.*', 'icon' => 'i-webhook', 'label' => 'Webhooks'],
+            ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'i-users', 'label' => 'Gebruikers'],
             ['route' => 'audit-logs.index', 'match' => 'audit-logs.*', 'icon' => 'i-history', 'label' => 'Auditlog'],
         ] : [],
         'Account' => [

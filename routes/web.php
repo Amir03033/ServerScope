@@ -24,6 +24,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServerMaintenanceController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
 
 Route::redirect('/', '/dashboard');
@@ -90,6 +91,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/export', [ReportController::class, 'export'])->middleware('throttle:20,1')->name('reports.export');
 
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::post('/users', [UserController::class, 'store'])->middleware('throttle:10,1')->name('users.store');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     Route::get('/status-pages', [StatusPageController::class, 'index'])->name('status-pages.index');
     Route::get('/status-pages/create', [StatusPageController::class, 'create'])->name('status-pages.create');
