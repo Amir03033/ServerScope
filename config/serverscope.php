@@ -149,4 +149,9 @@ return [
         'requests_per_minute' => (int) env('SERVERSCOPE_API_RATE_LIMIT', 120),
     ],
 
+    'webhooks' => [
+        // Plain http endpoints are refused unless explicitly allowed.
+        'allow_http' => (bool) env('SERVERSCOPE_WEBHOOKS_ALLOW_HTTP', false),
+    ],
+
 ];

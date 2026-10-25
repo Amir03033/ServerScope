@@ -22,6 +22,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServerMaintenanceController;
+use App\Http\Controllers\WebhookController;
 
 Route::redirect('/', '/dashboard');
 
@@ -83,6 +84,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/export', [ReportController::class, 'export'])->middleware('throttle:20,1')->name('reports.export');
 
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    Route::get('/webhooks', [WebhookController::class, 'index'])->name('webhooks.index');
+    Route::get('/webhooks/create', [WebhookController::class, 'create'])->name('webhooks.create');
+    Route::post('/webhooks', [WebhookController::class, 'store'])->name('webhooks.store');
+    Route::get('/webhooks/{webhook}', [WebhookController::class, 'show'])->name('webhooks.show');
+    Route::get('/webhooks/{webhook}/edit', [WebhookController::class, 'edit'])->name('webhooks.edit');
+    Route::put('/webhooks/{webhook}', [WebhookController::class, 'update'])->name('webhooks.update');
+    Route::delete('/webhooks/{webhook}', [WebhookController::class, 'destroy'])->name('webhooks.destroy');
+    Route::post('/webhooks/{webhook}/secret', [WebhookController::class, 'rotateSecret'])->name('webhooks.secret');
+    Route::post('/webhooks/{webhook}/test', [WebhookController::class, 'test'])->name('webhooks.test');
+    Route::post('/webhooks/{webhook}/deliveries/{delivery}/redeliver', [WebhookController::class, 'redeliver'])->name('webhooks.redeliver');
 
     Route::get('/search', SearchController::class)->middleware('throttle:60,1')->name('search');
 

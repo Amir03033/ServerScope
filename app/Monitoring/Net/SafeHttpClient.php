@@ -33,6 +33,20 @@ class SafeHttpClient
 
     public function get(string $url, float $timeoutSeconds = 10.0, bool $followRedirects = true, array $headers = []): HttpResult
     {
+        return $this->request('GET', $url, $timeoutSeconds, $followRedirects, $headers);
+    }
+
+    /**
+     * POST a body without following redirects (a redirect is returned as
+     * the response so callers can treat it as a failure).
+     */
+    public function post(string $url, string $body, array $headers = [], float $timeoutSeconds = 10.0): HttpResult
+    {
+        return $this->request('POST', $url, $timeoutSeconds, false, $headers, $body);
+    }
+
+    public function request(string $method, string $url, float $timeoutSeconds = 10.0, bool $followRedirects = true, array $headers = [], ?string $body = null): HttpResult
+    {
         $started = microtime(true);
         $redirects = [];
         $seen = [];
@@ -64,7 +78,7 @@ class SafeHttpClient
             $sink = new LimitedSink($this->maxBytes);
 
             try {
-                $response = $this->send($target, $remaining, $sink, $headers);
+                $response = $this->send($target, $remaining, $sink, $headers, $method, $body);
             } catch (Throwable $exception) {
                 $partial = $this->partialResponse($exception);
 
@@ -161,15 +175,20 @@ class SafeHttpClient
         ];
     }
 
-    private function send(ResolvedTarget $target, float $timeoutSeconds, LimitedSink $sink, array $headers = []): Response
+    private function send(ResolvedTarget $target, float $timeoutSeconds, LimitedSink $sink, array $headers = [], string $method = 'GET', ?string $body = null): Response
     {
-        return Http::withOptions([...$this->connectionOptions($target, $timeoutSeconds), 'sink' => $sink])
+        $request = Http::withOptions([...$this->connectionOptions($target, $timeoutSeconds), 'sink' => $sink])
             ->withHeaders([
                 'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
                 ...$headers,
                 'User-Agent' => $this->userAgent,
-            ])
-            ->get($target->url);
+            ]);
+
+        if ($method === 'GET') {
+            return $request->get($target->url);
+        }
+
+        return $request->withBody((string) $body, $headers['Content-Type'] ?? 'application/json')->send($method, $target->url);
     }
 
     /**

@@ -54,3 +54,35 @@ curl -s https://serverscope.nl/api/v1/incidents?state=active \
 
 The monitoring agent uses a separate endpoint (`POST /api/agent/metrics`) with
 per-server agent tokens; those tokens do not work for this API.
+
+## Webhooks
+
+Administrators configure endpoints under **Beheer → Webhooks**. Events:
+`incident.opened`, `incident.reopened`, `incident.resolved`,
+`incident.escalated` (threshold crossed, severity increased or not
+acknowledged in time) and `dns.changed`, plus `test`.
+
+Each delivery is a `POST` with a JSON body:
+
+```json
+{"id": "<delivery uuid>", "event": "incident.opened", "created_at": "2026-10-26T10:00:00+00:00", "data": {"incident": {"id": 12, "title": "…", "severity": "critical", "status": "open", "…": "…"}}}
+```
+
+Headers: `X-ServerScope-Event`, `X-ServerScope-Delivery` (use it to ignore
+duplicates), `X-ServerScope-Timestamp` (Unix time) and
+`X-ServerScope-Signature: sha256=<hex>` where the hex value is
+`HMAC-SHA256(secret, timestamp + "." + raw_body)`.
+
+Verify in PHP:
+
+```php
+$expected = 'sha256='.hash_hmac('sha256', $timestamp.'.'.$rawBody, $secret);
+abs(time() - (int) $timestamp) < 300 && hash_equals($expected, $signatureHeader);
+```
+
+Delivery rules: only public https destinations on allowed ports, checked
+when saving and again before every attempt (DNS rebinding safe); redirects
+are not followed; any 2xx is success; network errors, timeouts, 408, 429 and
+5xx are retried up to 6 times (1 min, 5 min, 15 min, 1 h, 6 h); other
+responses fail immediately. After 20 consecutive failed deliveries the
+endpoint is disabled. With `QUEUE_CONNECTION=sync` there are no retries.
