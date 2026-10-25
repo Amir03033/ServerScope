@@ -121,4 +121,9 @@ return [
         'emails' => array_values(array_filter(array_map('trim', explode(',', (string) env('SERVERSCOPE_ESCALATION_EMAILS', ''))), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))),
     ],
 
+    'reports' => [
+        // Availability target shown in reports (calculated, not contractual).
+        'default_target' => (float) env('SERVERSCOPE_REPORT_TARGET', 99.9),
+    ],
+
 ];
