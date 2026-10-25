@@ -53,6 +53,11 @@ class AlertDetectionService
 
             'disk_percent' => $this->diskPercentages($sample),
 
+            // A sample is a heartbeat: the agent is not silent now.
+            AlertRule::METRIC_AGENT_OFFLINE => [
+                AlertRule::METRIC_AGENT_OFFLINE => 0.0,
+            ],
+
             default => [],
         };
     }

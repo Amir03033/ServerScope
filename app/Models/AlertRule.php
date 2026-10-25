@@ -10,6 +10,30 @@ class AlertRule extends Model
 {
     use SoftDeletes;
 
+    public const METRIC_AGENT_OFFLINE = 'agent_offline';
+
+    /** @var array<string, string> */
+    public const METRIC_LABELS = [
+        'cpu_percent' => 'CPU-gebruik',
+        'memory_percent' => 'RAM-gebruik',
+        'disk_percent' => 'Schijfgebruik',
+        self::METRIC_AGENT_OFFLINE => 'Agent offline',
+    ];
+
+    public static function metricLabel(string $metric): string
+    {
+        return self::METRIC_LABELS[$metric] ?? str_replace('_', ' ', $metric);
+    }
+
+    public static function metricUnit(string $metric): string
+    {
+        return match ($metric) {
+            'cpu_percent', 'memory_percent', 'disk_percent' => '%',
+            self::METRIC_AGENT_OFFLINE => ' min',
+            default => '',
+        };
+    }
+
     protected $fillable = [
         'name',
         'metric',

@@ -410,12 +410,6 @@
                 <div class="rule-list">
                     @foreach ($rules as $rule)
                         @php
-                            $metricLabels = [
-                                'cpu_percent' => 'CPU-gebruik',
-                                'memory_percent' => 'RAM-gebruik',
-                                'disk_percent' => 'Schijfgebruik',
-                            ];
-
                             $metricIcons = [
                                 'cpu_percent' => 'i-cpu',
                                 'memory_percent' => 'i-ram',
@@ -429,15 +423,14 @@
                                 '<' => '<',
                             ];
 
-                            $metricLabel = $metricLabels[$rule->metric]
-                                ?? str_replace('_', ' ', $rule->metric);
+                            $metricLabel = \App\Models\AlertRule::metricLabel($rule->metric);
 
                             $metricIcon = $metricIcons[$rule->metric] ?? 'i-sliders';
 
                             $operator = $operatorLabels[$rule->operator]
                                 ?? $rule->operator;
 
-                            $unit = '%';
+                            $unit = \App\Models\AlertRule::metricUnit($rule->metric);
                         @endphp
 
                         <article @class(['rule-card', 'is-enabled' => $rule->is_enabled])>

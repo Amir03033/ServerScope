@@ -428,19 +428,9 @@
                         @php
                             $isActive = $alert->status === 'active';
                             $isDisabled = $alert->status === 'disabled';
-                            $metricLabels = [
-                                'cpu_percent' => 'CPU-gebruik',
-                                'memory_percent' => 'RAM-gebruik',
-                                'disk_percent' => 'Schijfgebruik',
-                            ];
                             $metricKey = $alert->metric;
-                            $metricLabel = $metricLabels[$metricKey]
-                                ?? str_replace('_', ' ', $metricKey);
-                            $unit = in_array(
-                                $metricKey,
-                                ['cpu_percent', 'memory_percent', 'disk_percent'],
-                                true
-                            ) ? '%' : '';
+                            $metricLabel = \App\Models\AlertRule::metricLabel($metricKey);
+                            $unit = \App\Models\AlertRule::metricUnit($metricKey);
                             $operatorLabels = [
                                 '>=' => '≥',
                                 '>' => '>',

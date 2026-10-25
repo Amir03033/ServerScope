@@ -1,11 +1,7 @@
 @php
     $isEditing = $rule->exists;
 
-    $metricLabels = [
-        'cpu_percent' => 'CPU-gebruik',
-        'memory_percent' => 'RAM-gebruik',
-        'disk_percent' => 'Schijfgebruik',
-    ];
+    $metricLabels = \App\Models\AlertRule::METRIC_LABELS;
 
     $operatorLabels = [
         '>=' => 'Groter dan of gelijk aan (≥)',
@@ -170,21 +166,23 @@
         </div>
 
         <div class="field">
-            <label for="threshold">Drempelwaarde (%)</label>
+            <label for="threshold">Drempelwaarde</label>
 
             <input
                 id="threshold"
                 name="threshold"
                 type="number"
                 min="0"
-                max="100"
+                max="1440"
                 step="0.01"
                 required
                 value="{{ old('threshold', $rule->threshold ?? 85) }}"
             >
 
             <span class="field-help">
-                Een percentage tussen 0 en 100.
+                CPU, RAM en schijf: een percentage tussen 0 en 100.
+                Agent offline: het aantal minuten zonder heartbeat (2–1440);
+                voorwaarde en duur worden dan genegeerd.
             </span>
 
             @error('threshold')
