@@ -6,10 +6,13 @@ use App\Models\MetricSample;
 use App\Models\Server;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class ServerDetailController extends Controller
 {
+    private const MAX_CHART_POINTS = 2000;
+
     public function __invoke(Request $request, Server $server): View
     {
         $validated = $request->validate([
@@ -43,13 +46,18 @@ class ServerDetailController extends Controller
 
         $rangeStart = now()->subMinutes($rangeOptions[$range]['minutes']);
 
-        $samples = MetricSample::query()
+        $samplesQuery = MetricSample::query()
             ->where('server_id', $server->id)
             ->where('collected_at', '>=', $rangeStart)
-            ->where('collected_at', '<=', now())
-            ->orderBy('collected_at')
-            ->limit(2000)
-            ->get();
+            ->where('collected_at', '<=', now());
+
+        $sampleCount = (clone $samplesQuery)->count();
+
+        $samples = $this->downsample(
+            $samplesQuery,
+            $sampleCount,
+            self::MAX_CHART_POINTS,
+        );
 
         $latestSample = $server->latestMetricSample;
         $memoryTotal = $latestSample?->memory_total_bytes ?? 0;
@@ -156,8 +164,14 @@ class ServerDetailController extends Controller
             'tx' => $latestSample?->network_tx_bytes,
         ];
 
-        $previousSample = $samples->count() >= 2
-            ? $samples->get($samples->count() - 2)
+        // Use the sample directly preceding the latest one: the chart
+        // series may be downsampled and cannot be used for rates.
+        $previousSample = $latestSample
+            ? MetricSample::query()
+                ->where('server_id', $server->id)
+                ->where('collected_at', '<', $latestSample->collected_at)
+                ->latest('collected_at')
+                ->first()
             : null;
 
         $networkRates = [
@@ -196,7 +210,7 @@ class ServerDetailController extends Controller
             'rangeOptions' => $rangeOptions,
             'rangeStart' => $rangeStart,
             'samples' => $samples,
-            'sampleCount' => $samples->count(),
+            'sampleCount' => $sampleCount,
             'latestSample' => $latestSample,
             'memoryPercent' => $memoryPercent,
             'memoryTotal' => $memoryTotal,
@@ -208,5 +222,37 @@ class ServerDetailController extends Controller
             'formatBytes' => $formatBytes,
             'formatUptime' => $formatUptime,
         ]);
+    }
+
+    /**
+     * Spread at most $maxPoints samples evenly across the whole range,
+     * always keeping the most recent sample.
+     *
+     * @return Collection<int, MetricSample>
+     */
+    private function downsample(
+        Builder $query,
+        int $total,
+        int $maxPoints,
+    ): Collection {
+        $step = max(1, (int) ceil($total / $maxPoints));
+        $samples = collect();
+        $last = null;
+        $index = 0;
+
+        foreach ($query->orderBy('collected_at')->lazy(1000) as $sample) {
+            if ($index % $step === 0) {
+                $samples->push($sample);
+            }
+
+            $last = $sample;
+            $index++;
+        }
+
+        if ($last !== null && $samples->last() !== $last) {
+            $samples->push($last);
+        }
+
+        return $samples;
     }
 }
