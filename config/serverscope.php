@@ -66,6 +66,33 @@ return [
         'requests_per_ip_per_minute' => (int) env('SERVERSCOPE_REQUESTS_PER_IP_PER_MINUTE', 30),
         'ca_file' => env('SERVERSCOPE_CA_FILE'),
         'user_agent' => env('SERVERSCOPE_USER_AGENT', 'ServerScope-Monitor/1.0 (+https://serverscope.nl)'),
+
+        // Record types whose changes trigger a notification. All changes are
+        // stored in the DNS history regardless.
+        'dns_alert_types' => array_values(array_filter(explode(',', (string) env('SERVERSCOPE_DNS_ALERT_TYPES', 'A,AAAA,CNAME,MX,NS,CAA')))),
+
+        // Abuse prevention: the shortest allowed HTTP interval and the
+        // maximum number of monitored domains.
+        'min_interval_minutes' => (int) env('SERVERSCOPE_MIN_INTERVAL', 1),
+        'max_domains' => (int) env('SERVERSCOPE_MAX_DOMAINS', 1000),
+
+        // How often the slower checks run (minutes).
+        'ssl_interval_minutes' => (int) env('SERVERSCOPE_SSL_INTERVAL', 360),
+        'dns_interval_minutes' => (int) env('SERVERSCOPE_DNS_INTERVAL', 15),
+        'expiry_interval_minutes' => (int) env('SERVERSCOPE_EXPIRY_INTERVAL', 1440),
+        'rdap_bootstrap_url' => env('SERVERSCOPE_RDAP_BOOTSTRAP_URL', 'https://data.iana.org/rdap/dns.json'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Incidents
+    |--------------------------------------------------------------------------
+    */
+
+    'incidents' => [
+        // A problem that recurs within this many minutes after automatic or
+        // manual resolution reopens the previous incident.
+        'reopen_window_minutes' => (int) env('SERVERSCOPE_INCIDENT_REOPEN_MINUTES', 60),
     ],
 
 ];

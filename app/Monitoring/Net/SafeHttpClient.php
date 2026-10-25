@@ -31,7 +31,7 @@ class SafeHttpClient
         private string $userAgent = 'ServerScope-Monitor/1.0 (+https://serverscope.nl)',
     ) {}
 
-    public function get(string $url, float $timeoutSeconds = 10.0, bool $followRedirects = true): HttpResult
+    public function get(string $url, float $timeoutSeconds = 10.0, bool $followRedirects = true, array $headers = []): HttpResult
     {
         $started = microtime(true);
         $redirects = [];
@@ -64,7 +64,7 @@ class SafeHttpClient
             $sink = new LimitedSink($this->maxBytes);
 
             try {
-                $response = $this->send($target, $remaining, $sink);
+                $response = $this->send($target, $remaining, $sink, $headers);
             } catch (Throwable $exception) {
                 $partial = $this->partialResponse($exception);
 
@@ -161,12 +161,13 @@ class SafeHttpClient
         ];
     }
 
-    private function send(ResolvedTarget $target, float $timeoutSeconds, LimitedSink $sink): Response
+    private function send(ResolvedTarget $target, float $timeoutSeconds, LimitedSink $sink, array $headers = []): Response
     {
         return Http::withOptions([...$this->connectionOptions($target, $timeoutSeconds), 'sink' => $sink])
             ->withHeaders([
-                'User-Agent' => $this->userAgent,
                 'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+                ...$headers,
+                'User-Agent' => $this->userAgent,
             ])
             ->get($target->url);
     }

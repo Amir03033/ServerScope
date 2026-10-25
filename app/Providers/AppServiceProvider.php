@@ -11,6 +11,7 @@ use App\Monitoring\Net\IpPolicy;
 use App\Monitoring\Net\SafeHttpClient;
 use App\Monitoring\Net\TargetGuard;
 use App\Monitoring\Net\TlsInspector;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(Resolver::class, fn () => new DnsClient(
             config('serverscope.monitoring.nameservers', []),
+            (float) config('serverscope.monitoring.dns_timeout', 3),
+        ));
+
+        $this->app->singleton(\App\Monitoring\Dns\ResolverFactory::class, fn () => new \App\Monitoring\Dns\ResolverFactory(
             (float) config('serverscope.monitoring.dns_timeout', 3),
         ));
 
@@ -45,6 +50,11 @@ class AppServiceProvider extends ServiceProvider
             (string) config('serverscope.monitoring.user_agent'),
         ));
 
+        $this->app->bind(\App\Services\Domains\RdapClient::class, fn ($app) => new \App\Services\Domains\RdapClient(
+            $app->make(SafeHttpClient::class),
+            (string) config('serverscope.monitoring.rdap_bootstrap_url'),
+        ));
+
         $this->app->bind(TlsInspector::class, fn () => new TlsInspector(
             config('serverscope.monitoring.ca_file'),
         ));
@@ -56,6 +66,15 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::define('admin', fn (User $user): bool => (bool) $user->is_admin);
+
+        // Short, stable type names in polymorphic columns.
+        Relation::morphMap([
+            'server' => \App\Models\Server::class,
+            'domain' => \App\Models\Domain::class,
+            'incident' => \App\Models\Incident::class,
+            'alert_rule' => \App\Models\AlertRule::class,
+            'user' => User::class,
+        ]);
 
         View::composer(
             'components.layouts.app',

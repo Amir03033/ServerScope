@@ -10,6 +10,7 @@ use App\Http\Controllers\ServerDetailController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\AlertRuleController;
 use App\Http\Controllers\AgentCredentialController;
+use App\Http\Controllers\DomainController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServerMaintenanceController;
 
@@ -71,6 +72,19 @@ Route::middleware('auth')->group(function () {
     Route::delete('/servers/{server}/credentials/{agentCredential}', [AgentCredentialController::class, 'destroy'])
         ->scopeBindings()
         ->name('servers.credentials.destroy');
+
+    Route::get('/domains', [DomainController::class, 'index'])->name('domains.index');
+    Route::get('/domains/create', [DomainController::class, 'create'])->name('domains.create');
+    Route::post('/domains', [DomainController::class, 'store'])->name('domains.store');
+    Route::get('/domains/{domain}', [DomainController::class, 'show'])->withTrashed()->name('domains.show');
+    Route::get('/domains/{domain}/edit', [DomainController::class, 'edit'])->name('domains.edit');
+    Route::put('/domains/{domain}', [DomainController::class, 'update'])->name('domains.update');
+    Route::delete('/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');
+    Route::post('/domains/{domain}/pause', [DomainController::class, 'pause'])->name('domains.pause');
+    Route::post('/domains/{domain}/resume', [DomainController::class, 'resume'])->name('domains.resume');
+    Route::post('/domains/{domain}/check', [DomainController::class, 'checkNow'])->name('domains.check');
+    Route::post('/domains/{domain}/restore', [DomainController::class, 'restore'])->withTrashed()->name('domains.restore');
+    Route::delete('/domains/{domain}/permanent', [DomainController::class, 'forceDestroy'])->withTrashed()->name('domains.force-destroy');
 
     Route::get('/alerts', AlertController::class)->name('alerts.index');
 
