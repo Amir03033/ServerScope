@@ -7,6 +7,7 @@ use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\Server;
 use App\Support\Time;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -101,7 +102,7 @@ class DashboardOverview
         DB::table('domain_checks')->where('type', 'http')->where('checked_at', '>=', $from)
             ->select(['checked_at', 'success', 'response_time_ms'])->orderBy('id')->lazy(5000)
             ->each(function ($row) use (&$hours): void {
-                $key = \Carbon\Carbon::parse($row->checked_at, 'UTC')->format('Y-m-d H');
+                $key = Carbon::parse($row->checked_at, 'UTC')->format('Y-m-d H');
 
                 if (! isset($hours[$key])) {
                     return;
@@ -116,7 +117,7 @@ class DashboardOverview
             });
 
         $response = collect($hours)->map(fn ($h, $key) => [
-            'label' => Time::format(\Carbon\Carbon::createFromFormat('Y-m-d H', $key, 'UTC'), 'H:i'),
+            'label' => Time::format(Carbon::createFromFormat('Y-m-d H', $key, 'UTC'), 'H:i'),
             'value' => $h['n'] > 0 ? round($h['sum'] / $h['n'], 1) : null,
             'flag' => $h['fail'] > 0,
         ])->values()->all();

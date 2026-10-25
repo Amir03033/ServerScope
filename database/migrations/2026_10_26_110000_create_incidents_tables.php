@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -72,7 +73,7 @@ return new class extends Migration
         });
 
         // Agent disconnects are outages.
-        \Illuminate\Support\Facades\DB::table('alert_rules')
+        DB::table('alert_rules')
             ->where('metric', 'agent_offline')
             ->update(['severity' => 'critical']);
     }

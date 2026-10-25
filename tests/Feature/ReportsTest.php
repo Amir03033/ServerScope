@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Domain;
 use App\Models\Incident;
+use App\Models\MetricSample;
 use App\Models\Server;
 use App\Models\User;
 use App\Services\Reports\AvailabilityReport;
@@ -32,7 +33,7 @@ class ReportsTest extends TestCase
         // 30 minutes of agent-offline incident inside the period, 10 before it.
         Incident::query()->create(['fingerprint' => 'a', 'subject_type' => 'server', 'subject_id' => $server->id, 'source' => 'agent', 'severity' => 'critical', 'status' => 'resolved', 'title' => 'x', 'opened_at' => $from->copy()->subMinutes(10), 'last_occurrence_at' => $from, 'resolved_at' => $from->copy()->addMinutes(30)]);
         foreach (range(1, 720) as $i) {
-            \App\Models\MetricSample::query()->insert(['server_id' => $server->id, 'collected_at' => now()->subMinutes($i * 2), 'created_at' => now(), 'updated_at' => now()]);
+            MetricSample::query()->insert(['server_id' => $server->id, 'collected_at' => now()->subMinutes($i * 2), 'created_at' => now(), 'updated_at' => now()]);
         }
 
         $report = app(AvailabilityReport::class)->build($from, now(), 99.9);

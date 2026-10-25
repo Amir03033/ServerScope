@@ -58,4 +58,17 @@ class LayoutTest extends TestCase
             $this->assertFileExists(public_path('build/'.$entry['file']));
         }
     }
+
+    public function test_security_headers_are_sent(): void
+    {
+        $response = $this->get('/login')->assertOk();
+
+        $response->assertHeader('X-Frame-Options', 'DENY');
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertStringContainsString("frame-ancestors 'none'", $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString("object-src 'none'", $response->headers->get('Content-Security-Policy'));
+        $response->assertHeaderMissing('Strict-Transport-Security');
+
+        $this->get('https://localhost/login')->assertHeader('Strict-Transport-Security');
+    }
 }

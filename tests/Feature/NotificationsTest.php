@@ -3,13 +3,14 @@
 namespace Tests\Feature;
 
 use App\Events\DnsRecordsChanged;
-use App\Models\DnsChange;
+use App\Models\AuditLog;
 use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\NotificationLog;
 use App\Models\User;
 use App\Notifications\DnsChangeNotification;
 use App\Notifications\IncidentNotification;
+use App\Notifications\TestNotification;
 use App\Services\Incidents\IncidentManager;
 use App\Services\Incidents\Signal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -233,7 +234,7 @@ class NotificationsTest extends TestCase
             $this->actingAs($user)->post(route('profile.notifications.test'))->assertSessionHas('success');
         }
         $this->actingAs($user)->post(route('profile.notifications.test'))->assertSessionHas('error');
-        Notification::assertSentToTimes($user, \App\Notifications\TestNotification::class, 3);
+        Notification::assertSentToTimes($user, TestNotification::class, 3);
     }
 
     public function test_password_change_requires_current_password(): void
@@ -254,6 +255,6 @@ class NotificationsTest extends TestCase
 
         $this->assertTrue(Hash::check('NewPassword1234', $user->fresh()->password));
         $this->assertDatabaseHas('audit_logs', ['action' => 'user.password_changed']);
-        $this->assertStringNotContainsString('NewPassword1234', json_encode(\App\Models\AuditLog::query()->get()->toArray()));
+        $this->assertStringNotContainsString('NewPassword1234', json_encode(AuditLog::query()->get()->toArray()));
     }
 }

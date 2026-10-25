@@ -11,6 +11,7 @@ use App\Models\Incident;
 use App\Models\MetricSample;
 use App\Models\Server;
 use App\Services\Incidents\IncidentManager;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -52,8 +53,8 @@ class ApiController extends Controller
         ]);
 
         $samples = MetricSample::query()->where('server_id', $server->id)
-            ->where('collected_at', '>=', isset($v['from']) ? \Carbon\Carbon::parse($v['from']) : now()->subHour())
-            ->where('collected_at', '<=', isset($v['to']) ? \Carbon\Carbon::parse($v['to']) : now())
+            ->where('collected_at', '>=', isset($v['from']) ? Carbon::parse($v['from']) : now()->subHour())
+            ->where('collected_at', '<=', isset($v['to']) ? Carbon::parse($v['to']) : now())
             ->orderByDesc('collected_at')
             ->limit($v['limit'] ?? 120)
             ->get()

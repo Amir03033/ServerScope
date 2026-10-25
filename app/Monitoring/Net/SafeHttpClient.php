@@ -9,6 +9,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
+use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
 /**
@@ -140,7 +141,7 @@ class SafeHttpClient
         );
     }
 
-    private function partialResponse(Throwable $exception): ?\Psr\Http\Message\ResponseInterface
+    private function partialResponse(Throwable $exception): ?ResponseInterface
     {
         for ($e = $exception; $e !== null; $e = $e->getPrevious()) {
             if ($e instanceof RequestException && $e->getResponse() !== null) {

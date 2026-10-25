@@ -8,6 +8,7 @@ use App\Monitoring\Net\IpPolicy;
 use App\Monitoring\Net\SafeHttpClient;
 use App\Monitoring\Net\TargetGuard;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
@@ -243,7 +244,7 @@ class SafeHttpClientTest extends TestCase
         ];
 
         foreach ($cases as $message => $expected) {
-            Http::swap(new \Illuminate\Http\Client\Factory);
+            Http::swap(new Factory);
             Http::fake(fn () => throw new ConnectionException($message));
 
             $result = $this->client()->get('https://example.com/');

@@ -3,7 +3,9 @@
 namespace App\Services\Incidents;
 
 use App\Models\Incident;
+use App\Support\Time;
 use Carbon\CarbonInterface;
+use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -49,7 +51,7 @@ class IncidentMetrics
      */
     public function perDay(int $days, ?Builder $scope = null): array
     {
-        $zone = \App\Support\Time::zone();
+        $zone = Time::zone();
         $start = now($zone)->startOfDay()->subDays($days - 1);
         $series = [];
 
@@ -81,6 +83,6 @@ class IncidentMetrics
             return $seconds.' s';
         }
 
-        return \Carbon\CarbonInterval::seconds($seconds)->cascade()->locale('nl')->forHumans(['short' => true, 'parts' => 2]);
+        return CarbonInterval::seconds($seconds)->cascade()->locale('nl')->forHumans(['short' => true, 'parts' => 2]);
     }
 }

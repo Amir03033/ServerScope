@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Server;
 use App\Support\Audit;
+use App\Support\Time;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -33,7 +34,7 @@ class ServerMaintenanceController extends Controller
             'reason' => $server->maintenance_reason,
         ]);
 
-        return back()->with('success', 'Onderhoudsmodus ingeschakeld. Er worden geen nieuwe downtime-alerts aangemaakt tot '.\App\Support\Time::format($server->maintenance_ends_at).'.');
+        return back()->with('success', 'Onderhoudsmodus ingeschakeld. Er worden geen nieuwe downtime-alerts aangemaakt tot '.Time::format($server->maintenance_ends_at).'.');
     }
 
     /**

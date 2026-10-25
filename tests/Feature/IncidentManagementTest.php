@@ -12,6 +12,7 @@ use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\Server;
 use App\Models\User;
+use App\Services\AgentHeartbeatService;
 use App\Services\Incidents\IncidentManager;
 use App\Services\Incidents\IncidentMetrics;
 use App\Services\Incidents\Signal;
@@ -158,7 +159,7 @@ class IncidentManagementTest extends TestCase
         Event::fake([IncidentResolved::class]);
         $rule = AlertRule::create(['name' => 'Offline', 'metric' => 'agent_offline', 'threshold' => 5, 'operator' => '>=', 'duration_minutes' => 1, 'is_enabled' => true]);
         $server = Server::create(['name' => 'Web 1', 'hostname' => 'web1.example.test', 'last_seen_at' => now()->subHour()]);
-        app(\App\Services\AgentHeartbeatService::class)->check();
+        app(AgentHeartbeatService::class)->check();
         $this->assertSame('agent', Incident::query()->sole()->source);
 
         $this->actingAs($this->admin)->put(route('alert-rules.update', $rule), [

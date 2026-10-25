@@ -34,8 +34,7 @@ class HttpMonitor
         [$success, $code, $message] = match (true) {
             $result->failed() => [false, $result->error, $result->errorMessage],
             ! $domain->acceptsStatus($result->status) => [false, 'unexpected_status', "Onverwachte HTTP-statuscode {$result->status}."],
-            $domain->expected_content !== null && $domain->expected_content !== '' && ! str_contains($result->body, $domain->expected_content)
-                => [false, 'content_mismatch', 'De verwachte inhoud is niet gevonden'.($result->truncated ? ' (antwoord ingekort tot de maximale grootte).' : '.')],
+            $domain->expected_content !== null && $domain->expected_content !== '' && ! str_contains($result->body, $domain->expected_content) => [false, 'content_mismatch', 'De verwachte inhoud is niet gevonden'.($result->truncated ? ' (antwoord ingekort tot de maximale grootte).' : '.')],
             default => [true, null, null],
         };
 

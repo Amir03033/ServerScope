@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\AuditLog;
 use App\Models\Domain;
 use App\Models\MetricSample;
 use App\Models\Server;
 use App\Models\User;
+use App\Support\Audit;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -53,7 +54,7 @@ class OperationsTest extends TestCase
             'name' => 'example.com', 'scheme' => 'https', 'path' => '/', 'check_interval_minutes' => 5, 'timeout_seconds' => 10,
             'failure_threshold' => 3, 'recovery_threshold' => 2, 'ssl_warning_days' => '30', 'expiry_warning_days' => '30',
         ]);
-        \App\Support\Audit::log('server.created', 'Server X geregistreerd');
+        Audit::log('server.created', 'Server X geregistreerd');
 
         $this->actingAs($viewer)->get(route('audit-logs.index'))->assertForbidden();
 
@@ -67,7 +68,7 @@ class OperationsTest extends TestCase
 
     public function test_audit_redacts_secrets(): void
     {
-        $log = \App\Support\Audit::log('test', 'Test', null, ['token' => 'abc', 'nested' => ['password' => 'p', 'ok' => 1]]);
+        $log = Audit::log('test', 'Test', null, ['token' => 'abc', 'nested' => ['password' => 'p', 'ok' => 1]]);
 
         $this->assertSame('[redacted]', $log->properties['token']);
         $this->assertSame('[redacted]', $log->properties['nested']['password']);
@@ -76,7 +77,7 @@ class OperationsTest extends TestCase
 
     public function test_scheduler_registers_all_monitoring_tasks(): void
     {
-        $commands = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())->map(fn ($e) => $e->command)->implode("\n");
+        $commands = collect(app(Schedule::class)->events())->map(fn ($e) => $e->command)->implode("\n");
 
         foreach (['serverscope:check-agents', 'serverscope:dispatch-domain-checks', 'serverscope:escalate-incidents', 'serverscope:prune', 'queue:work'] as $command) {
             $this->assertStringContainsString($command, $commands);

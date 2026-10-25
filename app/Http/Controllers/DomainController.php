@@ -7,6 +7,7 @@ use App\Jobs\RunDomainCheck;
 use App\Models\Domain;
 use App\Services\Domains\DnsMonitor;
 use App\Services\Domains\DomainCheckRunner;
+use App\Services\Domains\DomainNormalizer;
 use App\Services\Reports\UptimeCalculator;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
@@ -43,7 +44,7 @@ class DomainController extends Controller
 
         if (! empty($filters['q'])) {
             $term = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], mb_strtolower($filters['q'])).'%';
-            $ascii = app(\App\Services\Domains\DomainNormalizer::class)->normalize($filters['q']);
+            $ascii = app(DomainNormalizer::class)->normalize($filters['q']);
             $query->where(fn ($q) => $q->where('name', 'like', $term)->when($ascii, fn ($q) => $q->orWhere('name', 'like', '%'.$ascii.'%')));
         }
 

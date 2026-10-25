@@ -12,7 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
+        // Plesk serves Laravel behind its own nginx/Apache proxy; trust it so
+        // request()->ip() and isSecure() reflect the real client.
+        $middleware->trustProxies(at: env('TRUSTED_PROXIES', '127.0.0.1,::1'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // The API always answers in JSON, also for 404/405/500.

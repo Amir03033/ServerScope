@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Incident;
+use App\Services\Notifications\NotificationDispatcher;
 use App\Support\Time;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -99,7 +100,7 @@ class IncidentNotification extends Notification implements ShouldQueue
 
     public function failed(\Throwable $exception): void
     {
-        \App\Services\Notifications\NotificationDispatcher::markFailed($this->id, $exception->getMessage());
+        NotificationDispatcher::markFailed($this->id, $exception->getMessage());
     }
 
     public function toArray(object $notifiable): array

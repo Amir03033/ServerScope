@@ -11,11 +11,13 @@ use App\Monitoring\Net\SafeHttpClient;
 use App\Services\Incidents\IncidentManager;
 use App\Services\Incidents\Signal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Tests\Support\FakeResolver;
 use Tests\TestCase;
 
@@ -121,9 +123,9 @@ class WebhooksTest extends TestCase
         $endpoint = $this->endpoint();
 
         foreach ([500 => 'retrying', 429 => 'retrying', 400 => 'failed', 301 => 'failed'] as $status => $expected) {
-            Http::swap(new \Illuminate\Http\Client\Factory);
+            Http::swap(new Factory);
             Http::fake(['*' => Http::response('nee', $status, ['Location' => 'https://elders.example/'])]);
-            $delivery = $endpoint->deliveries()->create(['uuid' => (string) \Illuminate\Support\Str::uuid(), 'event' => 'test', 'payload' => ['x' => 1]]);
+            $delivery = $endpoint->deliveries()->create(['uuid' => (string) Str::uuid(), 'event' => 'test', 'payload' => ['x' => 1]]);
             // Retries are released back onto the queue, never thrown into
             // the request that triggered the event.
             (new DeliverWebhook($delivery->id))->handle(app(SafeHttpClient::class));
@@ -140,7 +142,7 @@ class WebhooksTest extends TestCase
         $this->dns->host('hooks.example.com', '169.254.169.254');
         Http::fake();
 
-        $delivery = $endpoint->deliveries()->create(['uuid' => (string) \Illuminate\Support\Str::uuid(), 'event' => 'test', 'payload' => []]);
+        $delivery = $endpoint->deliveries()->create(['uuid' => (string) Str::uuid(), 'event' => 'test', 'payload' => []]);
         (new DeliverWebhook($delivery->id))->handle(app(SafeHttpClient::class));
 
         Http::assertNothingSent();
@@ -169,7 +171,7 @@ class WebhooksTest extends TestCase
         $failed = WebhookDelivery::query()->sole();
         $this->assertSame('failed', $failed->status, 'sync queue: retries exhausted immediately');
 
-        Http::swap(new \Illuminate\Http\Client\Factory);
+        Http::swap(new Factory);
         Http::fake(['*' => Http::response('', 204)]);
         $this->actingAs($this->admin)->post(route('webhooks.redeliver', [$endpoint, $failed]))->assertSessionHas('success');
         $this->assertSame('success', WebhookDelivery::query()->latest('id')->first()->status);

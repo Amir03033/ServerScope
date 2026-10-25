@@ -10,12 +10,15 @@ use App\Events\IncidentResolved;
 use App\Jobs\RunDomainCheck;
 use App\Models\Domain;
 use App\Models\Incident;
+use App\Models\User;
 use App\Monitoring\Dns\Resolver;
 use App\Monitoring\Dns\ResolverFactory;
 use App\Monitoring\Net\TlsInspector;
+use App\Monitoring\Net\TlsResult;
 use App\Services\Domains\DomainCheckRunner;
 use App\Services\Reports\UptimeCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
@@ -78,7 +81,7 @@ class DomainMonitorsTest extends TestCase
     private function httpDown(): void
     {
         Http::swap(new Factory);
-        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 7: Connection refused'));
+        Http::fake(fn () => throw new ConnectionException('cURL error 7: Connection refused'));
     }
 
     // ---------------- HTTP ----------------
@@ -300,7 +303,7 @@ class DomainMonitorsTest extends TestCase
 
     public function test_tls_connection_failure_does_not_open_a_certificate_incident(): void
     {
-        $this->tls->result = new \App\Monitoring\Net\TlsResult('connection_failed', 'refused');
+        $this->tls->result = new TlsResult('connection_failed', 'refused');
 
         $domain = $this->check($this->domain(), 'ssl');
 
@@ -547,7 +550,7 @@ class DomainMonitorsTest extends TestCase
 
     public function test_detail_page_renders_all_sections(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $domain = $this->domain();
         $this->dnsRecords();
         $this->http();

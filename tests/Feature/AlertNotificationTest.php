@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\Alert;
 use App\Models\AlertRule;
+use App\Models\Incident;
 use App\Models\Server;
 use App\Models\User;
 use App\Notifications\IncidentNotification;
 use App\Services\AgentHeartbeatService;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -169,9 +171,9 @@ class AlertNotificationTest extends TestCase
 
     public function test_notification_is_queued_with_retries(): void
     {
-        $notification = new IncidentNotification(new \App\Models\Incident, IncidentNotification::OPENED);
+        $notification = new IncidentNotification(new Incident, IncidentNotification::OPENED);
 
-        $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class, $notification);
+        $this->assertInstanceOf(ShouldQueue::class, $notification);
         $this->assertSame(3, $notification->tries);
         $this->assertTrue($notification->afterCommit);
     }

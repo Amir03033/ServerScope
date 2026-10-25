@@ -2,12 +2,14 @@
 
 namespace App\Services\Notifications;
 
+use App\Models\DnsChange;
 use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\NotificationLog;
 use App\Models\User;
 use App\Notifications\DnsChangeNotification;
 use App\Notifications\IncidentNotification;
+use App\Notifications\TestNotification;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Notification as BaseNotification;
 use Illuminate\Support\Facades\Cache;
@@ -70,7 +72,7 @@ class NotificationDispatcher
     }
 
     /**
-     * @param  array<int, \App\Models\DnsChange>  $changes
+     * @param  array<int, DnsChange>  $changes
      */
     public function dnsChange(Domain $domain, array $changes): void
     {
@@ -97,7 +99,7 @@ class NotificationDispatcher
     public function test(User $user): void
     {
         $channels = $user->notificationChannels() ?: ['database'];
-        $this->send($user, new \App\Notifications\TestNotification($channels), null, 'test');
+        $this->send($user, new TestNotification($channels), null, 'test');
     }
 
     private function allowedChannels(User $user, array $channels, ?Incident $incident, string $kind): array

@@ -4,6 +4,7 @@ namespace App\Services\Reports;
 
 use App\Models\Domain;
 use App\Support\Time;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -70,7 +71,7 @@ class UptimeCalculator
             ->lazy(2000);
 
         foreach ($rows as $row) {
-            $date = \Carbon\Carbon::parse($row->checked_at, 'UTC')->setTimezone($zone)->format('Y-m-d');
+            $date = Carbon::parse($row->checked_at, 'UTC')->setTimezone($zone)->format('Y-m-d');
 
             if (isset($buckets[$date])) {
                 $buckets[$date]['checks']++;
@@ -106,7 +107,7 @@ class UptimeCalculator
             ->lazy(2000);
 
         foreach ($rows as $row) {
-            $offset = \Carbon\Carbon::parse($row->checked_at, 'UTC')->getTimestamp() - $from->getTimestamp();
+            $offset = Carbon::parse($row->checked_at, 'UTC')->getTimestamp() - $from->getTimestamp();
             $index = min($buckets - 1, max(0, (int) floor($offset / $size)));
 
             if ($row->success && $row->response_time_ms !== null) {

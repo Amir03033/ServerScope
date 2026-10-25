@@ -11,6 +11,7 @@ use App\Events\IncidentSeverityIncreased;
 use App\Events\IncidentUnacknowledged;
 use App\Notifications\IncidentNotification;
 use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\WebhookDispatcher;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Notifications\Events\NotificationSent;
@@ -23,7 +24,7 @@ class IncidentNotifier
 {
     public function __construct(
         private NotificationDispatcher $dispatcher,
-        private \App\Services\Notifications\WebhookDispatcher $webhooks,
+        private WebhookDispatcher $webhooks,
     ) {}
 
     public function opened(IncidentOpened $event): void

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Incidents\IncidentManager;
 use App\Services\Incidents\Signal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -135,7 +136,7 @@ class StatusPagesTest extends TestCase
     {
         [$page, $server] = $this->setupPage();
         $server->forceFill(['maintenance_starts_at' => now()->subMinute()])->save();
-        \Illuminate\Support\Facades\Cache::flush();
+        Cache::flush();
 
         $this->getJson(route('status.json', $page->slug))->assertJsonPath('components.1.state', 'maintenance');
     }

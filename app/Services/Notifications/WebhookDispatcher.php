@@ -4,6 +4,7 @@ namespace App\Services\Notifications;
 
 use App\Http\Resources\IncidentResource;
 use App\Jobs\DeliverWebhook;
+use App\Models\DnsChange;
 use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\WebhookDelivery;
@@ -18,7 +19,7 @@ class WebhookDispatcher
     }
 
     /**
-     * @param  array<int, \App\Models\DnsChange>  $changes
+     * @param  array<int, DnsChange>  $changes
      */
     public function dnsChange(Domain $domain, array $changes): void
     {

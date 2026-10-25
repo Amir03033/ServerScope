@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Domain;
 use App\Services\Domains\DomainNormalizer;
+use App\Support\Time;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -128,8 +129,8 @@ class DomainRequest extends FormRequest
 
         $data['ssl_warning_days'] = Domain::normaliseDays($data['ssl_warning_days']);
         $data['expiry_warning_days'] = Domain::normaliseDays($data['expiry_warning_days']);
-        $data['maintenance_starts_at'] = \App\Support\Time::parse($this->validated('maintenance_starts_at'));
-        $data['maintenance_ends_at'] = \App\Support\Time::parse($this->validated('maintenance_ends_at'));
+        $data['maintenance_starts_at'] = Time::parse($this->validated('maintenance_starts_at'));
+        $data['maintenance_ends_at'] = Time::parse($this->validated('maintenance_ends_at'));
 
         if ($data['maintenance_starts_at'] === null) {
             $data['maintenance_reason'] = null;
