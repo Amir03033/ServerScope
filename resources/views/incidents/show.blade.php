@@ -38,7 +38,7 @@
         @endif
     </x-slot:actions>
 
-    <div class="grid-2" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)">
+    <div class="grid-2 split">
         <div class="stack">
             <section class="panel">
                 <div class="section-heading">

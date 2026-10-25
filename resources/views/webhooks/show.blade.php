@@ -15,7 +15,7 @@
         </x-secret-token>
     @endif
 
-    <div class="grid-2" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr)">
+    <div class="grid-2 split-narrow">
         <section class="panel">
             <div class="section-heading"><div><h2>Instellingen</h2></div><x-status :status="$endpoint->is_active ? 'enabled' : 'disabled'" /></div>
             <dl class="dl">

@@ -10,7 +10,7 @@
         </x-secret-token>
     @endif
 
-    <div class="grid-2" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)">
+    <div class="grid-2 split">
         <section class="panel">
             <div class="section-heading"><div><h2>Tokens</h2></div></div>
             @if ($tokens->isEmpty())

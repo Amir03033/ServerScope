@@ -3,7 +3,7 @@
 <x-layouts.app title="Gebruikers">
     <x-slot:subtitle>Alle gebruikers zien alle servers, domeinen en incidenten. Beheerders wijzigen de configuratie.</x-slot:subtitle>
 
-    <div class="grid-2" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)">
+    <div class="grid-2 split">
         <section class="panel">
             <div class="table-wrap">
                 <table class="data-table">

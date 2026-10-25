@@ -35,7 +35,7 @@
                 <div class="section-heading"><div><h2>Onderdelen</h2><p>Lege rijen worden genegeerd. De volgorde bepaalt de weergave.</p></div></div>
                 <div id="component-rows" class="stack">
                     @foreach ($components as $i => $component)
-                        <div class="form-cols component-row" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto;align-items:end">
+                        <div class="form-cols component-row">
                             <div class="form-field"><label>Monitor</label>
                                 <select name="components[{{ $i }}][subject]">
                                     <option value="">— kies —</option>
