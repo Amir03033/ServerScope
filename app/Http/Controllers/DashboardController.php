@@ -25,13 +25,7 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get()
             ->map(function (Server $server) use ($now): Server {
-                $server->display_status = match (true) {
-                    $server->last_seen_at === null => 'pending',
-                    $server->last_seen_at->lte(
-                        $now->copy()->subMinutes(2)
-                    ) => 'offline',
-                    default => 'online',
-                };
+                $server->display_status = $server->displayStatus($now);
 
                 $sample = $server->latestMetricSample;
 
@@ -244,6 +238,7 @@ class DashboardController extends Controller
             : collect();
 
         return view('dashboard', [
+            'overview' => app(\App\Services\Reports\DashboardOverview::class)->data(),
             'servers' => $servers,
             'serverCount' => $servers->count(),
             'onlineCount' => $servers->where('display_status', 'online')->count(),

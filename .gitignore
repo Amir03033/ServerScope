@@ -27,7 +27,7 @@ htmlcov/
 # Laravel generated files
 /vendor
 /node_modules
-/public/build
+# /public/build is committed: production deploys via Plesk Git without a Node build step.
 /public/fonts-manifest.dev.json
 /public/hot
 /public/storage

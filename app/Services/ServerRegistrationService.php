@@ -9,6 +9,10 @@ use RuntimeException;
 
 class ServerRegistrationService
 {
+    public function __construct(
+        private AgentCredentialService $credentials,
+    ) {}
+
     /**
      * Register a server and issue its first agent credential.
      *
@@ -39,19 +43,16 @@ class ServerRegistrationService
                 'hostname' => trim($serverData['hostname']),
                 'ip_address' => $serverData['ip_address'] ?? null,
                 'operating_system' => $serverData['operating_system'] ?? null,
+                'environment' => $serverData['environment'] ?? 'production',
+                'notes' => $serverData['notes'] ?? null,
                 'status' => 'pending',
             ]);
 
-            $token = bin2hex(random_bytes(32));
-
-            $server->agentCredentials()->create([
-                'name' => $credentialName,
-                'token_hash' => hash('sha256', $token),
-            ]);
+            $issued = $this->credentials->issue($server, $credentialName);
 
             return [
                 'server' => $server,
-                'token' => $token,
+                'token' => $issued['token'],
             ];
         });
     }

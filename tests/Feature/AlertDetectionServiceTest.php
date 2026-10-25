@@ -14,6 +14,15 @@ class AlertDetectionServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Samples are created relative to now(); a second boundary between
+        // two now() calls would shift the evaluation window.
+        $this->freezeSecond();
+    }
+
     public function test_cpu_alert_is_created_when_threshold_is_exceeded_for_required_duration(): void
     {
         $server = $this->createServer();

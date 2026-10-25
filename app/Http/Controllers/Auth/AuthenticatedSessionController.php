@@ -34,10 +34,9 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        if (! Auth::attempt([
-            'email' => $email,
-            'password' => $credentials['password'],
-        ], $request->boolean('remember'))) {
+        $user = \App\Models\User::query()->where('email', $email)->first();
+
+        if ($user === null || ! Auth::getProvider()->validateCredentials($user, ['password' => $credentials['password']])) {
             RateLimiter::hit($key, 60);
 
             throw ValidationException::withMessages([
@@ -46,6 +45,19 @@ class AuthenticatedSessionController extends Controller
         }
 
         RateLimiter::clear($key);
+        Auth::getProvider()->rehashPasswordIfRequired($user, ['password' => $credentials['password']]);
+
+        // Second factor: remember who passed the password step, but do not
+        // log in until the code is verified.
+        if ($user->hasTwoFactorEnabled()) {
+            $request->session()->regenerate();
+            $request->session()->put('login.id', $user->id);
+            $request->session()->put('login.remember', $request->boolean('remember'));
+
+            return redirect()->route('two-factor.challenge');
+        }
+
+        Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'));

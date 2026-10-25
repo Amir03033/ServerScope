@@ -1,0 +1,31 @@
+[Unit]
+Description=ServerScope monitoring agent
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=serverscope
+Group=serverscope
+WorkingDirectory=/opt/serverscope-agent
+ExecStart=/opt/serverscope-agent/.venv/bin/python -m serverscope_agent.agent
+Restart=always
+RestartSec=10
+
+# The agent only reads system metrics and talks HTTPS to ServerScope.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ReadOnlyPaths=/opt/serverscope-agent
+
+[Install]
+WantedBy=multi-user.target

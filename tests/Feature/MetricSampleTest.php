@@ -57,7 +57,8 @@ class MetricSampleTest extends TestCase
             'collected_at' => now(),
         ]);
 
-        $server->delete();
+        // Permanent deletion; delete() is a soft delete since server management.
+        $server->forceDelete();
 
         $this->assertDatabaseMissing('metric_samples', [
             'id' => $sample->id,

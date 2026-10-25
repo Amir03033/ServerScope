@@ -2,14 +2,18 @@
 
 namespace App\Models;
 
+use App\Observers\AlertObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[ObservedBy(AlertObserver::class)]
 class Alert extends Model
 {
     protected $fillable = [
         'server_id',
         'alert_rule_id',
+        'incident_id',
         'metric',
         'dimension',
         'observed_value',
@@ -37,6 +41,11 @@ class Alert extends Model
     public function alertRule(): BelongsTo
     {
         return $this->belongsTo(AlertRule::class)->withTrashed();
+    }
+
+    public function incident(): BelongsTo
+    {
+        return $this->belongsTo(Incident::class);
     }
 
     public function isActive(): bool

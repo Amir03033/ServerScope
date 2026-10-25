@@ -53,6 +53,11 @@ class AlertDetectionService
 
             'disk_percent' => $this->diskPercentages($sample),
 
+            // A sample is a heartbeat: the agent is not silent now.
+            AlertRule::METRIC_AGENT_OFFLINE => [
+                AlertRule::METRIC_AGENT_OFFLINE => 0.0,
+            ],
+
             default => [],
         };
     }
@@ -118,7 +123,7 @@ class AlertDetectionService
             $value,
         ): void {
             // Serialise evaluations for the same server.
-            Server::query()
+            $server = Server::query()
                 ->whereKey($sample->server_id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -161,6 +166,12 @@ class AlertDetectionService
                     'observed_value' => $value,
                 ]);
 
+                return;
+            }
+
+            // No new alerts during planned maintenance; existing alerts
+            // still update and recover.
+            if ($server->isInMaintenance()) {
                 return;
             }
 

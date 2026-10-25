@@ -75,14 +75,15 @@ class AlertRuleController extends Controller
             $lockedRule->update($validated);
 
             if ($wasEnabled && ! $willBeEnabled) {
+                // Per-model updates so the linked incidents are resolved too.
                 Alert::query()
                     ->where('alert_rule_id', $lockedRule->id)
                     ->where('status', 'active')
-                    ->update([
+                    ->get()
+                    ->each(fn (Alert $alert) => $alert->update([
                         'status' => 'disabled',
                         'resolved_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    ]));
             }
         });
 
@@ -127,17 +128,19 @@ class AlertRuleController extends Controller
 
     private function validateRule(Request $request): array
     {
-        return $request->validate([
+        $isAgentOffline = $request->input('metric') === AlertRule::METRIC_AGENT_OFFLINE;
+
+        $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'metric' => [
                 'required',
-                Rule::in([
-                    'cpu_percent',
-                    'memory_percent',
-                    'disk_percent',
-                ]),
+                Rule::in(array_keys(AlertRule::METRIC_LABELS)),
             ],
-            'threshold' => ['required', 'numeric', 'between:0,100'],
+            // Percentages for resource metrics; minutes without a
+            // heartbeat for agent_offline.
+            'threshold' => $isAgentOffline
+                ? ['required', 'integer', 'between:2,1440']
+                : ['required', 'numeric', 'between:0,100'],
             'operator' => [
                 'required',
                 Rule::in(['>=', '>', '<=', '<']),
@@ -148,6 +151,17 @@ class AlertRuleController extends Controller
                 'between:1,1440',
             ],
             'is_enabled' => ['required', 'boolean'],
+            'severity' => ['sometimes', Rule::in(['warning', 'critical'])],
         ]);
+
+        $validated['severity'] ??= $isAgentOffline ? 'critical' : 'warning';
+
+        if ($isAgentOffline) {
+            // The threshold itself is the duration of silence.
+            $validated['operator'] = '>=';
+            $validated['duration_minutes'] = 1;
+        }
+
+        return $validated;
     }
 }

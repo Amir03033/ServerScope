@@ -99,4 +99,60 @@ class ServerDetailTest extends TestCase
             ]))
             ->assertSessionHasErrors('range');
     }
+
+    public function test_long_ranges_are_downsampled_across_the_whole_range(): void
+    {
+        $user = User::factory()->create();
+
+        $server = Server::create([
+            'name' => 'Test VPS',
+            'hostname' => 'vps.example.test',
+            'last_seen_at' => now(),
+        ]);
+
+        $now = now()->startOfMinute();
+        $rows = [];
+
+        // 2,500 samples spread over the last ~29 days.
+        for ($i = 2499; $i >= 0; $i--) {
+            $rows[] = [
+                'server_id' => $server->id,
+                'cpu_percent' => $i === 0 ? 77 : 10,
+                'network_rx_bytes' => $i === 0 ? 2_000 : 1_000,
+                'collected_at' => $now->copy()->subMinutes($i * 16),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            MetricSample::query()->insert($chunk);
+        }
+
+        $response = $this->actingAs($user)
+            ->get(route('servers.show', [
+                'server' => $server,
+                'range' => '30d',
+            ]))
+            ->assertOk()
+            ->assertViewHas('sampleCount', 2500);
+
+        $samples = $response->viewData('samples');
+
+        $this->assertLessThanOrEqual(2001, $samples->count());
+        $this->assertTrue(
+            $samples->first()->collected_at->lt($now->copy()->subDays(25)),
+        );
+        $this->assertTrue(
+            $samples->last()->collected_at->eq($now),
+        );
+        $this->assertSame(77.0, (float) $samples->last()->cpu_percent);
+
+        // Rate uses the directly preceding sample (16 minutes earlier).
+        $this->assertEqualsWithDelta(
+            1_000 / 960,
+            $response->viewData('networkRates')['rx'],
+            0.0001,
+        );
+    }
 }
