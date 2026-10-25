@@ -12,6 +12,7 @@ use App\Http\Controllers\AlertRuleController;
 use App\Http\Controllers\AgentCredentialController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\IncidentController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServerMaintenanceController;
 
@@ -42,6 +43,8 @@ Route::get('/agent/ping', function (Request $request) {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
+
+    Route::get('/search', SearchController::class)->middleware('throttle:60,1')->name('search');
 
     Route::get('/servers', [ServerController::class, 'index'])->name('servers.index');
     Route::get('/servers/create', [ServerController::class, 'create'])->name('servers.create');

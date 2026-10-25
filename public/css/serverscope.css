@@ -349,6 +349,19 @@ a.kpi:hover { border-color: color-mix(in srgb, var(--tone) 45%, var(--border)); 
 .timeline .what { font-size: 13px; }
 .timeline .body { margin-top: 6px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2); white-space: pre-line; overflow-wrap: anywhere; font-size: 13px; }
 
+/* ---------- overview rows (dashboard, search) ---------- */
+.ov-row {
+    display: flex; align-items: center; gap: 10px; min-width: 0;
+    padding: 9px 8px; margin: 0 -8px; border-radius: 9px;
+    color: inherit; text-decoration: none; font-size: 13px;
+}
+.ov-row + .ov-row { border-top: 1px solid #16243a; }
+.ov-row:hover { background: #0f1b2e; }
+.ov-main { display: grid; flex: 1; min-width: 0; }
+.ov-main strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.global-search { display: flex; flex: 1; max-width: 340px; margin-right: auto; }
+.global-search input { width: 100%; min-height: 30px; padding: 4px 10px; border: 1px solid #263852; border-radius: 8px; background: #0a1322; color: var(--text); font-size: 12px; }
+
 /* ---------- pagination ---------- */
 .pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 18px; color: var(--muted); font-size: 12px; }
 .pagination-links { display: flex; gap: 8px; }

@@ -255,7 +255,7 @@
     </x-slot:breadcrumb>
 
     <x-slot:pageTitle>Dashboard</x-slot:pageTitle>
-    <x-slot:subtitle>Een realtime overzicht van de prestaties en gezondheid van je server.</x-slot:subtitle>
+    <x-slot:subtitle>Een realtime overzicht van je servers, domeinen en incidenten.</x-slot:subtitle>
 
     <x-slot:actions>
 
@@ -288,6 +288,15 @@
         @endif
     </x-slot:actions>
 
+
+    @include('dashboard._overview')
+
+    <div class="section-heading" style="margin:0 0 14px">
+        <div>
+            <h2 style="font-size:16px;font-weight:600">Serverprestaties{{ $selectedServer ? ': '.$selectedServer->name : '' }}</h2>
+            <p>Actuele metingen en historie van de meest recent actieve server.</p>
+        </div>
+    </div>
 
     {{-- KPI cards --}}
     <section class="stats" aria-label="Belangrijkste statistieken">

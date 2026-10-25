@@ -112,6 +112,12 @@
         </header>
 
         <div class="account-bar">
+            @if (Route::has('search'))
+                <form method="GET" action="{{ route('search') }}" class="global-search" role="search">
+                    <label class="sr-only" for="global-search">Zoeken</label>
+                    <input id="global-search" type="search" name="q" placeholder="Zoek servers, domeinen, incidenten…" value="{{ request()->routeIs('search') ? request('q') : '' }}">
+                </form>
+            @endif
             <span>Ingelogd als {{ $user?->email }}</span>
             @if (Route::has('profile.edit'))
                 <a href="{{ route('profile.edit') }}">Profiel</a>
