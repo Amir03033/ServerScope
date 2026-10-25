@@ -23,6 +23,8 @@ class IncidentNotification extends Notification implements ShouldQueue
 
     public const SEVERITY_INCREASED = 'severity_increased';
 
+    public const UNACKNOWLEDGED = 'unacknowledged';
+
     public int $tries = 3;
 
     /** @var array<int, int> */
@@ -53,6 +55,7 @@ class IncidentNotification extends Notification implements ShouldQueue
             self::RESOLVED => 'Opgelost',
             self::ESCALATED => 'Escalatie',
             self::SEVERITY_INCREASED => 'Ernst verhoogd',
+            self::UNACKNOWLEDGED => 'Niet bevestigd',
             default => 'Incident',
         };
 
@@ -71,6 +74,7 @@ class IncidentNotification extends Notification implements ShouldQueue
                 self::REOPENED => 'Het incident is opnieuw opgetreden',
                 self::ESCALATED => 'Een incident vraagt aandacht',
                 self::SEVERITY_INCREASED => 'De ernst van een incident is verhoogd',
+                self::UNACKNOWLEDGED => 'Dit incident is nog niet bevestigd',
                 default => 'Er is een nieuw incident',
             })
             ->line($incident->title)
@@ -93,6 +97,11 @@ class IncidentNotification extends Notification implements ShouldQueue
         return $message->action('Incident bekijken', route('incidents.show', $incident));
     }
 
+    public function failed(\Throwable $exception): void
+    {
+        \App\Services\Notifications\NotificationDispatcher::markFailed($this->id, $exception->getMessage());
+    }
+
     public function toArray(object $notifiable): array
     {
         return [
@@ -102,6 +111,8 @@ class IncidentNotification extends Notification implements ShouldQueue
             'severity' => $this->incident->severity,
             'status' => $this->incident->status,
             'subject' => $this->incident->subjectName(),
+            'message' => $this->subjectLine(),
+            'url' => route('incidents.show', $this->incident, false),
         ];
     }
 }

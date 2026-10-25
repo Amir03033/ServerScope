@@ -86,6 +86,10 @@ class AppServiceProvider extends ServiceProvider
                     Alert::query()->where('status', 'active')->count()
                 );
                 $view->with(
+                    'sidebarUnreadNotifications',
+                    auth()->user()?->unreadNotifications()->count() ?? 0
+                );
+                $view->with(
                     'sidebarOpenIncidents',
                     \App\Models\Incident::query()->active()->count()
                 );

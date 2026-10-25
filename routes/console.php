@@ -17,6 +17,10 @@ Schedule::command('serverscope:dispatch-domain-checks')
     ->everyMinute()
     ->withoutOverlapping(5);
 
+Schedule::command('serverscope:escalate-incidents')
+    ->everyMinute()
+    ->withoutOverlapping(5);
+
 // Processes queued jobs (e.g. alert e-mails) where no supervised worker
 // runs, which is common on Plesk. See config/serverscope.php.
 if (config('serverscope.scheduler_queue_worker')) {

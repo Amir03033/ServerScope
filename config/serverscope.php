@@ -95,4 +95,30 @@ return [
         'reopen_window_minutes' => (int) env('SERVERSCOPE_INCIDENT_REOPEN_MINUTES', 60),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications and escalation
+    |--------------------------------------------------------------------------
+    */
+
+    'notifications' => [
+        // A reopened incident within this many minutes after its last
+        // notification does not notify again (flapping protection).
+        'reopen_cooldown_minutes' => (int) env('SERVERSCOPE_NOTIFY_REOPEN_COOLDOWN', 15),
+        'dns_cooldown_minutes' => (int) env('SERVERSCOPE_NOTIFY_DNS_COOLDOWN', 30),
+        'max_mails_per_hour' => (int) env('SERVERSCOPE_MAX_MAILS_PER_HOUR', 30),
+    ],
+
+    'escalation' => [
+        // Minutes an open incident may stay unacknowledged before it is
+        // escalated, per severity (null/0 = never).
+        'after_minutes' => [
+            'critical' => (int) env('SERVERSCOPE_ESCALATE_CRITICAL_MINUTES', 15),
+            'warning' => (int) env('SERVERSCOPE_ESCALATE_WARNING_MINUTES', 120),
+            'info' => null,
+        ],
+        // Extra recipients for escalations (comma separated e-mail addresses).
+        'emails' => array_values(array_filter(array_map('trim', explode(',', (string) env('SERVERSCOPE_ESCALATION_EMAILS', ''))), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))),
+    ],
+
 ];

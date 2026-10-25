@@ -12,6 +12,8 @@ use App\Http\Controllers\AlertRuleController;
 use App\Http\Controllers\AgentCredentialController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\IncidentController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServerMaintenanceController;
@@ -43,6 +45,16 @@ Route::get('/agent/ping', function (Request $request) {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'password'])->middleware('throttle:6,1')->name('profile.password');
+    Route::put('/profile/notifications', [ProfileController::class, 'notifications'])->name('profile.notifications');
+    Route::post('/profile/notifications/test', [ProfileController::class, 'testNotification'])->name('profile.notifications.test');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->whereUuid('id')->name('notifications.read');
 
     Route::get('/search', SearchController::class)->middleware('throttle:60,1')->name('search');
 

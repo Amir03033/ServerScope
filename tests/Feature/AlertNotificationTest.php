@@ -126,8 +126,10 @@ class AlertNotificationTest extends TestCase
         Notification::assertSentToTimes($this->admin, IncidentNotification::class, 1);
     }
 
-    public function test_notifications_can_be_disabled_by_configuration(): void
+    public function test_mail_can_be_disabled_by_configuration(): void
     {
+        // SERVERSCOPE_ALERT_MAIL controls e-mail; in-app notifications
+        // (a separate user preference) keep working.
         config(['serverscope.alert_mail_enabled' => false]);
 
         $this->offlineRule();
@@ -135,6 +137,14 @@ class AlertNotificationTest extends TestCase
         app(AgentHeartbeatService::class)->check();
 
         $this->assertSame(1, Alert::query()->count());
+        Notification::assertNotSentTo($this->admin, IncidentNotification::class, fn ($n, array $channels) => in_array('mail', $channels, true));
+        Notification::assertSentTo($this->admin, IncidentNotification::class, fn ($n, array $channels) => $channels === ['database']);
+
+        $this->admin->forceFill(['notify_in_app' => false])->save();
+        Notification::fake();
+        $this->travel(2)->hours();
+        $this->server(now()->subMinutes(10));
+        app(AgentHeartbeatService::class)->check();
         Notification::assertNothingSent();
     }
 
