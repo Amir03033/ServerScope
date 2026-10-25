@@ -12,3 +12,11 @@ Artisan::command('inspire', function () {
 Schedule::command('serverscope:check-agents')
     ->everyMinute()
     ->withoutOverlapping(5);
+
+// Processes queued jobs (e.g. alert e-mails) where no supervised worker
+// runs, which is common on Plesk. See config/serverscope.php.
+if (config('serverscope.scheduler_queue_worker')) {
+    Schedule::command('queue:work --stop-when-empty --max-time=55 --tries=3')
+        ->everyMinute()
+        ->withoutOverlapping(5);
+}
