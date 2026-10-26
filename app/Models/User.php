@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Severity;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -91,12 +92,10 @@ class User extends Authenticatable
         return false;
     }
 
-    private const SEVERITY_RANK = ['info' => 0, 'warning' => 1, 'critical' => 2];
-
     /** Whether this user wants notifications for incidents of a severity. */
     public function wantsSeverity(string $severity): bool
     {
-        return (self::SEVERITY_RANK[$severity] ?? 0) >= (self::SEVERITY_RANK[$this->notify_min_severity ?? 'warning'] ?? 1);
+        return Severity::atLeast($severity, $this->notify_min_severity ?? Severity::MEDIUM);
     }
 
     /**

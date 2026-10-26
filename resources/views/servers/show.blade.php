@@ -664,6 +664,8 @@
                 @endunless
             </section>
         @endcan
+
+        <x-dependencies :resource="$server" />
     </div>
 
     <x-slot:scripts>

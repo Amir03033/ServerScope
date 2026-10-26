@@ -78,7 +78,7 @@
                     <div class="form-field">
                         <label for="notify_min_severity">Minimale ernst</label>
                         <select id="notify_min_severity" name="notify_min_severity">
-                            @foreach (['info' => 'Alles (info en hoger)', 'warning' => 'Waarschuwingen en kritiek', 'critical' => 'Alleen kritiek'] as $v => $l)
+                            @foreach (['info' => 'Alles (laag en hoger)', 'warning' => 'Gemiddeld en hoger', 'high' => 'Hoog en kritiek', 'critical' => 'Alleen kritiek'] as $v => $l)
                                 <option value="{{ $v }}" @selected(old('notify_min_severity', $user->notify_min_severity) === $v)>{{ $l }}</option>
                             @endforeach
                         </select>

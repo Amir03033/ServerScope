@@ -35,6 +35,7 @@ class Domain extends Model
         'follow_redirects', 'http_enabled', 'ssl_enabled', 'dns_enabled', 'expiry_enabled',
         'ssl_warning_days', 'expiry_warning_days',
         'maintenance_starts_at', 'maintenance_ends_at', 'maintenance_reason',
+        'notifications_enabled', 'sla_target',
     ];
 
     protected $attributes = [
@@ -61,6 +62,8 @@ class Domain extends Model
     {
         return [
             'is_active' => 'boolean',
+            'notifications_enabled' => 'boolean',
+            'sla_target' => 'float',
             'follow_redirects' => 'boolean',
             'http_enabled' => 'boolean',
             'ssl_enabled' => 'boolean',

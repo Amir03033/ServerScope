@@ -221,4 +221,19 @@ class DomainManagementTest extends TestCase
         // Critical first by default.
         $this->assertSame('broken.example.com', $ids($this->actingAs($this->viewer)->get(route('domains.index')))[0]);
     }
+
+    public function test_notification_preference_and_availability_target_are_saved(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+
+        $this->actingAs($this->admin)->post(route('domains.store'), $this->payload(['notifications_enabled' => '0', 'sla_target' => '99,5']))->assertRedirect();
+        $domain = Domain::query()->firstOrFail();
+        $this->assertFalse($domain->notifications_enabled);
+        $this->assertSame(99.5, $domain->sla_target);
+
+        $this->actingAs($this->admin)->put(route('domains.update', $domain), $this->payload(['sla_target' => '120']))->assertSessionHasErrors('sla_target');
+        $this->actingAs($this->admin)->put(route('domains.update', $domain), $this->payload(['notifications_enabled' => '1', 'sla_target' => '']))->assertRedirect();
+        $this->assertTrue($domain->fresh()->notifications_enabled);
+        $this->assertNull($domain->fresh()->sla_target);
+    }
 }

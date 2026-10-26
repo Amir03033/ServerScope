@@ -15,7 +15,7 @@
                 <div class="form-field">
                     <label for="severity">Ernst *</label>
                     <select id="severity" name="severity" required>
-                        @foreach (['warning' => 'Waarschuwing', 'critical' => 'Kritiek', 'info' => 'Info'] as $v => $l)<option value="{{ $v }}" @selected(old('severity') === $v)>{{ $l }}</option>@endforeach
+                        @foreach (\App\Support\Severity::options() as $v => $l)<option value="{{ $v }}" @selected(old('severity') === $v)>{{ $l }}</option>@endforeach
                     </select>
                 </div>
                 <div class="form-field">

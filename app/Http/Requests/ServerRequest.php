@@ -22,6 +22,7 @@ class ServerRequest extends FormRequest
             'ip_address' => $this->filled('ip_address') ? trim((string) $this->ip_address) : null,
             'operating_system' => $this->filled('operating_system') ? trim((string) $this->operating_system) : null,
             'notes' => $this->filled('notes') ? trim((string) $this->notes) : null,
+            'sla_target' => $this->filled('sla_target') ? str_replace(',', '.', (string) $this->sla_target) : null,
         ]);
     }
 
@@ -42,6 +43,8 @@ class ServerRequest extends FormRequest
             $rules['maintenance_starts_at'] = ['nullable', 'date', 'required_with:maintenance_ends_at'];
             $rules['maintenance_ends_at'] = ['nullable', 'date', 'after:maintenance_starts_at'];
             $rules['maintenance_reason'] = ['nullable', 'string', 'max:255'];
+            $rules['notifications_enabled'] = ['sometimes', 'boolean'];
+            $rules['sla_target'] = ['nullable', 'numeric', 'between:50,100'];
         }
 
         return $rules;
@@ -58,6 +61,7 @@ class ServerRequest extends FormRequest
             'credential_name' => 'naam van de agentcredential',
             'maintenance_starts_at' => 'start onderhoud',
             'maintenance_ends_at' => 'einde onderhoud',
+            'sla_target' => 'beschikbaarheidsdoel',
         ];
     }
 }

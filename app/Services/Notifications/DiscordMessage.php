@@ -23,6 +23,7 @@ class DiscordMessage
 
     private const COLORS = [
         'critical' => 0xE5484D,
+        'high' => 0xF76B15,
         'warning' => 0xF5A524,
         'info' => 0x3B82F6,
         'resolved' => 0x30A46C,
@@ -148,7 +149,7 @@ class DiscordMessage
 
         $fields = [
             ['name' => 'Status', 'value' => self::STATUS_LABELS[$status] ?? $status, 'inline' => true],
-            ['name' => 'Ernst', 'value' => ['info' => 'Info', 'warning' => 'Waarschuwing', 'critical' => 'Kritiek'][$severity] ?? $severity, 'inline' => true],
+            ['name' => 'Ernst', 'value' => \App\Support\Severity::label($severity), 'inline' => true],
             ['name' => 'Bron', 'value' => Incident::SOURCE_LABELS[$source] ?? $source, 'inline' => true],
         ];
 

@@ -45,6 +45,9 @@ class WebhookDispatcher
         WebhookEndpoint::query()->where('is_active', true)->get()
             ->filter(fn (WebhookEndpoint $endpoint) => $endpoint->subscribedTo($event))
             ->filter(fn (WebhookEndpoint $endpoint) => $incident === null || $endpoint->wantsSeverity($incident->severity))
+            // Chat channels follow the same incident-aware suppression as
+            // e-mail; machine endpoints receive everything (with parent_id).
+            ->reject(fn (WebhookEndpoint $endpoint) => $endpoint->isDiscord() && $incident !== null && app(NotificationDispatcher::class)->suppressionReason($incident, $event) !== null)
             ->reject(fn (WebhookEndpoint $endpoint) => $endpoint->isDiscord() && $this->isDuplicate($endpoint, $event, $incident))
             ->each(fn (WebhookEndpoint $endpoint) => $this->queue($endpoint, $event, $data));
     }

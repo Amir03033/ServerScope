@@ -58,6 +58,25 @@
 
     @if ($isEditing)
         <div class="form-section">
+            <h3>Meldingen en beschikbaarheidsdoel</h3>
+            <p>Incidenten worden altijd vastgelegd; met meldingen uit worden er geen e-mails, in-app- of chatmeldingen voor deze server verstuurd.</p>
+        </div>
+
+        <div class="form-field">
+            <label class="check">
+                <input type="hidden" name="notifications_enabled" value="0">
+                <input type="checkbox" name="notifications_enabled" value="1" @checked(old('notifications_enabled', $server->notifications_enabled ?? true))>
+                Meldingen versturen voor deze server
+            </label>
+        </div>
+
+        <div @class(['form-field', 'has-error' => $errors->has('sla_target')])>
+            <label for="sla_target">Beschikbaarheidsdoel (%)</label>
+            <input id="sla_target" name="sla_target" type="text" inputmode="decimal" value="{{ old('sla_target', $server->sla_target) }}" placeholder="{{ config('serverscope.reports.default_target') }} (standaard)">
+            @error('sla_target')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
+
+        <div class="form-section">
             <h3>Onderhoudsvenster</h3>
             <p>
                 Tijdens onderhoud worden geen nieuwe downtime- of resource-alerts aangemaakt. Laat beide velden leeg om

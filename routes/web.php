@@ -14,6 +14,7 @@ use App\Http\Controllers\AlertRuleController;
 use App\Http\Controllers\ApiTokenController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AgentCredentialController;
+use App\Http\Controllers\DependencyController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\NotificationController;
@@ -167,10 +168,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
     Route::post('/incidents/{incident}/status', [IncidentController::class, 'transition'])->name('incidents.transition');
     Route::post('/incidents/{incident}/assign', [IncidentController::class, 'assign'])->name('incidents.assign');
+    Route::post('/incidents/{incident}/detach', [IncidentController::class, 'detach'])->name('incidents.detach');
     Route::post('/incidents/{incident}/severity', [IncidentController::class, 'severity'])->name('incidents.severity');
     Route::post('/incidents/{incident}/comments', [IncidentController::class, 'comment'])
         ->middleware('throttle:30,1')
         ->name('incidents.comment');
+
+    Route::get('/dependencies', [DependencyController::class, 'index'])->name('dependencies.index');
+    Route::post('/dependencies', [DependencyController::class, 'store'])->name('dependencies.store');
+    Route::delete('/dependencies/{dependency}', [DependencyController::class, 'destroy'])->name('dependencies.destroy');
 
     Route::get('/alerts', AlertController::class)->name('alerts.index');
 

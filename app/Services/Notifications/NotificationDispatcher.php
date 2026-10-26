@@ -33,6 +33,12 @@ class NotificationDispatcher
 {
     public function incident(Incident $incident, string $kind): void
     {
+        if ($reason = $this->suppressionReason($incident, $kind)) {
+            $this->logSuppressed($incident, $kind, $reason);
+
+            return;
+        }
+
         if ($kind === IncidentNotification::REOPENED && $this->inCooldown($incident)) {
             $this->logSuppressed($incident, $kind, 'Onderdrukt: incident heropend binnen de cooldown na de vorige melding.');
 
@@ -148,6 +154,30 @@ class NotificationDispatcher
             'status' => 'queued',
             'subject' => method_exists($notification, 'subjectLine') ? mb_substr($notification->subjectLine(), 0, 255) : null,
         ]);
+    }
+
+    /**
+     * Incident-aware suppression, applied before recipients are chosen:
+     * - an incident grouped under a root that is still active is covered
+     *   by the root's notifications (one alert per underlying problem);
+     * - notifications can be switched off per resource (the incident is
+     *   still recorded).
+     */
+    public function suppressionReason(Incident $incident, string $kind): ?string
+    {
+        if ($incident->isSuppressedByParent()) {
+            return "Onderdrukt: onderdeel van actief incident #{$incident->parent_id}.";
+        }
+
+        $subject = $incident->subject;
+
+        foreach (['notifications_enabled', 'alerts_enabled'] as $flag) {
+            if ($subject !== null && $subject->getAttribute($flag) !== null && ! $subject->getAttribute($flag)) {
+                return 'Onderdrukt: meldingen voor deze resource staan uit.';
+            }
+        }
+
+        return null;
     }
 
     private function inCooldown(Incident $incident): bool

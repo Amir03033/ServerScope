@@ -117,6 +117,7 @@ return [
         // escalated, per severity (null/0 = never).
         'after_minutes' => [
             'critical' => (int) env('SERVERSCOPE_ESCALATE_CRITICAL_MINUTES', 15),
+            'high' => (int) env('SERVERSCOPE_ESCALATE_HIGH_MINUTES', 30),
             'warning' => (int) env('SERVERSCOPE_ESCALATE_WARNING_MINUTES', 120),
             'info' => null,
         ],

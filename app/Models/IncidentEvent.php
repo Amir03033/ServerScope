@@ -23,6 +23,11 @@ class IncidentEvent extends Model
         'closed' => 'Gesloten',
         'escalated' => 'Geëscaleerd',
         'notified' => 'Melding verstuurd',
+        'correlated' => 'Gegroepeerd',
+        'child_added' => 'Gerelateerd incident gekoppeld',
+        'detached' => 'Groepering opgeheven',
+        'resource_affected' => 'Resource getroffen',
+        'resource_recovered' => 'Resource hersteld',
     ];
 
     protected $fillable = ['incident_id', 'type', 'user_id', 'message', 'data', 'created_at'];

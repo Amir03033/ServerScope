@@ -16,6 +16,7 @@
             ['route' => 'domains.index', 'match' => 'domains.*', 'icon' => 'i-globe', 'label' => 'Domeinen'],
             ['route' => 'incidents.index', 'match' => 'incidents.*', 'icon' => 'i-siren', 'label' => 'Incidenten', 'count' => $sidebarOpenIncidents ?? 0],
             ['route' => 'alerts.index', 'match' => 'alerts.*', 'icon' => 'i-bell', 'label' => 'Alerts', 'count' => $sidebarActiveAlerts ?? 0],
+            ['route' => 'dependencies.index', 'match' => 'dependencies.*', 'icon' => 'i-link', 'label' => 'Afhankelijkheden'],
             ['route' => 'reports.index', 'match' => 'reports.*', 'icon' => 'i-bars', 'label' => 'Rapporten'],
         ],
         'Beheer' => $isAdmin ? [

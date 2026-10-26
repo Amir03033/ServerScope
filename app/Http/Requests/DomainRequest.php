@@ -31,6 +31,8 @@ class DomainRequest extends FormRequest
             'ssl_warning_days' => $this->parseDays($this->ssl_warning_days),
             'expiry_warning_days' => $this->parseDays($this->expiry_warning_days),
             'notes' => $this->filled('notes') ? trim((string) $this->notes) : null,
+            'sla_target' => $this->filled('sla_target') ? str_replace(',', '.', (string) $this->sla_target) : null,
+            'notifications_enabled' => $this->has('notifications_enabled') ? $this->boolean('notifications_enabled') : true,
             ...collect(['follow_redirects', 'http_enabled', 'ssl_enabled', 'dns_enabled', 'expiry_enabled'])
                 ->mapWithKeys(fn ($key) => [$key => $this->boolean($key)])->all(),
         ]);
@@ -60,6 +62,8 @@ class DomainRequest extends FormRequest
             'expiry_warning_days' => ['array', 'min:1', 'max:10'],
             'expiry_warning_days.*' => ['integer', 'between:1,365'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'notifications_enabled' => ['boolean'],
+            'sla_target' => ['nullable', 'numeric', 'between:50,100'],
             'maintenance_starts_at' => ['nullable', 'date', 'required_with:maintenance_ends_at'],
             'maintenance_ends_at' => ['nullable', 'date', 'after:maintenance_starts_at'],
             'maintenance_reason' => ['nullable', 'string', 'max:255'],
@@ -113,6 +117,7 @@ class DomainRequest extends FormRequest
             'expiry_warning_days.*' => 'vervalwaarschuwing',
             'maintenance_ends_at' => 'einde onderhoud',
             'maintenance_starts_at' => 'start onderhoud',
+            'sla_target' => 'beschikbaarheidsdoel',
         ];
     }
 

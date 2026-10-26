@@ -279,7 +279,7 @@
                                     @if (Route::has('incidents.show'))<a class="row-link" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>@else{{ $incident->title }}@endif
                                     <span class="cell-sub">{{ $incident->sourceLabel() }}</span>
                                 </td>
-                                <td><x-status :status="$incident->severity" /></td>
+                                <td><x-severity :severity="$incident->severity" /></td>
                                 <td><x-status :status="$incident->status" /></td>
                                 <td class="nowrap">{{ Time::format($incident->opened_at) }}</td>
                                 <td class="nowrap">{{ $incident->resolved_at ? \Carbon\CarbonInterval::seconds($incident->timeToResolve())->cascade()->locale('nl')->forHumans(['short' => true, 'parts' => 2]) : 'loopt' }}</td>
@@ -323,4 +323,6 @@
             <x-pagination :paginator="$checks" />
         @endif
     </section>
+
+    <x-dependencies :resource="$domain" style="margin-top:14px" />
 </x-layouts.app>

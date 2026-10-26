@@ -36,6 +36,11 @@ class EscalateIncidents extends Command
                 ->get();
 
             foreach ($incidents as $incident) {
+                // The root incident escalates for its group.
+                if ($incident->isSuppressedByParent()) {
+                    continue;
+                }
+
                 $claimed = Incident::query()->whereKey($incident->id)->whereNull('escalated_at')->update(['escalated_at' => now()]);
 
                 if ($claimed !== 1) {

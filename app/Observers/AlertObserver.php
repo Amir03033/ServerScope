@@ -52,6 +52,7 @@ class AlertObserver
                     .' (drempel '.($rule?->operator ?? '>=').' '.number_format($alert->threshold, 1, ',', '.').$unit.').',
             subject: $server,
             context: ['alert_id' => $alert->id, 'metric' => $alert->metric, 'dimension' => $alert->dimension],
+            startedAt: $alert->triggered_at,
         ));
 
         $alert->forceFill(['incident_id' => $incident->id])->saveQuietly();

@@ -66,7 +66,7 @@ class IncidentNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $incident = $this->incident;
-        $severity = ['info' => 'Info', 'warning' => 'Waarschuwing', 'critical' => 'Kritiek'][$incident->severity] ?? $incident->severity;
+        $severity = \App\Support\Severity::label($incident->severity);
 
         $message = (new MailMessage)
             ->subject($this->subjectLine())

@@ -6,6 +6,7 @@ use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\Server;
 use App\Models\User;
+use App\Services\Incidents\CorrelationEngine;
 use App\Services\Incidents\IncidentManager;
 use App\Services\Incidents\IncidentMetrics;
 use App\Services\Incidents\Signal;
@@ -43,7 +44,7 @@ class IncidentController extends Controller
         ]);
 
         $state = $filters['state'] ?? 'active';
-        $query = Incident::query()->with(['subject', 'assignee:id,name']);
+        $query = Incident::query()->with(['subject', 'assignee:id,name'])->withCount('children');
 
         match ($state) {
             'active' => $query->active(),
@@ -136,7 +137,7 @@ class IncidentController extends Controller
 
     public function show(Incident $incident): View
     {
-        $incident->load(['events.user:id,name', 'assignee:id,name', 'acknowledger:id,name', 'resolver:id,name', 'alerts.server:id,name']);
+        $incident->load(['events.user:id,name', 'assignee:id,name', 'acknowledger:id,name', 'resolver:id,name', 'alerts.server:id,name', 'parent', 'children.subject', 'impacts.resource']);
 
         $related = $incident->subject_type
             ? Incident::query()
@@ -158,8 +159,16 @@ class IncidentController extends Controller
                 ->get()
             : collect();
 
+        // Recurrence: how often the same underlying problem occurred.
+        $recurrence = [
+            'last_30d' => Incident::query()->where('fingerprint', $incident->fingerprint)->where('opened_at', '>=', now()->subDays(30))->count(),
+            'total' => Incident::query()->where('fingerprint', $incident->fingerprint)->count(),
+            'reopened' => $incident->reopened_count,
+        ];
+
         return view('incidents.show', [
             'incident' => $incident,
+            'recurrence' => $recurrence,
             'related' => $related,
             'checks' => $checks,
             'users' => User::query()->orderBy('name')->get(['id', 'name']),
@@ -170,7 +179,10 @@ class IncidentController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(Incident::STATUSES)],
-            'notes' => ['nullable', 'string', 'max:5000'],
+            // A manual resolution records what the cause and fix were.
+            'notes' => ['nullable', 'required_if:status,resolved', 'string', 'min:3', 'max:5000'],
+        ], [
+            'notes.required_if' => 'Beschrijf kort de oorzaak en de oplossing.',
         ]);
 
         if (in_array($validated['status'], ['closed', 'open'], true)) {
@@ -206,6 +218,21 @@ class IncidentController extends Controller
         $this->incidents->changeSeverity($incident, $validated['severity'], $request->user());
 
         return back()->with('success', 'Ernst bijgewerkt.');
+    }
+
+    /** Undo an automatic grouping (admin). */
+    public function detach(Request $request, Incident $incident, CorrelationEngine $correlation): RedirectResponse
+    {
+        Gate::authorize('admin');
+
+        if ($incident->parent_id === null) {
+            return back()->with('error', 'Dit incident is niet gegroepeerd.');
+        }
+
+        $correlation->detach($incident, $request->user());
+        Audit::log('incident.detached', "Incident #{$incident->id} losgekoppeld van zijn hoofdincident", $incident);
+
+        return back()->with('success', 'Incident losgekoppeld. Meldingen volgen weer dit incident zelf.');
     }
 
     public function comment(Request $request, Incident $incident): RedirectResponse

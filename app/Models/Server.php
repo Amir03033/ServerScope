@@ -46,12 +46,16 @@ class Server extends Model
         'maintenance_starts_at',
         'maintenance_ends_at',
         'maintenance_reason',
+        'notifications_enabled',
+        'sla_target',
     ];
 
     protected function casts(): array
     {
         return [
             'last_seen_at' => 'datetime',
+            'notifications_enabled' => 'boolean',
+            'sla_target' => 'float',
             'maintenance_starts_at' => 'datetime',
             'maintenance_ends_at' => 'datetime',
         ];
