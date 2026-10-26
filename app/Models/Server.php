@@ -41,6 +41,7 @@ class Server extends Model
         'environment',
         'notes',
         'agent_version',
+        'agent_checksum',
         'status',
         'last_seen_at',
         'maintenance_starts_at',
@@ -48,6 +49,8 @@ class Server extends Model
         'maintenance_reason',
         'notifications_enabled',
         'sla_target',
+        'predictive_alerts_enabled',
+        'anomaly_sensitivity',
     ];
 
     protected function casts(): array
@@ -55,6 +58,7 @@ class Server extends Model
         return [
             'last_seen_at' => 'datetime',
             'notifications_enabled' => 'boolean',
+            'predictive_alerts_enabled' => 'boolean',
             'sla_target' => 'float',
             'maintenance_starts_at' => 'datetime',
             'maintenance_ends_at' => 'datetime',
@@ -75,6 +79,11 @@ class Server extends Model
     {
         return $this->hasOne(MetricSample::class)
             ->latestOfMany('collected_at');
+    }
+
+    public function serviceChecks(): HasMany
+    {
+        return $this->hasMany(ServiceCheck::class);
     }
 
     public function alerts(): HasMany

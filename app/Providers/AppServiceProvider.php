@@ -89,6 +89,7 @@ class AppServiceProvider extends ServiceProvider
             'user' => User::class,
             'resource_dependency' => \App\Models\ResourceDependency::class,
             'page' => \App\Models\MonitoredPage::class,
+            'service' => \App\Models\ServiceCheck::class,
         ]);
 
         View::composer(

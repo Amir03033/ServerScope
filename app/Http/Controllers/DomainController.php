@@ -126,6 +126,8 @@ class DomainController extends Controller
             'dnsRecords' => $dnsRecords,
             'dnsChanges' => $domain->dnsChanges()->latest('detected_at')->limit(15)->get(),
             'incidents' => $domain->incidents()->latest('opened_at')->limit(10)->get(),
+            'certificates' => $domain->sslCertificates()->latest('first_seen_at')->limit(10)->get(),
+            'predictions' => \App\Models\Prediction::query()->forResource($domain)->current()->get(),
             'latestSsl' => $domain->checks()->where('type', 'ssl')->whereNotNull('details')->latest('checked_at')->first(),
         ]);
     }

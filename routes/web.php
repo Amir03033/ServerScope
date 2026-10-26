@@ -25,6 +25,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServerMaintenanceController;
+use App\Http\Controllers\ServiceCheckController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\WebsiteDiscoveryController;
@@ -142,6 +143,9 @@ Route::middleware('auth')->group(function () {
         ->name('servers.maintenance.start');
     Route::delete('/servers/{server}/maintenance', [ServerMaintenanceController::class, 'destroy'])
         ->name('servers.maintenance.end');
+
+    Route::put('/services/{service}', [ServiceCheckController::class, 'update'])->name('services.update');
+    Route::delete('/services/{service}', [ServiceCheckController::class, 'destroy'])->name('services.destroy');
 
     Route::post('/servers/{server}/credentials', [AgentCredentialController::class, 'store'])
         ->name('servers.credentials.store');

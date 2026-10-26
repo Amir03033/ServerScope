@@ -160,6 +160,44 @@ return [
         'emails' => array_values(array_filter(array_map('trim', explode(',', (string) env('SERVERSCOPE_ESCALATION_EMAILS', ''))), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Monitoring agent
+    |--------------------------------------------------------------------------
+    |
+    | latest_version: agents reporting an older version are flagged.
+    | known_checksums: SHA-256 checksums of released agent builds (comma
+    | separated). When set, an agent reporting another checksum is flagged
+    | as an unknown build. Empty = integrity is shown as "not verified".
+    |
+    */
+
+    'agent' => [
+        'latest_version' => env('SERVERSCOPE_AGENT_LATEST_VERSION', '0.2.0'),
+        'known_checksums' => array_values(array_filter(array_map('trim', explode(',', (string) env('SERVERSCOPE_AGENT_CHECKSUMS', ''))))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Predictive monitoring
+    |--------------------------------------------------------------------------
+    |
+    | Anomaly detection and capacity forecasts run hourly
+    | (serverscope:analyze). Results are always shown; incidents are only
+    | opened for forecasts that cross a limit within alert_horizon_days with
+    | at least medium confidence, and for anomalies only when
+    | anomaly_incidents is enabled. Servers can opt out and set their own
+    | sensitivity (low, medium, high or off).
+    |
+    */
+
+    'predictive' => [
+        'enabled' => (bool) env('SERVERSCOPE_PREDICTIVE', true),
+        'alerts_enabled' => (bool) env('SERVERSCOPE_PREDICTIVE_ALERTS', true),
+        'alert_horizon_days' => (int) env('SERVERSCOPE_PREDICTIVE_HORIZON_DAYS', 7),
+        'anomaly_incidents' => (bool) env('SERVERSCOPE_ANOMALY_INCIDENTS', false),
+    ],
+
     'reports' => [
         // Availability target shown in reports (calculated, not contractual).
         'default_target' => (float) env('SERVERSCOPE_REPORT_TARGET', 99.9),

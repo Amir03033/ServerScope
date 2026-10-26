@@ -120,6 +120,11 @@ class Domain extends Model
         return $this->morphMany(Incident::class, 'subject');
     }
 
+    public function sslCertificates(): HasMany
+    {
+        return $this->hasMany(SslCertificate::class);
+    }
+
     public function pages(): HasMany
     {
         return $this->hasMany(MonitoredPage::class);

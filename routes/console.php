@@ -25,6 +25,10 @@ Schedule::command('serverscope:escalate-incidents')
     ->everyMinute()
     ->withoutOverlapping(5);
 
+Schedule::command('serverscope:analyze')
+    ->hourlyAt(7)
+    ->withoutOverlapping(55);
+
 Schedule::command('serverscope:prune')
     ->dailyAt('03:17')
     ->withoutOverlapping(120);

@@ -46,5 +46,37 @@ def test_collect_metrics_returns_expected_values(
     assert result["network_tx_bytes"] == 85000
     assert result["uptime_seconds"] == 100
     assert result["disks"] == []
-    assert result["agent_version"] == "0.1.0"
+    assert result["agent_version"] == "0.2.0"
+    assert len(result["agent_checksum"]) == 64
     assert result["collected_at"].endswith("+00:00")
+
+
+@patch("serverscope_agent.collector.psutil.disk_partitions", return_value=[])
+@patch(
+    "serverscope_agent.collector.psutil.net_io_counters",
+    return_value=SimpleNamespace(bytes_recv=1, bytes_sent=2, errin=3, errout=4, dropin=5, dropout=6),
+)
+@patch(
+    "serverscope_agent.collector.psutil.disk_io_counters",
+    return_value=SimpleNamespace(read_bytes=1000, write_bytes=2000),
+)
+@patch("serverscope_agent.collector.psutil.pids", return_value=[1, 2, 3])
+@patch("serverscope_agent.collector.psutil.cpu_percent", return_value=1.0)
+def test_collect_metrics_includes_extended_counters(mock_cpu, mock_pids, mock_disk_io, mock_network, mock_partitions):
+    result = collect_metrics()
+
+    assert result["network_errors_in"] == 3
+    assert result["network_drops_out"] == 6
+    assert result["disk_read_bytes"] == 1000
+    assert result["disk_write_bytes"] == 2000
+    assert result["process_count"] == 3
+
+
+@patch("serverscope_agent.collector.psutil.disk_partitions", return_value=[])
+@patch("serverscope_agent.collector.psutil.disk_io_counters", side_effect=RuntimeError("no disks"))
+@patch("serverscope_agent.collector.psutil.cpu_percent", return_value=1.0)
+def test_missing_counters_are_sent_as_null(mock_cpu, mock_disk_io, mock_partitions):
+    result = collect_metrics()
+
+    assert result["disk_read_bytes"] is None
+    assert result["disk_write_bytes"] is None

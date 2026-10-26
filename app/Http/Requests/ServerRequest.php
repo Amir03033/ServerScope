@@ -45,6 +45,8 @@ class ServerRequest extends FormRequest
             $rules['maintenance_reason'] = ['nullable', 'string', 'max:255'];
             $rules['notifications_enabled'] = ['sometimes', 'boolean'];
             $rules['sla_target'] = ['nullable', 'numeric', 'between:50,100'];
+            $rules['predictive_alerts_enabled'] = ['sometimes', 'boolean'];
+            $rules['anomaly_sensitivity'] = ['sometimes', Rule::in(['off', 'low', 'medium', 'high'])];
         }
 
         return $rules;

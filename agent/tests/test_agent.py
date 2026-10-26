@@ -59,3 +59,23 @@ def test_run_forever_logs_safe_error_and_continues(
 
     assert "Metrics submission failed." in caplog.text
     assert sensitive_message not in caplog.text
+
+
+def test_run_once_adds_services_only_when_configured():
+    class FakeClient:
+        def send_metrics(self, metrics):
+            self.received = metrics
+            return {}
+
+    client = FakeClient()
+
+    with patch("serverscope_agent.agent.collect_metrics", return_value={"cpu_percent": 1.0}), patch(
+        "serverscope_agent.agent.check_services",
+        return_value=[{"name": "nginx", "state": "running", "detail": "active/running"}],
+    ) as mock_check:
+        run_once(client)
+        assert "services" not in client.received
+        mock_check.assert_not_called()
+
+        run_once(client, ("nginx",))
+        assert client.received["services"][0]["state"] == "running"
