@@ -179,6 +179,9 @@
         <x-secret-token :token="session('agent_token')" title="Agenttoken voor {{ $server->name }}">
             <p class="small" style="margin:8px 0 0">
                 Zet dit token als <code>SERVERSCOPE_TOKEN</code> in <code>agent/.env</code> op de server en herstart de agent.
+                @if (config('serverscope.docs_url'))
+                    <a href="{{ config('serverscope.docs_url') }}/server-monitoring" target="_blank" rel="noopener">Installatiehandleiding</a>
+                @endif
             </p>
         </x-secret-token>
     @endif

@@ -69,12 +69,13 @@ web requests and webhook retries are disabled.
 | `2026_10_26_150000_create_api_tokens_table` | personal API tokens |
 | `2026_10_26_160000_create_webhooks_tables` | webhook endpoints and deliveries |
 | `2026_10_26_170000_create_status_pages_tables` | status pages and components |
+| `2026_10_27_100000_add_type_to_webhook_endpoints_table` | `webhook_endpoints.type` (default `generic`) and `min_severity` (nullable) for Discord |
 
 Every migration has a `down()`. Rolling back the domain/incident migrations
 deletes the data stored in those tables, so restore from the backup instead
 of rolling back once the features are in use.
 
-**APP_KEY**: 2FA secrets and webhook secrets are encrypted with `APP_KEY`.
+**APP_KEY**: 2FA secrets, webhook secrets and Discord webhook URLs are encrypted with `APP_KEY`.
 Never rotate `APP_KEY` without re-encrypting, or 2FA users are locked out
 and webhooks need new secrets.
 
@@ -105,6 +106,8 @@ All optional; the defaults are shown.
 | `SERVERSCOPE_REPORT_TARGET` | `99.9` | default availability target in reports |
 | `SERVERSCOPE_API_RATE_LIMIT` | `120` | API requests per minute per token |
 | `SERVERSCOPE_WEBHOOKS_ALLOW_HTTP` | `false` | allow non-TLS webhook URLs |
+| `SERVERSCOPE_NOTIFY_CHAT_COOLDOWN` | `15` | minutes before the same incident event is posted to Discord again (0 = off) |
+| `SERVERSCOPE_DOCS_URL` | `https://info.serverscope.nl/nl/docs` | documentation link in the sidebar and setup screens (empty = hidden) |
 | `SERVERSCOPE_RETAIN_*_DAYS` | – (keep forever) | retention for metrics, domain checks, notification logs, read notifications, audit logs |
 | `TRUSTED_PROXIES` | `127.0.0.1,::1` | proxies in front of PHP (Plesk nginx); read at boot, not from the config cache |
 

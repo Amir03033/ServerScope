@@ -87,6 +87,9 @@
         <div class="sidebar-bottom">
             <strong><span class="connection-dot"></span>Monitoring status</strong>
             <div class="muted small" style="margin-top:6px">Agentverbinding via HTTPS</div>
+            @if (config('serverscope.docs_url'))
+                <a class="small" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px" href="{{ config('serverscope.docs_url') }}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-file"/></svg> Documentatie</a>
+            @endif
         </div>
     </aside>
 

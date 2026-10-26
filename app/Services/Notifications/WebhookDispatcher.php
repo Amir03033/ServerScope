@@ -9,13 +9,14 @@ use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class WebhookDispatcher
 {
     public function incident(Incident $incident, string $event): void
     {
-        $this->dispatch($event, ['incident' => (new IncidentResource($incident->loadMissing('subject')))->resolve()]);
+        $this->dispatch($event, ['incident' => (new IncidentResource($incident->loadMissing('subject')))->resolve()], $incident);
     }
 
     /**
@@ -39,11 +40,32 @@ class WebhookDispatcher
         return $this->queue($delivery->endpoint, $delivery->event, $delivery->payload['data'] ?? []);
     }
 
-    private function dispatch(string $event, array $data): void
+    private function dispatch(string $event, array $data, ?Incident $incident = null): void
     {
         WebhookEndpoint::query()->where('is_active', true)->get()
             ->filter(fn (WebhookEndpoint $endpoint) => $endpoint->subscribedTo($event))
+            ->filter(fn (WebhookEndpoint $endpoint) => $incident === null || $endpoint->wantsSeverity($incident->severity))
+            ->reject(fn (WebhookEndpoint $endpoint) => $endpoint->isDiscord() && $this->isDuplicate($endpoint, $event, $incident))
             ->each(fn (WebhookEndpoint $endpoint) => $this->queue($endpoint, $event, $data));
+    }
+
+    /**
+     * Chat channels are read by people: the same incident event in the
+     * same state is posted at most once per cooldown (flapping, several
+     * escalation triggers for one incident). Machine endpoints keep
+     * receiving every event.
+     */
+    private function isDuplicate(WebhookEndpoint $endpoint, string $event, ?Incident $incident): bool
+    {
+        $minutes = (int) config('serverscope.notifications.chat_cooldown_minutes', 15);
+
+        if ($incident === null || $minutes <= 0) {
+            return false;
+        }
+
+        $key = implode(':', ['webhook-chat', $endpoint->id, $event, $incident->id, $incident->status, $incident->severity]);
+
+        return ! Cache::add($key, true, now()->addMinutes($minutes));
     }
 
     private function queue(WebhookEndpoint $endpoint, string $event, array $data): WebhookDelivery

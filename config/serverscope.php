@@ -107,6 +107,9 @@ return [
         'reopen_cooldown_minutes' => (int) env('SERVERSCOPE_NOTIFY_REOPEN_COOLDOWN', 15),
         'dns_cooldown_minutes' => (int) env('SERVERSCOPE_NOTIFY_DNS_COOLDOWN', 30),
         'max_mails_per_hour' => (int) env('SERVERSCOPE_MAX_MAILS_PER_HOUR', 30),
+        // Chat webhooks (Discord) post the same incident event in the same
+        // state at most once per this many minutes (0 = no limit).
+        'chat_cooldown_minutes' => (int) env('SERVERSCOPE_NOTIFY_CHAT_COOLDOWN', 15),
     ],
 
     'escalation' => [
@@ -153,5 +156,17 @@ return [
         // Plain http endpoints are refused unless explicitly allowed.
         'allow_http' => (bool) env('SERVERSCOPE_WEBHOOKS_ALLOW_HTTP', false),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Documentation
+    |--------------------------------------------------------------------------
+    |
+    | Public documentation site (a separate application). Linked from the
+    | sidebar and from setup screens; set empty to hide the links.
+    |
+    */
+
+    'docs_url' => rtrim((string) env('SERVERSCOPE_DOCS_URL', 'https://info.serverscope.nl/nl/docs'), '/'),
 
 ];
