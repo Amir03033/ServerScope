@@ -3,6 +3,43 @@ import os
 import requests
 
 
+class SubmissionError(RuntimeError):
+    """A failed submission with a reason that is safe to log.
+
+    The reason only contains the HTTP status and, for validation errors,
+    the names of the rejected fields; never tokens or response bodies.
+    """
+
+    def __init__(self, reason: str):
+        super().__init__("Could not send metrics to ServerScope.")
+        self.reason = reason
+
+
+def _safe_reason(response) -> str:
+    status = getattr(response, "status_code", None)
+
+    if not isinstance(status, int):
+        return "HTTP error"
+
+    hints = {
+        401: "token rejected; check SERVERSCOPE_TOKEN for this ServerScope URL",
+        403: "access denied",
+        404: "endpoint not found; check SERVERSCOPE_URL",
+        409: "a sample for this timestamp already exists",
+        429: "rate limited; increase SERVERSCOPE_INTERVAL",
+    }
+
+    if status == 422:
+        try:
+            fields = sorted((response.json().get("errors") or {}).keys())[:5]
+        except (ValueError, AttributeError):
+            fields = []
+
+        return f"HTTP 422, rejected fields: {', '.join(fields) or 'unknown'}"
+
+    return f"HTTP {status}" + (f", {hints[status]}" if status in hints else "")
+
+
 class ServerScopeClient:
     """HTTPS client for sending metrics to ServerScope."""
 
@@ -33,7 +70,7 @@ class ServerScopeClient:
             "Authorization": f"Bearer {self.token}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "ServerScope-Agent/0.1.0",
+            "User-Agent": "ServerScope-Agent/0.2.0",
         })
 
     def send_metrics(self, metrics: dict) -> dict:
@@ -46,6 +83,12 @@ class ServerScopeClient:
                 timeout=self.timeout,
             )
             response.raise_for_status()
+        except requests.HTTPError:
+            raise SubmissionError(_safe_reason(response)) from None
+        except requests.Timeout:
+            raise SubmissionError("time-out") from None
+        except requests.ConnectionError:
+            raise SubmissionError("connection failed (DNS, TLS or network)") from None
         except requests.RequestException:
             # Do not include the original exception: it might contain
             # request details or sensitive information.

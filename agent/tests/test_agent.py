@@ -79,3 +79,16 @@ def test_run_once_adds_services_only_when_configured():
 
         run_once(client, ("nginx",))
         assert client.received["services"][0]["state"] == "running"
+
+
+def test_run_forever_logs_the_safe_reason(caplog):
+    from serverscope_agent.client import SubmissionError
+
+    with (
+        patch("serverscope_agent.agent.run_once", side_effect=SubmissionError("HTTP 401, token rejected")),
+        patch("serverscope_agent.agent.time.sleep", side_effect=KeyboardInterrupt),
+    ):
+        with pytest.raises(KeyboardInterrupt):
+            run_forever(object(), interval_seconds=10)
+
+    assert "Metrics submission failed: HTTP 401, token rejected" in caplog.text

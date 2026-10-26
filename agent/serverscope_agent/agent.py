@@ -4,7 +4,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from serverscope_agent.client import ServerScopeClient
+from serverscope_agent.client import ServerScopeClient, SubmissionError
 from serverscope_agent.collector import collect_metrics
 from serverscope_agent.config import load_config
 from serverscope_agent.services import check_services
@@ -50,6 +50,9 @@ def run_forever(
     while True:
         try:
             run_once(client, services)
+        except SubmissionError as error:
+            # The reason never contains secrets (see SubmissionError).
+            logger.error("Metrics submission failed: %s", error.reason)
         except Exception:
             logger.error("Metrics submission failed.")
 
