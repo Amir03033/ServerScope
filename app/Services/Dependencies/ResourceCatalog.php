@@ -5,6 +5,7 @@ namespace App\Services\Dependencies;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Route;
 
 /**
  * The monitored resource types that can take part in dependencies,
@@ -83,7 +84,7 @@ class ResourceCatalog
         return match ($resource->getMorphClass()) {
             'server' => route('servers.show', $resource),
             'domain' => route('domains.show', $resource),
-            'page' => \Illuminate\Support\Facades\Route::has('pages.show') ? route('pages.show', $resource) : null,
+            'page' => Route::has('pages.show') ? route('pages.show', $resource) : null,
             'service' => route('servers.show', $resource->getAttribute('server_id')),
             default => null,
         };

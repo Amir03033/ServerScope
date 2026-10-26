@@ -23,6 +23,11 @@ class PruneMonitoringData extends Command
         'notification_logs' => ['notification_logs_days', 'created_at', null],
         'notifications' => ['notifications_days', 'created_at', 'read'],
         'audit_logs' => ['audit_logs_days', 'created_at', null],
+        'page_checks' => ['page_checks_days', 'checked_at', null],
+        'page_changes' => ['page_changes_days', 'detected_at', null],
+        'page_discovery_runs' => ['discovery_runs_days', 'created_at', null],
+        'service_check_events' => ['service_events_days', 'recorded_at', null],
+        'predictions' => ['predictions_days', 'resolved_at', 'resolved'],
     ];
 
     public function handle(): int
@@ -41,7 +46,9 @@ class PruneMonitoringData extends Command
 
             $cutoff = now()->subDays((int) $days);
             $query = fn () => DB::table($table)->where($column, '<', $cutoff)
-                ->when($constraint === 'read', fn ($q) => $q->whereNotNull('read_at'));
+                ->when($constraint === 'read', fn ($q) => $q->whereNotNull('read_at'))
+                // Only resolved findings; active ones are current state.
+                ->when($constraint === 'resolved', fn ($q) => $q->where('status', 'resolved'));
 
             if ($dryRun) {
                 $count = $query()->count();

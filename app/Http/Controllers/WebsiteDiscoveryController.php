@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\RunPageDiscovery;
 use App\Models\Domain;
-use App\Models\PageDiscoveryRun;
+use App\Services\Websites\DiscoveryLauncher;
 use App\Services\Websites\UrlNormalizer;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -19,9 +17,6 @@ use Illuminate\View\View;
  */
 class WebsiteDiscoveryController extends Controller
 {
-    /** A run that has not finished after this many minutes is considered dead. */
-    private const STALE_AFTER_MINUTES = 15;
-
     public function show(Domain $domain): View
     {
         return view('websites.discovery', [
@@ -92,40 +87,15 @@ class WebsiteDiscoveryController extends Controller
         return back()->with('success', 'Ontdekkingsinstellingen opgeslagen.');
     }
 
-    public function run(Request $request, Domain $domain): RedirectResponse
+    public function run(Request $request, Domain $domain, DiscoveryLauncher $launcher): RedirectResponse
     {
         Gate::authorize('admin');
 
-        if (! $domain->is_active || $domain->trashed()) {
-            return back()->with('error', 'Hervat de monitoring van dit domein voordat je pagina\'s ontdekt.');
+        $result = $launcher->start($domain, $request->user());
+
+        if ($result['error'] !== null) {
+            return back()->with('error', $result['error']);
         }
-
-        // Runs that never finished (killed worker) are closed first.
-        $domain->discoveryRuns()->whereIn('status', ['queued', 'running'])
-            ->where('created_at', '<', now()->subMinutes(self::STALE_AFTER_MINUTES))
-            ->update(['status' => 'failed', 'errors' => json_encode(['Niet afgerond binnen '.self::STALE_AFTER_MINUTES.' minuten.']), 'finished_at' => now()]);
-
-        if ($domain->discoveryRuns()->whereIn('status', ['queued', 'running'])->exists()) {
-            return back()->with('error', 'Er loopt al een ontdekking voor deze website.');
-        }
-
-        $key = 'website-discovery:'.$domain->id;
-
-        if (RateLimiter::tooManyAttempts($key, 3)) {
-            return back()->with('error', 'Te veel ontdekkingen; probeer het over '.ceil(RateLimiter::availableIn($key) / 60).' minuten opnieuw.');
-        }
-
-        RateLimiter::hit($key, 3600);
-
-        $run = PageDiscoveryRun::query()->create([
-            'domain_id' => $domain->id,
-            'triggered_by' => $request->user()->id,
-            'status' => 'queued',
-            'settings' => $domain->discoverySettings(),
-        ]);
-
-        Audit::log('website.discovery_started', "Paginaontdekking gestart voor {$domain->name}", $domain);
-        RunPageDiscovery::dispatch($run->id, $domain->id);
 
         return redirect()->route('websites.discovery', $domain)->with('success', 'Ontdekking gestart. Gevonden pagina\'s verschijnen onder "Wacht op goedkeuring".');
     }

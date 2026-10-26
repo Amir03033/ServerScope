@@ -7,7 +7,6 @@ use App\Models\AlertRule;
 use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\IncidentImpact;
-use App\Models\MetricSample;
 use App\Models\NotificationLog;
 use App\Models\ResourceDependency;
 use App\Models\Server;

@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PageRequest;
-use App\Jobs\RunPageCheck;
 use App\Models\Domain;
+use App\Models\Incident;
 use App\Models\MonitoredPage;
 use App\Models\PageChange;
 use App\Monitoring\Net\BlockedTargetException;
 use App\Monitoring\Net\TargetGuard;
 use App\Services\Websites\DiscoveryScope;
+use App\Services\Websites\PageRegistrar;
 use App\Services\Websites\WebsiteOverview;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
@@ -72,7 +73,7 @@ class WebsitePageController extends Controller
 
         return view('websites.pages', [
             'domain' => $domain,
-            'pages' => $query->paginate(50)->withQueryString(),
+            'pages' => $query->paginate(50)->withQueryString()->through(fn (MonitoredPage $page) => $page->setRelation('domain', $domain)),
             'filters' => $filters,
             'status' => $status,
             'counts' => $overview->counts($domain),
@@ -92,45 +93,22 @@ class WebsitePageController extends Controller
         return view('websites.page-form', ['domain' => $domain, 'page' => new MonitoredPage(['domain_id' => $domain->id])]);
     }
 
-    public function store(PageRequest $request, Domain $domain): RedirectResponse
+    public function store(PageRequest $request, Domain $domain, PageRegistrar $registrar): RedirectResponse
     {
-        $limit = (int) config('serverscope.websites.max_pages_per_website', 1000);
-        $existing = $domain->pages()->count();
-        $added = 0;
-        $duplicates = 0;
-
-        foreach ($request->normalizedUrls as $url) {
-            if ($existing + $added >= $limit) {
-                return redirect()->route('websites.pages', $domain)->with('error', "Maximaal {$limit} pagina's per website; {$added} toegevoegd.");
-            }
-
-            $page = MonitoredPage::query()->firstOrCreate(
-                ['domain_id' => $domain->id, 'url_hash' => MonitoredPage::hashUrl($url)],
-                ['url' => $url, 'source' => 'manual', 'approval_status' => 'approved', ...$request->pageData()],
-            );
-
-            if (! $page->wasRecentlyCreated) {
-                // A previously discovered page is approved by adding it by hand.
-                if ($page->approval_status !== 'approved') {
-                    $page->forceFill(['approval_status' => 'approved', ...$request->pageData()])->save();
-                    $this->queueCheck($page);
-                    $added++;
-                } else {
-                    $duplicates++;
-                }
-
-                continue;
-            }
-
-            $this->queueCheck($page);
-            $added++;
-        }
+        $result = $registrar->add($domain, $request->normalizedUrls, $request->pageData());
+        $added = count($result['added']);
 
         Audit::log('website.pages_added', "{$added} pagina('s) toegevoegd aan {$domain->name}", $domain, ['urls' => array_slice($request->normalizedUrls, 0, 50)]);
 
+        if ($result['limit_reached']) {
+            $limit = (int) config('serverscope.websites.max_pages_per_website', 1000);
+
+            return redirect()->route('websites.pages', $domain)->with('error', "Maximaal {$limit} pagina's per website; {$added} toegevoegd.");
+        }
+
         $message = $added === 1 ? 'Pagina toegevoegd. De eerste controle is ingepland.' : "{$added} pagina's toegevoegd. De eerste controles zijn ingepland.";
 
-        return redirect()->route('websites.pages', $domain)->with('success', $message.($duplicates ? " {$duplicates} URL('s) werden al gemonitord." : ''));
+        return redirect()->route('websites.pages', $domain)->with('success', $message.($result['duplicates'] ? " {$result['duplicates']} URL('s) werden al gemonitord." : ''));
     }
 
     public function show(Request $request, MonitoredPage $page, WebsiteOverview $overview): View
@@ -150,7 +128,7 @@ class WebsitePageController extends Controller
             'daily' => $overview->daily($page->domain, 30, $page->id),
             'series' => $page->checks()->where('checked_at', '>=', $now->copy()->subDay())->orderBy('checked_at')->limit(1500)->get(['checked_at', 'response_time_ms', 'success']),
             'incidents' => $page->incidents()->latest('opened_at')->limit(10)->get(),
-            'groupIncidents' => \App\Models\Incident::query()->whereHas('impacts', fn ($q) => $q->where('resource_type', 'page')->where('resource_id', $page->id))->latest('opened_at')->limit(10)->get(),
+            'groupIncidents' => Incident::query()->whereHas('impacts', fn ($q) => $q->where('resource_type', 'page')->where('resource_id', $page->id))->latest('opened_at')->limit(10)->get(),
         ]);
     }
 
@@ -350,18 +328,11 @@ class WebsitePageController extends Controller
 
     private function queueCheck(MonitoredPage $page): void
     {
-        if (! $page->isMonitored()) {
-            return;
-        }
-
-        $page->forceFill(['next_check_at' => now()->addMinutes(max(1, $page->check_interval_minutes))])->saveQuietly();
-        RunPageCheck::dispatch($page->id);
+        PageRegistrar::queueCheck($page);
     }
 
     private function deletePage(MonitoredPage $page): void
     {
-        // Incidents stay in the history without their subject.
-        $page->incidents()->update(['subject_id' => null, 'subject_type' => null]);
-        $page->delete();
+        PageRegistrar::delete($page);
     }
 }

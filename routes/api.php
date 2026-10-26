@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\MetricSampleController;
 use App\Http\Controllers\Api\V1\ApiController;
+use App\Http\Controllers\Api\V1\MonitoringApiController;
+use App\Http\Middleware\IdempotentRequests;
 use App\Http\Middleware\AuthenticateAgent;
 use App\Http\Middleware\AuthenticateApiToken;
 use Illuminate\Support\Facades\Route;
@@ -27,9 +29,26 @@ Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-token')->group(fu
         Route::get('/domains/{domain}/checks', [ApiController::class, 'domainChecks'])->name('domains.checks');
         Route::get('/incidents', [ApiController::class, 'incidents'])->name('incidents.index');
         Route::get('/incidents/{incident}', [ApiController::class, 'incident'])->name('incidents.show');
+
+        Route::get('/domains/{domain}/pages', [MonitoringApiController::class, 'pages'])->name('pages.index');
+        Route::get('/domains/{domain}/discovery-runs', [MonitoringApiController::class, 'discoveryRuns'])->name('discovery.index');
+        Route::get('/pages/{page}', [MonitoringApiController::class, 'page'])->name('pages.show');
+        Route::get('/pages/{page}/checks', [MonitoringApiController::class, 'pageChecks'])->name('pages.checks');
+        Route::get('/dependencies', [MonitoringApiController::class, 'dependencies'])->name('dependencies.index');
+        Route::get('/servers/{server}/services', [MonitoringApiController::class, 'services'])->name('servers.services');
+        Route::get('/predictions', [MonitoringApiController::class, 'predictions'])->name('predictions.index');
     });
 
-    Route::middleware(AuthenticateApiToken::class.':write')->group(function () {
+    Route::middleware([AuthenticateApiToken::class.':write', IdempotentRequests::class])->group(function () {
+        Route::post('/domains/{domain}/pages', [MonitoringApiController::class, 'storePages'])->name('pages.store');
+        Route::put('/pages/{page}', [MonitoringApiController::class, 'updatePage'])->name('pages.update');
+        Route::delete('/pages/{page}', [MonitoringApiController::class, 'destroyPage'])->name('pages.destroy');
+        Route::post('/pages/{page}/{action}', [MonitoringApiController::class, 'pageState'])->whereIn('action', ['pause', 'resume', 'approve', 'reject'])->name('pages.state');
+        Route::post('/domains/{domain}/discovery', [MonitoringApiController::class, 'startDiscovery'])->name('discovery.start');
+        Route::post('/dependencies', [MonitoringApiController::class, 'storeDependency'])->name('dependencies.store');
+        Route::delete('/dependencies/{dependency}', [MonitoringApiController::class, 'destroyDependency'])->name('dependencies.destroy');
+        Route::post('/incidents/{incident}/assign', [MonitoringApiController::class, 'assign'])->name('incidents.assign');
+
         Route::post('/incidents/{incident}/acknowledge', [ApiController::class, 'transition'])->defaults('status', 'acknowledged')->name('incidents.acknowledge');
         Route::post('/incidents/{incident}/investigate', [ApiController::class, 'transition'])->defaults('status', 'investigating')->name('incidents.investigate');
         Route::post('/incidents/{incident}/resolve', [ApiController::class, 'transition'])->defaults('status', 'resolved')->name('incidents.resolve');

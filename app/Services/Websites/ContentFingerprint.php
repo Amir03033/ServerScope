@@ -23,7 +23,7 @@ use DOMXPath;
  */
 class ContentFingerprint
 {
-    public const SNAPSHOT_LIMIT = 200_000;
+    public const SNAPSHOT_LIMIT = 50_000;
 
     private const REMOVED_TAGS = ['script', 'style', 'noscript', 'template', 'svg', 'iframe', 'canvas', 'head'];
 

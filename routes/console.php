@@ -9,6 +9,11 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Requires a cron entry running `php artisan schedule:run` every minute.
+// The heartbeat lets ServerScope report whether its own scheduler runs.
+Schedule::call(fn () => \App\Services\SystemHealth::beat())
+    ->everyMinute()
+    ->name('serverscope:heartbeat');
+
 Schedule::command('serverscope:check-agents')
     ->everyMinute()
     ->withoutOverlapping(5);

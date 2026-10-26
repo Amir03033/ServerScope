@@ -220,6 +220,11 @@ return [
         'notification_logs_days' => env('SERVERSCOPE_RETAIN_NOTIFICATION_LOGS_DAYS'),
         'notifications_days' => env('SERVERSCOPE_RETAIN_READ_NOTIFICATIONS_DAYS'),
         'audit_logs_days' => env('SERVERSCOPE_RETAIN_AUDIT_LOGS_DAYS'),
+        'page_checks_days' => env('SERVERSCOPE_RETAIN_PAGE_CHECKS_DAYS'),
+        'page_changes_days' => env('SERVERSCOPE_RETAIN_PAGE_CHANGES_DAYS'),
+        'discovery_runs_days' => env('SERVERSCOPE_RETAIN_DISCOVERY_RUNS_DAYS'),
+        'service_events_days' => env('SERVERSCOPE_RETAIN_SERVICE_EVENTS_DAYS'),
+        'predictions_days' => env('SERVERSCOPE_RETAIN_PREDICTIONS_DAYS'),
     ],
 
     'api' => [

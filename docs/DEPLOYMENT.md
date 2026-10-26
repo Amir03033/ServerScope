@@ -1,7 +1,8 @@
 # ServerScope — Deployment and operations (Plesk)
 
-This describes what production needs after the changes on branch
-`claude/hopeful-euler-bbinww`. Nothing here has been run on the production
+This describes what production needs after the changes on branches
+`claude/hopeful-euler-bbinww` and `claude/cool-curie-fk2smd` (monitoring &
+intelligence upgrade, see [UPGRADE_PLAN.md](UPGRADE_PLAN.md)). Nothing here has been run on the production
 server; follow it as a checklist.
 
 ## 1. Requirements
@@ -41,7 +42,10 @@ The scheduler runs:
 |---|---|---|
 | `serverscope:check-agents` | every minute | mark silent servers offline, agent-offline incidents |
 | `serverscope:dispatch-domain-checks` | every minute | queue due HTTP/TLS/DNS/RDAP checks (atomic claim, no duplicates) |
-| `serverscope:escalate-incidents` | every minute | escalate unacknowledged incidents |
+| `serverscope:dispatch-page-checks` | every minute | queue due website page checks (max. 20 per website and 500 in total per run, configurable) |
+| `serverscope:escalate-incidents` | every minute | escalate unacknowledged incidents (grouped incidents escalate via their root) |
+| `serverscope:analyze` | hourly at :07 | anomaly detection and capacity forecasts |
+| heartbeat (closure) | every minute | lets **Beheer → Systeemstatus** report whether the scheduler runs |
 | `queue:work --stop-when-empty --max-time=55` | every minute | process queued checks, notifications, webhooks |
 | `serverscope:prune` | daily 03:17 | delete history older than the configured retention (disabled by default) |
 
@@ -50,7 +54,14 @@ on Plesk) the scheduler-driven worker is enough for small to medium
 installations. With many domains or short intervals, run a supervised
 `php artisan queue:work --sleep=3 --tries=1 --max-time=3600` instead and set
 `SERVERSCOPE_SCHEDULER_QUEUE_WORKER=false`. Failed jobs are visible with
-`php artisan queue:failed`.
+`php artisan queue:failed` and on **Beheer → Systeemstatus**.
+
+Website pages add load: every monitored page is one queued HTTP request per
+interval, and discovery runs (`RunPageDiscovery`, up to 300 requests, 300 s
+time-out) run on the same queue. With hundreds of pages run a supervised
+worker; give it `--timeout=300` so discovery is not killed. Page checks and
+discovery are never retried automatically (the next interval is the retry),
+so a failing website cannot cause a job storm.
 
 Do **not** use `QUEUE_CONNECTION=sync` in production: checks would run inside
 web requests and webhook retries are disabled.
@@ -70,6 +81,18 @@ web requests and webhook retries are disabled.
 | `2026_10_26_160000_create_webhooks_tables` | webhook endpoints and deliveries |
 | `2026_10_26_170000_create_status_pages_tables` | status pages and components |
 | `2026_10_27_100000_add_type_to_webhook_endpoints_table` | `webhook_endpoints.type` (default `generic`) and `min_severity` (nullable) for Discord |
+| `2026_10_28_100000_add_correlation_and_dependencies` | `incidents.started_at/parent_id/correlation`, `incident_impacts`, `resource_dependencies`, `alert_rules.recovery_samples` (default 1 = old behaviour), `alerts.recovery_streak`, `notifications_enabled` and `sla_target` on servers and domains |
+| `2026_10_28_110000_create_website_pages_tables` | `domains.discovery_settings`, `monitored_pages`, `page_checks`, `page_changes`, `page_discovery_runs` |
+| `2026_10_28_120000_add_service_checks_and_extended_metrics` | nullable disk I/O, network error, process-count columns on `metric_samples`; `servers.agent_checksum/predictive_alerts_enabled/anomaly_sensitivity`; `service_checks`, `service_check_events` |
+| `2026_10_28_130000_create_predictions_table` | `predictions` |
+| `2026_10_28_140000_create_ssl_certificates_table` | `ssl_certificates` (certificate history) |
+
+The five 2026-10-28 migrations only add tables and nullable/defaulted
+columns; existing rows and history are untouched. To roll them back:
+`php artisan migrate:rollback --step=5` (drops the new tables, so page
+history, dependencies, predictions and certificate history are lost —
+restore the backup instead once they are in use). Existing severities are
+unchanged; `high` is a new value between `warning` and `critical`.
 
 Every migration has a `down()`. Rolling back the domain/incident migrations
 deletes the data stored in those tables, so restore from the backup instead
@@ -108,7 +131,20 @@ All optional; the defaults are shown.
 | `SERVERSCOPE_WEBHOOKS_ALLOW_HTTP` | `false` | allow non-TLS webhook URLs |
 | `SERVERSCOPE_NOTIFY_CHAT_COOLDOWN` | `15` | minutes before the same incident event is posted to Discord again (0 = off) |
 | `SERVERSCOPE_DOCS_URL` | `https://info.serverscope.nl/nl/docs` | documentation link in the sidebar and setup screens (empty = hidden) |
-| `SERVERSCOPE_RETAIN_*_DAYS` | – (keep forever) | retention for metrics, domain checks, notification logs, read notifications, audit logs |
+| `SERVERSCOPE_RETAIN_*_DAYS` | – (keep forever) | retention for metrics, domain checks, notification logs, read notifications, audit logs, and (new) `PAGE_CHECKS`, `PAGE_CHANGES`, `DISCOVERY_RUNS`, `SERVICE_EVENTS`, `PREDICTIONS` (resolved only) |
+| `SERVERSCOPE_ESCALATE_HIGH_MINUTES` | `30` | escalation delay for high-severity incidents |
+| `SERVERSCOPE_CORRELATION_WINDOW_MINUTES` | `30` | a newly detected root cause adopts dependent incidents opened at most this long before it |
+| `SERVERSCOPE_MAX_PAGES_PER_WEBSITE` | `1000` | monitored + discovered pages per website |
+| `SERVERSCOPE_DISCOVERY_DEFAULT_PAGES` / `_MAX_PAGES` | `50` / `1000` | safe default and hard limit for discovery |
+| `SERVERSCOPE_DISCOVERY_MAX_REQUESTS` / `_MAX_SITEMAPS` / `_DELAY_MS` / `_TIMEOUT` / `_MAX_DURATION` | `300` / `25` / `250` / `10` / `240` | discovery budget per run |
+| `SERVERSCOPE_PAGE_CHECKS_PER_WEBSITE` / `_PER_RUN` | `20` / `500` | page checks queued per scheduler run |
+| `SERVERSCOPE_SIGNIFICANT_CHANGE_RATIO` | `0.10` | share of changed text that makes a content change "significant" |
+| `SERVERSCOPE_PAGE_GROUP_MIN` | `2` | pages failing for the same shared cause before one website incident is used |
+| `SERVERSCOPE_AGENT_LATEST_VERSION` | `0.2.0` | older agents are flagged |
+| `SERVERSCOPE_AGENT_CHECKSUMS` | – | SHA-256 checksums of released agent builds; others are flagged |
+| `SERVERSCOPE_PREDICTIVE` / `_PREDICTIVE_ALERTS` | `true` / `true` | run the analysis / open incidents for near-term capacity forecasts |
+| `SERVERSCOPE_PREDICTIVE_HORIZON_DAYS` | `7` | forecast incidents only within this horizon |
+| `SERVERSCOPE_ANOMALY_INCIDENTS` | `false` | also open incidents for anomalies (they are always shown) |
 | `TRUSTED_PROXIES` | `127.0.0.1,::1` | proxies in front of PHP (Plesk nginx); read at boot, not from the config cache |
 
 Also set `SESSION_SECURE_COOKIE=true`, `APP_ENV=production`, `APP_DEBUG=false`
@@ -118,14 +154,15 @@ and a real `APP_URL=https://serverscope.nl`.
 
 ```sh
 php artisan about                    # PHP version, environment, cache status
-php artisan schedule:list            # five scheduled commands
+php artisan schedule:list            # eight scheduled entries
 php artisan migrate:status           # all migrations ran
 php artisan serverscope:check-agents
 php artisan serverscope:dispatch-domain-checks && php artisan queue:work --stop-when-empty
 php artisan queue:failed             # should be empty
 ```
 
-In the UI: add a domain, wait two minutes, and confirm HTTP/TLS/DNS results
+In the UI: open **Beheer → Systeemstatus** (scheduler, queue and overdue
+checks should be green after two minutes); add a domain, wait two minutes, and confirm HTTP/TLS/DNS results
 on its page; send a test notification from **Profiel**; check
 **Meldingen → Verzendgeschiedenis** for "Verzonden".
 
@@ -149,4 +186,8 @@ on its page; send a test notification from **Profiel**; check
 3. Configure SMTP and the scheduled task.
 4. Decide on retention periods (`SERVERSCOPE_RETAIN_*_DAYS`).
 5. Ask administrators to enable two-factor authentication (Profiel).
-6. Install/upgrade the agent on each server using `agent/README.md`.
+6. Install/upgrade the agent on each server using `agent/README.md`
+   (0.2.0 adds service checks: set `SERVERSCOPE_SERVICES`).
+7. Record which websites run on which servers (**Afhankelijkheden**, or
+   confirm the suggestions on the domain pages); without dependencies no
+   cross-resource incident grouping happens.

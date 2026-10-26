@@ -9,7 +9,9 @@
 <x-layouts.app title="Rapporten">
     <x-slot:subtitle>Berekende beschikbaarheid uit monitoringgegevens — geen contractuele SLA-vaststelling.</x-slot:subtitle>
     <x-slot:actions>
-        <a class="button" href="{{ route('reports.export', $input) }}"><svg class="ico"><use href="#i-file"/></svg> CSV exporteren</a>
+        <a class="button" href="{{ route('reports.print', $input) }}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-file"/></svg> Afdrukken / PDF</a>
+        <a class="button" href="{{ route('reports.export', [...$input, 'kind' => 'incidents']) }}"><svg class="ico"><use href="#i-file"/></svg> Incidenten (CSV)</a>
+        <a class="button" href="{{ route('reports.export', $input) }}"><svg class="ico"><use href="#i-file"/></svg> Beschikbaarheid (CSV)</a>
     </x-slot:actions>
 
     <section class="panel" style="margin-bottom:14px">
@@ -32,66 +34,10 @@
             {{ Time::format($report['from']) }} t/m {{ Time::format($report['to']) }} ({{ Time::zone() }}).
             Uptime telt alleen uitgevoerde controles; ontbrekende metingen verlagen de <em>dekking</em> en tellen nooit als beschikbaar.
             Serverdowntime = duur van agent-offline-incidenten; tijdens gepland onderhoud worden geen incidenten aangemaakt.
+            Controles van domeinen en pagina's tijdens onderhoud tellen gewoon mee (er wordt niets stilzwijgend uitgesloten).
+            Een eigen beschikbaarheidsdoel van een resource gaat vóór het doel hierboven.
         </p>
     </section>
 
-    <section class="kpis">
-        <div class="kpi tone-cyan"><span class="kpi-icon"><svg class="ico"><use href="#i-check"/></svg></span><div><div class="kpi-label">Gemiddelde uptime</div><div class="kpi-value">{{ $pct($report['average_uptime']) }}</div><div class="kpi-caption">Doel {{ $pct($report['target'], 2) }}</div></div></div>
-        <div class="kpi tone-red"><span class="kpi-icon"><svg class="ico"><use href="#i-siren"/></svg></span><div><div class="kpi-label">Incidenten</div><div class="kpi-value">{{ $report['incidents']['opened'] }}</div><div class="kpi-caption">{{ $report['incidents']['by_severity']['critical'] ?? 0 }} kritiek</div></div></div>
-        <div class="kpi tone-yellow"><span class="kpi-icon"><svg class="ico"><use href="#i-clock"/></svg></span><div><div class="kpi-label">MTTA</div><div class="kpi-value" style="font-size:22px">{{ IncidentMetrics::humanDuration($report['incidents']['mtta_seconds']) }}</div></div></div>
-        <div class="kpi tone-green"><span class="kpi-icon"><svg class="ico"><use href="#i-wrench"/></svg></span><div><div class="kpi-label">MTTR</div><div class="kpi-value" style="font-size:22px">{{ IncidentMetrics::humanDuration($report['incidents']['mttr_seconds']) }}</div></div></div>
-    </section>
-
-    <section class="panel" style="margin-bottom:14px">
-        <div class="section-heading"><div><h2>Domeinen</h2><p>HTTP-beschikbaarheid en responstijden.</p></div></div>
-        @if ($report['domains']->isEmpty())
-            <x-empty-state icon="i-globe" title="Geen domeinen in deze periode" />
-        @else
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead><tr><th>Domein</th><th class="num">Uptime</th><th class="num">Dekking</th><th class="num">Downtime</th><th class="num">Gem. respons</th><th class="num">Max</th><th class="num">Incidenten</th><th>Doel</th></tr></thead>
-                    <tbody>
-                        @foreach ($report['domains'] as $row)
-                            <tr>
-                                <td><a class="row-link" href="{{ route('domains.show', $row['domain']) }}">{{ $row['domain']->displayName() }}</a><span class="cell-sub">{{ $row['checks'] }} controles</span></td>
-                                <td class="num">{{ $pct($row['uptime']) }}</td>
-                                <td class="num">{{ $pct($row['coverage'], 1) }}</td>
-                                <td class="num">{{ $row['downtime_minutes'] === null ? '—' : $row['downtime_minutes'].' min' }}</td>
-                                <td class="num">{{ $row['avg_ms'] === null ? '—' : number_format($row['avg_ms'], 0, ',', '.').' ms' }}</td>
-                                <td class="num">{{ $row['max_ms'] === null ? '—' : number_format($row['max_ms'], 0, ',', '.').' ms' }}</td>
-                                <td class="num">{{ $row['incidents'] }}</td>
-                                <td>@if ($row['meets_target'] === null)<span class="muted small">geen data</span>@else<x-status :status="$row['meets_target'] ? 'healthy' : 'critical'" :label="$row['meets_target'] ? 'Gehaald' : 'Niet gehaald'" />@endif</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </section>
-
-    <section class="panel">
-        <div class="section-heading"><div><h2>Servers</h2><p>Beschikbaarheid op basis van agent-offline-incidenten; dekking = ontvangen metingen / verwachte metingen (één per minuut).</p></div></div>
-        @if ($report['servers']->isEmpty())
-            <x-empty-state icon="i-server" title="Geen servers in deze periode" />
-        @else
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead><tr><th>Server</th><th class="num">Uptime</th><th class="num">Dekking</th><th class="num">Downtime</th><th class="num">Metingen</th><th class="num">Incidenten</th><th>Doel</th></tr></thead>
-                    <tbody>
-                        @foreach ($report['servers'] as $row)
-                            <tr>
-                                <td><a class="row-link" href="{{ route('servers.show', $row['server']) }}">{{ $row['server']->name }}</a>@if ($row['server']->trashed())<span class="cell-sub">verwijderd</span>@endif</td>
-                                <td class="num">{{ $pct($row['uptime']) }}</td>
-                                <td class="num">{{ $pct($row['coverage'], 1) }}</td>
-                                <td class="num">{{ $row['downtime_minutes'] }} min</td>
-                                <td class="num">{{ number_format($row['samples'], 0, ',', '.') }}</td>
-                                <td class="num">{{ $row['incidents'] }}</td>
-                                <td>@if ($row['meets_target'] === null)<span class="muted small">geen data</span>@else<x-status :status="$row['meets_target'] ? 'healthy' : 'critical'" :label="$row['meets_target'] ? 'Gehaald' : 'Niet gehaald'" />@endif</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </section>
+    @include('reports._body')
 </x-layouts.app>

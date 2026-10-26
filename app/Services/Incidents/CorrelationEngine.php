@@ -4,8 +4,10 @@ namespace App\Services\Incidents;
 
 use App\Models\Incident;
 use App\Models\IncidentImpact;
+use App\Models\User;
 use App\Services\Dependencies\DependencyGraph;
 use App\Services\Dependencies\ResourceCatalog;
+use Illuminate\Support\Collection;
 
 /**
  * Groups related incidents under one root incident.
@@ -138,7 +140,7 @@ class CorrelationEngine
 
     /**
      * @param  array<string, array{type: string, id: int, depth: int, path: array<int, string>}>  $nodes
-     * @return \Illuminate\Support\Collection<int, Incident>
+     * @return Collection<int, Incident>
      */
     private function activeIncidentsFor(array $nodes, int $excludeId)
     {
@@ -191,7 +193,7 @@ class CorrelationEngine
     }
 
     /** Undo a grouping by hand (wrong or no longer relevant). */
-    public function detach(Incident $child, \App\Models\User $by): void
+    public function detach(Incident $child, User $by): void
     {
         $parentId = $child->parent_id;
 

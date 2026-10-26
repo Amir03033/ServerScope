@@ -92,9 +92,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->whereUuid('id')->name('notifications.read');
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/print', [ReportController::class, 'print'])->middleware('throttle:20,1')->name('reports.print');
     Route::get('/reports/export', [ReportController::class, 'export'])->middleware('throttle:20,1')->name('reports.export');
 
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/system-health', function (\App\Services\SystemHealth $health) {
+        \Illuminate\Support\Facades\Gate::authorize('admin');
+
+        return view('system-health', ['report' => $health->report()]);
+    })->name('system-health');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->middleware('throttle:10,1')->name('users.store');

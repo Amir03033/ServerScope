@@ -52,8 +52,11 @@ class PageRequest extends FormRequest
             'header_assertions' => is_array($this->header_assertions) ? $this->header_assertions : self::parseHeaderAssertions($lines($this->header_assertions)),
             'monitored_headers' => is_array($this->monitored_headers) ? $this->monitored_headers : array_values(array_filter(array_map(fn ($h) => strtolower(trim($h)), explode(',', (string) $this->monitored_headers)))),
             'sla_target' => $this->filled('sla_target') ? str_replace(',', '.', (string) $this->sla_target) : null,
-            ...collect(['follow_redirects', 'content_monitoring', 'alerts_enabled', 'notify_content_changes'])
-                ->mapWithKeys(fn ($key) => [$key => $this->boolean($key)])->all(),
+            // Omitted fields (API clients) get the defaults, not "false".
+            ...collect(['follow_redirects' => true, 'content_monitoring' => false, 'alerts_enabled' => true, 'notify_content_changes' => false])
+                ->mapWithKeys(fn ($default, $key) => [$key => $this->has($key) ? $this->boolean($key) : $default])->all(),
+            ...collect(['check_interval_minutes' => 5, 'timeout_seconds' => 10, 'failure_threshold' => 2, 'recovery_threshold' => 2, 'alert_severity' => 'high'])
+                ->filter(fn ($default, $key) => ! $this->has($key))->all(),
         ]);
     }
 
