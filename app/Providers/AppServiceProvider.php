@@ -88,6 +88,7 @@ class AppServiceProvider extends ServiceProvider
             'alert_rule' => \App\Models\AlertRule::class,
             'user' => User::class,
             'resource_dependency' => \App\Models\ResourceDependency::class,
+            'page' => \App\Models\MonitoredPage::class,
         ]);
 
         View::composer(

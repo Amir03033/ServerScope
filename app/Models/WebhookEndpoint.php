@@ -14,6 +14,7 @@ class WebhookEndpoint extends Model
         'incident.resolved' => 'Incident opgelost',
         'incident.escalated' => 'Incident geëscaleerd (drempel/ernst/niet bevestigd)',
         'dns.changed' => 'DNS-records gewijzigd',
+        'page.changed' => 'Pagina-inhoud gewijzigd (alleen pagina\'s met wijzigingsmeldingen)',
     ];
 
     public const TYPE_GENERIC = 'generic';

@@ -178,6 +178,10 @@
     document.addEventListener('submit', (event) => {
         const form = event.target;
 
+        if (event.defaultPrevented) {
+            return;
+        }
+
         if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) {
             event.preventDefault();
             return;

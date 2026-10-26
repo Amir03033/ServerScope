@@ -101,6 +101,11 @@ class DiscordMessage
         $embed = match (true) {
             str_starts_with($event, 'incident.') && isset($data['incident']) => self::incidentEmbed($event, $data['incident']),
             $event === 'dns.changed' && isset($data['domain']) => self::dnsEmbed($data['domain'], $data['changes'] ?? []),
+            $event === 'page.changed' && isset($data['page']) => [
+                'title' => 'Pagina-inhoud gewijzigd',
+                'description' => self::clean((string) ($data['page']['url'] ?? ''), 300)."\n".self::clean((string) ($data['change']['summary'] ?? ''), 500),
+                'color' => self::COLORS['info'],
+            ],
             default => [
                 'title' => 'Testmelding',
                 'description' => 'De Discord-koppeling met ServerScope werkt. Meldingen voor de geselecteerde gebeurtenissen verschijnen in dit kanaal.',
@@ -225,6 +230,7 @@ class DiscordMessage
             'incident.resolved' => 'Incident opgelost',
             'incident.escalated' => 'Incident geëscaleerd',
             'dns.changed' => 'DNS gewijzigd',
+            'page.changed' => 'Pagina gewijzigd',
             default => 'Testmelding',
         };
     }

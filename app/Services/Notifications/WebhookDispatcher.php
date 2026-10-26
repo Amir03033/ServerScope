@@ -7,6 +7,8 @@ use App\Jobs\DeliverWebhook;
 use App\Models\DnsChange;
 use App\Models\Domain;
 use App\Models\Incident;
+use App\Models\MonitoredPage;
+use App\Models\PageChange;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
 use Illuminate\Support\Facades\Cache;
@@ -27,6 +29,14 @@ class WebhookDispatcher
         $this->dispatch('dns.changed', [
             'domain' => ['id' => $domain->id, 'name' => $domain->name, 'display_name' => $domain->displayName()],
             'changes' => array_map(fn ($c) => ['type' => $c->record_type, 'added' => $c->added, 'removed' => $c->removed, 'detected_at' => $c->detected_at->toIso8601String()], $changes),
+        ]);
+    }
+
+    public function pageChange(MonitoredPage $page, PageChange $change): void
+    {
+        $this->dispatch('page.changed', [
+            'page' => ['id' => $page->id, 'url' => $page->url, 'domain_id' => $page->domain_id],
+            'change' => ['id' => $change->id, 'kind' => $change->kind, 'significance' => $change->significance, 'summary' => $change->summary, 'detected_at' => $change->detected_at->toIso8601String()],
         ]);
     }
 

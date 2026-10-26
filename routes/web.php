@@ -27,6 +27,8 @@ use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServerMaintenanceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\WebsiteDiscoveryController;
+use App\Http\Controllers\WebsitePageController;
 
 Route::redirect('/', '/dashboard');
 
@@ -161,6 +163,23 @@ Route::middleware('auth')->group(function () {
     Route::post('/domains/{domain}/check', [DomainController::class, 'checkNow'])->name('domains.check');
     Route::post('/domains/{domain}/restore', [DomainController::class, 'restore'])->withTrashed()->name('domains.restore');
     Route::delete('/domains/{domain}/permanent', [DomainController::class, 'forceDestroy'])->withTrashed()->name('domains.force-destroy');
+
+    // Website (multi-page) monitoring
+    Route::get('/domains/{domain}/pages', [WebsitePageController::class, 'index'])->name('websites.pages');
+    Route::get('/domains/{domain}/pages/create', [WebsitePageController::class, 'create'])->name('websites.pages.create');
+    Route::post('/domains/{domain}/pages', [WebsitePageController::class, 'store'])->middleware('throttle:20,1')->name('websites.pages.store');
+    Route::post('/domains/{domain}/pages/bulk', [WebsitePageController::class, 'bulk'])->middleware('throttle:30,1')->name('websites.pages.bulk');
+    Route::get('/domains/{domain}/discovery', [WebsiteDiscoveryController::class, 'show'])->name('websites.discovery');
+    Route::put('/domains/{domain}/discovery', [WebsiteDiscoveryController::class, 'update'])->name('websites.discovery.update');
+    Route::post('/domains/{domain}/discovery/run', [WebsiteDiscoveryController::class, 'run'])->middleware('throttle:10,1')->name('websites.discovery.run');
+    Route::get('/pages/{page}', [WebsitePageController::class, 'show'])->name('pages.show');
+    Route::get('/pages/{page}/edit', [WebsitePageController::class, 'edit'])->name('pages.edit');
+    Route::put('/pages/{page}', [WebsitePageController::class, 'update'])->name('pages.update');
+    Route::delete('/pages/{page}', [WebsitePageController::class, 'destroy'])->name('pages.destroy');
+    Route::post('/pages/{page}/pause', [WebsitePageController::class, 'pause'])->name('pages.pause');
+    Route::post('/pages/{page}/resume', [WebsitePageController::class, 'resume'])->name('pages.resume');
+    Route::post('/pages/{page}/check', [WebsitePageController::class, 'check'])->name('pages.check');
+    Route::post('/page-changes/{change}/acknowledge', [WebsitePageController::class, 'acknowledgeChange'])->name('page-changes.acknowledge');
 
     Route::get('/incidents', [IncidentController::class, 'index'])->name('incidents.index');
     Route::get('/incidents/create', [IncidentController::class, 'create'])->name('incidents.create');

@@ -17,6 +17,10 @@ Schedule::command('serverscope:dispatch-domain-checks')
     ->everyMinute()
     ->withoutOverlapping(5);
 
+Schedule::command('serverscope:dispatch-page-checks')
+    ->everyMinute()
+    ->withoutOverlapping(5);
+
 Schedule::command('serverscope:escalate-incidents')
     ->everyMinute()
     ->withoutOverlapping(5);

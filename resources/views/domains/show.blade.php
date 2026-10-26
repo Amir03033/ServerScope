@@ -72,6 +72,8 @@
         @endcan
     </x-slot:actions>
 
+    @include('websites._tabs')
+
     @if ($domain->trashed())
         <div class="flash warning" role="status">
             <svg class="ico"><use href="#i-trash"/></svg>

@@ -85,6 +85,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Website (multi-page) monitoring and discovery
+    |--------------------------------------------------------------------------
+    |
+    | Discovery only follows sitemaps, robots.txt and links on the website's
+    | own host (subdomains only when enabled per website). Every request goes
+    | through SafeHttpClient, so the SSRF rules above apply to each URL and
+    | every redirect.
+    |
+    */
+
+    'websites' => [
+        'max_pages_per_website' => (int) env('SERVERSCOPE_MAX_PAGES_PER_WEBSITE', 1000),
+        'discovery_default_max_pages' => (int) env('SERVERSCOPE_DISCOVERY_DEFAULT_PAGES', 50),
+        'discovery_max_pages_limit' => (int) env('SERVERSCOPE_DISCOVERY_MAX_PAGES', 1000),
+        'discovery_max_requests' => (int) env('SERVERSCOPE_DISCOVERY_MAX_REQUESTS', 300),
+        'discovery_max_sitemaps' => (int) env('SERVERSCOPE_DISCOVERY_MAX_SITEMAPS', 25),
+        'discovery_request_delay_ms' => (int) env('SERVERSCOPE_DISCOVERY_DELAY_MS', 250),
+        'discovery_timeout_seconds' => (int) env('SERVERSCOPE_DISCOVERY_TIMEOUT', 10),
+        'discovery_max_duration_seconds' => (int) env('SERVERSCOPE_DISCOVERY_MAX_DURATION', 240),
+        // Page checks queued per website and in total per scheduler run;
+        // the rest stays due for the next minute (no job storms).
+        'checks_per_website_per_run' => (int) env('SERVERSCOPE_PAGE_CHECKS_PER_WEBSITE', 20),
+        'max_checks_per_run' => (int) env('SERVERSCOPE_PAGE_CHECKS_PER_RUN', 500),
+        // Content changes above this share of changed text are "significant".
+        'significant_change_ratio' => (float) env('SERVERSCOPE_SIGNIFICANT_CHANGE_RATIO', 0.10),
+        // Shared-cause page failures are grouped once at least this many
+        // pages of a website fail for the same reason.
+        'group_min_pages' => (int) env('SERVERSCOPE_PAGE_GROUP_MIN', 2),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Incidents
     |--------------------------------------------------------------------------
     */
@@ -93,6 +125,9 @@ return [
         // A problem that recurs within this many minutes after automatic or
         // manual resolution reopens the previous incident.
         'reopen_window_minutes' => (int) env('SERVERSCOPE_INCIDENT_REOPEN_MINUTES', 60),
+        // A newly detected root cause adopts dependent incidents that
+        // opened at most this many minutes before it.
+        'correlation_window_minutes' => (int) env('SERVERSCOPE_CORRELATION_WINDOW_MINUTES', 30),
     ],
 
     /*

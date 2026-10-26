@@ -67,7 +67,7 @@
                         'notify_email' => ['E-mail', 'Meldingen per e-mail aan '.$user->email.(config('serverscope.alert_mail_enabled') ? '' : ' (e-mail is uitgeschakeld door de beheerder)')],
                         'notify_in_app' => ['In de app', 'Meldingen onder “Meldingen” in de zijbalk.'],
                         'notify_resolved' => ['Herstelmeldingen', 'Ook een melding wanneer een incident is opgelost.'],
-                        'notify_dns_changes' => ['DNS-wijzigingen', 'Melding bij gewijzigde A-, AAAA-, CNAME-, MX-, NS- of CAA-records.'],
+                        'notify_dns_changes' => ['DNS- en inhoudswijzigingen', 'Melding bij gewijzigde A-, AAAA-, CNAME-, MX-, NS- of CAA-records en bij significante inhoudswijzigingen van pagina\'s waarvoor dat is ingeschakeld.'],
                     ] as $key => [$label, $help])
                         <label class="check">
                             <input type="hidden" name="{{ $key }}" value="0">

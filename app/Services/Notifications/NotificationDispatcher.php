@@ -5,10 +5,13 @@ namespace App\Services\Notifications;
 use App\Models\DnsChange;
 use App\Models\Domain;
 use App\Models\Incident;
+use App\Models\MonitoredPage;
+use App\Models\PageChange;
 use App\Models\NotificationLog;
 use App\Models\User;
 use App\Notifications\DnsChangeNotification;
 use App\Notifications\IncidentNotification;
+use App\Notifications\PageChangeNotification;
 use App\Notifications\TestNotification;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Notification as BaseNotification;
@@ -100,6 +103,30 @@ class NotificationDispatcher
                 $this->send($user, new DnsChangeNotification($domain, $changes, $channels), null, 'dns_changed');
             }
         }
+    }
+
+    /** A significant content change of a page that opted in to notifications. */
+    public function pageChange(MonitoredPage $page, PageChange $change): void
+    {
+        $key = "notify:page-change:{$page->id}";
+
+        if (! Cache::add($key, true, now()->addMinutes((int) config('serverscope.notifications.dns_cooldown_minutes', 30)))) {
+            return;
+        }
+
+        $users = User::query()->where('notify_dns_changes', true)
+            ->where(fn ($q) => $q->where('notify_email', true)->orWhere('notify_in_app', true))
+            ->get();
+
+        foreach ($users as $user) {
+            $channels = $this->allowedChannels($user, $user->notificationChannels(), null, 'page_changed');
+
+            if ($channels !== []) {
+                $this->send($user, new PageChangeNotification($page, $change, $channels), null, 'page_changed');
+            }
+        }
+
+        app(WebhookDispatcher::class)->pageChange($page, $change);
     }
 
     public function test(User $user): void

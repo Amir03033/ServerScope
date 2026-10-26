@@ -128,7 +128,7 @@
                                             <span class="cell-sub">{{ \App\Services\Dependencies\ResourceCatalog::typeLabel($impact->resource_type) }}@if ($impact->message) · {{ $impact->message }}@endif</span>
                                         </td>
                                         <td>{{ $impact->role === 'cause' ? 'Oorzaak' : 'Getroffen' }}</td>
-                                        <td>{{ $impact->failure_type ? str_replace('_', ' ', $impact->failure_type) : '—' }}</td>
+                                        <td>{{ $impact->failure_type ? (['availability' => 'Beschikbaarheid', 'server_error' => 'Serverfout (5xx)', ...\App\Models\MonitoredPage::FAILURE_LABELS][$impact->failure_type] ?? str_replace('_', ' ', $impact->failure_type)) : '—' }}</td>
                                         <td><x-status :status="$impact->status === 'failing' ? 'down' : 'up'" :label="$impact->status === 'failing' ? 'Faalt' : 'Hersteld'" /></td>
                                         <td class="nowrap">{{ Time::format($impact->first_failed_at) }}</td>
                                         <td class="nowrap">{{ Time::format($impact->recovered_at) }}</td>
