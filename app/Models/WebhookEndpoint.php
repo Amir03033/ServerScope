@@ -15,7 +15,22 @@ class WebhookEndpoint extends Model
         'dns.changed' => 'DNS-records gewijzigd',
     ];
 
-    protected $fillable = ['name', 'url', 'secret', 'events', 'is_active', 'created_by'];
+    public const TYPE_GENERIC = 'generic';
+
+    public const TYPE_DISCORD = 'discord';
+
+    public const TYPES = [
+        self::TYPE_GENERIC => 'Algemeen (ondertekende JSON)',
+        self::TYPE_DISCORD => 'Discord',
+    ];
+
+    public const SEVERITIES = ['info' => 'Info', 'warning' => 'Waarschuwing', 'critical' => 'Kritiek'];
+
+    private const SEVERITY_RANK = ['info' => 0, 'warning' => 1, 'critical' => 2];
+
+    protected $fillable = ['name', 'type', 'url', 'secret', 'events', 'min_severity', 'is_active', 'created_by'];
+
+    protected $attributes = ['type' => self::TYPE_GENERIC];
 
     protected $hidden = ['secret'];
 
@@ -37,6 +52,29 @@ class WebhookEndpoint extends Model
     public function subscribedTo(string $event): bool
     {
         return $event === 'test' || in_array($event, $this->events ?? [], true);
+    }
+
+    public function isDiscord(): bool
+    {
+        return $this->type === self::TYPE_DISCORD;
+    }
+
+    /**
+     * The URL requests are sent to. For Discord the real webhook URL
+     * (which contains the token) lives encrypted in `secret`.
+     */
+    public function deliveryUrl(): string
+    {
+        return $this->isDiscord() ? (string) $this->secret : $this->url;
+    }
+
+    public function wantsSeverity(?string $severity): bool
+    {
+        if ($this->min_severity === null || $severity === null) {
+            return true;
+        }
+
+        return (self::SEVERITY_RANK[$severity] ?? 0) >= (self::SEVERITY_RANK[$this->min_severity] ?? 0);
     }
 
     public static function generateSecret(): string

@@ -86,3 +86,28 @@ are not followed; any 2xx is success; network errors, timeouts, 408, 429 and
 5xx are retried up to 6 times (1 min, 5 min, 15 min, 1 h, 6 h); other
 responses fail immediately. After 20 consecutive failed deliveries the
 endpoint is disabled. With `QUEUE_CONNECTION=sync` there are no retries.
+
+### Discord
+
+Administrators can also add a **Discord** endpoint (**Beheer → Webhooks →
+Discord koppelen**). It uses the same events, delivery log, retries and
+auto-disable rules, but posts a Discord embed instead of the signed JSON
+body:
+
+- Only `https://discord.com/api/webhooks/{id}/{token}` URLs are accepted
+  (also `discordapp.com`, `ptb.`/`canary.` hosts and `/api/v10/`); no query
+  string.
+- The full URL contains the token and is stored encrypted (`APP_KEY`). Pages,
+  audit logs and delivery errors only show
+  `https://discord.com/api/webhooks/{id}/••••••`. Replace the URL via
+  **Bewerken**; an empty field keeps the stored one.
+- Embeds show the event (server offline/online, alert, website, SSL,
+  certificate expiry, DNS, domain registration), the affected server or
+  domain, status, severity, timestamps and a link to the incident.
+  Mentions are disabled.
+- An optional minimum severity skips lower incidents. The same incident
+  event in the same state is posted at most once per
+  `SERVERSCOPE_NOTIFY_CHAT_COOLDOWN` minutes (default 15), which absorbs
+  flapping; generic endpoints still receive every event.
+- **Testmelding naar Discord** sends one test embed (manual only; nothing is
+  sent on deploy).

@@ -4,7 +4,9 @@ namespace App\Jobs;
 
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
+use App\Monitoring\Net\HttpResult;
 use App\Monitoring\Net\SafeHttpClient;
+use App\Services\Notifications\DiscordMessage;
 use App\Support\Audit;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,22 +52,14 @@ class DeliverWebhook implements ShouldQueue
             return;
         }
 
-        $body = json_encode($delivery->payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        $timestamp = now()->getTimestamp();
-
-        $result = $http->post($endpoint->url, $body, [
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-            'X-ServerScope-Event' => $delivery->event,
-            'X-ServerScope-Delivery' => $delivery->uuid,
-            'X-ServerScope-Timestamp' => (string) $timestamp,
-            'X-ServerScope-Signature' => WebhookEndpoint::signature($endpoint->secret, $timestamp, $body),
-        ], 10.0);
+        $result = $endpoint->isDiscord()
+            ? $this->postToDiscord($http, $endpoint, $delivery)
+            : $this->postSigned($http, $endpoint, $delivery);
 
         $delivery->attempts++;
         $delivery->duration_ms = $result->durationMs;
         $delivery->response_status = $result->status;
-        $delivery->response_body = $result->body !== '' ? mb_substr($result->body, 0, 1000) : null;
+        $delivery->response_body = $result->body !== '' ? mb_substr((string) DiscordMessage::redact($result->body), 0, 1000) : null;
 
         if (! $result->failed() && $result->status >= 200 && $result->status < 300) {
             $delivery->fill(['status' => 'success', 'error' => null, 'delivered_at' => now()])->save();
@@ -83,7 +77,8 @@ class DeliverWebhook implements ShouldQueue
         // the request that triggered the event, so give up immediately.
         $canRetry = $retryable && $this->attempts() < $this->tries && ! $this->job instanceof SyncJob;
 
-        $delivery->fill(['status' => $canRetry ? 'retrying' : 'failed', 'error' => mb_substr((string) $error, 0, 500)])->save();
+        // Transport errors can echo the request URL; never store a Discord token.
+        $delivery->fill(['status' => $canRetry ? 'retrying' : 'failed', 'error' => mb_substr((string) DiscordMessage::redact((string) $error), 0, 500)])->save();
 
         if ($canRetry) {
             $this->release($this->backoff[$this->attempts() - 1] ?? 21600);
@@ -94,6 +89,35 @@ class DeliverWebhook implements ShouldQueue
         if (! $retryable || $this->job === null || $this->job instanceof SyncJob || $this->attempts() >= $this->tries) {
             $this->recordFailure($endpoint);
         }
+    }
+
+    private function postSigned(SafeHttpClient $http, WebhookEndpoint $endpoint, WebhookDelivery $delivery): HttpResult
+    {
+        $body = json_encode($delivery->payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $timestamp = now()->getTimestamp();
+
+        return $http->post($endpoint->deliveryUrl(), $body, [
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+            'X-ServerScope-Event' => $delivery->event,
+            'X-ServerScope-Delivery' => $delivery->uuid,
+            'X-ServerScope-Timestamp' => (string) $timestamp,
+            'X-ServerScope-Signature' => WebhookEndpoint::signature($endpoint->secret, $timestamp, $body),
+        ], 10.0);
+    }
+
+    /**
+     * Discord expects its own message format and cannot verify signatures;
+     * the token in the URL is the credential.
+     */
+    private function postToDiscord(SafeHttpClient $http, WebhookEndpoint $endpoint, WebhookDelivery $delivery): HttpResult
+    {
+        $body = json_encode(DiscordMessage::fromPayload($delivery->payload), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        return $http->post($endpoint->deliveryUrl(), $body, [
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ], 10.0);
     }
 
     public function failed(Throwable $exception): void

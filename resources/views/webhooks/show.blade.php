@@ -5,7 +5,7 @@
     <x-slot:pageTitle>{{ $endpoint->name }}</x-slot:pageTitle>
     <x-slot:subtitle class="break">{{ $endpoint->url }}</x-slot:subtitle>
     <x-slot:actions>
-        <form method="POST" action="{{ route('webhooks.test', $endpoint) }}" class="inline-form">@csrf<button class="button" type="submit">Testlevering</button></form>
+        <form method="POST" action="{{ route('webhooks.test', $endpoint) }}" class="inline-form">@csrf<button class="button" type="submit">{{ $endpoint->isDiscord() ? 'Testmelding naar Discord' : 'Testlevering' }}</button></form>
         <a class="button" href="{{ route('webhooks.edit', $endpoint) }}"><svg class="ico"><use href="#i-edit"/></svg> Bewerken</a>
     </x-slot:actions>
 
@@ -19,12 +19,18 @@
         <section class="panel">
             <div class="section-heading"><div><h2>Instellingen</h2></div><x-status :status="$endpoint->is_active ? 'enabled' : 'disabled'" /></div>
             <dl class="dl">
+                <dt>Type</dt><dd>{{ \App\Models\WebhookEndpoint::TYPES[$endpoint->type] ?? $endpoint->type }}</dd>
+                <dt>Minimale ernst</dt><dd>{{ $endpoint->min_severity ? \App\Models\WebhookEndpoint::SEVERITIES[$endpoint->min_severity].' en hoger' : 'Alle incidenten' }}</dd>
                 <dt>Gebeurtenissen</dt><dd>@foreach ($endpoint->events as $e)<code class="chip">{{ $e }}</code> @endforeach</dd>
                 <dt>Mislukt op rij</dt><dd>{{ $endpoint->consecutive_failures }} (uitgeschakeld na {{ \App\Jobs\DeliverWebhook::DISABLE_AFTER_FAILURES }})</dd>
                 <dt>Laatste levering</dt><dd>{{ $endpoint->last_delivery_at ? Time::format($endpoint->last_delivery_at) : '—' }}</dd>
             </dl>
             <div class="form-footer">
-                <form method="POST" action="{{ route('webhooks.secret', $endpoint) }}" class="inline-form" data-confirm="Nieuw geheim genereren? Het huidige werkt daarna niet meer.">@csrf<button class="button button-warning" type="submit">Geheim vernieuwen</button></form>
+                @if ($endpoint->isDiscord())
+                    <a class="button button-warning" href="{{ route('webhooks.edit', $endpoint) }}">Discord-URL vervangen</a>
+                @else
+                    <form method="POST" action="{{ route('webhooks.secret', $endpoint) }}" class="inline-form" data-confirm="Nieuw geheim genereren? Het huidige werkt daarna niet meer.">@csrf<button class="button button-warning" type="submit">Geheim vernieuwen</button></form>
+                @endif
                 <form method="POST" action="{{ route('webhooks.destroy', $endpoint) }}" class="inline-form" data-confirm="Webhook en leveringsgeschiedenis verwijderen?">@csrf @method('DELETE')<button class="button button-danger" type="submit">Verwijderen</button></form>
             </div>
         </section>
