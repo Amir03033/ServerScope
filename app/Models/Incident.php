@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Severity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +15,7 @@ class Incident extends Model
 
     public const ACTIVE_STATUSES = ['open', 'acknowledged', 'investigating'];
 
-    public const SEVERITIES = ['info', 'warning', 'critical'];
+    public const SEVERITIES = Severity::ALL;
 
     /** Allowed manual status transitions. */
     public const TRANSITIONS = [
@@ -34,6 +35,10 @@ class Incident extends Model
         'dns' => 'DNS',
         'expiry' => 'Domeinregistratie',
         'manual' => 'Handmatig',
+        'page' => 'Websitepagina',
+        'service' => 'Service',
+        'predictive' => 'Voorspelling',
+        'anomaly' => 'Afwijking',
     ];
 
     protected $fillable = [
@@ -41,7 +46,7 @@ class Incident extends Model
         'status', 'title', 'description', 'assigned_to', 'opened_at', 'last_occurrence_at',
         'occurrence_count', 'acknowledged_at', 'acknowledged_by', 'resolved_at', 'resolved_by',
         'closed_at', 'closed_by', 'resolution_notes', 'reopened_count', 'escalated_at',
-        'last_notified_at', 'context',
+        'last_notified_at', 'context', 'started_at', 'parent_id', 'correlation',
     ];
 
     protected function casts(): array
@@ -57,6 +62,8 @@ class Incident extends Model
             'occurrence_count' => 'integer',
             'reopened_count' => 'integer',
             'context' => 'array',
+            'started_at' => 'datetime',
+            'correlation' => 'array',
         ];
     }
 
@@ -68,6 +75,44 @@ class Incident extends Model
     public function events(): HasMany
     {
         return $this->hasMany(IncidentEvent::class)->orderBy('created_at')->orderBy('id');
+    }
+
+    /** The root incident this one was grouped under. */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    /** Incidents grouped under this one. */
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
+    /** Resources affected by (or causing) this incident. */
+    public function impacts(): HasMany
+    {
+        return $this->hasMany(IncidentImpact::class);
+    }
+
+    /** Whether this incident is grouped under a parent that is still active. */
+    public function isSuppressedByParent(): bool
+    {
+        if ($this->parent_id === null) {
+            return false;
+        }
+
+        $parent = $this->relationLoaded('parent') ? $this->parent : $this->parent()->first();
+
+        return $parent !== null && $parent->isActive();
+    }
+
+    /** Seconds from the start of the problem to detection (incident opened). */
+    public function timeToDetect(): ?int
+    {
+        return $this->started_at && $this->started_at->lte($this->opened_at)
+            ? (int) $this->started_at->diffInSeconds($this->opened_at, true)
+            : null;
     }
 
     public function alerts(): HasMany
@@ -129,6 +174,7 @@ class Incident extends Model
         return match (true) {
             $subject instanceof Server => $subject->name,
             $subject instanceof Domain => $subject->displayName(),
+            $subject !== null && method_exists($subject, 'displayName') => $subject->displayName(),
             default => '—',
         };
     }

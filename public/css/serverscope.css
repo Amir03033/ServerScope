@@ -404,3 +404,6 @@ a.kpi:hover { border-color: color-mix(in srgb, var(--tone) 45%, var(--border)); 
     .dl { grid-template-columns: 1fr; }
     .dl dt { padding-bottom: 0; border-bottom: 0; }
 }
+
+/* Placeholders are examples, not values: keep them clearly dimmer. */
+input::placeholder, textarea::placeholder { color: #5b6b82; opacity: 1; font-style: italic; }

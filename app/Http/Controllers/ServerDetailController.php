@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MetricSample;
+use App\Services\ServerDiagnosis;
 use App\Models\Server;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -209,8 +210,15 @@ class ServerDetailController extends Controller
             ->limit(5)
             ->get();
 
+        $diagnosis = app(ServerDiagnosis::class);
+
         return view('servers.show', [
             'server' => $server,
+            'diagnosis' => $diagnosis->diagnose($server),
+            'quality' => $diagnosis->dataQuality($server),
+            'services' => $server->serviceChecks()->orderBy('name')->get(),
+            'history' => $this->history($samples),
+            'predictions' => \App\Models\Prediction::query()->forResource($server)->current()->orderByDesc('severity_rank')->get(),
             'credentials' => $credentials,
             'recentAlerts' => $recentAlerts,
             'displayStatus' => $displayStatus,
@@ -230,6 +238,50 @@ class ServerDetailController extends Controller
             'formatBytes' => $formatBytes,
             'formatUptime' => $formatUptime,
         ]);
+    }
+
+    /**
+     * Extended history for server-side charts: swap usage and rates
+     * derived from cumulative counters (network, disk I/O, errors).
+     * A counter that goes down (reboot, wrap) yields a gap, not a spike.
+     *
+     * @param  Collection<int, MetricSample>  $samples
+     * @return array<string, array<int, array{label: string, value: ?float, flag: bool}>>
+     */
+    private function history(Collection $samples): array
+    {
+        $series = ['swap' => [], 'rx' => [], 'tx' => [], 'disk_read' => [], 'disk_write' => [], 'errors' => [], 'processes' => []];
+        $previous = null;
+
+        foreach ($samples as $sample) {
+            $label = \App\Support\Time::format($sample->collected_at, 'd-m H:i');
+            $swap = $sample->swap_total_bytes > 0 && $sample->swap_used_bytes !== null ? round($sample->swap_used_bytes / $sample->swap_total_bytes * 100, 1) : null;
+            $series['swap'][] = ['label' => $label, 'value' => $swap, 'flag' => false];
+            $series['processes'][] = ['label' => $label, 'value' => $sample->process_count !== null ? (float) $sample->process_count : null, 'flag' => false];
+
+            $elapsed = $previous ? $previous->collected_at->diffInSeconds($sample->collected_at) : 0;
+            $rate = function (string $field, float $divisor = 1) use ($sample, $previous, $elapsed): ?float {
+                if (! $previous || $elapsed <= 0 || $sample->{$field} === null || $previous->{$field} === null || $sample->{$field} < $previous->{$field}) {
+                    return null;
+                }
+
+                return round(($sample->{$field} - $previous->{$field}) / $elapsed / $divisor, 2);
+            };
+
+            $series['rx'][] = ['label' => $label, 'value' => $rate('network_rx_bytes', 1024), 'flag' => false];
+            $series['tx'][] = ['label' => $label, 'value' => $rate('network_tx_bytes', 1024), 'flag' => false];
+            $series['disk_read'][] = ['label' => $label, 'value' => $rate('disk_read_bytes', 1024), 'flag' => false];
+            $series['disk_write'][] = ['label' => $label, 'value' => $rate('disk_write_bytes', 1024), 'flag' => false];
+
+            $in = $rate('network_errors_in');
+            $out = $rate('network_errors_out');
+            $errors = $in === null && $out === null ? null : round(($in ?? 0) + ($out ?? 0), 3);
+            $series['errors'][] = ['label' => $label, 'value' => $errors !== null ? $errors * 60 : null, 'flag' => $errors !== null && $errors > 0];
+
+            $previous = $sample;
+        }
+
+        return $series;
     }
 
     /**

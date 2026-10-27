@@ -6,6 +6,7 @@ use App\Models\Domain;
 use App\Monitoring\Net\SafeHttpClient;
 use App\Services\Incidents\IncidentManager;
 use App\Services\Incidents\Signal;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,6 +25,18 @@ class HttpMonitor
     public static function fingerprint(Domain $domain): string
     {
         return "domain:{$domain->id}:http";
+    }
+
+    /** Time of the first failed check after the last success. */
+    private function failingSince(Domain $domain): ?Carbon
+    {
+        $first = $domain->checks()
+            ->where('type', 'http')
+            ->where('success', false)
+            ->when($domain->http_last_success_at, fn ($q, $at) => $q->where('checked_at', '>', $at))
+            ->min('checked_at');
+
+        return $first !== null ? Carbon::parse($first, 'UTC') : null;
     }
 
     public function check(Domain $domain): void
@@ -93,6 +106,7 @@ class HttpMonitor
                             description: "{$message} ({$locked->http_consecutive_failures} opeenvolgende mislukte controles van {$locked->url()}).",
                             subject: $locked,
                             context: ['error' => $code, 'status_code' => $result->status],
+                            startedAt: $this->failingSince($locked),
                         ));
                     }
                 }

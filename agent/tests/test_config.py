@@ -69,3 +69,19 @@ def test_load_config_rejects_url_with_credentials(monkeypatch):
 
     with pytest.raises(ValueError, match="valid HTTPS"):
         load_config()
+
+
+def test_load_config_reads_services(monkeypatch):
+    monkeypatch.setenv("SERVERSCOPE_URL", "https://monitor.example.test")
+    monkeypatch.setenv("SERVERSCOPE_TOKEN", "test-token")
+    monkeypatch.setenv("SERVERSCOPE_SERVICES", "nginx, mysql")
+
+    assert load_config().services == ("nginx", "mysql")
+
+
+def test_load_config_services_default_to_none(monkeypatch):
+    monkeypatch.setenv("SERVERSCOPE_URL", "https://monitor.example.test")
+    monkeypatch.setenv("SERVERSCOPE_TOKEN", "test-token")
+    monkeypatch.delenv("SERVERSCOPE_SERVICES", raising=False)
+
+    assert load_config().services == ()

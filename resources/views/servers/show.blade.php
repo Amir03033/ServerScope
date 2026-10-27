@@ -310,6 +310,8 @@
         </article>
     </section>
 
+    @include('servers._health')
+
     <div class="section-heading" id="metrics">
         <div>
             <h2>Prestatiemonitoring</h2>
@@ -474,6 +476,8 @@
             </div>
         </section>
     </div>
+
+    @include('servers._history')
 
     <div class="section-heading">
         <div>
@@ -664,6 +668,8 @@
                 @endunless
             </section>
         @endcan
+
+        <x-dependencies :resource="$server" />
     </div>
 
     <x-slot:scripts>

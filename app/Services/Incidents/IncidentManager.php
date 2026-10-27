@@ -10,6 +10,7 @@ use App\Events\IncidentSeverityIncreased;
 use App\Models\Incident;
 use App\Models\IncidentEvent;
 use App\Models\User;
+use App\Support\Severity;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -26,8 +27,6 @@ use InvalidArgumentException;
  */
 class IncidentManager
 {
-    private const SEVERITY_RANK = ['info' => 0, 'warning' => 1, 'critical' => 2];
-
     public function trigger(Signal $signal): Incident
     {
         $this->assertSeverity($signal->severity);
@@ -58,7 +57,7 @@ class IncidentManager
             $active->last_occurrence_at = $now;
             $active->context = [...($active->context ?? []), ...$signal->context];
 
-            $escalated = self::SEVERITY_RANK[$signal->severity] > self::SEVERITY_RANK[$active->severity];
+            $escalated = Severity::rank($signal->severity) > Severity::rank($active->severity);
 
             if ($escalated) {
                 $this->event($active, 'severity_changed', null, "Ernst verhoogd van {$active->severity} naar {$signal->severity}.", [
@@ -110,6 +109,8 @@ class IncidentManager
             $recent->fill([
                 'status' => 'open',
                 'active_fingerprint' => $signal->fingerprint,
+                // Re-evaluated below: the previous root may be resolved.
+                'parent_id' => null,
                 'severity' => $signal->severity,
                 'title' => $signal->title,
                 'description' => $signal->description ?? $recent->description,
@@ -120,6 +121,8 @@ class IncidentManager
                 'reopened_count' => $recent->reopened_count + 1,
                 'context' => [...($recent->context ?? []), ...$signal->context, 'escalation_key' => $signal->escalationKey],
             ])->save();
+
+            $this->correlate($recent);
 
             $this->event($recent, 'reopened', null, 'Het probleem trad opnieuw op binnen '.$window.' minuten na herstel.', $signal->context ?: null);
 
@@ -141,9 +144,11 @@ class IncidentManager
             'opened_at' => $now,
             'last_occurrence_at' => $now,
             'context' => ($signal->escalationKey !== null ? [...$signal->context, 'escalation_key' => $signal->escalationKey] : $signal->context) ?: null,
+            'started_at' => $signal->startedAt !== null && $signal->startedAt->lte($now) ? $signal->startedAt : $now,
         ]);
 
         $this->event($incident, 'opened', null, $signal->description, $signal->context ?: null);
+        $this->correlate($incident);
 
         DB::afterCommit(fn () => IncidentOpened::dispatch($incident));
 
@@ -180,6 +185,11 @@ class IncidentManager
 
             return $incident;
         });
+    }
+
+    private function correlate(Incident $incident): void
+    {
+        app(CorrelationEngine::class)->correlate($incident);
     }
 
     public function isActive(string $fingerprint): bool
@@ -298,7 +308,7 @@ class IncidentManager
 
     private function assertSeverity(string $severity): void
     {
-        if (! isset(self::SEVERITY_RANK[$severity])) {
+        if (! Severity::isValid($severity)) {
             throw new InvalidArgumentException("Unknown severity {$severity}.");
         }
     }

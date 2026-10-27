@@ -151,10 +151,24 @@ class AlertDetectionService
 
             if (! $isTriggered) {
                 if ($activeAlert !== null) {
+                    // Recovery confirmation: resolve only after the
+                    // configured number of consecutive good samples.
+                    $streak = $activeAlert->recovery_streak + 1;
+
+                    if ($streak < max(1, (int) $lockedRule->recovery_samples)) {
+                        $activeAlert->update([
+                            'recovery_streak' => $streak,
+                            'observed_value' => $value,
+                        ]);
+
+                        return;
+                    }
+
                     $activeAlert->update([
                         'status' => 'resolved',
                         'resolved_at' => now(),
                         'observed_value' => $value,
+                        'recovery_streak' => $streak,
                     ]);
                 }
 
@@ -164,6 +178,7 @@ class AlertDetectionService
             if ($activeAlert !== null) {
                 $activeAlert->update([
                     'observed_value' => $value,
+                    'recovery_streak' => 0,
                 ]);
 
                 return;

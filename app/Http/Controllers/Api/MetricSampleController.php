@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\MetricSample;
 use App\Services\AlertDetectionService;
+use App\Services\ServiceMonitor;
+use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +19,7 @@ class MetricSampleController extends Controller
     public function store(
         Request $request,
         AlertDetectionService $alertDetectionService,
+        ServiceMonitor $serviceMonitor,
     ): JsonResponse {
         $server = $request->attributes->get('agentServer');
 
@@ -54,6 +57,20 @@ class MetricSampleController extends Controller
             'network_tx_bytes' => ['nullable', 'integer', 'min:0'],
             'uptime_seconds' => ['nullable', 'integer', 'min:0'],
             'agent_version' => ['nullable', 'string', 'max:50'],
+
+            // Added in agent 0.2.0; older agents omit them.
+            'disk_read_bytes' => ['nullable', 'integer', 'min:0'],
+            'disk_write_bytes' => ['nullable', 'integer', 'min:0'],
+            'network_errors_in' => ['nullable', 'integer', 'min:0'],
+            'network_errors_out' => ['nullable', 'integer', 'min:0'],
+            'network_drops_in' => ['nullable', 'integer', 'min:0'],
+            'network_drops_out' => ['nullable', 'integer', 'min:0'],
+            'process_count' => ['nullable', 'integer', 'min:0', 'max:10000000'],
+            'agent_checksum' => ['nullable', 'string', 'regex:/^[a-f0-9]{64}$/'],
+            'services' => ['nullable', 'array', 'max:'.ServiceMonitor::MAX_SERVICES],
+            'services.*.name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9@._:-]+$/', 'distinct'],
+            'services.*.state' => ['required', 'string', Rule::in(['running', 'starting', 'stopped', 'failed', 'not_found', 'unknown'])],
+            'services.*.detail' => ['nullable', 'string', 'max:100'],
         ]);
 
         foreach ([
@@ -88,8 +105,9 @@ class MetricSampleController extends Controller
         );
 
         $sampleData = $validated;
+        $services = $validated['services'] ?? null;
 
-        unset($sampleData['collected_at']);
+        unset($sampleData['collected_at'], $sampleData['services'], $sampleData['agent_checksum']);
 
         try {
             $sample = DB::transaction(function () use (
@@ -98,6 +116,8 @@ class MetricSampleController extends Controller
                 $collectedAt,
                 $validated,
                 $alertDetectionService,
+                $services,
+                $serviceMonitor,
             ): MetricSample {
                 $sample = $server->metricSamples()->create([
                     ...$sampleData,
@@ -109,7 +129,14 @@ class MetricSampleController extends Controller
                     'status' => 'online',
                     'agent_version' => $validated['agent_version']
                         ?? $server->agent_version,
+                    'agent_checksum' => $validated['agent_checksum']
+                        ?? $server->agent_checksum,
                 ])->save();
+
+                // Only agents configured to watch services send the key.
+                if ($services !== null) {
+                    $serviceMonitor->record($server, $services, now());
+                }
 
                 // Evaluate alerts as part of the same database transaction.
                 $alertDetectionService->evaluate($sample);

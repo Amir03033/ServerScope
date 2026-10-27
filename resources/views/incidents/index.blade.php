@@ -19,12 +19,12 @@
         <a class="kpi tone-red" href="{{ route('incidents.index', ['state' => 'active']) }}"><span class="kpi-icon"><svg class="ico"><use href="#i-siren"/></svg></span><div><div class="kpi-label">Actief</div><div class="kpi-value">{{ $counts['active'] }}</div><div class="kpi-caption">{{ $counts['critical'] }} kritiek</div></div></a>
         <a class="kpi tone-yellow" href="{{ route('incidents.index', ['state' => 'unacknowledged']) }}"><span class="kpi-icon"><svg class="ico"><use href="#i-bell"/></svg></span><div><div class="kpi-label">Wacht op bevestiging</div><div class="kpi-value">{{ $counts['unacknowledged'] }}</div></div></a>
         <div class="kpi tone-cyan"><span class="kpi-icon"><svg class="ico"><use href="#i-clock"/></svg></span><div><div class="kpi-label">MTTA (30 dagen)</div><div class="kpi-value" style="font-size:22px">{{ IncidentMetrics::humanDuration($summary['mtta_seconds']) }}</div><div class="kpi-caption">{{ $summary['acknowledged'] }} van {{ $summary['opened'] }} bevestigd</div></div></div>
-        <div class="kpi tone-green"><span class="kpi-icon"><svg class="ico"><use href="#i-check"/></svg></span><div><div class="kpi-label">MTTR (30 dagen)</div><div class="kpi-value" style="font-size:22px">{{ IncidentMetrics::humanDuration($summary['mttr_seconds']) }}</div><div class="kpi-caption">{{ $counts['resolved_7d'] }} opgelost in 7 dagen</div></div></div>
+        <div class="kpi tone-green"><span class="kpi-icon"><svg class="ico"><use href="#i-check"/></svg></span><div><div class="kpi-label">MTTR (30 dagen)</div><div class="kpi-value" style="font-size:22px">{{ IncidentMetrics::humanDuration($summary['mttr_seconds']) }}</div><div class="kpi-caption">{{ $counts['resolved_7d'] }} opgelost in 7 dagen · MTTD {{ IncidentMetrics::humanDuration($summary['mttd_seconds']) }}</div></div></div>
     </section>
 
     <section class="panel" style="margin-bottom:14px">
         <div class="section-heading">
-            <div><h2>Incidentfrequentie</h2><p>Nieuw geopende incidenten per dag, afgelopen 30 dagen. MTTA = gemiddelde tijd tot eerste bevestiging; MTTR = gemiddelde tijd tot oplossing (incidenten geopend in de periode).</p></div>
+            <div><h2>Incidentfrequentie</h2><p>Nieuw geopende incidenten per dag, afgelopen 30 dagen. MTTD = gemiddelde tijd van eerste mislukte controle tot incident; MTTA = gemiddelde tijd tot eerste bevestiging; MTTR = gemiddelde tijd tot oplossing (incidenten geopend in de periode).</p></div>
         </div>
         <x-line-chart :points="$points" :height="120" color="#fb7185" label="Incidenten per dag" />
     </section>
@@ -46,7 +46,7 @@
             <div class="form-field grow"><label for="q">Zoeken</label><input id="q" type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Titel"></div>
             <div class="form-field"><label for="severity">Ernst</label>
                 <select id="severity" name="severity"><option value="">Alle</option>
-                    @foreach (['critical' => 'Kritiek', 'warning' => 'Waarschuwing', 'info' => 'Info'] as $v => $l)<option value="{{ $v }}" @selected(($filters['severity'] ?? null) === $v)>{{ $l }}</option>@endforeach
+                    @foreach (\App\Support\Severity::options() as $v => $l)<option value="{{ $v }}" @selected(($filters['severity'] ?? null) === $v)>{{ $l }}</option>@endforeach
                 </select>
             </div>
             <div class="form-field"><label for="source">Bron</label>
@@ -73,9 +73,9 @@
                             <tr>
                                 <td>
                                     <a class="row-link" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>
-                                    <span class="cell-sub">#{{ $incident->id }} · {{ $incident->sourceLabel() }}@if ($incident->occurrence_count > 1) · {{ $incident->occurrence_count }}× waargenomen @endif @if ($incident->reopened_count) · {{ $incident->reopened_count }}× heropend @endif</span>
+                                    <span class="cell-sub">#{{ $incident->id }} · {{ $incident->sourceLabel() }}@if ($incident->occurrence_count > 1) · {{ $incident->occurrence_count }}× waargenomen @endif @if ($incident->reopened_count) · {{ $incident->reopened_count }}× heropend @endif @if ($incident->parent_id) · gegroepeerd onder #{{ $incident->parent_id }} @endif @if ($incident->children_count) · {{ $incident->children_count }} gerelateerd @endif</span>
                                 </td>
-                                <td><x-status :status="$incident->severity" /></td>
+                                <td><x-severity :severity="$incident->severity" /></td>
                                 <td><x-status :status="$incident->status" /></td>
                                 <td class="small">{{ $incident->subjectName() }}</td>
                                 <td class="nowrap" title="{{ Time::format($incident->opened_at, 'd-m-Y H:i:s') }}">{{ Time::relative($incident->opened_at) }}</td>

@@ -3,6 +3,7 @@
 namespace App\Services\Domains;
 
 use App\Models\Domain;
+use App\Models\SslCertificate;
 use App\Monitoring\Net\BlockedTargetException;
 use App\Monitoring\Net\TargetGuard;
 use App\Monitoring\Net\TlsInspector;
@@ -98,6 +99,19 @@ class SslMonitor
                 'details' => array_filter($details, fn ($v) => $v !== null),
                 'checked_at' => $now,
             ]);
+
+            // Certificate history: one row per distinct certificate.
+            $certificate = SslCertificate::query()->firstOrNew(['domain_id' => $locked->id, 'fingerprint' => $tls->fingerprint]);
+            $certificate->fill([
+                'serial' => $tls->serial ? mb_substr($tls->serial, 0, 128) : null,
+                'subject' => $tls->subject ? mb_substr($tls->subject, 0, 255) : null,
+                'issuer' => $tls->issuer ? mb_substr($tls->issuer, 0, 255) : null,
+                'subject_alt_names' => array_slice($tls->subjectAltNames, 0, 100),
+                'valid_from' => $tls->validFrom,
+                'valid_to' => $tls->validTo,
+                'first_seen_at' => $certificate->exists ? $certificate->first_seen_at : $now,
+                'last_seen_at' => $now,
+            ])->save();
 
             $locked->forceFill([
                 'ssl_status' => $status,

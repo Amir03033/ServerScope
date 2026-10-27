@@ -44,8 +44,80 @@ Accept: application/json
 | POST | `/incidents/{id}/investigate` | write | |
 | POST | `/incidents/{id}/resolve` | write | optional `notes` |
 | POST | `/incidents/{id}/comments` | write | `message` |
+| POST | `/incidents/{id}/assign` | write | `user_id` (or null to unassign) |
+| GET | `/domains/{id}/pages` | read | monitored pages; `status` = up/degraded/down/unknown/paused/pending/rejected |
+| POST | `/domains/{id}/pages` | write + admin | `urls` (newline separated, full URLs or paths) plus optional page settings (see below); returns `meta.added`/`duplicates` |
+| GET | `/pages/{id}` | read | page state and settings |
+| PUT | `/pages/{id}` | write + admin | `url` plus settings (omitted settings fall back to defaults) |
+| DELETE | `/pages/{id}` | write + admin | deletes the page and its check history |
+| POST | `/pages/{id}/pause` · `/resume` · `/approve` · `/reject` | write + admin | approve re-validates the destination (SSRF rules) |
+| GET | `/pages/{id}/checks` | read | `result` = up/degraded/down; includes `failure_type` and redirect chain |
+| POST | `/domains/{id}/discovery` | write + admin | starts a background discovery run (202); 409 when one is running or the hourly limit is reached |
+| GET | `/domains/{id}/discovery-runs` | read | results, sources and errors of discovery runs |
+| GET | `/dependencies` | read | confirmed dependencies |
+| POST | `/dependencies` | write + admin | `dependent_type`, `dependent_id`, `dependency_type`, `dependency_id` (types: server, domain, page, service), `label`; cycles are refused |
+| DELETE | `/dependencies/{id}` | write + admin | |
+| GET | `/servers/{id}/services` | read | reported service states; `status` is `stale` while the agent is offline |
+| GET | `/predictions` | read | `kind` = anomaly/forecast, `status` = active (default)/resolved; includes window, trend, horizon, confidence and reason |
 
-## Example
+Incident objects additionally contain `started_at`, `time_to_detect_seconds`,
+`parent_id` and `correlation` (`reason_code` = dependency/same_resource, a
+human `reason` and the resource `path`); the detail endpoint also returns
+`children` and `impacts` (affected resources, e.g. the pages of a grouped
+website incident). Severity values: `info` (low), `warning` (medium),
+`high`, `critical`.
+
+### Page settings
+
+`check_interval_minutes` (default 5), `timeout_seconds` (10),
+`failure_threshold` (2), `recovery_threshold` (2), `expected_status_codes`
+(e.g. `200-299,301`), `max_response_ms`, `follow_redirects` (true),
+`expected_final_url`, `keyword_present`, `keyword_absent`,
+`header_assertions` (array of `{name, mode: present|absent|equals|contains, value}`),
+`monitored_headers` (array of header names tracked for drift),
+`content_monitoring`, `content_selector`, `content_exclusions` (array),
+`alerts_enabled` (true), `alert_severity` (`high`), `notify_content_changes`,
+`sla_target`.
+
+### Permissions
+
+Every token can read. Writes need the `write` ability; configuration
+changes (pages, discovery, dependencies) additionally need a token owned by
+an administrator (otherwise 403). Incident actions follow the web
+interface: any user may acknowledge, investigate, resolve, comment and
+assign.
+
+### Idempotency
+
+Write requests may send `Idempotency-Key: <8-128 characters>`. Repeating a
+request with the same key (per token, within 24 hours) returns the stored
+response with `Idempotent-Replayed: true` instead of executing it again;
+the same key with a different body or path is refused with 422, a
+concurrent duplicate with 409.
+
+## Examples
+
+Add pages and start discovery:
+
+```sh
+curl -s -X POST https://serverscope.nl/api/v1/domains/3/pages \
+  -H "Authorization: Bearer $SERVERSCOPE_API_TOKEN" -H "Accept: application/json" \
+  -H "Idempotency-Key: deploy-2026-10-28-pages" \
+  -d urls=$'/\n/pricing\n/api/health' -d keyword_absent="Fatal error" -d alert_severity=critical
+
+curl -s -X POST https://serverscope.nl/api/v1/domains/3/discovery \
+  -H "Authorization: Bearer $SERVERSCOPE_API_TOKEN" -H "Accept: application/json"
+```
+
+Declare that a website runs on a server (enables incident grouping):
+
+```sh
+curl -s -X POST https://serverscope.nl/api/v1/dependencies \
+  -H "Authorization: Bearer $SERVERSCOPE_API_TOKEN" -H "Accept: application/json" \
+  -d dependent_type=domain -d dependent_id=3 -d dependency_type=server -d dependency_id=1 -d label="draait op"
+```
+
+List active incidents:
 
 ```sh
 curl -s https://serverscope.nl/api/v1/incidents?state=active \
@@ -60,7 +132,11 @@ per-server agent tokens; those tokens do not work for this API.
 Administrators configure endpoints under **Beheer → Webhooks**. Events:
 `incident.opened`, `incident.reopened`, `incident.resolved`,
 `incident.escalated` (threshold crossed, severity increased or not
-acknowledged in time) and `dns.changed`, plus `test`.
+acknowledged in time), `dns.changed` and `page.changed` (significant
+content change of a page that opted in), plus `test`. Incident payloads
+include `parent_id`/`correlation`; generic endpoints receive grouped
+(child) incidents too, Discord channels follow the same suppression as
+e-mail (one message per underlying problem).
 
 Each delivery is a `POST` with a JSON body:
 

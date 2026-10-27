@@ -35,6 +35,7 @@ class Domain extends Model
         'follow_redirects', 'http_enabled', 'ssl_enabled', 'dns_enabled', 'expiry_enabled',
         'ssl_warning_days', 'expiry_warning_days',
         'maintenance_starts_at', 'maintenance_ends_at', 'maintenance_reason',
+        'notifications_enabled', 'sla_target', 'discovery_settings',
     ];
 
     protected $attributes = [
@@ -61,6 +62,8 @@ class Domain extends Model
     {
         return [
             'is_active' => 'boolean',
+            'notifications_enabled' => 'boolean',
+            'sla_target' => 'float',
             'follow_redirects' => 'boolean',
             'http_enabled' => 'boolean',
             'ssl_enabled' => 'boolean',
@@ -68,6 +71,7 @@ class Domain extends Model
             'expiry_enabled' => 'boolean',
             'ssl_warning_days' => 'array',
             'expiry_warning_days' => 'array',
+            'discovery_settings' => 'array',
             'check_interval_minutes' => 'integer',
             'timeout_seconds' => 'integer',
             'failure_threshold' => 'integer',
@@ -114,6 +118,50 @@ class Domain extends Model
     public function incidents(): MorphMany
     {
         return $this->morphMany(Incident::class, 'subject');
+    }
+
+    public function sslCertificates(): HasMany
+    {
+        return $this->hasMany(SslCertificate::class);
+    }
+
+    public function pages(): HasMany
+    {
+        return $this->hasMany(MonitoredPage::class);
+    }
+
+    public function pageChecks(): HasMany
+    {
+        return $this->hasMany(PageCheck::class);
+    }
+
+    public function discoveryRuns(): HasMany
+    {
+        return $this->hasMany(PageDiscoveryRun::class);
+    }
+
+    /**
+     * Discovery configuration with safe defaults: few pages, shallow,
+     * same host only, discovered pages wait for approval.
+     *
+     * @return array{max_pages: int, max_depth: int, allowed_patterns: array<int, string>, excluded_patterns: array<int, string>, keep_query: bool, include_subdomains: bool, auto_monitor: bool, default_interval: int, sitemap_urls: array<int, string>}
+     */
+    public function discoverySettings(): array
+    {
+        $settings = $this->discovery_settings ?? [];
+        $limit = (int) config('serverscope.websites.discovery_max_pages_limit', 1000);
+
+        return [
+            'max_pages' => max(1, min($limit, (int) ($settings['max_pages'] ?? config('serverscope.websites.discovery_default_max_pages', 50)))),
+            'max_depth' => max(0, min(5, (int) ($settings['max_depth'] ?? 1))),
+            'allowed_patterns' => array_values(array_filter((array) ($settings['allowed_patterns'] ?? []), 'is_string')),
+            'excluded_patterns' => array_values(array_filter((array) ($settings['excluded_patterns'] ?? []), 'is_string')),
+            'keep_query' => (bool) ($settings['keep_query'] ?? false),
+            'include_subdomains' => (bool) ($settings['include_subdomains'] ?? false),
+            'auto_monitor' => (bool) ($settings['auto_monitor'] ?? false),
+            'default_interval' => max(1, min(1440, (int) ($settings['default_interval'] ?? 15))),
+            'sitemap_urls' => array_values(array_filter((array) ($settings['sitemap_urls'] ?? []), 'is_string')),
+        ];
     }
 
     public function creator(): BelongsTo

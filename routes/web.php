@@ -14,6 +14,7 @@ use App\Http\Controllers\AlertRuleController;
 use App\Http\Controllers\ApiTokenController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AgentCredentialController;
+use App\Http\Controllers\DependencyController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\NotificationController;
@@ -24,8 +25,11 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServerMaintenanceController;
+use App\Http\Controllers\ServiceCheckController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\WebsiteDiscoveryController;
+use App\Http\Controllers\WebsitePageController;
 
 Route::redirect('/', '/dashboard');
 
@@ -88,9 +92,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->whereUuid('id')->name('notifications.read');
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/print', [ReportController::class, 'print'])->middleware('throttle:20,1')->name('reports.print');
     Route::get('/reports/export', [ReportController::class, 'export'])->middleware('throttle:20,1')->name('reports.export');
 
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/system-health', function (\App\Services\SystemHealth $health) {
+        \Illuminate\Support\Facades\Gate::authorize('admin');
+
+        return view('system-health', ['report' => $health->report()]);
+    })->name('system-health');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->middleware('throttle:10,1')->name('users.store');
@@ -140,6 +150,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/servers/{server}/maintenance', [ServerMaintenanceController::class, 'destroy'])
         ->name('servers.maintenance.end');
 
+    Route::put('/services/{service}', [ServiceCheckController::class, 'update'])->name('services.update');
+    Route::delete('/services/{service}', [ServiceCheckController::class, 'destroy'])->name('services.destroy');
+
     Route::post('/servers/{server}/credentials', [AgentCredentialController::class, 'store'])
         ->name('servers.credentials.store');
     Route::post('/servers/{server}/credentials/rotate', [AgentCredentialController::class, 'rotate'])
@@ -161,16 +174,38 @@ Route::middleware('auth')->group(function () {
     Route::post('/domains/{domain}/restore', [DomainController::class, 'restore'])->withTrashed()->name('domains.restore');
     Route::delete('/domains/{domain}/permanent', [DomainController::class, 'forceDestroy'])->withTrashed()->name('domains.force-destroy');
 
+    // Website (multi-page) monitoring
+    Route::get('/domains/{domain}/pages', [WebsitePageController::class, 'index'])->name('websites.pages');
+    Route::get('/domains/{domain}/pages/create', [WebsitePageController::class, 'create'])->name('websites.pages.create');
+    Route::post('/domains/{domain}/pages', [WebsitePageController::class, 'store'])->middleware('throttle:20,1')->name('websites.pages.store');
+    Route::post('/domains/{domain}/pages/bulk', [WebsitePageController::class, 'bulk'])->middleware('throttle:30,1')->name('websites.pages.bulk');
+    Route::get('/domains/{domain}/discovery', [WebsiteDiscoveryController::class, 'show'])->name('websites.discovery');
+    Route::put('/domains/{domain}/discovery', [WebsiteDiscoveryController::class, 'update'])->name('websites.discovery.update');
+    Route::post('/domains/{domain}/discovery/run', [WebsiteDiscoveryController::class, 'run'])->middleware('throttle:10,1')->name('websites.discovery.run');
+    Route::get('/pages/{page}', [WebsitePageController::class, 'show'])->name('pages.show');
+    Route::get('/pages/{page}/edit', [WebsitePageController::class, 'edit'])->name('pages.edit');
+    Route::put('/pages/{page}', [WebsitePageController::class, 'update'])->name('pages.update');
+    Route::delete('/pages/{page}', [WebsitePageController::class, 'destroy'])->name('pages.destroy');
+    Route::post('/pages/{page}/pause', [WebsitePageController::class, 'pause'])->name('pages.pause');
+    Route::post('/pages/{page}/resume', [WebsitePageController::class, 'resume'])->name('pages.resume');
+    Route::post('/pages/{page}/check', [WebsitePageController::class, 'check'])->name('pages.check');
+    Route::post('/page-changes/{change}/acknowledge', [WebsitePageController::class, 'acknowledgeChange'])->name('page-changes.acknowledge');
+
     Route::get('/incidents', [IncidentController::class, 'index'])->name('incidents.index');
     Route::get('/incidents/create', [IncidentController::class, 'create'])->name('incidents.create');
     Route::post('/incidents', [IncidentController::class, 'store'])->name('incidents.store');
     Route::get('/incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
     Route::post('/incidents/{incident}/status', [IncidentController::class, 'transition'])->name('incidents.transition');
     Route::post('/incidents/{incident}/assign', [IncidentController::class, 'assign'])->name('incidents.assign');
+    Route::post('/incidents/{incident}/detach', [IncidentController::class, 'detach'])->name('incidents.detach');
     Route::post('/incidents/{incident}/severity', [IncidentController::class, 'severity'])->name('incidents.severity');
     Route::post('/incidents/{incident}/comments', [IncidentController::class, 'comment'])
         ->middleware('throttle:30,1')
         ->name('incidents.comment');
+
+    Route::get('/dependencies', [DependencyController::class, 'index'])->name('dependencies.index');
+    Route::post('/dependencies', [DependencyController::class, 'store'])->name('dependencies.store');
+    Route::delete('/dependencies/{dependency}', [DependencyController::class, 'destroy'])->name('dependencies.destroy');
 
     Route::get('/alerts', AlertController::class)->name('alerts.index');
 

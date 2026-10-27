@@ -19,6 +19,7 @@ class Alert extends Model
         'observed_value',
         'threshold',
         'status',
+        'recovery_streak',
         'triggered_at',
         'resolved_at',
     ];
@@ -28,6 +29,7 @@ class Alert extends Model
         return [
             'observed_value' => 'float',
             'threshold' => 'float',
+            'recovery_streak' => 'integer',
             'triggered_at' => 'datetime',
             'resolved_at' => 'datetime',
         ];

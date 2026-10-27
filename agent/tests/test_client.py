@@ -173,3 +173,36 @@ def test_client_rejects_unexpected_response_format(
     assert str(error.value) == (
         "ServerScope returned an unexpected response."
     )
+
+
+class _ErrorResponse:
+    def __init__(self, status, body=None):
+        self.status_code = status
+        self._body = body or {}
+
+    def raise_for_status(self):
+        raise requests.HTTPError(response=self)
+
+    def json(self):
+        return self._body
+
+
+@pytest.mark.parametrize(
+    "status, body, expected",
+    [
+        (401, {}, "HTTP 401, token rejected"),
+        (422, {"message": "x", "errors": {"services.0.name": ["bad"], "collected_at": ["old"]}}, "HTTP 422, rejected fields: collected_at, services.0.name"),
+        (500, {}, "HTTP 500"),
+    ],
+)
+def test_failed_submissions_have_a_safe_reason(monkeypatch, status, body, expected):
+    from serverscope_agent.client import SubmissionError
+
+    client = create_client()
+    monkeypatch.setattr(client.session, "post", lambda url, **kwargs: _ErrorResponse(status, body))
+
+    with pytest.raises(SubmissionError) as error:
+        client.send_metrics({})
+
+    assert error.value.reason.startswith(expected)
+    assert "test-token" not in error.value.reason

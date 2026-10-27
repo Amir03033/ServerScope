@@ -66,7 +66,7 @@ class ProfileController extends Controller
             'notify_in_app' => ['boolean'],
             'notify_resolved' => ['boolean'],
             'notify_dns_changes' => ['boolean'],
-            'notify_min_severity' => ['required', Rule::in(['info', 'warning', 'critical'])],
+            'notify_min_severity' => ['required', Rule::in(\App\Support\Severity::ALL)],
         ]);
 
         $request->user()->forceFill([

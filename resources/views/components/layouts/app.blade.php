@@ -16,6 +16,7 @@
             ['route' => 'domains.index', 'match' => 'domains.*', 'icon' => 'i-globe', 'label' => 'Domeinen'],
             ['route' => 'incidents.index', 'match' => 'incidents.*', 'icon' => 'i-siren', 'label' => 'Incidenten', 'count' => $sidebarOpenIncidents ?? 0],
             ['route' => 'alerts.index', 'match' => 'alerts.*', 'icon' => 'i-bell', 'label' => 'Alerts', 'count' => $sidebarActiveAlerts ?? 0],
+            ['route' => 'dependencies.index', 'match' => 'dependencies.*', 'icon' => 'i-link', 'label' => 'Afhankelijkheden'],
             ['route' => 'reports.index', 'match' => 'reports.*', 'icon' => 'i-bars', 'label' => 'Rapporten'],
         ],
         'Beheer' => $isAdmin ? [
@@ -24,6 +25,7 @@
             ['route' => 'webhooks.index', 'match' => 'webhooks.*', 'icon' => 'i-webhook', 'label' => 'Webhooks'],
             ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'i-users', 'label' => 'Gebruikers'],
             ['route' => 'audit-logs.index', 'match' => 'audit-logs.*', 'icon' => 'i-history', 'label' => 'Auditlog'],
+            ['route' => 'system-health', 'match' => 'system-health', 'icon' => 'i-pulse', 'label' => 'Systeemstatus'],
         ] : [],
         'Account' => [
             ['route' => 'notifications.index', 'match' => 'notifications.*', 'icon' => 'i-message', 'label' => 'Meldingen', 'count' => $sidebarUnreadNotifications ?? 0, 'countClass' => 'info'],
@@ -85,8 +87,18 @@
         </nav>
 
         <div class="sidebar-bottom">
-            <strong><span class="connection-dot"></span>Monitoring status</strong>
-            <div class="muted small" style="margin-top:6px">Agentverbinding via HTTPS</div>
+            @php
+                $systemStatus = $isAdmin ? app(\App\Services\SystemHealth::class)->summary() : null;
+                $systemLabel = ['healthy' => 'Monitoring werkt', 'warning' => 'Monitoring: aandacht nodig', 'critical' => 'Monitoring verstoord'][$systemStatus] ?? 'Monitoring status';
+            @endphp
+            <strong><span class="connection-dot" @if ($systemStatus && $systemStatus !== 'healthy') style="background:var({{ $systemStatus === 'critical' ? '--red' : '--yellow' }});box-shadow:none" @endif></span>{{ $systemLabel }}</strong>
+            <div class="muted small" style="margin-top:6px">
+                @if ($systemStatus)
+                    <a href="{{ route('system-health') }}">Scheduler, wachtrij en controles</a>
+                @else
+                    Agentverbinding via HTTPS
+                @endif
+            </div>
             @if (config('serverscope.docs_url'))
                 <a class="small" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px" href="{{ config('serverscope.docs_url') }}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-file"/></svg> Documentatie</a>
             @endif
@@ -176,6 +188,10 @@
     // state on submit so forms cannot be submitted twice.
     document.addEventListener('submit', (event) => {
         const form = event.target;
+
+        if (event.defaultPrevented) {
+            return;
+        }
 
         if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) {
             event.preventDefault();

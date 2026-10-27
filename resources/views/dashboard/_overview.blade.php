@@ -41,7 +41,7 @@
             <div class="section-heading"><div><h2>Actieve incidenten</h2><p>Kritiek eerst.</p></div><a class="button button-sm" href="{{ route('incidents.index') }}">Alle</a></div>
             @forelse ($inc['list'] as $incident)
                 <a href="{{ route('incidents.show', $incident) }}" class="ov-row">
-                    <x-status :status="$incident->severity" />
+                    <x-severity :severity="$incident->severity" />
                     <span class="ov-main"><strong>{{ $incident->title }}</strong><span class="cell-sub">{{ $incident->subjectName() }} · {{ Time::relative($incident->opened_at) }} · {{ ['open' => 'open', 'acknowledged' => 'bevestigd', 'investigating' => 'in onderzoek'][$incident->status] ?? $incident->status }}</span></span>
                 </a>
             @empty

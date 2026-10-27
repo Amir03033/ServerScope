@@ -213,7 +213,7 @@
             <label for="severity">Ernst van het incident</label>
 
             <select id="severity" name="severity" required>
-                @foreach (['warning' => 'Waarschuwing', 'critical' => 'Kritiek'] as $value => $label)
+                @foreach (\App\Support\Severity::options() as $value => $label)
                     <option value="{{ $value }}" @selected(old('severity', $rule->severity ?? ($rule->metric === 'agent_offline' ? 'critical' : 'warning')) === $value)>{{ $label }}</option>
                 @endforeach
             </select>
@@ -244,6 +244,29 @@
             </span>
 
             @error('duration_minutes')
+            <span class="field-error">{{ $message }}</span>
+            @enderror
+        </div>
+
+        <div class="field">
+            <label for="recovery_samples">Herstelbevestiging (metingen)</label>
+
+            <input
+                id="recovery_samples"
+                name="recovery_samples"
+                type="number"
+                min="1"
+                max="30"
+                step="1"
+                value="{{ old('recovery_samples', $rule->recovery_samples ?? 1) }}"
+            >
+
+            <span class="field-help">
+                Aantal opeenvolgende goede metingen voordat de alert als hersteld geldt (1 = direct).
+                Voorkomt herstelmeldingen bij een kortstondige dip.
+            </span>
+
+            @error('recovery_samples')
             <span class="field-error">{{ $message }}</span>
             @enderror
         </div>

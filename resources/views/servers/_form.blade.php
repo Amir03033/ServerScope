@@ -58,6 +58,42 @@
 
     @if ($isEditing)
         <div class="form-section">
+            <h3>Meldingen en beschikbaarheidsdoel</h3>
+            <p>Incidenten worden altijd vastgelegd; met meldingen uit worden er geen e-mails, in-app- of chatmeldingen voor deze server verstuurd.</p>
+        </div>
+
+        <div class="form-field">
+            <label class="check">
+                <input type="hidden" name="notifications_enabled" value="0">
+                <input type="checkbox" name="notifications_enabled" value="1" @checked(old('notifications_enabled', $server->notifications_enabled ?? true))>
+                Meldingen versturen voor deze server
+            </label>
+        </div>
+
+        <div @class(['form-field', 'has-error' => $errors->has('sla_target')])>
+            <label for="sla_target">Beschikbaarheidsdoel (%)</label>
+            <input id="sla_target" name="sla_target" type="text" inputmode="decimal" value="{{ old('sla_target', $server->sla_target) }}" placeholder="{{ config('serverscope.reports.default_target') }} (standaard)">
+            @error('sla_target')<span class="form-error">{{ $message }}</span>@enderror
+        </div>
+
+        <div class="form-field">
+            <label class="check">
+                <input type="hidden" name="predictive_alerts_enabled" value="0">
+                <input type="checkbox" name="predictive_alerts_enabled" value="1" @checked(old('predictive_alerts_enabled', $server->predictive_alerts_enabled ?? true))>
+                Voorspellende meldingen (bijv. schijf vol binnen {{ config('serverscope.predictive.alert_horizon_days') }} dagen)
+            </label>
+        </div>
+
+        <div class="form-field">
+            <label for="anomaly_sensitivity">Gevoeligheid afwijkingsdetectie</label>
+            <select id="anomaly_sensitivity" name="anomaly_sensitivity">
+                @foreach (['off' => 'Uit', 'low' => 'Laag (alleen grote afwijkingen)', 'medium' => 'Gemiddeld', 'high' => 'Hoog'] as $v => $l)
+                    <option value="{{ $v }}" @selected(old('anomaly_sensitivity', $server->anomaly_sensitivity ?? 'medium') === $v)>{{ $l }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="form-section">
             <h3>Onderhoudsvenster</h3>
             <p>
                 Tijdens onderhoud worden geen nieuwe downtime- of resource-alerts aangemaakt. Laat beide velden leeg om

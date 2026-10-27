@@ -7,6 +7,8 @@ use App\Jobs\DeliverWebhook;
 use App\Models\DnsChange;
 use App\Models\Domain;
 use App\Models\Incident;
+use App\Models\MonitoredPage;
+use App\Models\PageChange;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
 use Illuminate\Support\Facades\Cache;
@@ -30,6 +32,14 @@ class WebhookDispatcher
         ]);
     }
 
+    public function pageChange(MonitoredPage $page, PageChange $change): void
+    {
+        $this->dispatch('page.changed', [
+            'page' => ['id' => $page->id, 'url' => $page->url, 'domain_id' => $page->domain_id],
+            'change' => ['id' => $change->id, 'kind' => $change->kind, 'significance' => $change->significance, 'summary' => $change->summary, 'detected_at' => $change->detected_at->toIso8601String()],
+        ]);
+    }
+
     public function test(WebhookEndpoint $endpoint): WebhookDelivery
     {
         return $this->queue($endpoint, 'test', ['message' => 'Testlevering vanuit ServerScope.']);
@@ -45,6 +55,9 @@ class WebhookDispatcher
         WebhookEndpoint::query()->where('is_active', true)->get()
             ->filter(fn (WebhookEndpoint $endpoint) => $endpoint->subscribedTo($event))
             ->filter(fn (WebhookEndpoint $endpoint) => $incident === null || $endpoint->wantsSeverity($incident->severity))
+            // Chat channels follow the same incident-aware suppression as
+            // e-mail; machine endpoints receive everything (with parent_id).
+            ->reject(fn (WebhookEndpoint $endpoint) => $endpoint->isDiscord() && $incident !== null && app(NotificationDispatcher::class)->suppressionReason($incident, $event) !== null)
             ->reject(fn (WebhookEndpoint $endpoint) => $endpoint->isDiscord() && $this->isDuplicate($endpoint, $event, $incident))
             ->each(fn (WebhookEndpoint $endpoint) => $this->queue($endpoint, $event, $data));
     }

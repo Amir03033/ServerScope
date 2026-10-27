@@ -2,6 +2,7 @@
 
 namespace App\Services\Incidents;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -21,5 +22,7 @@ final class Signal
         // When this changes while the incident is active (e.g. a lower
         // expiry threshold was crossed), an escalation is announced.
         public readonly ?string $escalationKey = null,
+        // When the problem began according to the evidence (MTTD).
+        public readonly ?CarbonInterface $startedAt = null,
     ) {}
 }

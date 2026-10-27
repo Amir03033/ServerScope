@@ -3,6 +3,10 @@
 - Original audit: 2026-10-25 (61 tests, server-metrics dashboard only).
 - Status update: 2026-10-26, branch `claude/hopeful-euler-bbinww`
   (289 PHPUnit tests and 24 agent tests passing).
+- Monitoring & intelligence upgrade: branch `claude/cool-curie-fk2smd`
+  (407 PHPUnit tests and 32 agent tests passing). Details, remaining work
+  and limitations: [UPGRADE_PLAN.md](UPGRADE_PLAN.md); report method:
+  [REPORTS.md](REPORTS.md).
 
 Scope: the ServerScope Laravel application (not `info.serverscope.nl`).
 Statuses are based on code plus automated tests and local runs in a
@@ -26,7 +30,7 @@ where noted) · **PARTIAL** · **MISSING** · **UNVERIFIED**.
 | Offline detection, status, last seen | COMPLETE | scheduler; `Server::displayStatus()` single source |
 | Historical charts | COMPLETE | 7d/30d downsampling fix; charts were empty in production because the Vite build was not committed — fixed |
 | Resource alerts with severity | PARTIAL | CPU/RAM/disk/agent-offline; no load/network/swap rules, no separate warning+critical thresholds per rule, recovery on first good sample |
-| Process/service health | MISSING | agent does not collect it |
+| Process/service health | COMPLETE | agent 0.2.0 `SERVERSCOPE_SERVICES`; `ServerHealthTest` |
 | Agent packaging | COMPLETE | systemd unit + install guide (`agent/README.md`); no local buffering of failed samples |
 
 ### Domains
@@ -47,7 +51,7 @@ where noted) · **PARTIAL** · **MISSING** · **UNVERIFIED**.
 |---|---|---|
 | Incidents from server alerts and domain checks, fingerprints, unique active incident, reopen window, recovery | COMPLETE | `IncidentManagementTest`, `DomainMonitorsTest` |
 | Lifecycle, assignment, comments, timeline, manual incidents, filters, MTTA/MTTR | COMPLETE | |
-| Incident correlation across resources | MISSING | intentionally not automatic (no time-based merging) |
+| Incident correlation across resources | COMPLETE | via confirmed dependencies only, never by timing alone; `IncidentCorrelationTest` |
 | E-mail + in-app notifications, preferences, delivery log, suppression, mail cap | COMPLETE | `NotificationsTest` (real delivery through array mailer) |
 | Escalation of unacknowledged incidents | COMPLETE | per-severity delay, optional extra recipients |
 | DNS/SSL/domain-expiry notifications | COMPLETE | via incidents (threshold escalation) and DNS change notification |

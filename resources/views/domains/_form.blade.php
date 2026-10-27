@@ -113,6 +113,26 @@
     </div>
 
     <div class="form-section">
+        <h3>Meldingen en beschikbaarheidsdoel</h3>
+        <p>Incidenten worden altijd vastgelegd; met meldingen uit worden er geen e-mails, in-app- of chatmeldingen voor dit domein verstuurd.</p>
+    </div>
+
+    <div class="form-field">
+        <label class="check">
+            <input type="hidden" name="notifications_enabled" value="0">
+            <input type="checkbox" name="notifications_enabled" value="1" @checked(old('notifications_enabled', $domain->notifications_enabled ?? true))>
+            Meldingen versturen voor dit domein
+        </label>
+    </div>
+
+    <div @class(['form-field', 'has-error' => $errors->has('sla_target')])>
+        <label for="sla_target">Beschikbaarheidsdoel (%)</label>
+        <input id="sla_target" name="sla_target" type="text" inputmode="decimal" value="{{ old('sla_target', $domain->sla_target) }}" placeholder="{{ config('serverscope.reports.default_target') }} (standaard)">
+        <span class="form-help">Gebruikt in rapporten; leeg = standaarddoel.</span>
+        @error('sla_target')<span class="form-error">{{ $message }}</span>@enderror
+    </div>
+
+    <div class="form-section">
         <h3>Onderhoudsvenster</h3>
         <p>Tijdens onderhoud lopen de controles door, maar worden er geen incidenten aangemaakt. Tijden in {{ Time::zone() }}.</p>
     </div>

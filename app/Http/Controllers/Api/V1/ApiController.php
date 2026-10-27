@@ -128,7 +128,7 @@ class ApiController extends Controller
 
     public function incident(Incident $incident): IncidentResource
     {
-        return new IncidentResource($incident->load(['subject', 'events']));
+        return new IncidentResource($incident->load(['subject', 'events', 'impacts', 'children']));
     }
 
     public function transition(Request $request, Incident $incident, IncidentManager $manager, string $status): IncidentResource|JsonResponse

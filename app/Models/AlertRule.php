@@ -41,6 +41,7 @@ class AlertRule extends Model
         'operator',
         'severity',
         'duration_minutes',
+        'recovery_samples',
         'is_enabled',
     ];
 
@@ -49,6 +50,7 @@ class AlertRule extends Model
         return [
             'threshold' => 'float',
             'duration_minutes' => 'integer',
+            'recovery_samples' => 'integer',
             'is_enabled' => 'boolean',
         ];
     }

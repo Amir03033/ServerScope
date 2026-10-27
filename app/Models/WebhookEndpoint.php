@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Severity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -13,6 +14,7 @@ class WebhookEndpoint extends Model
         'incident.resolved' => 'Incident opgelost',
         'incident.escalated' => 'Incident geëscaleerd (drempel/ernst/niet bevestigd)',
         'dns.changed' => 'DNS-records gewijzigd',
+        'page.changed' => 'Pagina-inhoud gewijzigd (alleen pagina\'s met wijzigingsmeldingen)',
     ];
 
     public const TYPE_GENERIC = 'generic';
@@ -24,9 +26,7 @@ class WebhookEndpoint extends Model
         self::TYPE_DISCORD => 'Discord',
     ];
 
-    public const SEVERITIES = ['info' => 'Info', 'warning' => 'Waarschuwing', 'critical' => 'Kritiek'];
-
-    private const SEVERITY_RANK = ['info' => 0, 'warning' => 1, 'critical' => 2];
+    public const SEVERITIES = [Severity::LOW => 'Laag', Severity::MEDIUM => 'Gemiddeld', Severity::HIGH => 'Hoog', Severity::CRITICAL => 'Kritiek'];
 
     protected $fillable = ['name', 'type', 'url', 'secret', 'events', 'min_severity', 'is_active', 'created_by'];
 
@@ -74,7 +74,7 @@ class WebhookEndpoint extends Model
             return true;
         }
 
-        return (self::SEVERITY_RANK[$severity] ?? 0) >= (self::SEVERITY_RANK[$this->min_severity] ?? 0);
+        return Severity::atLeast($severity, $this->min_severity);
     }
 
     public static function generateSecret(): string

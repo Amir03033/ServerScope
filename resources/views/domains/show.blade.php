@@ -72,6 +72,8 @@
         @endcan
     </x-slot:actions>
 
+    @include('websites._tabs')
+
     @if ($domain->trashed())
         <div class="flash warning" role="status">
             <svg class="ico"><use href="#i-trash"/></svg>
@@ -279,7 +281,7 @@
                                     @if (Route::has('incidents.show'))<a class="row-link" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>@else{{ $incident->title }}@endif
                                     <span class="cell-sub">{{ $incident->sourceLabel() }}</span>
                                 </td>
-                                <td><x-status :status="$incident->severity" /></td>
+                                <td><x-severity :severity="$incident->severity" /></td>
                                 <td><x-status :status="$incident->status" /></td>
                                 <td class="nowrap">{{ Time::format($incident->opened_at) }}</td>
                                 <td class="nowrap">{{ $incident->resolved_at ? \Carbon\CarbonInterval::seconds($incident->timeToResolve())->cascade()->locale('nl')->forHumans(['short' => true, 'parts' => 2]) : 'loopt' }}</td>
@@ -323,4 +325,37 @@
             <x-pagination :paginator="$checks" />
         @endif
     </section>
+
+    <div class="grid-2" style="margin-top:14px">
+        <section class="panel">
+            <div class="section-heading"><div><h2>Certificaatgeschiedenis</h2><p>Elk afzonderlijk certificaat dat is waargenomen.</p></div></div>
+            @if ($certificates->isEmpty())
+                <x-empty-state icon="i-lock" title="Nog geen certificaten vastgelegd">{{ $domain->ssl_enabled ? 'Verschijnt na de eerste TLS-controle.' : 'TLS-controle staat uit.' }}</x-empty-state>
+            @else
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead><tr><th>Uitgever</th><th>Geldig</th><th>Waargenomen</th></tr></thead>
+                        <tbody>
+                            @foreach ($certificates as $certificate)
+                                <tr>
+                                    <td class="small">{{ $certificate->issuer ?? '—' }}<span class="cell-sub mono">{{ substr($certificate->fingerprint, 0, 23) }}…</span></td>
+                                    <td class="nowrap small">{{ Time::format($certificate->valid_from, 'd-m-Y') }} – {{ Time::format($certificate->valid_to, 'd-m-Y') }}</td>
+                                    <td class="nowrap small">{{ Time::format($certificate->first_seen_at) }}<span class="cell-sub">t/m {{ Time::format($certificate->last_seen_at) }}</span></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </section>
+
+        <x-dependencies :resource="$domain" />
+    </div>
+
+    @if ($predictions->isNotEmpty())
+        <section class="panel" style="margin-top:14px">
+            <div class="section-heading"><div><h2>Afwijkingen</h2><p>Responstijd en foutpercentage vergeleken met de eigen historie van 7 dagen.</p></div></div>
+            @include('servers._predictions', ['predictions' => $predictions])
+        </section>
+    @endif
 </x-layouts.app>

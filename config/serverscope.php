@@ -85,6 +85,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Website (multi-page) monitoring and discovery
+    |--------------------------------------------------------------------------
+    |
+    | Discovery only follows sitemaps, robots.txt and links on the website's
+    | own host (subdomains only when enabled per website). Every request goes
+    | through SafeHttpClient, so the SSRF rules above apply to each URL and
+    | every redirect.
+    |
+    */
+
+    'websites' => [
+        'max_pages_per_website' => (int) env('SERVERSCOPE_MAX_PAGES_PER_WEBSITE', 1000),
+        'discovery_default_max_pages' => (int) env('SERVERSCOPE_DISCOVERY_DEFAULT_PAGES', 50),
+        'discovery_max_pages_limit' => (int) env('SERVERSCOPE_DISCOVERY_MAX_PAGES', 1000),
+        'discovery_max_requests' => (int) env('SERVERSCOPE_DISCOVERY_MAX_REQUESTS', 300),
+        'discovery_max_sitemaps' => (int) env('SERVERSCOPE_DISCOVERY_MAX_SITEMAPS', 25),
+        'discovery_request_delay_ms' => (int) env('SERVERSCOPE_DISCOVERY_DELAY_MS', 250),
+        'discovery_timeout_seconds' => (int) env('SERVERSCOPE_DISCOVERY_TIMEOUT', 10),
+        'discovery_max_duration_seconds' => (int) env('SERVERSCOPE_DISCOVERY_MAX_DURATION', 240),
+        // Page checks queued per website and in total per scheduler run;
+        // the rest stays due for the next minute (no job storms).
+        'checks_per_website_per_run' => (int) env('SERVERSCOPE_PAGE_CHECKS_PER_WEBSITE', 20),
+        'max_checks_per_run' => (int) env('SERVERSCOPE_PAGE_CHECKS_PER_RUN', 500),
+        // Content changes above this share of changed text are "significant".
+        'significant_change_ratio' => (float) env('SERVERSCOPE_SIGNIFICANT_CHANGE_RATIO', 0.10),
+        // Shared-cause page failures are grouped once at least this many
+        // pages of a website fail for the same reason.
+        'group_min_pages' => (int) env('SERVERSCOPE_PAGE_GROUP_MIN', 2),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Incidents
     |--------------------------------------------------------------------------
     */
@@ -93,6 +125,9 @@ return [
         // A problem that recurs within this many minutes after automatic or
         // manual resolution reopens the previous incident.
         'reopen_window_minutes' => (int) env('SERVERSCOPE_INCIDENT_REOPEN_MINUTES', 60),
+        // A newly detected root cause adopts dependent incidents that
+        // opened at most this many minutes before it.
+        'correlation_window_minutes' => (int) env('SERVERSCOPE_CORRELATION_WINDOW_MINUTES', 30),
     ],
 
     /*
@@ -117,11 +152,50 @@ return [
         // escalated, per severity (null/0 = never).
         'after_minutes' => [
             'critical' => (int) env('SERVERSCOPE_ESCALATE_CRITICAL_MINUTES', 15),
+            'high' => (int) env('SERVERSCOPE_ESCALATE_HIGH_MINUTES', 30),
             'warning' => (int) env('SERVERSCOPE_ESCALATE_WARNING_MINUTES', 120),
             'info' => null,
         ],
         // Extra recipients for escalations (comma separated e-mail addresses).
         'emails' => array_values(array_filter(array_map('trim', explode(',', (string) env('SERVERSCOPE_ESCALATION_EMAILS', ''))), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Monitoring agent
+    |--------------------------------------------------------------------------
+    |
+    | latest_version: agents reporting an older version are flagged.
+    | known_checksums: SHA-256 checksums of released agent builds (comma
+    | separated). When set, an agent reporting another checksum is flagged
+    | as an unknown build. Empty = integrity is shown as "not verified".
+    |
+    */
+
+    'agent' => [
+        'latest_version' => env('SERVERSCOPE_AGENT_LATEST_VERSION', '0.2.0'),
+        'known_checksums' => array_values(array_filter(array_map('trim', explode(',', (string) env('SERVERSCOPE_AGENT_CHECKSUMS', ''))))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Predictive monitoring
+    |--------------------------------------------------------------------------
+    |
+    | Anomaly detection and capacity forecasts run hourly
+    | (serverscope:analyze). Results are always shown; incidents are only
+    | opened for forecasts that cross a limit within alert_horizon_days with
+    | at least medium confidence, and for anomalies only when
+    | anomaly_incidents is enabled. Servers can opt out and set their own
+    | sensitivity (low, medium, high or off).
+    |
+    */
+
+    'predictive' => [
+        'enabled' => (bool) env('SERVERSCOPE_PREDICTIVE', true),
+        'alerts_enabled' => (bool) env('SERVERSCOPE_PREDICTIVE_ALERTS', true),
+        'alert_horizon_days' => (int) env('SERVERSCOPE_PREDICTIVE_HORIZON_DAYS', 7),
+        'anomaly_incidents' => (bool) env('SERVERSCOPE_ANOMALY_INCIDENTS', false),
     ],
 
     'reports' => [
@@ -146,6 +220,11 @@ return [
         'notification_logs_days' => env('SERVERSCOPE_RETAIN_NOTIFICATION_LOGS_DAYS'),
         'notifications_days' => env('SERVERSCOPE_RETAIN_READ_NOTIFICATIONS_DAYS'),
         'audit_logs_days' => env('SERVERSCOPE_RETAIN_AUDIT_LOGS_DAYS'),
+        'page_checks_days' => env('SERVERSCOPE_RETAIN_PAGE_CHECKS_DAYS'),
+        'page_changes_days' => env('SERVERSCOPE_RETAIN_PAGE_CHANGES_DAYS'),
+        'discovery_runs_days' => env('SERVERSCOPE_RETAIN_DISCOVERY_RUNS_DAYS'),
+        'service_events_days' => env('SERVERSCOPE_RETAIN_SERVICE_EVENTS_DAYS'),
+        'predictions_days' => env('SERVERSCOPE_RETAIN_PREDICTIONS_DAYS'),
     ],
 
     'api' => [

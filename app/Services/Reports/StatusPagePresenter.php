@@ -162,7 +162,7 @@ class StatusPagePresenter
                 }
             })
             ->where(fn ($q) => $q->active()->orWhere('resolved_at', '>=', now()->subDays(7)))
-            ->whereIn('severity', ['warning', 'critical'])
+            ->whereIn('severity', ['warning', 'high', 'critical'])
             ->latest('opened_at')
             ->limit(20)
             ->get()

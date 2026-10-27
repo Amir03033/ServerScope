@@ -2,12 +2,15 @@ import os
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
+from serverscope_agent.services import parse_services
+
 
 @dataclass(frozen=True)
 class AgentConfig:
     base_url: str
     token: str
     interval_seconds: int = 60
+    services: tuple = ()
 
 
 def load_config() -> AgentConfig:
@@ -51,4 +54,5 @@ def load_config() -> AgentConfig:
         base_url=base_url,
         token=token,
         interval_seconds=interval_seconds,
+        services=tuple(parse_services(os.environ.get("SERVERSCOPE_SERVICES", ""))),
     )

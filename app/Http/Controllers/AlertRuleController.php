@@ -151,10 +151,12 @@ class AlertRuleController extends Controller
                 'between:1,1440',
             ],
             'is_enabled' => ['required', 'boolean'],
-            'severity' => ['sometimes', Rule::in(['warning', 'critical'])],
+            'recovery_samples' => ['sometimes', 'integer', 'between:1,30'],
+            'severity' => ['sometimes', Rule::in(\App\Support\Severity::ALL)],
         ]);
 
         $validated['severity'] ??= $isAgentOffline ? 'critical' : 'warning';
+        $validated['recovery_samples'] ??= 1;
 
         if ($isAgentOffline) {
             // The threshold itself is the duration of silence.
