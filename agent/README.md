@@ -67,3 +67,13 @@ working immediately.
 ```sh
 pip install -r requirements.txt && python -m pytest -q   # from the repository root
 ```
+
+## Bash agent (containers without Python or systemd)
+
+`agent/bash/agent.sh` sends the same data using only `/proc`, `df`,
+`pgrep` and `curl`. Put it with a `.env` (`SERVERSCOPE_URL`,
+`SERVERSCOPE_TOKEN`, optional `SERVERSCOPE_SERVICES` as process names and
+`SERVERSCOPE_INTERVAL`) in one directory outside the web root and start it
+with `nohup bash agent.sh >> agent.log 2>&1 &`. Check the payload first with
+`SERVERSCOPE_DRY_RUN=1 bash agent.sh`. Inside a container it measures that
+container, not the host.
