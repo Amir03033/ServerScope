@@ -33,6 +33,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_platform_admin' => 'boolean',
+            'current_team_id' => 'integer',
             'notify_email' => 'boolean',
             'notify_in_app' => 'boolean',
             'notify_resolved' => 'boolean',

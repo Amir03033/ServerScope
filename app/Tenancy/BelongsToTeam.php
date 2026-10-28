@@ -33,6 +33,11 @@ trait BelongsToTeam
         });
     }
 
+    public function initializeBelongsToTeam(): void
+    {
+        $this->mergeCasts(['team_id' => 'integer']);
+    }
+
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);

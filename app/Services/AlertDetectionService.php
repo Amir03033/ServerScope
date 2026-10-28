@@ -13,7 +13,11 @@ class AlertDetectionService
 {
     public function evaluate(MetricSample $sample): void
     {
+        // Only the rules of the server's own team.
+        $teamId = Server::query()->withoutGlobalScopes()->whereKey($sample->server_id)->value('team_id');
+
         $rules = AlertRule::query()
+            ->where('team_id', $teamId)
             ->where('is_enabled', true)
             ->get();
 

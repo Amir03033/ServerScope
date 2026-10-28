@@ -135,6 +135,8 @@ class ApiIsolationTest extends TestCase
 
         $token = bin2hex(random_bytes(32));
         $this->b['server']->agentCredentials()->create(['name' => 'nieuw', 'token_hash' => hash('sha256', $token)]);
+        // The rules need one minute above the threshold.
+        \App\Models\MetricSample::query()->where('server_id', $this->b['server']->id)->update(['cpu_percent' => 99.5]);
 
         $this->postJson('/api/agent/metrics', ['collected_at' => now()->toIso8601String(), 'cpu_percent' => 99.9], ['Authorization' => 'Bearer '.$token])->assertCreated();
 
