@@ -32,13 +32,14 @@ class TeamMigrationTest extends TestCase
         });
     }
 
-    private const STEPS = 6;
+    /** The six tenancy migrations. */
+    private const FIRST_TENANCY_MIGRATION = '2026_10_29_100000_create_teams_tables';
 
     private const TABLES = ['servers', 'domains', 'monitored_pages', 'alert_rules', 'alerts', 'incidents', 'predictions', 'resource_dependencies', 'webhook_endpoints', 'status_pages', 'api_tokens', 'audit_logs', 'notification_logs'];
 
     public function test_existing_data_is_moved_into_the_default_team(): void
     {
-        $this->artisan('migrate:rollback', ['--step' => self::STEPS])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--step' => $this->stepsBackToBeforeTenancy()])->assertSuccessful();
         $this->assertFalse(Schema::hasTable('teams'));
 
         $ids = $this->legacyData();
@@ -71,7 +72,7 @@ class TeamMigrationTest extends TestCase
     {
         $this->legacyDataAfterMigration();
 
-        $this->artisan('migrate:rollback', ['--step' => self::STEPS])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--step' => $this->stepsBackToBeforeTenancy()])->assertSuccessful();
         $this->assertFalse(Schema::hasTable('teams'));
         $this->assertFalse(Schema::hasTable('team_user'));
         $this->assertFalse(Schema::hasColumn('users', 'current_team_id'));
@@ -128,5 +129,14 @@ class TeamMigrationTest extends TestCase
     {
         $team = DB::table('teams')->where('is_default', true)->value('id');
         DB::table('servers')->insert(['team_id' => $team, 'name' => 's', 'hostname' => 's', 'created_at' => now(), 'updated_at' => now()]);
+    }
+
+    /**
+     * Rolling back to just before the tenancy migrations: those six plus
+     * every later migration (which may depend on teams).
+     */
+    private function stepsBackToBeforeTenancy(): int
+    {
+        return DB::table('migrations')->where('migration', '>=', self::FIRST_TENANCY_MIGRATION)->count();
     }
 }

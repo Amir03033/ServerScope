@@ -165,6 +165,8 @@ class EnrollApiTest extends TestCase
 
     public function test_input_is_validated_strictly(): void
     {
+        // Many requests in one minute: the rate limit has its own test.
+        config(['serverscope.enrollment.attempts_per_minute' => 100]);
         [, $plain] = $this->token();
 
         foreach ([

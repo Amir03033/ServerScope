@@ -96,6 +96,16 @@ class AppServiceProvider extends ServiceProvider
             ->by('api:'.hash('sha256', (string) ($request->bearerToken() ?? $request->ip())))
             ->response(fn () => response()->json(['message' => 'Te veel verzoeken.'], 429)));
 
+        // Enrollment: strict per address, plus a ceiling for the whole
+        // platform against token guessing from many addresses.
+        \Illuminate\Support\Facades\RateLimiter::for('agent-enroll', fn (\Illuminate\Http\Request $request) => [
+            \Illuminate\Cache\RateLimiting\Limit::perMinute(max(1, (int) config('serverscope.enrollment.attempts_per_minute', 10)))
+                ->by('enroll:'.$request->ip())
+                ->response(fn () => response()->json(['message' => 'Te veel koppelpogingen. Probeer het over een minuut opnieuw.'], 429)),
+            \Illuminate\Cache\RateLimiting\Limit::perMinute(300)->by('enroll:all')
+                ->response(fn () => response()->json(['message' => 'Te veel koppelpogingen. Probeer het over een minuut opnieuw.'], 429)),
+        ]);
+
         \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(fn (User $user, string $token) => (new \Illuminate\Notifications\Messages\MailMessage)
             ->subject('[ServerScope] Wachtwoord opnieuw instellen')
             ->line('Je ontvangt deze e-mail omdat er een nieuw wachtwoord is aangevraagd voor je ServerScope-account.')

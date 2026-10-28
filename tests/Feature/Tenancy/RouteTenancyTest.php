@@ -38,6 +38,8 @@ class RouteTenancyTest extends TestCase
         // Public status pages render as the page's own team.
         'GET|HEAD status/{slug}.json',
         'GET|HEAD status/{slug}',
+        // install.sh: the team comes only from the one-time enrollment token.
+        'POST api/agent/enroll',
     ];
 
     /**
