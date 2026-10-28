@@ -3,6 +3,9 @@
 namespace App\Support;
 
 use App\Models\AuditLog;
+use App\Models\User;
+use App\Tenancy\Tenancy;
+use App\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -24,7 +27,15 @@ class Audit
     ): AuditLog {
         $request = app()->runningInConsole() ? null : request();
 
+        // The entry belongs to the team of the subject; for people (who can
+        // be in several teams) to the team the action was taken in. Outside
+        // tests an entry without a team is an error, never a guess.
+        $teamId = $subject instanceof User
+            ? (Tenant::id() ?? Tenancy::teamIdOf($subject))
+            : (Tenancy::teamIdOf($subject) ?? Tenant::id());
+
         return AuditLog::query()->create([
+            'team_id' => Tenancy::requireTeamId($teamId, 'audit log entry'),
             'user_id' => auth()->id(),
             'action' => $action,
             'auditable_type' => $subject?->getMorphClass(),

@@ -17,6 +17,10 @@ use Illuminate\Support\Facades\DB;
  * server) or inferred (e.g. a domain resolves to a server's IP address).
  * Only confirmed edges are used to group incidents; inferred ones are
  * shown as suggestions that a user can confirm.
+ *
+ * With a team, the walk only follows edges stored for that team whose
+ * other end also belongs to it, so the graph never crosses teams, not
+ * even through an inconsistent row.
  */
 class DependencyGraph
 {
@@ -27,7 +31,7 @@ class DependencyGraph
      *
      * @return array<int, array{type: string, id: int, label: ?string, origin: string, dependency_id: ?int}>
      */
-    public function upstream(string $type, int $id): array
+    public function upstream(string $type, int $id, ?int $teamId = null): array
     {
         $edges = [];
 
@@ -36,6 +40,7 @@ class DependencyGraph
         }
 
         $rows = ResourceDependency::query()
+            ->when($teamId !== null, fn ($q) => $q->where('team_id', $teamId))
             ->where('dependent_type', $type)
             ->where('dependent_id', $id)
             ->get(['id', 'dependency_type', 'dependency_id', 'label']);
@@ -52,7 +57,7 @@ class DependencyGraph
      *
      * @return array<int, array{type: string, id: int, label: ?string, origin: string, dependency_id: ?int}>
      */
-    public function downstream(string $type, int $id): array
+    public function downstream(string $type, int $id, ?int $teamId = null): array
     {
         $edges = [];
 
@@ -69,6 +74,7 @@ class DependencyGraph
         }
 
         $rows = ResourceDependency::query()
+            ->when($teamId !== null, fn ($q) => $q->where('team_id', $teamId))
             ->where('dependency_type', $type)
             ->where('dependency_id', $id)
             ->get(['id', 'dependent_type', 'dependent_id', 'label']);
@@ -86,9 +92,9 @@ class DependencyGraph
      *
      * @return array<string, array{type: string, id: int, depth: int, path: array<int, string>}>
      */
-    public function ancestors(string $type, int $id, int $maxDepth = self::MAX_DEPTH): array
+    public function ancestors(string $type, int $id, int $maxDepth = self::MAX_DEPTH, ?int $teamId = null): array
     {
-        return $this->walk($type, $id, $maxDepth, fn (string $t, int $i) => $this->upstream($t, $i));
+        return $this->walk($type, $id, $maxDepth, fn (string $t, int $i) => $this->upstream($t, $i, $teamId), $teamId);
     }
 
     /**
@@ -96,19 +102,19 @@ class DependencyGraph
      *
      * @return array<string, array{type: string, id: int, depth: int, path: array<int, string>}>
      */
-    public function descendants(string $type, int $id, int $maxDepth = self::MAX_DEPTH): array
+    public function descendants(string $type, int $id, int $maxDepth = self::MAX_DEPTH, ?int $teamId = null): array
     {
-        return $this->walk($type, $id, $maxDepth, fn (string $t, int $i) => $this->downstream($t, $i));
+        return $this->walk($type, $id, $maxDepth, fn (string $t, int $i) => $this->downstream($t, $i, $teamId), $teamId);
     }
 
     /** Whether adding "dependent depends on dependency" would create a cycle. */
-    public function wouldCreateCycle(string $dependentType, int $dependentId, string $dependencyType, int $dependencyId): bool
+    public function wouldCreateCycle(string $dependentType, int $dependentId, string $dependencyType, int $dependencyId, ?int $teamId = null): bool
     {
         if ($dependentType === $dependencyType && $dependentId === $dependencyId) {
             return true;
         }
 
-        return isset($this->ancestors($dependencyType, $dependencyId, 20)["{$dependentType}:{$dependentId}"]);
+        return isset($this->ancestors($dependencyType, $dependencyId, 20, $teamId)["{$dependentType}:{$dependentId}"]);
     }
 
     /**
@@ -126,7 +132,7 @@ class DependencyGraph
             $ips = $this->domainAddresses($resource);
 
             if ($ips !== []) {
-                foreach (Server::query()->whereIn('ip_address', $ips)->get(['id', 'name', 'ip_address']) as $server) {
+                foreach (Server::query()->where('team_id', $resource->team_id)->whereIn('ip_address', $ips)->get(['id', 'name', 'ip_address']) as $server) {
                     if (! $this->hasConfirmedEdge('domain', $resource->id, 'server', $server->id)) {
                         $suggestions[] = ['type' => 'server', 'id' => $server->id, 'direction' => 'upstream', 'reason' => "{$resource->displayName()} verwijst in DNS naar {$server->ip_address}, het IP-adres van {$server->name}."];
                     }
@@ -136,12 +142,13 @@ class DependencyGraph
 
         if ($resource instanceof Server && $resource->ip_address) {
             $domainIds = DnsSnapshot::query()
+                ->whereIn('domain_id', Domain::query()->where('team_id', $resource->team_id)->select('id'))
                 ->whereIn('record_type', ['A', 'AAAA'])
                 ->where('records', 'like', '%"'.$resource->ip_address.'"%')
                 ->distinct()
                 ->pluck('domain_id');
 
-            foreach (Domain::query()->whereIn('id', $domainIds)->get() as $domain) {
+            foreach (Domain::query()->where('team_id', $resource->team_id)->whereIn('id', $domainIds)->get() as $domain) {
                 if (in_array($resource->ip_address, $this->domainAddresses($domain), true)
                     && ! $this->hasConfirmedEdge('domain', $domain->id, 'server', $resource->id)) {
                     $suggestions[] = ['type' => 'domain', 'id' => $domain->id, 'direction' => 'downstream', 'reason' => "{$domain->displayName()} verwijst in DNS naar {$resource->ip_address}, het IP-adres van deze server."];
@@ -174,7 +181,7 @@ class DependencyGraph
 
     private function hasConfirmedEdge(string $dependentType, int $dependentId, string $dependencyType, int $dependencyId): bool
     {
-        return ResourceDependency::query()
+        return ResourceDependency::query()->withoutGlobalScopes()
             ->where('dependent_type', $dependentType)->where('dependent_id', $dependentId)
             ->where('dependency_type', $dependencyType)->where('dependency_id', $dependencyId)
             ->exists();
@@ -202,7 +209,7 @@ class DependencyGraph
      * @param  callable(string, int): array  $next
      * @return array<string, array{type: string, id: int, depth: int, path: array<int, string>}>
      */
-    private function walk(string $type, int $id, int $maxDepth, callable $next): array
+    private function walk(string $type, int $id, int $maxDepth, callable $next, ?int $teamId = null): array
     {
         $start = "{$type}:{$id}";
         $seen = [$start => ['type' => $type, 'id' => $id, 'depth' => 0, 'path' => [$start]]];
@@ -220,6 +227,10 @@ class DependencyGraph
                 $edgeKey = "{$edge['type']}:{$edge['id']}";
 
                 if (isset($seen[$edgeKey])) {
+                    continue;
+                }
+
+                if ($teamId !== null && \App\Tenancy\Tenancy::teamIdOfMorph($edge['type'], $edge['id']) !== $teamId) {
                     continue;
                 }
 

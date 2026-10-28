@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\StatusPage;
 use App\Services\Reports\StatusPagePresenter;
+use App\Tenancy\TeamScope;
+use App\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -36,20 +38,26 @@ class PublicStatusPageController extends Controller
 
     private function resolve(Request $request, string $slug): StatusPage|Response
     {
-        $page = StatusPage::query()->where('slug', $slug)->first();
+        // Public route without a tenant: slugs are unique platform-wide.
+        $page = StatusPage::query()->withoutGlobalScope(TeamScope::class)->where('slug', $slug)->first();
 
         abort_if($page === null, 404);
 
-        // Private pages are only visible to signed-in users.
+        // Private pages are only visible to signed-in members of the page's
+        // team; for everyone else they do not exist.
         if (! $page->is_public && $request->user() === null) {
             return redirect()->guest(route('login'));
         }
+
+        abort_if(! $page->is_public && ! $request->user()->belongsToTeam($page->team_id), 404);
 
         return $page;
     }
 
     private function data(StatusPage $page, StatusPagePresenter $presenter): array
     {
-        return Cache::remember("status-page:{$page->id}:{$page->updated_at?->timestamp}", 30, fn () => $presenter->present($page));
+        // Rendered as the page's own team, so only that team's resources
+        // and incidents can appear.
+        return Cache::remember("status-page:{$page->id}:{$page->updated_at?->timestamp}", 30, fn () => Tenant::run($page->team_id, fn () => $presenter->present($page)));
     }
 }

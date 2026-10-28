@@ -22,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(\App\Tenancy\TenantContext::class);
+
         $this->app->singleton(Resolver::class, fn () => new DnsClient(
             config('serverscope.monitoring.nameservers', []),
             (float) config('serverscope.monitoring.dns_timeout', 3),
@@ -65,7 +67,29 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::define('admin', fn (User $user): bool => (bool) $user->is_admin);
+        // Administrator of the current team (owner or admin role). The
+        // users.is_admin column is only a mirror and grants nothing.
+        Gate::define('admin', fn (User $user): bool => \App\Tenancy\Tenant::check() && $user->isAdminOf(\App\Tenancy\Tenant::id()));
+
+        // Owner of the ServerScope platform: platform-wide system health.
+        // Gives no access to data or configuration of any team.
+        Gate::define('platform', fn (User $user): bool => (bool) $user->is_platform_admin);
+
+        // Jobs always run without a tenant, also on the sync queue inside a
+        // request, exactly like in a queue worker; the request's tenant is
+        // restored afterwards.
+        $suspended = [];
+        \Illuminate\Support\Facades\Queue::before(function () use (&$suspended): void {
+            $suspended[] = \App\Tenancy\Tenant::id();
+            \App\Tenancy\Tenant::forget();
+        });
+        $resume = function () use (&$suspended): void {
+            if ($suspended !== []) {
+                \App\Tenancy\Tenant::set(array_pop($suspended));
+            }
+        };
+        \Illuminate\Support\Facades\Queue::after($resume);
+        \Illuminate\Support\Facades\Queue::exceptionOccurred($resume);
 
         // Per token (or per IP for unauthenticated calls).
         \Illuminate\Support\Facades\RateLimiter::for('api-token', fn (\Illuminate\Http\Request $request) => \Illuminate\Cache\RateLimiting\Limit::perMinute((int) config('serverscope.api.requests_per_minute', 120))

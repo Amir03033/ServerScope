@@ -7,6 +7,7 @@ use App\Models\MonitoredPage;
 use App\Models\NotificationLog;
 use App\Models\PageDiscoveryRun;
 use App\Models\WebhookDelivery;
+use App\Tenancy\Tenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -31,27 +32,31 @@ class SystemHealth
     }
 
     /**
+     * Platform-wide report (no team), or the view of one team: the shared
+     * scheduler plus that team's own checks, deliveries and discovery.
+     * The queue is shared by all teams and only part of the platform view.
+     *
      * @return array{status: string, checks: array<int, array{key: string, label: string, status: string, detail: string}>}
      */
-    public function report(): array
+    public function report(?int $teamId = null): array
     {
-        $checks = [
+        $checks = Tenant::run($teamId, fn () => array_values(array_filter([
             $this->scheduler(),
-            $this->queue(),
+            $teamId === null ? $this->queue() : null,
             $this->overdue(),
             $this->deliveries(),
             $this->discovery(),
-        ];
+        ])));
 
         $status = collect($checks)->contains('status', 'critical') ? 'critical' : (collect($checks)->contains('status', 'warning') ? 'warning' : 'healthy');
 
         return ['status' => $status, 'checks' => $checks];
     }
 
-    /** Cheap summary for the sidebar (cached for a minute). */
-    public function summary(): string
+    /** Cheap summary for the sidebar (cached for a minute, per team). */
+    public function summary(?int $teamId = null): string
     {
-        return Cache::remember('serverscope:system-health:summary', 60, fn () => $this->report()['status']);
+        return Cache::remember('serverscope:system-health:summary:'.($teamId ?? 'platform'), 60, fn () => $this->report($teamId)['status']);
     }
 
     private function scheduler(): array

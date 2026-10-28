@@ -52,13 +52,16 @@ class AgentHeartbeatService
             return $result;
         }
 
+        // Every team's servers, each evaluated against its own team's rules.
+        $rules = $rules->groupBy('team_id');
+
         Server::query()
             ->whereNotNull('last_seen_at')
-            ->select('id')
+            ->select(['id', 'team_id'])
             ->orderBy('id')
             ->chunkById(200, function ($servers) use ($rules, $now, &$result): void {
                 foreach ($servers as $server) {
-                    foreach ($rules as $rule) {
+                    foreach ($rules->get($server->team_id, []) as $rule) {
                         $outcome = $this->evaluate($server->id, $rule->id, $now);
 
                         if ($outcome !== null) {
@@ -95,6 +98,7 @@ class AgentHeartbeatService
 
             if (
                 $server === null
+                || $rule?->team_id !== $server->team_id
                 || $server->last_seen_at === null
                 || $rule === null
                 || ! $rule->is_enabled

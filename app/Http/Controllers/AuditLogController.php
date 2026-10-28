@@ -32,7 +32,7 @@ class AuditLogController extends Controller
         return view('audit-logs.index', [
             'logs' => $logs,
             'filters' => $filters,
-            'users' => User::query()->orderBy('name')->get(['id', 'name']),
+            'users' => \App\Rules\TeamMember::options(\App\Tenancy\Tenant::id()),
             'actions' => AuditLog::query()->distinct()->orderBy('action')->pluck('action')
                 ->map(fn ($a) => explode('.', $a)[0])->unique()->values(),
         ]);

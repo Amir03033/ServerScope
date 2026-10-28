@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\ApiToken;
+use App\Tenancy\Tenant;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,9 +23,11 @@ class AuthenticateApiToken
             return $this->error('Ontbrekend of ongeldig API-token.', 401);
         }
 
-        $token = ApiToken::query()->with('user')->where('token_hash', hash('sha256', $plain))->first();
+        $token = ApiToken::query()->withoutGlobalScopes()->with('user')->where('token_hash', hash('sha256', $plain))->first();
 
-        if ($token === null || ! $token->isActive() || $token->user === null) {
+        // A token belongs to one team and only works while its owner is a
+        // member of that team.
+        if ($token === null || ! $token->isActive() || $token->user === null || ! $token->user->belongsToTeam($token->team_id)) {
             return $this->error('Ontbrekend of ongeldig API-token.', 401);
         }
 
@@ -41,7 +44,7 @@ class AuthenticateApiToken
         $request->setUserResolver(fn () => $token->user);
         $request->attributes->set('apiToken', $token);
 
-        return $next($request);
+        return Tenant::run($token->team_id, fn () => $next($request));
     }
 
     private function error(string $message, int $status): Response

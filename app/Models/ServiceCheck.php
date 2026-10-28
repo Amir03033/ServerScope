@@ -14,6 +14,14 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class ServiceCheck extends Model
 {
+    use \App\Tenancy\ScopedThroughParent;
+
+    /** @return array{0: string, 1: class-string} */
+    protected static function teamParent(): array
+    {
+        return ['server_id', Server::class];
+    }
+
     public const KINDS = [
         'nginx' => 'Nginx',
         'apache' => 'Apache',

@@ -53,6 +53,7 @@ class AlertObserver
             subject: $server,
             context: ['alert_id' => $alert->id, 'metric' => $alert->metric, 'dimension' => $alert->dimension],
             startedAt: $alert->triggered_at,
+            teamId: $alert->team_id,
         ));
 
         $alert->forceFill(['incident_id' => $incident->id])->saveQuietly();

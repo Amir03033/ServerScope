@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AgentCredential extends Model
 {
+    use \App\Tenancy\ScopedThroughParent;
+
+    /** @return array{0: string, 1: class-string} */
+    protected static function teamParent(): array
+    {
+        return ['server_id', Server::class];
+    }
+
     protected $fillable = [
         'server_id',
         'name',

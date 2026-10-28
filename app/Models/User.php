@@ -4,10 +4,13 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Support\Severity;
+use App\Tenancy\Tenancy;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -29,6 +32,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_platform_admin' => 'boolean',
+            'current_team_id' => 'integer',
             'notify_email' => 'boolean',
             'notify_in_app' => 'boolean',
             'notify_resolved' => 'boolean',
@@ -54,6 +59,58 @@ class User extends Authenticatable
                 }
             }
         });
+    }
+
+    /**
+     * Teams this user is a member of; the pivot role (owner, admin,
+     * member) is the only source of permissions within a team.
+     */
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class)->withPivot('role')->withTimestamps();
+    }
+
+    /** Only meaningful after membership is verified (see ResolveTenant). */
+    public function currentTeam(): BelongsTo
+    {
+        return $this->belongsTo(Team::class, 'current_team_id');
+    }
+
+    public function roleIn(Team|int|null $team): ?string
+    {
+        $teamId = $team instanceof Team ? $team->id : $team;
+
+        if ($teamId === null || ! $this->exists) {
+            return null;
+        }
+
+        return $this->teams()->where('teams.id', $teamId)->value('team_user.role');
+    }
+
+    public function belongsToTeam(Team|int|null $team): bool
+    {
+        return $this->roleIn($team) !== null;
+    }
+
+    public function isAdminOf(Team|int|null $team): bool
+    {
+        return in_array($this->roleIn($team), Tenancy::ADMIN_ROLES, true);
+    }
+
+    /**
+     * users.is_admin mirrors the role in the current team (role -> column,
+     * never the other way round) so older code and views that read the
+     * column keep showing the right thing. It grants nothing by itself.
+     * Quietly skips the "notify administrators by default" rule, which
+     * only applies to promotions.
+     */
+    public function syncAdminMirror(bool $quietly = false): void
+    {
+        $this->is_admin = $this->isAdminOf($this->current_team_id);
+
+        if ($this->isDirty('is_admin')) {
+            $quietly ? $this->saveQuietly() : $this->save();
+        }
     }
 
     public function hasTwoFactorEnabled(): bool

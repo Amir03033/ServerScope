@@ -120,7 +120,7 @@ class AlertRuleController extends Controller
     private function authorizeAdmin(): void
     {
         abort_unless(
-            auth()->check() && (bool) auth()->user()->is_admin,
+            \Illuminate\Support\Facades\Gate::allows('admin'),
             403,
             'Je hebt geen toestemming om alertregels te beheren.',
         );

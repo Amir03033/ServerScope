@@ -23,6 +23,8 @@ use Illuminate\Support\Str;
 /**
  * Decides who is notified about what, and records every delivery.
  *
+ * - Recipients are always members of the team the incident, domain or
+ *   page belongs to; never all users.
  * - Recipients follow their own preferences (channels, minimum severity,
  *   recoveries, DNS changes).
  * - Flapping: a reopen within the cooldown after the last notification
@@ -48,7 +50,7 @@ class NotificationDispatcher
             return;
         }
 
-        $recipients = User::query()
+        $recipients = $this->members($incident->team_id)
             ->where(fn ($q) => $q->where('notify_email', true)->orWhere('notify_in_app', true))
             ->get()
             ->filter(fn (User $user) => $user->wantsSeverity($incident->severity))
@@ -70,7 +72,9 @@ class NotificationDispatcher
         }
 
         // Escalation contacts outside the user list (e.g. an on-call mailbox).
-        if (in_array($kind, [IncidentNotification::UNACKNOWLEDGED], true)) {
+        // They are configured for the platform owner, so they only receive
+        // incidents of the default team.
+        if (in_array($kind, [IncidentNotification::UNACKNOWLEDGED], true) && $this->isDefaultTeam($incident->team_id)) {
             foreach (config('serverscope.escalation.emails', []) as $email) {
                 $notification = new IncidentNotification($incident, $kind, ['mail']);
                 $notification->id = (string) Str::uuid();
@@ -92,15 +96,15 @@ class NotificationDispatcher
             return;
         }
 
-        $users = User::query()->where('notify_dns_changes', true)
+        $users = $this->members($domain->team_id)->where('notify_dns_changes', true)
             ->where(fn ($q) => $q->where('notify_email', true)->orWhere('notify_in_app', true))
             ->get();
 
         foreach ($users as $user) {
-            $channels = $this->allowedChannels($user, $user->notificationChannels(), null, 'dns_changed');
+            $channels = $this->allowedChannels($user, $user->notificationChannels(), null, 'dns_changed', $domain->team_id);
 
             if ($channels !== []) {
-                $this->send($user, new DnsChangeNotification($domain, $changes, $channels), null, 'dns_changed');
+                $this->send($user, new DnsChangeNotification($domain, $changes, $channels), null, 'dns_changed', $domain->team_id);
             }
         }
     }
@@ -114,15 +118,15 @@ class NotificationDispatcher
             return;
         }
 
-        $users = User::query()->where('notify_dns_changes', true)
+        $users = $this->members($page->team_id)->where('notify_dns_changes', true)
             ->where(fn ($q) => $q->where('notify_email', true)->orWhere('notify_in_app', true))
             ->get();
 
         foreach ($users as $user) {
-            $channels = $this->allowedChannels($user, $user->notificationChannels(), null, 'page_changed');
+            $channels = $this->allowedChannels($user, $user->notificationChannels(), null, 'page_changed', $page->team_id);
 
             if ($channels !== []) {
-                $this->send($user, new PageChangeNotification($page, $change, $channels), null, 'page_changed');
+                $this->send($user, new PageChangeNotification($page, $change, $channels), null, 'page_changed', $page->team_id);
             }
         }
 
@@ -132,10 +136,21 @@ class NotificationDispatcher
     public function test(User $user): void
     {
         $channels = $user->notificationChannels() ?: ['database'];
-        $this->send($user, new TestNotification($channels), null, 'test');
+        $this->send($user, new TestNotification($channels), null, 'test', \App\Tenancy\Tenant::id() ?? $user->current_team_id);
     }
 
-    private function allowedChannels(User $user, array $channels, ?Incident $incident, string $kind): array
+    /** Users who are a member of the team. */
+    private function members(?int $teamId)
+    {
+        return User::query()->whereHas('teams', fn ($q) => $q->where('teams.id', $teamId));
+    }
+
+    private function isDefaultTeam(?int $teamId): bool
+    {
+        return $teamId !== null && \App\Models\Team::query()->whereKey($teamId)->where('is_default', true)->exists();
+    }
+
+    private function allowedChannels(User $user, array $channels, ?Incident $incident, string $kind, ?int $teamId = null): array
     {
         if (! in_array('mail', $channels, true)) {
             return $channels;
@@ -146,6 +161,7 @@ class NotificationDispatcher
 
         if (RateLimiter::tooManyAttempts($key, $limit)) {
             NotificationLog::query()->create([
+                'team_id' => $incident?->team_id ?? $teamId,
                 'user_id' => $user->id, 'incident_id' => $incident?->id, 'kind' => $kind, 'channel' => 'mail',
                 'status' => 'suppressed', 'error' => "Maximum van {$limit} e-mails per uur bereikt.",
             ]);
@@ -158,20 +174,21 @@ class NotificationDispatcher
         return $channels;
     }
 
-    private function send(User $user, BaseNotification $notification, ?Incident $incident, string $kind): void
+    private function send(User $user, BaseNotification $notification, ?Incident $incident, string $kind, ?int $teamId = null): void
     {
         $notification->id = (string) Str::uuid();
 
         foreach ($notification->via($user) as $channel) {
-            $this->log($notification, $user, null, $incident, $kind, $channel);
+            $this->log($notification, $user, null, $incident, $kind, $channel, $teamId);
         }
 
         $user->notify($notification);
     }
 
-    private function log(BaseNotification $notification, ?User $user, ?string $recipient, ?Incident $incident, string $kind, string $channel): void
+    private function log(BaseNotification $notification, ?User $user, ?string $recipient, ?Incident $incident, string $kind, string $channel, ?int $teamId = null): void
     {
         NotificationLog::query()->create([
+            'team_id' => $incident?->team_id ?? $teamId,
             'notification_id' => $notification->id,
             'user_id' => $user?->id,
             'recipient' => $recipient,
@@ -217,6 +234,7 @@ class NotificationDispatcher
     private function logSuppressed(Incident $incident, string $kind, string $reason): void
     {
         NotificationLog::query()->create([
+            'team_id' => $incident->team_id,
             'incident_id' => $incident->id, 'kind' => $kind, 'channel' => '-', 'status' => 'suppressed', 'error' => $reason,
         ]);
     }
@@ -230,7 +248,7 @@ class NotificationDispatcher
             return;
         }
 
-        NotificationLog::query()
+        NotificationLog::query()->withoutGlobalScopes()
             ->where('notification_id', $notificationId)
             ->where('channel', $channel)
             ->when($notifiable instanceof User, fn ($q) => $q->where('user_id', $notifiable->id))
@@ -244,7 +262,7 @@ class NotificationDispatcher
             return;
         }
 
-        NotificationLog::query()
+        NotificationLog::query()->withoutGlobalScopes()
             ->where('notification_id', $notificationId)
             ->where('status', 'queued')
             ->when($channel, fn ($q) => $q->where('channel', $channel))

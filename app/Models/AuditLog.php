@@ -8,9 +8,12 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class AuditLog extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
     public const UPDATED_AT = null;
 
     protected $fillable = [
+        'team_id',
         'user_id',
         'action',
         'auditable_type',

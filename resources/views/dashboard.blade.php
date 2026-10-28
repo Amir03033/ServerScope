@@ -283,9 +283,9 @@
             <svg class="ico chev"><use href="#i-chevron"/></svg>
         </form>
 
-        @if(auth()->user()->is_admin)
+        @can('admin')
             <a class="button button-primary" href="{{ route('servers.create') }}">＋ Server toevoegen</a>
-        @endif
+        @endcan
     </x-slot:actions>
 
 
@@ -551,9 +551,9 @@
                 <div class="empty-icon"><svg class="ico"><use href="#i-server"/></svg></div>
                 <h3>Nog geen servers geregistreerd</h3>
                 <p>Registreer je eerste server om de prestaties en gezondheid te monitoren.</p>
-                @if(auth()->user()->is_admin)
+                @can('admin')
                     <a class="button button-primary" href="{{ route('servers.create') }}">＋ Eerste server toevoegen</a>
-                @endif
+                @endcan
             </div>
         @else
             <div class="server-list">

@@ -127,7 +127,9 @@ class AvailabilityReport
     /** Availability of monitored website pages from their own checks. */
     private function pages(CarbonInterface $from, CarbonInterface $to, float $target)
     {
+        // Raw query: limited to the pages of the current team explicitly.
         $stats = DB::table('page_checks')
+            ->whereIn('monitored_page_id', MonitoredPage::query()->select('id'))
             ->whereBetween('checked_at', [$from, $to])
             ->groupBy('monitored_page_id')
             ->selectRaw('monitored_page_id, COUNT(*) as checks, SUM(CASE WHEN success THEN 1 ELSE 0 END) as successes, AVG(CASE WHEN success THEN response_time_ms END) as avg_ms')

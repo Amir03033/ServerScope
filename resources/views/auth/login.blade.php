@@ -5,6 +5,9 @@
     @if (session('status'))
         <div class="status" role="status">{{ session('status') }}</div>
     @endif
+    @if (session('error'))
+        <div class="error" role="alert">{{ session('error') }}</div>
+    @endif
 
     @if ($errors->any())
         <div class="error" role="alert">

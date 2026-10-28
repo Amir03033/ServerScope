@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\Domain;
+use App\Tenancy\TeamScope;
+use App\Tenancy\Tenant;
 use App\Services\Domains\DomainNormalizer;
 use App\Support\Time;
 use Illuminate\Foundation\Http\FormRequest;
@@ -82,18 +84,24 @@ class DomainRequest extends FormRequest
                     return;
                 }
 
-                $existing = Domain::withTrashed()
+                // Domain names are unique across the whole platform (unique
+                // index); look in every team, but only explain the conflict
+                // when the domain belongs to the own team.
+                $existing = Domain::query()->withoutGlobalScope(TeamScope::class)->withTrashed()
                     ->where('name', $this->input('name'))
                     ->when($this->route('domain'), fn ($q, $domain) => $q->whereKeyNot($domain->id))
                     ->first();
 
-                if ($existing?->trashed()) {
+                if ($existing !== null && $existing->team_id !== Tenant::id()) {
+                    $validator->errors()->add('name', 'Dit domein kan niet worden toegevoegd. Neem contact op met de beheerder van ServerScope als je denkt dat dit niet klopt.');
+                } elseif ($existing?->trashed()) {
                     $validator->errors()->add('name', 'Dit domein is eerder verwijderd. Herstel het via het filter "Verwijderd".');
                 } elseif ($existing) {
                     $validator->errors()->add('name', 'Dit domein wordt al gemonitord.');
                 }
 
-                if ($this->isMethod('post') && Domain::withTrashed()->count() >= (int) config('serverscope.monitoring.max_domains', 1000)) {
+                // The limit applies per team.
+                if ($this->isMethod('post') && Domain::withTrashed()->where('team_id', Tenant::id())->count() >= (int) config('serverscope.monitoring.max_domains', 1000)) {
                     $validator->errors()->add('name', 'Het maximale aantal domeinen is bereikt.');
                 }
             },

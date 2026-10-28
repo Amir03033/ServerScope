@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -31,6 +32,32 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * Users made by the factory join the default team unless a test puts
+     * them in a team itself, so tests written before teams existed keep
+     * their meaning: 'is_admin' => true makes an administrator of that
+     * team (the role is the source; the column is its mirror).
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            $team = Team::defaultTeam();
+
+            if ($team === null || $user->teams()->exists()) {
+                return;
+            }
+
+            $user->teams()->attach($team->id, ['role' => $user->is_admin ? 'admin' : 'member']);
+            $user->forceFill(['current_team_id' => $team->id])->saveQuietly();
+        });
+    }
+
+    /** Administrator of the default team. */
+    public function admin(): static
+    {
+        return $this->state(['is_admin' => true]);
     }
 
     /**

@@ -21,6 +21,7 @@ use App\Services\Incidents\IncidentManager;
 use App\Services\Websites\DiscoveryLauncher;
 use App\Services\Websites\PageRegistrar;
 use App\Support\Audit;
+use App\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -195,11 +196,12 @@ class MonitoringApiController extends Controller
             'label' => ['nullable', 'string', 'max:100'],
         ]);
 
-        if (ResourceCatalog::find($v['dependent_type'], $v['dependent_id']) === null || ResourceCatalog::find($v['dependency_type'], $v['dependency_id']) === null) {
+        // Both ends must belong to the token's team.
+        if (ResourceCatalog::find($v['dependent_type'], $v['dependent_id'], Tenant::id()) === null || ResourceCatalog::find($v['dependency_type'], $v['dependency_id'], Tenant::id()) === null) {
             return response()->json(['message' => 'Onbekende resource.', 'errors' => ['dependent_id' => ['Onbekende resource.']]], 422);
         }
 
-        if ($graph->wouldCreateCycle($v['dependent_type'], $v['dependent_id'], $v['dependency_type'], $v['dependency_id'])) {
+        if ($graph->wouldCreateCycle($v['dependent_type'], (int) $v['dependent_id'], $v['dependency_type'], (int) $v['dependency_id'], Tenant::id())) {
             return response()->json(['message' => 'Deze afhankelijkheid zou een kringverwijzing maken.', 'errors' => ['dependency_id' => ['Kringverwijzing.']]], 422);
         }
 
@@ -266,7 +268,7 @@ class MonitoringApiController extends Controller
 
     public function assign(Request $request, Incident $incident, IncidentManager $manager): JsonResponse
     {
-        $v = $request->validate(['user_id' => ['nullable', 'integer', 'exists:users,id']]);
+        $v = $request->validate(['user_id' => ['nullable', 'integer', new \App\Rules\TeamMember($incident->team_id)]]);
         $manager->assign($incident, isset($v['user_id']) ? User::query()->find($v['user_id']) : null, $request->user());
 
         return response()->json(['data' => ['id' => $incident->id, 'assigned_to' => $incident->fresh()->assigned_to]]);

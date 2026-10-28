@@ -14,8 +14,7 @@ class ServerRegistrationController extends Controller
         ServerRegistrationService $registrationService,
     ): JsonResponse {
         abort_unless(
-            $request->user()?->is_admin === true
-            || (bool) $request->user()?->is_admin,
+            \Illuminate\Support\Facades\Gate::allows('admin'),
             403,
             'Alleen beheerders mogen servers registreren.',
         );

@@ -44,6 +44,10 @@ Route::middleware('guest')->group(function () {
         'store',
     ])->middleware('throttle:10,1');
 
+    // Public sign-up; 404 unless serverscope.tenancy.registration_enabled.
+    Route::get('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'create'])->name('register');
+    Route::post('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'store'])->middleware('throttle:5,1');
+
     Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
@@ -68,7 +72,7 @@ Route::get('/agent/ping', function (Request $request) {
 Route::get('/status/{slug}.json', [PublicStatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.json');
 Route::get('/status/{slug}', [PublicStatusPageController::class, 'show'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.show');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
@@ -96,11 +100,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/export', [ReportController::class, 'export'])->middleware('throttle:20,1')->name('reports.export');
 
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    // Team administrators see the scheduler and their own team; the
+    // platform administrator sees the whole platform, including the queue.
     Route::get('/system-health', function (\App\Services\SystemHealth $health) {
-        \Illuminate\Support\Facades\Gate::authorize('admin');
+        $platform = \Illuminate\Support\Facades\Gate::allows('platform');
+        abort_unless($platform || \Illuminate\Support\Facades\Gate::allows('admin'), 403);
 
-        return view('system-health', ['report' => $health->report()]);
+        return view('system-health', ['report' => $health->report($platform ? null : \App\Tenancy\Tenant::id())]);
     })->name('system-health');
+
+    Route::post('/teams/{team}/switch', [\App\Http\Controllers\TeamController::class, 'switch'])->middleware('throttle:20,1')->name('teams.switch');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->middleware('throttle:10,1')->name('users.store');

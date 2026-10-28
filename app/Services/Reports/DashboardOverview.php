@@ -62,7 +62,8 @@ class DashboardOverview
             'incidents' => $incidents,
             'expirations' => $this->expirations(60),
             'dnsChanges' => DnsChange::query()->with('domain:id,name')->latest('detected_at')->limit(8)->get(),
-            'trends' => Cache::remember('dashboard:trends', 60, fn () => $this->trends()),
+            // Cached per team: the trends contain the team's own checks only.
+            'trends' => Cache::remember('dashboard:trends:'.(\App\Tenancy\Tenant::id() ?? 'all'), 60, fn () => $this->trends()),
         ];
     }
 
@@ -88,10 +89,13 @@ class DashboardOverview
 
     /**
      * Hourly average response time (24 h) and daily uptime (14 days)
-     * across all domains. Days without checks have no value.
+     * across the (current team's) domains. Days without checks have no value.
      */
     private function trends(): array
     {
+        // Domain query carries the team scope; raw check queries do not.
+        $domains = Domain::query()->withTrashed()->select('id');
+
         $from = now()->subDay()->startOfHour();
         $hours = [];
 
@@ -99,7 +103,7 @@ class DashboardOverview
             $hours[$from->copy()->addHours($i)->format('Y-m-d H')] = ['sum' => 0.0, 'n' => 0, 'fail' => 0];
         }
 
-        DB::table('domain_checks')->where('type', 'http')->where('checked_at', '>=', $from)
+        DB::table('domain_checks')->whereIn('domain_id', $domains)->where('type', 'http')->where('checked_at', '>=', $from)
             ->select(['checked_at', 'success', 'response_time_ms'])->orderBy('id')->lazy(5000)
             ->each(function ($row) use (&$hours): void {
                 $key = Carbon::parse($row->checked_at, 'UTC')->format('Y-m-d H');
@@ -122,7 +126,7 @@ class DashboardOverview
             'flag' => $h['fail'] > 0,
         ])->values()->all();
 
-        $uptime = DB::table('domain_checks')->where('type', 'http')->where('checked_at', '>=', now()->subDays(14)->startOfDay())
+        $uptime = DB::table('domain_checks')->whereIn('domain_id', $domains)->where('type', 'http')->where('checked_at', '>=', now()->subDays(14)->startOfDay())
             ->selectRaw('DATE(checked_at) as day, COUNT(*) as checks, SUM(CASE WHEN success THEN 1 ELSE 0 END) as ok')
             ->groupBy('day')->orderBy('day')->get()
             ->keyBy('day');
@@ -135,7 +139,7 @@ class DashboardOverview
             $daily[] = ['date' => $day, 'checks' => (int) ($row->checks ?? 0), 'uptime' => $row && $row->checks > 0 ? round($row->ok / $row->checks * 100, 2) : null];
         }
 
-        $totals = DB::table('domain_checks')->where('type', 'http')->where('checked_at', '>=', now()->subDay())
+        $totals = DB::table('domain_checks')->whereIn('domain_id', $domains)->where('type', 'http')->where('checked_at', '>=', now()->subDay())
             ->selectRaw('COUNT(*) as checks, SUM(CASE WHEN success THEN 1 ELSE 0 END) as ok')->first();
 
         return [

@@ -18,7 +18,7 @@ class WebhookDispatcher
 {
     public function incident(Incident $incident, string $event): void
     {
-        $this->dispatch($event, ['incident' => (new IncidentResource($incident->loadMissing('subject')))->resolve()], $incident);
+        $this->dispatch($incident->team_id, $event, ['incident' => (new IncidentResource($incident->loadMissing('subject')))->resolve()], $incident);
     }
 
     /**
@@ -26,7 +26,7 @@ class WebhookDispatcher
      */
     public function dnsChange(Domain $domain, array $changes): void
     {
-        $this->dispatch('dns.changed', [
+        $this->dispatch($domain->team_id, 'dns.changed', [
             'domain' => ['id' => $domain->id, 'name' => $domain->name, 'display_name' => $domain->displayName()],
             'changes' => array_map(fn ($c) => ['type' => $c->record_type, 'added' => $c->added, 'removed' => $c->removed, 'detected_at' => $c->detected_at->toIso8601String()], $changes),
         ]);
@@ -34,7 +34,7 @@ class WebhookDispatcher
 
     public function pageChange(MonitoredPage $page, PageChange $change): void
     {
-        $this->dispatch('page.changed', [
+        $this->dispatch($page->team_id, 'page.changed', [
             'page' => ['id' => $page->id, 'url' => $page->url, 'domain_id' => $page->domain_id],
             'change' => ['id' => $change->id, 'kind' => $change->kind, 'significance' => $change->significance, 'summary' => $change->summary, 'detected_at' => $change->detected_at->toIso8601String()],
         ]);
@@ -50,9 +50,10 @@ class WebhookDispatcher
         return $this->queue($delivery->endpoint, $delivery->event, $delivery->payload['data'] ?? []);
     }
 
-    private function dispatch(string $event, array $data, ?Incident $incident = null): void
+    /** Only the endpoints of the team the event belongs to. */
+    private function dispatch(int $teamId, string $event, array $data, ?Incident $incident = null): void
     {
-        WebhookEndpoint::query()->where('is_active', true)->get()
+        WebhookEndpoint::query()->withoutGlobalScopes()->where('team_id', $teamId)->where('is_active', true)->get()
             ->filter(fn (WebhookEndpoint $endpoint) => $endpoint->subscribedTo($event))
             ->filter(fn (WebhookEndpoint $endpoint) => $incident === null || $endpoint->wantsSeverity($incident->severity))
             // Chat channels follow the same incident-aware suppression as

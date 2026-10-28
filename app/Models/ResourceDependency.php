@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class ResourceDependency extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
     protected $fillable = ['dependent_type', 'dependent_id', 'dependency_type', 'dependency_id', 'label', 'notes', 'created_by'];
 
     public function dependent(): MorphTo
