@@ -31,7 +31,7 @@ class TeamAccessTest extends TestCase
 
         Queue::fake();
         Notification::fake();
-        $this->setUpTwoTeams();
+        $this->createTwoTeams();
     }
 
     public function test_the_team_role_is_the_only_source_of_admin_rights(): void

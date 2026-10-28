@@ -29,7 +29,7 @@ class WebIsolationTest extends TestCase
         Queue::fake();
         Notification::fake();
         $this->app->instance(Resolver::class, (new FakeResolver)->host('hooks.example.com', '93.184.215.50')->host('bravo-shop.example.com', '93.184.215.51'));
-        $this->setUpTwoTeams();
+        $this->createTwoTeams();
     }
 
     /**

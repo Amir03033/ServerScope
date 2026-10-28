@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WebhookEndpoint extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
     public const EVENTS = [
         'incident.opened' => 'Incident geopend',
         'incident.reopened' => 'Incident heropend',

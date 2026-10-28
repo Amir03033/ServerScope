@@ -16,6 +16,14 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class MonitoredPage extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
+    /** A page belongs to the team of its website. */
+    public function owningTeamId(): ?int
+    {
+        return $this->domain_id ? Domain::query()->withoutGlobalScopes()->whereKey($this->domain_id)->value('team_id') : null;
+    }
+
     public const STATUSES = ['unknown', 'up', 'degraded', 'down'];
 
     public const APPROVAL_STATUSES = ['approved', 'pending', 'rejected'];

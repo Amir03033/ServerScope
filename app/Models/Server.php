@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Server extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
     use SoftDeletes;
 
     /** Matches the agent heartbeat logic in AgentHeartbeatService. */

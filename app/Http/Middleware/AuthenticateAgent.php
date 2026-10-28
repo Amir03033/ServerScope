@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\AgentCredential;
+use App\Tenancy\Tenant;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,7 +48,8 @@ class AuthenticateAgent
         $request->attributes->set('agentCredential', $credential);
         $request->attributes->set('agentServer', $credential->server);
 
-        return $next($request);
+        // The server, derived from the credential, determines the team.
+        return Tenant::run($credential->server->team_id, fn () => $next($request));
     }
 
     private function unauthorized(): JsonResponse

@@ -10,6 +10,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ObservedBy(AlertObserver::class)]
 class Alert extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
+    /** An alert belongs to the team of its server. */
+    public function owningTeamId(): ?int
+    {
+        return $this->server_id ? Server::query()->withoutGlobalScopes()->whereKey($this->server_id)->value('team_id') : null;
+    }
+
     protected $fillable = [
         'server_id',
         'alert_rule_id',

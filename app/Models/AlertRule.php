@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AlertRule extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
     use SoftDeletes;
 
     public const METRIC_AGENT_OFFLINE = 'agent_offline';

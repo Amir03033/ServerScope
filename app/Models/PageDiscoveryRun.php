@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PageDiscoveryRun extends Model
 {
+    use \App\Tenancy\ScopedThroughParent;
+
+    /** @return array{0: string, 1: class-string} */
+    protected static function teamParent(): array
+    {
+        return ['domain_id', Domain::class];
+    }
+
     protected $fillable = [
         'domain_id', 'triggered_by', 'status', 'settings', 'requests_made', 'urls_found', 'pages_added',
         'pages_seen', 'urls_skipped', 'sources', 'errors', 'started_at', 'finished_at',

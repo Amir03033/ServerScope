@@ -11,6 +11,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Incident extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
+    /** Belongs to the team of the resource it is about. */
+    public function owningTeamId(): ?int
+    {
+        return \App\Tenancy\Tenancy::teamIdOfMorph($this->subject_type, $this->subject_id);
+    }
+
     public const STATUSES = ['open', 'acknowledged', 'investigating', 'resolved', 'closed'];
 
     public const ACTIVE_STATUSES = ['open', 'acknowledged', 'investigating'];

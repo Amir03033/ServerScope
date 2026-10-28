@@ -42,7 +42,7 @@ class BackgroundTenancyTest extends TestCase
         parent::setUp();
 
         Notification::fake();
-        $this->setUpTwoTeams();
+        $this->createTwoTeams();
         // Forget the notifications sent while building the fixture.
         Notification::fake();
         $this->manager = app(IncidentManager::class);

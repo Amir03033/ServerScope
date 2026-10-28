@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Domain extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
     use SoftDeletes;
 
     public const DEFAULT_WARNING_DAYS = [30, 14, 7, 3, 1];

@@ -1,7 +1,7 @@
 @php use App\Support\Time; @endphp
 
 <x-layouts.app title="Gebruikers">
-    <x-slot:subtitle>Alle gebruikers zien alle servers, domeinen en incidenten. Beheerders wijzigen de configuratie.</x-slot:subtitle>
+    <x-slot:subtitle>Alle leden van dit team zien de servers, domeinen en incidenten van het team. Beheerders wijzigen de configuratie.</x-slot:subtitle>
 
     <div class="grid-2 split">
         <section class="panel">
@@ -12,7 +12,8 @@
                         @foreach ($users as $user)
                             <tr>
                                 <td><strong>{{ $user->name }}</strong>@if ($user->is(auth()->user())) <span class="chip">jij</span>@endif<span class="cell-sub">{{ $user->email }} · sinds {{ Time::format($user->created_at, 'd-m-Y') }}</span></td>
-                                <td><x-status :status="$user->is_admin ? 'info' : 'unknown'" :label="$user->is_admin ? 'Beheerder' : 'Gebruiker'" /></td>
+                                @php $teamAdmin = in_array($user->team_role, \App\Tenancy\Tenancy::ADMIN_ROLES, true); @endphp
+                                <td><x-status :status="$teamAdmin ? 'info' : 'unknown'" :label="$user->team_role === 'owner' ? 'Eigenaar' : ($teamAdmin ? 'Beheerder' : 'Gebruiker')" /></td>
                                 <td><x-status :status="$user->hasTwoFactorEnabled() ? 'enabled' : 'disabled'" :label="$user->hasTwoFactorEnabled() ? 'Aan' : 'Uit'" /></td>
                                 <td class="small">{{ collect(['e-mail' => $user->notify_email, 'in-app' => $user->notify_in_app])->filter()->keys()->implode(', ') ?: '—' }}</td>
                                 <td>
@@ -20,8 +21,8 @@
                                         <div class="row-actions">
                                             <form method="POST" action="{{ route('users.update', $user) }}" class="inline-form">
                                                 @csrf @method('PUT')
-                                                <input type="hidden" name="is_admin" value="{{ $user->is_admin ? 0 : 1 }}">
-                                                <button class="button button-sm" type="submit">{{ $user->is_admin ? 'Maak gebruiker' : 'Maak beheerder' }}</button>
+                                                <input type="hidden" name="is_admin" value="{{ $teamAdmin ? 0 : 1 }}">
+                                                <button class="button button-sm" type="submit">{{ $teamAdmin ? 'Maak gebruiker' : 'Maak beheerder' }}</button>
                                             </form>
                                             <form method="POST" action="{{ route('users.destroy', $user) }}" class="inline-form" data-confirm="Gebruiker {{ $user->email }} verwijderen?">
                                                 @csrf @method('DELETE')

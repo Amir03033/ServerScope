@@ -7,7 +7,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class NotificationLog extends Model
 {
-    protected $fillable = ['notification_id', 'user_id', 'recipient', 'incident_id', 'kind', 'channel', 'status', 'subject', 'error', 'sent_at'];
+    use \App\Tenancy\BelongsToTeam;
+
+    /** A delivery about an incident belongs to the incident's team. */
+    public function owningTeamId(): ?int
+    {
+        return $this->incident_id ? Incident::query()->withoutGlobalScopes()->whereKey($this->incident_id)->value('team_id') : null;
+    }
+
+    protected $fillable = ['team_id', 'notification_id', 'user_id', 'recipient', 'incident_id', 'kind', 'channel', 'status', 'subject', 'error', 'sent_at'];
 
     protected function casts(): array
     {

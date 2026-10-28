@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ApiToken extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
     public const ABILITIES = ['read' => 'Lezen', 'write' => 'Schrijven (incidenten bevestigen/oplossen, notities)'];
 
-    protected $fillable = ['user_id', 'name', 'prefix', 'token_hash', 'abilities', 'last_used_at', 'last_used_ip', 'expires_at', 'revoked_at'];
+    protected $fillable = ['team_id', 'user_id', 'name', 'prefix', 'token_hash', 'abilities', 'last_used_at', 'last_used_ip', 'expires_at', 'revoked_at'];
 
     protected $hidden = ['token_hash'];
 
@@ -39,15 +41,17 @@ class ApiToken extends Model
     }
 
     /**
-     * Create a token; the plaintext value is returned once.
+     * Create a token for one team (default: the current tenant); the
+     * plaintext value is returned once.
      *
      * @return array{0: ApiToken, 1: string}
      */
-    public static function issue(User $user, string $name, array $abilities, ?\DateTimeInterface $expiresAt = null): array
+    public static function issue(User $user, string $name, array $abilities, ?\DateTimeInterface $expiresAt = null, ?int $teamId = null): array
     {
         $secret = 'ssk_'.bin2hex(random_bytes(24));
 
         $token = static::query()->create([
+            'team_id' => \App\Tenancy\Tenancy::requireTeamId($teamId, 'API token'),
             'user_id' => $user->id,
             'name' => $name,
             'prefix' => substr($secret, 0, 12),

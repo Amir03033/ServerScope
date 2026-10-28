@@ -246,6 +246,27 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Teams (multi-tenancy)
+    |--------------------------------------------------------------------------
+    |
+    | Every customer is a team that only sees its own data. Public sign-up
+    | (a new account with its own team) and invitations of existing
+    | accounts into another team are off until explicitly enabled.
+    | Do not enable registration before domain names are unique per team
+    | instead of platform-wide (see docs/AUDIT.md).
+    |
+    */
+
+    'tenancy' => [
+        'registration_enabled' => (bool) env('SERVERSCOPE_REGISTRATION_ENABLED', false),
+        'invitations_enabled' => (bool) env('SERVERSCOPE_TEAM_INVITATIONS_ENABLED', false),
+        // Automated tests only: records created without any team context
+        // go to the default team. Never applies outside tests.
+        'test_fallback' => true,
+    ],
+
     'docs_url' => rtrim((string) env('SERVERSCOPE_DOCS_URL', 'https://info.serverscope.nl/nl/docs'), '/'),
 
 ];

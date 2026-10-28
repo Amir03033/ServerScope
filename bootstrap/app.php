@@ -14,6 +14,22 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
+        // The tenant must be known before route model binding, so that IDs
+        // of another team resolve to 404.
+        $middleware->alias(['tenant' => \App\Http\Middleware\ResolveTenant::class]);
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\ResolveTenant::class,
+        );
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\AuthenticateApiToken::class,
+        );
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Http\Middleware\AuthenticateAgent::class,
+        );
+
         // Plesk serves Laravel behind its own nginx/Apache proxy; trust it so
         // request()->ip() and isSecure() reflect the real client.
         $middleware->trustProxies(at: env('TRUSTED_PROXIES', '127.0.0.1,::1'));

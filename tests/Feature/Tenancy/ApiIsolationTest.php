@@ -28,7 +28,7 @@ class ApiIsolationTest extends TestCase
         Queue::fake();
         Notification::fake();
         $this->app->instance(Resolver::class, (new FakeResolver)->host('alpha-shop.example.com', '93.184.215.14')->host('bravo-shop.example.com', '93.184.215.15'));
-        $this->setUpTwoTeams();
+        $this->createTwoTeams();
     }
 
     public function test_lists_only_contain_own_team(): void

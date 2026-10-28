@@ -13,6 +13,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class Prediction extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
+    /** Belongs to the team of the resource it is about. */
+    public function owningTeamId(): ?int
+    {
+        return \App\Tenancy\Tenancy::teamIdOfMorph($this->resource_type, $this->resource_id);
+    }
+
     public const METRIC_LABELS = [
         'cpu_percent' => 'CPU-gebruik',
         'memory_percent' => 'Geheugengebruik',

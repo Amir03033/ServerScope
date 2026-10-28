@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StatusPage extends Model
 {
+    use \App\Tenancy\BelongsToTeam;
+
     protected $fillable = ['name', 'slug', 'description', 'is_public', 'show_incident_titles', 'show_uptime', 'accent_color', 'created_by'];
 
     protected function casts(): array

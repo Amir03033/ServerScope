@@ -39,7 +39,7 @@ trait TwoTeams
     /** @var array<string, mixed> */
     protected array $b = [];
 
-    protected function setUpTwoTeams(): void
+    protected function createTwoTeams(): void
     {
         $this->a = $this->tenant('alpha');
         $this->b = $this->tenant('bravo');
