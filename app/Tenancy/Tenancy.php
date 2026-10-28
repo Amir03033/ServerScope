@@ -23,7 +23,7 @@ class Tenancy
         }
 
         if ($model instanceof User) {
-            return $model->current_team_id;
+            return $model->current_team_id ?? $model->teams()->orderBy('teams.id')->value('teams.id');
         }
 
         if ($model->getAttribute('team_id') !== null) {
