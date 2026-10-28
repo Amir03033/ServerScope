@@ -2,6 +2,7 @@
 
 namespace App\Services\Dependencies;
 
+use App\Tenancy\Tenancy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -31,7 +32,11 @@ class ResourceCatalog
         return isset(self::TYPES[$type]) && Relation::getMorphedModel($type) !== null;
     }
 
-    public static function find(string $type, int|string|null $id): ?Model
+    /**
+     * A resource by type and id; with a team, only when it belongs to that
+     * team (resources of other teams do not exist for the caller).
+     */
+    public static function find(string $type, int|string|null $id, ?int $teamId = null): ?Model
     {
         if ($id === null || ! self::supports($type)) {
             return null;
@@ -44,17 +49,23 @@ class ResourceCatalog
             $query->withTrashed();
         }
 
-        return $query->find($id);
+        $resource = $query->find($id);
+
+        if ($resource !== null && $teamId !== null && Tenancy::teamIdOf($resource) !== $teamId) {
+            return null;
+        }
+
+        return $resource;
     }
 
     /** Resolve a "type:id" key. */
-    public static function fromKey(?string $key): ?Model
+    public static function fromKey(?string $key, ?int $teamId = null): ?Model
     {
         if ($key === null || ! preg_match('/^([a-z_]+):(\d+)$/', $key, $m)) {
             return null;
         }
 
-        return self::find($m[1], (int) $m[2]);
+        return self::find($m[1], (int) $m[2], $teamId);
     }
 
     public static function name(?Model $resource): string

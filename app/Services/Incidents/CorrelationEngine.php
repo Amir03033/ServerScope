@@ -13,6 +13,8 @@ use Illuminate\Support\Collection;
  * Groups related incidents under one root incident.
  *
  * Incidents are only grouped when all of these hold:
+ * - both incidents belong to the same team (a dependency or correlation
+ *   never connects two teams);
  * - the resources are connected by a confirmed dependency (user-defined
  *   or structural: page -> website, service -> server) or are the same
  *   resource;
@@ -91,8 +93,8 @@ class CorrelationEngine
             return;
         }
 
-        $ancestors = $this->graph->ancestors($incident->subject_type, (int) $incident->subject_id);
-        $candidates = $this->activeIncidentsFor($ancestors, $incident->id)
+        $ancestors = $this->graph->ancestors($incident->subject_type, (int) $incident->subject_id, teamId: $incident->team_id);
+        $candidates = $this->activeIncidentsFor($ancestors, $incident->id, $incident->team_id)
             ->filter(fn (Incident $c) => in_array($kind, self::CAUSES[$c->source] ?? [], true))
             // A grouped incident's own root comes from the same chain.
             ->filter(fn (Incident $c) => $c->parent_id !== $incident->id);
@@ -119,10 +121,10 @@ class CorrelationEngine
     private function attachDownstream(Incident $root): void
     {
         $window = (int) config('serverscope.incidents.correlation_window_minutes', 30);
-        $descendants = $this->graph->descendants($root->subject_type, (int) $root->subject_id);
+        $descendants = $this->graph->descendants($root->subject_type, (int) $root->subject_id, teamId: $root->team_id);
         $explains = self::CAUSES[$root->source];
 
-        $children = $this->activeIncidentsFor($descendants, $root->id)
+        $children = $this->activeIncidentsFor($descendants, $root->id, $root->team_id)
             ->filter(fn (Incident $c) => $c->parent_id === null)
             ->filter(fn (Incident $c) => $c->opened_at->gte($root->opened_at->copy()->subMinutes($window)))
             ->filter(fn (Incident $c) => in_array(self::failureKind($c), $explains, true));
@@ -132,7 +134,7 @@ class CorrelationEngine
             $this->attach($child, $root, $root, $path, self::failureKind($child));
 
             // Incidents grouped under the child move to the new root.
-            foreach (Incident::query()->where('parent_id', $child->id)->get() as $grandchild) {
+            foreach (Incident::query()->where('team_id', $root->team_id)->where('parent_id', $child->id)->get() as $grandchild) {
                 $grandchild->forceFill(['parent_id' => $root->id])->save();
             }
         }
@@ -142,7 +144,7 @@ class CorrelationEngine
      * @param  array<string, array{type: string, id: int, depth: int, path: array<int, string>}>  $nodes
      * @return Collection<int, Incident>
      */
-    private function activeIncidentsFor(array $nodes, int $excludeId)
+    private function activeIncidentsFor(array $nodes, int $excludeId, int $teamId)
     {
         $byType = [];
 
@@ -151,6 +153,7 @@ class CorrelationEngine
         }
 
         return Incident::query()
+            ->where('team_id', $teamId)
             ->active()
             ->whereKeyNot($excludeId)
             ->where(function ($query) use ($byType): void {
@@ -204,7 +207,7 @@ class CorrelationEngine
         $child->forceFill(['parent_id' => null, 'correlation' => [...($child->correlation ?? []), 'detached_at' => now()->toIso8601String(), 'detached_by' => $by->id]])->save();
         $this->incidents->event($child, 'detached', $by, "Losgekoppeld van incident #{$parentId}.");
 
-        if ($parent = Incident::query()->find($parentId)) {
+        if ($parent = Incident::query()->where('team_id', $child->team_id)->find($parentId)) {
             $this->incidents->event($parent, 'detached', $by, "Incident #{$child->id} is losgekoppeld.");
         }
     }

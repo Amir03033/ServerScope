@@ -6,6 +6,7 @@ use App\Models\ResourceDependency;
 use App\Services\Dependencies\DependencyGraph;
 use App\Services\Dependencies\ResourceCatalog;
 use App\Support\Audit;
+use App\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -48,8 +49,9 @@ class DependencyController extends Controller
             'dependency' => 'afhankelijkheid',
         ]);
 
-        $dependent = ResourceCatalog::fromKey($validated['dependent']);
-        $dependency = ResourceCatalog::fromKey($validated['dependency']);
+        // Both ends must belong to the current team.
+        $dependent = ResourceCatalog::fromKey($validated['dependent'], Tenant::id());
+        $dependency = ResourceCatalog::fromKey($validated['dependency'], Tenant::id());
 
         if ($dependent === null || $dependency === null) {
             throw ValidationException::withMessages(['dependent' => 'Onbekende resource.']);
@@ -57,7 +59,7 @@ class DependencyController extends Controller
 
         $types = [$dependent->getMorphClass(), (int) $dependent->getKey(), $dependency->getMorphClass(), (int) $dependency->getKey()];
 
-        if ($graph->wouldCreateCycle(...$types)) {
+        if ($graph->wouldCreateCycle(...$types, teamId: Tenant::id())) {
             throw ValidationException::withMessages(['dependency' => 'Deze afhankelijkheid zou een kringverwijzing maken.']);
         }
 

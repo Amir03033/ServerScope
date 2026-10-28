@@ -180,11 +180,12 @@ class ServerDiagnosis
     private function websites(Server $server): Collection
     {
         $ids = ResourceDependency::query()
+            ->where('team_id', $server->team_id)
             ->where('dependency_type', 'server')->where('dependency_id', $server->id)
             ->where('dependent_type', 'domain')
             ->pluck('dependent_id');
 
-        return Domain::query()->whereIn('id', $ids)->where('is_active', true)->get();
+        return Domain::query()->where('team_id', $server->team_id)->whereIn('id', $ids)->where('is_active', true)->get();
     }
 
     private function result(string $state, string $tone, string $title, string $explanation, array $evidence): array

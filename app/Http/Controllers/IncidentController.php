@@ -6,6 +6,8 @@ use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\Server;
 use App\Models\User;
+use App\Rules\TeamMember;
+use App\Tenancy\Tenant;
 use App\Services\Incidents\CorrelationEngine;
 use App\Services\Incidents\IncidentManager;
 use App\Services\Incidents\IncidentMetrics;
@@ -93,7 +95,7 @@ class IncidentController extends Controller
         return view('incidents.create', [
             'servers' => Server::query()->orderBy('name')->get(['id', 'name']),
             'domains' => Domain::query()->orderBy('name')->get(['id', 'name']),
-            'users' => User::query()->orderBy('name')->get(['id', 'name']),
+            'users' => TeamMember::options(Tenant::id()),
         ]);
     }
 
@@ -106,7 +108,7 @@ class IncidentController extends Controller
             'description' => ['nullable', 'string', 'max:5000'],
             'severity' => ['required', Rule::in(Incident::SEVERITIES)],
             'subject' => ['nullable', 'string', 'regex:/^(server|domain):\d+$/'],
-            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'assigned_to' => ['nullable', 'integer', new TeamMember(Tenant::id())],
         ]);
 
         $subject = null;
@@ -124,6 +126,7 @@ class IncidentController extends Controller
             description: $validated['description'] ?? null,
             subject: $subject,
             context: ['created_by' => $request->user()->id],
+            teamId: Tenant::id(),
         ));
 
         if (! empty($validated['assigned_to'])) {
@@ -171,7 +174,7 @@ class IncidentController extends Controller
             'recurrence' => $recurrence,
             'related' => $related,
             'checks' => $checks,
-            'users' => User::query()->orderBy('name')->get(['id', 'name']),
+            'users' => TeamMember::options($incident->team_id),
         ]);
     }
 
@@ -202,7 +205,7 @@ class IncidentController extends Controller
 
     public function assign(Request $request, Incident $incident): RedirectResponse
     {
-        $validated = $request->validate(['assigned_to' => ['nullable', 'integer', 'exists:users,id']]);
+        $validated = $request->validate(['assigned_to' => ['nullable', 'integer', new TeamMember($incident->team_id)]]);
 
         $assignee = isset($validated['assigned_to']) ? User::query()->find($validated['assigned_to']) : null;
         $this->incidents->assign($incident, $assignee, $request->user());

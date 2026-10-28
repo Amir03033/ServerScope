@@ -24,5 +24,8 @@ final class Signal
         public readonly ?string $escalationKey = null,
         // When the problem began according to the evidence (MTTD).
         public readonly ?CarbonInterface $startedAt = null,
+        // Required when there is no subject (manual incidents): the team
+        // the incident belongs to. Otherwise the subject's team is used.
+        public readonly ?int $teamId = null,
     ) {}
 }

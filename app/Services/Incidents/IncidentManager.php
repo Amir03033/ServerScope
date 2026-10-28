@@ -11,6 +11,7 @@ use App\Models\Incident;
 use App\Models\IncidentEvent;
 use App\Models\User;
 use App\Support\Severity;
+use App\Tenancy\Tenancy;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -132,6 +133,7 @@ class IncidentManager
         }
 
         $incident = Incident::query()->create([
+            'team_id' => $signal->teamId ?? Tenancy::teamIdOf($signal->subject),
             'fingerprint' => $signal->fingerprint,
             'active_fingerprint' => $signal->fingerprint,
             'subject_type' => $signal->subject?->getMorphClass(),

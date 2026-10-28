@@ -54,7 +54,7 @@ class Incident extends Model
         'status', 'title', 'description', 'assigned_to', 'opened_at', 'last_occurrence_at',
         'occurrence_count', 'acknowledged_at', 'acknowledged_by', 'resolved_at', 'resolved_by',
         'closed_at', 'closed_by', 'resolution_notes', 'reopened_count', 'escalated_at',
-        'last_notified_at', 'context', 'started_at', 'parent_id', 'correlation',
+        'last_notified_at', 'context', 'started_at', 'parent_id', 'correlation', 'team_id',
     ];
 
     protected function casts(): array
