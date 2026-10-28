@@ -68,6 +68,12 @@ Route::get('/agent/ping', function (Request $request) {
     ]);
 })->middleware(AuthenticateAgent::class)->name('agent.ping');
 
+// One-command installation: the script and the agent package (public,
+// no secrets, no team data; the team comes from the enrollment token).
+Route::get('/install.sh', [\App\Http\Controllers\AgentDownloadController::class, 'script'])->middleware('throttle:60,1')->name('agent.install-script');
+Route::get('/agent/serverscope-agent-{version}.tar.gz', [\App\Http\Controllers\AgentDownloadController::class, 'package'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:30,1')->name('agent.package');
+Route::get('/agent/serverscope-agent-{version}.tar.gz.sha256', [\App\Http\Controllers\AgentDownloadController::class, 'checksum'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:60,1')->name('agent.checksum');
+
 // Public status pages (no login unless the page is private).
 Route::get('/status/{slug}.json', [PublicStatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.json');
 Route::get('/status/{slug}', [PublicStatusPageController::class, 'show'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.show');
@@ -138,6 +144,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::get('/servers', [ServerController::class, 'index'])->name('servers.index');
     Route::get('/servers/create', [ServerController::class, 'create'])->name('servers.create');
+    // One-command installation (Linux) with one-time enrollment tokens.
+    Route::get('/servers/add', [\App\Http\Controllers\EnrollmentTokenController::class, 'add'])->name('servers.add');
+    Route::post('/enrollment-tokens', [\App\Http\Controllers\EnrollmentTokenController::class, 'store'])->middleware('throttle:20,1')->name('enrollment-tokens.store');
+    Route::delete('/enrollment-tokens/{enrollmentToken}', [\App\Http\Controllers\EnrollmentTokenController::class, 'destroy'])->name('enrollment-tokens.destroy');
+    Route::get('/enrollment-tokens/{enrollmentToken}/status', [\App\Http\Controllers\EnrollmentTokenController::class, 'status'])->middleware('throttle:120,1')->name('enrollment-tokens.status');
     Route::post('/servers', [ServerController::class, 'store'])->name('servers.store');
 
     Route::get('/servers/{server}', ServerDetailController::class)

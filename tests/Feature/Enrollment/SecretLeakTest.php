@@ -103,7 +103,8 @@ class SecretLeakTest extends TestCase
         $this->assertNowhere($plain, 'enrollment token');
         $this->assertNowhere($agentToken, 'agent credential');
 
-        // The dashboard does not show the token again.
+        // The dashboard shows the token on the first visit only.
+        $this->actingAs($this->a['admin'])->get(route('servers.add'));
         $this->assertStringNotContainsString($plain, $this->actingAs($this->a['admin'])->get(route('servers.add'))->getContent());
     }
 

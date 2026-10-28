@@ -71,7 +71,7 @@ class AgentDownloadTest extends TestCase
     {
         $tarball = $this->get(route('agent.package', ['version' => '0.2.0']))->assertOk();
         $this->assertSame('application/gzip', $tarball->headers->get('Content-Type'));
-        $body = $tarball->streamedContent() ?: $tarball->getContent();
+        $body = $tarball->getContent();
 
         $checksum = $this->get(route('agent.checksum', ['version' => '0.2.0']))->assertOk()->getContent();
         $this->assertSame(hash('sha256', $body).'  serverscope-agent-0.2.0.tar.gz'."\n", $checksum);

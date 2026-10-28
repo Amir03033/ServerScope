@@ -20,7 +20,7 @@
 
     <x-slot:actions>
         @can('admin')
-            <a href="{{ route('servers.create') }}" class="button button-primary">
+            <a href="{{ route('servers.add') }}" class="button button-primary">
                 <svg class="ico"><use href="#i-plus"/></svg> Server toevoegen
             </a>
         @endcan
@@ -76,7 +76,7 @@
                     Registreer je eerste server en installeer de agent om metingen te ontvangen.
                     @can('admin')
                         <x-slot:actions>
-                            <a href="{{ route('servers.create') }}" class="button button-primary">Eerste server toevoegen</a>
+                            <a href="{{ route('servers.add') }}" class="button button-primary">Eerste server toevoegen</a>
                         </x-slot:actions>
                     @endcan
                 </x-empty-state>

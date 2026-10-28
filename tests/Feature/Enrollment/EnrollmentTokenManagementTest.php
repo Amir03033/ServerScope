@@ -52,7 +52,8 @@ class EnrollmentTokenManagementTest extends TestCase
 
         $this->assertTrue(AuditLog::withoutGlobalScopes()->where('team_id', $this->a['team']->id)->where('action', 'enrollment.created')->exists());
 
-        // The token is shown once: a later visit no longer contains it.
+        // The token is shown once, on the page right after creating it.
+        $this->actingAs($this->a['admin'])->get(route('servers.add'))->assertOk()->assertSee($plain);
         $this->actingAs($this->a['admin'])->get(route('servers.add'))->assertOk()->assertDontSee($plain);
     }
 
@@ -128,7 +129,9 @@ class EnrollmentTokenManagementTest extends TestCase
         $this->assertTrue(AuditLog::withoutGlobalScopes()->where('action', 'enrollment.revoked')->exists());
         $this->postJson(route('agent.enroll'), ['token' => $plain, 'hostname' => 'web-01', 'os' => 'Ubuntu 24.04', 'arch' => 'amd64', 'agent_version' => '0.2.0'])->assertUnauthorized();
 
-        // Revoked tokens no longer show up as pending.
+        // Revoked tokens no longer show up as pending (the first visit shows
+        // the confirmation, which names the prefix).
+        $this->actingAs($this->a['admin'])->get(route('servers.add'))->assertSee('is ingetrokken');
         $this->actingAs($this->a['admin'])->get(route('servers.add'))->assertDontSee($token->prefix);
     }
 
@@ -148,7 +151,7 @@ class EnrollmentTokenManagementTest extends TestCase
             ->assertJsonPath('state', 'connected')
             ->assertJsonPath('server_url', route('servers.show', $result['server']));
 
-        $token->forceFill(['used_at' => null, 'server_id' => null, 'expires_at' => now()->subMinute()])->save();
+        $token->refresh()->forceFill(['used_at' => null, 'server_id' => null, 'expires_at' => now()->subMinute()])->save();
         $this->actingAs($this->a['admin'])->getJson(route('enrollment-tokens.status', $token))->assertJsonPath('state', 'expired');
     }
 
@@ -162,9 +165,14 @@ class EnrollmentTokenManagementTest extends TestCase
         $this->actingAs($this->a['admin'])->post(route('enrollment-tokens.store'))->assertSessionHas('error');
         $this->assertSame(0, EnrollmentToken::withoutGlobalScopes()->count());
 
-        // Only an explicit setting allows it (local testing).
+        // Only an explicit setting allows it (local testing), never in production.
         config(['serverscope.enrollment.allow_insecure_url' => true]);
+        $this->actingAs($this->a['admin'])->post(route('enrollment-tokens.store'))->assertSessionHas('enrollment_token');
         $this->actingAs($this->a['admin'])->get(route('servers.add'))->assertSee('serverscope-install.sh');
+
+        $this->app['env'] = 'production';
+        $this->actingAs($this->a['admin'])->get(route('servers.add'))->assertSee('APP_URL')->assertDontSee('serverscope-install.sh');
+        $this->get(route('agent.install-script'))->assertStatus(503);
     }
 
     public function test_the_manual_registration_still_works(): void
