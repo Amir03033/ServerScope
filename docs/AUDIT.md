@@ -7,6 +7,11 @@
   (407 PHPUnit tests and 32 agent tests passing). Details, remaining work
   and limitations: [UPGRADE_PLAN.md](UPGRADE_PLAN.md); report method:
   [REPORTS.md](REPORTS.md).
+- Multi-tenancy phase 1 (teams): branch `claude/festive-goldberg-l278l4`,
+  PHP 8.4. Baseline 406 of 407 PHPUnit tests (the known
+  `TlsInspectorTest::test_expired_certificate` fails because of the test
+  itself on PHP 8.4/OpenSSL 3) and 36 agent tests; afterwards the same
+  406 plus 40 new isolation tests pass on SQLite. See §5.
 
 Scope: the ServerScope Laravel application (not `info.serverscope.nl`).
 Statuses are based on code plus automated tests and local runs in a
@@ -67,8 +72,8 @@ where noted) · **PARTIAL** · **MISSING** · **UNVERIFIED**.
 | Shared layout, responsive pages, empty/loading/error states | COMPLETE | old pages overflowed at 390 px; fixed |
 | Dashboard with servers, domains, incidents, expiries, DNS changes, trends, global search | COMPLETE | |
 | Password reset, 2FA (TOTP + recovery codes), profile, password change | COMPLETE | `AuthSecurityTest` incl. RFC 6238 vectors |
-| User management (invite, roles) | COMPLETE | single tenant |
-| Teams / multi-tenant isolation | MISSING | not needed for a single-owner product; requires a business decision (see §4) |
+| User management (invite, roles) | COMPLETE | per team: owner / admin / member |
+| Teams / multi-tenant isolation | COMPLETE (phase 1) | every customer is a team that only sees its own data; see §5. Registration and invitations exist but are **off** |
 | API tokens + REST API v1 | COMPLETE | `ApiTest` |
 | Audit log | COMPLETE | admin page, secrets redacted |
 | Data retention | COMPLETE | opt-in, disabled by default |
@@ -95,7 +100,7 @@ Remaining, by priority:
 | 5 | Recurring maintenance windows and a maintenance history (for reports) | only one window per resource | M |
 | 6 | Native Slack/Discord channels, notification schedules (quiet hours) | convenience | M |
 | 7 | Session management UI, email verification | account hygiene | S |
-| 8 | Teams/tenancy — only if customers will log in | business decision | L |
+| 8 | Teams phase 2: domain names unique per team (**required before public registration**), per-team escalation contacts, team settings UI | customers sign up themselves | M |
 
 ## 3. Technical findings
 
@@ -136,7 +141,72 @@ Remaining, by priority:
   paths but was only executed on SQLite here.
 
 ## 4. Decisions for the owner
-- **Tenancy**: keep single-tenant (every user sees everything) unless
-  customers will log in; then teams/ownership must be added across all models.
+- **Tenancy**: decided — multi-tenant with teams; phase 1 is implemented
+  (§5). Public registration stays off until the blockers in §5 are fixed.
 - **Livewire**: update or remove.
 - **Retention**: choose periods; reports can only cover retained data.
+
+## 5. Multi-tenancy (teams), phase 1
+
+### Model
+- `teams` (one `is_default` team holds all data from before multi-tenancy),
+  `team_user` with a role per membership: **owner**, **admin**, **member**.
+  Roles are the only source of permissions; `users.is_admin` is kept as a
+  mirror of the role in the current team (role → column) and grants nothing.
+- `users.current_team_id` is verified on every request (membership); a user
+  who is no longer a member is signed out (web) or gets 403 (JSON).
+- **Platform administrator** (`users.is_platform_admin`, set only with
+  `php artisan serverscope:create-admin --platform`): platform-wide system
+  status, nothing else. No access to data or configuration of any team.
+- `team_id` on: servers, domains, monitored_pages, alert_rules, alerts,
+  incidents, predictions, resource_dependencies, webhook_endpoints,
+  status_pages, api_tokens, audit_logs, notification_logs. All other tables
+  inherit the team through their parent (metric samples, checks, DNS
+  history, certificates, credentials, services, events, impacts, deliveries,
+  components).
+
+### How isolation is enforced
+- A tenant context is set only by HTTP middleware (session, API token,
+  agent credential), before route model binding: an ID of another team is a
+  404, never a 403.
+- A global scope on the 13 team-owned models (and a parent scope on child
+  models that are addressed directly) applies only within a tenant.
+  Scheduler commands and queued jobs always run without a tenant and
+  process every team; where the team matters (notification recipients,
+  alert rules, webhooks, correlation, dependencies, escalation) it is
+  filtered explicitly from the record itself.
+- New records take their team from their parent/subject or the tenant.
+  Outside automated tests a record without a determinable team throws
+  `MissingTeamException` (also for audit log entries); there is no silent
+  fallback to the default team.
+- API tokens belong to one team and stop working (401) when their owner
+  leaves that team. Agents are unchanged: the credential determines the
+  server, the server the team.
+- Cached data with team content is keyed per team (dashboard trends,
+  system-health summary); other cache keys contain a resource or token id.
+
+### Known limitations and blockers (must be fixed before public registration)
+1. **Domain names are unique platform-wide** (unique index on
+   `domains.name`, kept because phase 1 only adds schema). A customer could
+   "claim" and thereby block a domain of another customer. Another team gets
+   a neutral message that does not reveal the owner, but the block itself
+   remains. **Fix before `SERVERSCOPE_REGISTRATION_ENABLED` is turned on**
+   (unique per team, or domain ownership verification).
+2. User e-mail addresses are unique platform-wide: inviting or registering
+   an address that already has an account tells the inviter that it exists.
+3. Status page slugs are unique platform-wide (they are public URLs).
+4. Escalation contacts from `SERVERSCOPE_ESCALATION_EMAILS` only receive
+   incidents of the default team; other teams have no escalation contacts
+   yet (their members still receive escalations).
+5. `max_domains` applies per team; there is no per-team plan or limit UI.
+6. Team management UI is minimal: team switcher, members page per team;
+   creating teams is `php artisan serverscope:create-team`.
+7. In-app notifications (Laravel `notifications` table) belong to a user,
+   not a team: a user removed from a team keeps the notifications they
+   already received.
+
+### Flags (both off by default; do not enable without fixing blocker 1)
+- `SERVERSCOPE_REGISTRATION_ENABLED`: `/register` creates an account with
+  its own team (otherwise 404).
+- `SERVERSCOPE_TEAM_INVITATIONS_ENABLED`: an administrator can add an
+  existing account to their team by e-mail address.

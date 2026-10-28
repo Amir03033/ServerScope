@@ -66,7 +66,7 @@ class TeamAccessTest extends TestCase
 
         // Pointing current_team_id at a team the user is not a member of.
         $user->forceFill(['current_team_id' => $this->b['team']->id])->save();
-        $this->actingAs($user->fresh())->get(route('servers.index'))->assertRedirect(route('login'));
+        $this->actingAs($user->fresh())->get(route('servers.index'))->assertRedirect(route('login'))->assertSessionHas('error');
         $this->assertGuest();
 
         // Removed from the team while signed in.
