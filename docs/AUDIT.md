@@ -13,6 +13,10 @@
   itself on PHP 8.4/OpenSSL 3) and 36 agent tests; afterwards the same
   406 plus 43 new tenancy tests pass on SQLite; on MySQL 8.0 see §5
   (four older tests are MySQL-incompatible, also before this work).
+- One-command server enrollment (phase 2): same branch, on top of phase 1
+  in `main`. Baseline 449 of 450 PHPUnit tests (only the known TLS test
+  fails) and 36 agent tests; afterwards 482 of 483 (the 449 plus 33 new) and 39 agent tests,
+  plus a container test of `install.sh` on Ubuntu 22.04 and 24.04. See §6.
 
 Scope: the ServerScope Laravel application (not `info.serverscope.nl`).
 Statuses are based on code plus automated tests and local runs in a
@@ -38,6 +42,7 @@ where noted) · **PARTIAL** · **MISSING** · **UNVERIFIED**.
 | Resource alerts with severity | PARTIAL | CPU/RAM/disk/agent-offline; no load/network/swap rules, no separate warning+critical thresholds per rule, recovery on first good sample |
 | Process/service health | COMPLETE | agent 0.2.0 `SERVERSCOPE_SERVICES`; `ServerHealthTest` |
 | Agent packaging | COMPLETE | systemd unit + install guide (`agent/README.md`); no local buffering of failed samples |
+| One-command server enrollment (Linux) | COMPLETE (phase 2) | one-time enrollment tokens per team, `install.sh`, agent package with SHA-256; see §6. Not signed yet |
 
 ### Domains
 
@@ -260,3 +265,101 @@ notification log rows, 200 000 incidents, 50 000 pages, 1 000 domains,
 Roughly one minute per million rows on the large tables; MySQL rebuilds
 those tables (adding a foreign key), so writes to them wait. Run the
 migration in maintenance mode (`php artisan down`).
+
+## 6. One-command server enrollment (phase 2)
+
+### What it does
+**Servers → Server toevoegen → Linux**: a team administrator creates a
+one-time enrollment token and gets one command:
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://<app>/install.sh -o serverscope-install.sh && sudo bash serverscope-install.sh
+```
+
+The script asks for the token (hidden input) or reads it from
+`SERVERSCOPE_ENROLL_TOKEN`, installs the agent, exchanges the token for a
+normal agent credential and waits for the first sample. The page shows a
+live status ("Wachten op agent…" → "Verbonden" with a link). The manual
+registration and every existing agent keep working unchanged;
+`POST /api/agent/metrics` is unchanged. Details: `agent/README.md`.
+
+### Security decisions
+- **Enrollment tokens** (`enrollment_tokens`): `sse_` + 48 hex characters,
+  only the SHA-256 is stored, bound to the creating team and user, valid 60
+  minutes (`SERVERSCOPE_ENROLLMENT_TTL_MINUTES`), invalid after one
+  successful use, revocable, at most 10 pending per team
+  (`SERVERSCOPE_ENROLLMENT_MAX_PENDING`). Only team administrators create
+  or revoke them; other teams' tokens do not exist (404).
+- **`POST /api/agent/enroll`**: the team comes only from the token. A
+  single conditional `UPDATE` claims the token inside a transaction; the
+  server and credential are created through the existing
+  `ServerRegistrationService`/`AgentCredentialService`; a failure rolls back
+  and leaves the token usable. Every unusable token (unknown, malformed,
+  expired, used, revoked) gets the same `401 Ongeldig of verlopen
+  koppeltoken.` Input (hostname, OS, architecture, agent version) is
+  validated strictly. Rate limit: 10 attempts per minute per address
+  (`SERVERSCOPE_ENROLLMENT_ATTEMPTS_PER_MINUTE`) plus 300 per minute
+  platform-wide.
+- **`GET /api/agent/self` / `POST /api/agent/revoke`**: for `install.sh`
+  (first sample, uninstall); a credential can only revoke itself. Both use
+  their own rate limit counters per credential (plain `throttle:N,1` shares
+  one counter per IP across routes).
+- **No secrets in logs**: tokens and credentials are never written to
+  Laravel logs, the audit log, error responses or the script's output
+  (tested, including validation errors and exceptions). Audit entries:
+  `enrollment.created`, `enrollment.used` (in the token's team, with the
+  new server), `enrollment.revoked`, `agent_credential.self_revoked`.
+- **HTTPS only**: the command and the script use `--proto '=https'
+  --tlsv1.2`; the URL is always `APP_URL`, never the request's Host header.
+  With an http `APP_URL` the page shows an error and `/install.sh` answers
+  503. `SERVERSCOPE_ENROLLMENT_ALLOW_INSECURE_URL` allows http for local
+  testing only and is ignored in production.
+- **Agent package**: `/agent/serverscope-agent-<version>.tar.gz` and
+  `.sha256` are built from `agent/` (reproducible: fixed order, times and
+  owners), cached under a hash of the source files (changed code without a
+  new version number gives a new package) and written atomically. **The
+  checksum comes from the same server as the package: it protects against
+  corrupt downloads, not against a compromised ServerScope server.** Signed
+  releases are phase 3.
+- **The agent executes nothing on request of the server**; the agent code is
+  unchanged. Dependencies come from the distribution's signed packages
+  (`python3-psutil`, `python3-requests`, `python3-dotenv`), not from PyPI.
+- **New servers** start as "pending" and raise no "agent offline" incident
+  until their first sample (tested).
+
+### Tests
+- PHPUnit: 33 new tests (`tests/Feature/Enrollment`), passing on SQLite and
+  MySQL 8.0; agent: 3 new tests that the agent reads `<install dir>/.env`.
+- Real concurrency on MySQL: 6 rounds of 20 parallel enroll requests with
+  one token against 4 PHP workers: always exactly one 201, one server, one
+  credential.
+- `install.sh` passes shellcheck (style level).
+- `scripts/e2e/install-test.sh`: the documented command in clean
+  **Ubuntu 22.04 and 24.04** containers (amd64) against a local ServerScope
+  over HTTPS: install via the hidden prompt, server online in the token's
+  team, `.env` layout/owner/mode/format, user without shell, the agent
+  running as `serverscope`, running twice, re-enrolling after a revoked
+  credential (new server, via the environment variable), `--uninstall`
+  (credential revoked via the API, only own files and user removed), a
+  manual installation left alone, an invalid token, and no token or
+  credential in the output: 35 of 35 checks on both. Ubuntu 20.04 is
+  refused with a clear message.
+
+### Not tested / limitations
+1. **Debian 12**: the network policy of the test environment blocks
+   `deb.debian.org`, so the Debian packages and a full install on Debian 12
+   were not tested. The script stops with a clear message when apt fails.
+2. **systemd** itself was not exercised: the containers run without
+   systemd; a stand-in starts the agent exactly like the (unchanged) unit.
+   The unit's sandboxing options are therefore not re-tested here (they are
+   unchanged from the manual installation).
+3. **arm64** was not tested (amd64 containers only).
+4. Production on Plesk (APP_URL, reverse proxy, TLS certificate) was not
+   tested.
+5. Re-enrolling after a revoked credential creates a **new** server; the
+   old one stays (with its history) until it is deleted in the dashboard.
+6. `POST /api/agent/metrics` keeps its existing `throttle:60,1`, which is one
+   counter per IP address: many agents behind one NAT address share it
+   (pre-existing; unchanged so the contract stays exactly the same).
+7. The checksum is not a signature (see above); signed releases and
+   automatic updates are phase 3.
