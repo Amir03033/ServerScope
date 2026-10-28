@@ -202,6 +202,30 @@ class EnrollApiTest extends TestCase
         $this->assertLessThanOrEqual(10, count(array_filter($statuses, fn ($s) => $s === 401)));
     }
 
+    public function test_install_polling_does_not_use_up_the_budget_of_metrics_or_revoke(): void
+    {
+        [, $plain] = $this->token();
+        $agentToken = $this->enroll($plain)->json('data.agent_token');
+
+        // install.sh polls up to 18 times; other servers send metrics from
+        // the same address meanwhile.
+        for ($i = 0; $i < 18; $i++) {
+            $this->withToken($agentToken)->getJson(route('agent.self'))->assertOk();
+        }
+
+        for ($i = 0; $i < 50; $i++) {
+            $this->withToken($this->agentTokenOf($this->a['server']))->postJson('/api/agent/metrics', ['collected_at' => now()->subSeconds($i)->toIso8601String(), 'cpu_percent' => 1]);
+        }
+
+        $this->withToken($this->agentTokenOf($this->b['server']))->postJson('/api/agent/metrics', ['collected_at' => now()->toIso8601String(), 'cpu_percent' => 1])->assertCreated();
+        $this->withToken($agentToken)->postJson(route('agent.revoke'))->assertOk();
+    }
+
+    private function agentTokenOf(Server $server): string
+    {
+        return app(\App\Services\AgentCredentialService::class)->issue($server, 'test')['token'];
+    }
+
     public function test_use_is_audited_in_the_tokens_team(): void
     {
         [$token, $plain] = $this->token('b');

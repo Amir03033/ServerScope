@@ -24,10 +24,10 @@ Route::post('/agent/enroll', [\App\Http\Controllers\Api\AgentEnrollmentControlle
     ->middleware('throttle:agent-enroll')
     ->name('agent.enroll');
 Route::get('/agent/self', [\App\Http\Controllers\Api\AgentEnrollmentController::class, 'self'])
-    ->middleware([AuthenticateAgent::class, 'throttle:60,1'])
+    ->middleware([AuthenticateAgent::class, 'throttle:agent-self'])
     ->name('agent.self');
 Route::post('/agent/revoke', [\App\Http\Controllers\Api\AgentEnrollmentController::class, 'revoke'])
-    ->middleware([AuthenticateAgent::class, 'throttle:10,1'])
+    ->middleware([AuthenticateAgent::class, 'throttle:agent-revoke'])
     ->name('agent.revoke');
 
 // Public REST API, authenticated with personal API tokens.
