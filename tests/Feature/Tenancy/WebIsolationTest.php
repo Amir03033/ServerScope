@@ -136,7 +136,8 @@ class WebIsolationTest extends TestCase
     /** @return array<string, mixed> */
     private function snapshotB(): array
     {
-        return [
+        // Compared as JSON so dates compare by value.
+        return json_decode(json_encode([
             'server' => $this->b['server']->fresh()?->only(['name', 'deleted_at', 'maintenance_ends_at']),
             'trashed' => Server::withoutGlobalScopes()->withTrashed()->find($this->b['trashed']->id)?->only(['deleted_at']),
             'credentials' => $this->b['server']->agentCredentials()->whereNull('revoked_at')->count(),
@@ -152,7 +153,7 @@ class WebIsolationTest extends TestCase
             'deliveries' => $this->b['webhook']->deliveries()->count(),
             'member' => $this->b['member']->fresh()?->only(['is_admin']),
             'token' => $this->b['token']->fresh()->revoked_at,
-        ];
+        ]), true);
     }
 
     public function test_lists_search_dashboard_and_reports_never_show_another_team(): void
@@ -176,7 +177,9 @@ class WebIsolationTest extends TestCase
             route('users.index'),
             route('audit-logs.index'),
             route('notifications.index', ['tab' => 'deliveries']),
-            route('search', ['q' => 'bravo']),
+            // Terms that match records of both teams.
+            route('search', ['q' => 'shop']),
+            route('search', ['q' => 'storing']),
             route('search', ['q' => (string) $this->b['incident']->id]),
             route('reports.index'),
             route('reports.print'),
@@ -217,8 +220,9 @@ class WebIsolationTest extends TestCase
 
         // An unknown user and a user of another team get the same answer.
         $unknown = $this->actingAs($this->a['member'])->post(route('incidents.assign', $incident), ['assigned_to' => 999999])->assertSessionHasErrors('assigned_to');
+        $unknownMessage = $this->errorFor($unknown, 'assigned_to');
         $foreign = $this->actingAs($this->a['member'])->post(route('incidents.assign', $incident), ['assigned_to' => $this->b['member']->id]);
-        $this->assertSame(session('errors')->first('assigned_to'), $foreign->getSession()->get('errors')->first('assigned_to'));
+        $this->assertSame($unknownMessage, $this->errorFor($foreign, 'assigned_to'));
 
         $this->actingAs($this->a['member'])->post(route('incidents.assign', $incident), ['assigned_to' => $this->a['admin']->id])->assertSessionHasNoErrors();
         $this->assertSame($this->a['admin']->id, $incident->fresh()->assigned_to);
@@ -248,12 +252,28 @@ class WebIsolationTest extends TestCase
 
     public function test_domain_names_are_unique_platform_wide_without_revealing_the_owner(): void
     {
-        $response = $this->actingAs($this->a['admin'])->post(route('domains.store'), ['name' => 'bravo-shop.example.com', 'scheme' => 'https']);
-        $response->assertSessionHasErrors('name');
+        $payload = ['scheme' => 'https', 'path' => '/', 'check_interval_minutes' => 5, 'timeout_seconds' => 10, 'failure_threshold' => 3, 'recovery_threshold' => 2,
+            'http_enabled' => '1', 'ssl_enabled' => '1', 'dns_enabled' => '1', 'expiry_enabled' => '1', 'ssl_warning_days' => '30', 'expiry_warning_days' => '30'];
 
-        $message = session('errors')->first('name');
-        $this->assertStringNotContainsString('gemonitord', $message);
-        $this->assertStringNotContainsString('verwijderd', $message);
+        // Active and soft-deleted domains of another team answer the same,
+        // without saying that (or by whom) the domain is monitored.
+        $messages = [];
+        \App\Models\Domain::forceCreate(['team_id' => $this->b['team']->id, 'name' => 'bravo-oud.example.com'])->delete();
+
+        foreach (['bravo-shop.example.com', 'bravo-oud.example.com'] as $name) {
+            $response = $this->actingAs($this->a['admin'])->post(route('domains.store'), ['name' => $name, ...$payload]);
+            $response->assertSessionHasErrors('name');
+            $messages[] = $this->errorFor($response, 'name');
+        }
+
+        $this->assertSame($messages[0], $messages[1]);
+        $this->assertStringNotContainsString('gemonitord', $messages[0]);
+        $this->assertStringNotContainsString('verwijderd', $messages[0]);
+        $this->assertStringNotContainsStringIgnoringCase('bravo', $messages[0]);
+
+        // Within the own team the specific messages remain.
+        $own = $this->actingAs($this->a['admin'])->post(route('domains.store'), ['name' => 'alpha-shop.example.com', ...$payload]);
+        $this->assertStringContainsString('gemonitord', $this->errorFor($own, 'name'));
     }
 
     public function test_private_status_page_of_another_team_is_not_visible(): void
@@ -274,5 +294,16 @@ class WebIsolationTest extends TestCase
         $this->actingAs($this->a['admin'])->put(route('users.update', $this->a['member']), ['is_admin' => '1'])->assertSessionHas('success');
         $this->assertTrue($this->a['member']->fresh()->isAdminOf($this->a['team']));
         $this->assertFalse($this->a['member']->fresh()->isAdminOf($this->b['team']));
+    }
+
+    /** The first validation message of the latest response (read it before the next request). */
+    private function errorFor(\Illuminate\Testing\TestResponse $response, string $key): string
+    {
+        $errors = app('session.store')->get('errors');
+
+        // An error bag, or its serialized form after a later request.
+        return $errors instanceof \Illuminate\Support\ViewErrorBag
+            ? (string) $errors->first($key)
+            : (string) data_get($errors, "default.messages.{$key}.0");
     }
 }

@@ -36,7 +36,7 @@ class StatusPagePresenter
     public function present(StatusPage $page, int $days = 90): array
     {
         $components = $page->components()->with('subject')->get()
-            ->filter(fn (StatusPageComponent $c) => $c->subject !== null && ! $c->subject->trashed())
+            ->filter(fn (StatusPageComponent $c) => $c->subject !== null && ! $c->subject->trashed() && $c->subject->team_id === $page->team_id)
             ->values();
 
         $rows = $components->map(fn (StatusPageComponent $c) => [
@@ -156,6 +156,7 @@ class StatusPagePresenter
         }
 
         return Incident::query()
+            ->where('team_id', $page->team_id)
             ->where(function ($q) use ($components) {
                 foreach ($components as $c) {
                     $q->orWhere(fn ($w) => $w->where('subject_type', $c->subject_type)->where('subject_id', $c->subject_id));

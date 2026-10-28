@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Incident;
 use App\Services\Reports\AvailabilityReport;
 use App\Support\Time;
+use App\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -58,8 +59,11 @@ class ReportController extends Controller
     {
         [$from, $to] = $this->period($request);
         $filename = 'serverscope-incidenten-'.$from->format('Ymd').'-'.$to->format('Ymd').'.csv';
+        // The body is streamed after the middleware has finished, so the
+        // tenant is captured here and set again while streaming.
+        $teamId = Tenant::id() ?? abort(403);
 
-        return response()->streamDownload(function () use ($from, $to): void {
+        return response()->streamDownload(fn () => Tenant::run($teamId, function () use ($from, $to): void {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['id', 'titel', 'ernst', 'bron', 'status', 'betreft', 'begonnen', 'geopend', 'bevestigd', 'opgelost', 'detectie_s', 'tot_bevestiging_s', 'tot_oplossing_s', 'heropend', 'hoofdincident']);
 
@@ -74,7 +78,7 @@ class ReportController extends Controller
             });
 
             fclose($out);
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }), $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /**

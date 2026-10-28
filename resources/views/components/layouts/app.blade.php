@@ -5,7 +5,10 @@
 
 @php
     $user = auth()->user();
-    $isAdmin = (bool) $user?->is_admin;
+    // Rights come from the role in the current team, never from users.is_admin.
+    $isAdmin = (bool) $user?->can('admin');
+    $isPlatform = (bool) $user?->can('platform');
+    $teams = $user ? $user->teams()->orderBy('name')->get(['teams.id', 'teams.name']) : collect();
 
     // Navigation entries only appear once their route exists, so the shell
     // can be shared by features that are introduced incrementally.
@@ -26,7 +29,9 @@
             ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'i-users', 'label' => 'Gebruikers'],
             ['route' => 'audit-logs.index', 'match' => 'audit-logs.*', 'icon' => 'i-history', 'label' => 'Auditlog'],
             ['route' => 'system-health', 'match' => 'system-health', 'icon' => 'i-pulse', 'label' => 'Systeemstatus'],
-        ] : [],
+        ] : ($isPlatform ? [
+            ['route' => 'system-health', 'match' => 'system-health', 'icon' => 'i-pulse', 'label' => 'Systeemstatus'],
+        ] : []),
         'Account' => [
             ['route' => 'notifications.index', 'match' => 'notifications.*', 'icon' => 'i-message', 'label' => 'Meldingen', 'count' => $sidebarUnreadNotifications ?? 0, 'countClass' => 'info'],
             ['route' => 'profile.edit', 'match' => ['profile.*', 'api-tokens.*'], 'icon' => 'i-user', 'label' => 'Profiel'],
@@ -88,17 +93,32 @@
 
         <div class="sidebar-bottom">
             @php
-                $systemStatus = $isAdmin ? app(\App\Services\SystemHealth::class)->summary() : null;
+                $systemStatus = $isPlatform
+                    ? app(\App\Services\SystemHealth::class)->summary()
+                    : ($isAdmin ? app(\App\Services\SystemHealth::class)->summary(\App\Tenancy\Tenant::id()) : null);
                 $systemLabel = ['healthy' => 'Monitoring werkt', 'warning' => 'Monitoring: aandacht nodig', 'critical' => 'Monitoring verstoord'][$systemStatus] ?? 'Monitoring status';
             @endphp
             <strong><span class="connection-dot" @if ($systemStatus && $systemStatus !== 'healthy') style="background:var({{ $systemStatus === 'critical' ? '--red' : '--yellow' }});box-shadow:none" @endif></span>{{ $systemLabel }}</strong>
             <div class="muted small" style="margin-top:6px">
                 @if ($systemStatus)
-                    <a href="{{ route('system-health') }}">Scheduler, wachtrij en controles</a>
+                    <a href="{{ route('system-health') }}">{{ $isPlatform ? 'Scheduler, wachtrij en controles' : 'Scheduler en controles' }}</a>
                 @else
                     Agentverbinding via HTTPS
                 @endif
             </div>
+            @if ($teams->count() > 1)
+                <form method="POST" action="{{ route('teams.switch', $user->current_team_id ?? 0) }}" class="small" style="margin-top:10px" data-team-switch>
+                    @csrf
+                    <label class="muted" for="team-switch">Team</label>
+                    <select id="team-switch" onchange="this.form.action = this.form.action.replace(/\/teams\/\d+\//, '/teams/' + this.value + '/'); this.form.submit()">
+                        @foreach ($teams as $team)
+                            <option value="{{ $team->id }}" @selected($team->id === $user->current_team_id)>{{ $team->name }}</option>
+                        @endforeach
+                    </select>
+                </form>
+            @elseif ($teams->isNotEmpty())
+                <div class="muted small" style="margin-top:10px">Team: {{ $teams->first()->name }}</div>
+            @endif
             @if (config('serverscope.docs_url'))
                 <a class="small" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px" href="{{ config('serverscope.docs_url') }}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-file"/></svg> Documentatie</a>
             @endif
