@@ -11,7 +11,7 @@
   PHP 8.4. Baseline 406 of 407 PHPUnit tests (the known
   `TlsInspectorTest::test_expired_certificate` fails because of the test
   itself on PHP 8.4/OpenSSL 3) and 36 agent tests; afterwards the same
-  406 plus 40 new isolation tests pass on SQLite; on MySQL 8.0 see §5
+  406 plus 43 new tenancy tests pass on SQLite; on MySQL 8.0 see §5
   (four older tests are MySQL-incompatible, also before this work).
 
 Scope: the ServerScope Laravel application (not `info.serverscope.nl`).
@@ -205,15 +205,26 @@ Remaining, by priority:
 7. In-app notifications (Laravel `notifications` table) belong to a user,
    not a team: a user removed from a team keeps the notifications they
    already received.
+8. **Invitations add an existing account without its consent.** With
+   `SERVERSCOPE_TEAM_INVITATIONS_ENABLED` an administrator adds an existing
+   account to their team directly. **Fix before enabling invitations**: it
+   must become an invitation the recipient accepts, and the inviter must
+   not learn whether the e-mail address already has an account (same
+   answer for new and existing addresses).
+9. **Registration has no e-mail verification.** Anyone can sign up with
+   someone else's address. **Fix before enabling registration**: verify
+   the address before the account can be used.
 
-### Flags (both off by default; do not enable without fixing blocker 1)
+### Flags (both off by default)
+Do not enable registration before blockers 1, 2 and 9 are fixed, nor
+invitations before blockers 2 and 8 are fixed.
 - `SERVERSCOPE_REGISTRATION_ENABLED`: `/register` creates an account with
   its own team (otherwise 404).
 - `SERVERSCOPE_TEAM_INVITATIONS_ENABLED`: an administrator can add an
   existing account to their team by e-mail address.
 
 ### Verified on MySQL 8.0 (local container, never production)
-- All 40 new tests pass on MySQL 8.0.46, including the migration tests
+- All 43 new tests pass on MySQL 8.0.46, including the migration tests
   (backfill, NOT NULL, rollback of all six steps, running them again).
 - Of the older tests, four do not pass on MySQL **on the base commit
   either** (verified on `6b59d08`); they are unrelated to teams:

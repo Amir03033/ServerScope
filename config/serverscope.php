@@ -254,8 +254,9 @@ return [
     | Every customer is a team that only sees its own data. Public sign-up
     | (a new account with its own team) and invitations of existing
     | accounts into another team are off until explicitly enabled.
-    | Do not enable registration before domain names are unique per team
-    | instead of platform-wide (see docs/AUDIT.md).
+    | Do not enable either before the blockers in docs/AUDIT.md section 5
+    | are fixed (domain names unique per team, invitations the recipient
+    | accepts, e-mail verification for registration).
     |
     */
 
