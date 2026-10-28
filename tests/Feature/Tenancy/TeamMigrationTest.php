@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Tenancy;
 
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -14,7 +14,23 @@ use Tests\TestCase;
  */
 class TeamMigrationTest extends TestCase
 {
-    use DatabaseMigrations;
+    /**
+     * Fresh schema before and after each test. Not DatabaseMigrations:
+     * that rolls back every migration afterwards, and the down() of the
+     * older migration 2026_10_28_100000 fails on MySQL (drops an index a
+     * foreign key still needs) — unrelated to the tenancy migrations.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->artisan('migrate:fresh');
+
+        $this->beforeApplicationDestroyed(function (): void {
+            $this->artisan('migrate:fresh');
+            RefreshDatabaseState::$migrated = false;
+        });
+    }
 
     private const STEPS = 6;
 

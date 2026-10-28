@@ -11,7 +11,8 @@
   PHP 8.4. Baseline 406 of 407 PHPUnit tests (the known
   `TlsInspectorTest::test_expired_certificate` fails because of the test
   itself on PHP 8.4/OpenSSL 3) and 36 agent tests; afterwards the same
-  406 plus 40 new isolation tests pass on SQLite. See §5.
+  406 plus 40 new isolation tests pass on SQLite; on MySQL 8.0 see §5
+  (four older tests are MySQL-incompatible, also before this work).
 
 Scope: the ServerScope Laravel application (not `info.serverscope.nl`).
 Statuses are based on code plus automated tests and local runs in a
@@ -210,3 +211,41 @@ Remaining, by priority:
   its own team (otherwise 404).
 - `SERVERSCOPE_TEAM_INVITATIONS_ENABLED`: an administrator can add an
   existing account to their team by e-mail address.
+
+### Verified on MySQL 8.0 (local container, never production)
+- All 40 new tests pass on MySQL 8.0.46, including the migration tests
+  (backfill, NOT NULL, rollback of all six steps, running them again).
+- Of the older tests, four do not pass on MySQL **on the base commit
+  either** (verified on `6b59d08`); they are unrelated to teams:
+  - `AgentHeartbeatTest::test_default_agent_offline_rule_is_installed_by_migration`
+    hangs forever: it runs `migrate:fresh` inside its own open
+    `RefreshDatabase` transaction (MySQL metadata lock). Excluded from the
+    MySQL run with `--exclude-filter`.
+  - `ServerManagementTest::test_admin_updates_server_and_changes_are_audited`
+    and `WebsitePagesUiTest::test_admin_adds_several_pages_with_relative_paths`:
+    MySQL JSON columns return object keys in a different order.
+  - `PageDiscoveryTest::test_rediscovery_does_not_duplicate_and_auto_monitor_approves`.
+  - Plus the known `TlsInspectorTest::test_expired_certificate`.
+- The `down()` of the older migration `2026_10_28_100000` fails on MySQL
+  (drops an index a foreign key still needs). Rolling back the six tenancy
+  migrations is not affected; rolling back further is.
+
+### Migration duration (MySQL 8.0, container, measured)
+Data set: 1 000 000 alerts, 1 000 000 audit log rows, 1 000 000
+notification log rows, 200 000 incidents, 50 000 pages, 1 000 domains,
+500 servers, 50 users.
+
+| Step | Duration |
+|---|---|
+| 1 teams and memberships | 0.3 s |
+| 2 default team + memberships | 0.01 s |
+| 3 team_id on servers, domains, pages, rules, alerts | 1 min 2 s – 1 min 9 s |
+| 4 team_id on incidents, predictions, dependencies | 16 – 18 s |
+| 5 team_id on webhooks, status pages, tokens, audit log, notification log | 1 min 46 s – 1 min 56 s |
+| 6 NOT NULL | 33 – 34 s |
+| **Total** | **3 min 40 s – 4 min** |
+| Rollback of all six steps | 39 s |
+
+Roughly one minute per million rows on the large tables; MySQL rebuilds
+those tables (adding a foreign key), so writes to them wait. Run the
+migration in maintenance mode (`php artisan down`).
