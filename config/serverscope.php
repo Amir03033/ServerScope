@@ -268,6 +268,30 @@ return [
         'test_fallback' => true,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Server enrollment (install.sh)
+    |--------------------------------------------------------------------------
+    |
+    | One-time tokens with which install.sh connects a new Linux server.
+    | allow_insecure_url: only for local testing; never in production. Without
+    | it the "Server toevoegen" page and install.sh refuse an http APP_URL.
+    |
+    */
+
+    'enrollment' => [
+        'ttl_minutes' => (int) env('SERVERSCOPE_ENROLLMENT_TTL_MINUTES', 60),
+        'max_pending' => (int) env('SERVERSCOPE_ENROLLMENT_MAX_PENDING', 10),
+        'attempts_per_minute' => (int) env('SERVERSCOPE_ENROLLMENT_ATTEMPTS_PER_MINUTE', 10),
+        'allow_insecure_url' => (bool) env('SERVERSCOPE_ENROLLMENT_ALLOW_INSECURE_URL', false),
+    ],
+
+    'agent' => [
+        // Source of the agent package served to install.sh.
+        'source_path' => env('SERVERSCOPE_AGENT_SOURCE', base_path('agent')),
+        'cache_path' => storage_path('app/agent'),
+    ],
+
     'docs_url' => rtrim((string) env('SERVERSCOPE_DOCS_URL', 'https://info.serverscope.nl/nl/docs'), '/'),
 
 ];
