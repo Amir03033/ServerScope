@@ -175,6 +175,10 @@ return [
     'agent' => [
         'latest_version' => env('SERVERSCOPE_AGENT_LATEST_VERSION', '0.2.0'),
         'known_checksums' => array_values(array_filter(array_map('trim', explode(',', (string) env('SERVERSCOPE_AGENT_CHECKSUMS', ''))))),
+        // Agent sources in the repository (tests and development only;
+        // nothing is served from here, see App\Services\AgentPackage).
+        'source_path' => env('SERVERSCOPE_AGENT_SOURCE', base_path('agent')),
+        'cache_path' => storage_path('app/agent'),
     ],
 
     /*
@@ -286,10 +290,27 @@ return [
         'allow_insecure_url' => (bool) env('SERVERSCOPE_ENROLLMENT_ALLOW_INSECURE_URL', false),
     ],
 
-    'agent' => [
-        // Source of the agent package served to install.sh.
-        'source_path' => env('SERVERSCOPE_AGENT_SOURCE', base_path('agent')),
-        'cache_path' => storage_path('app/agent'),
+    /*
+    |--------------------------------------------------------------------------
+    | Signed agent releases (phase 3)
+    |--------------------------------------------------------------------------
+    |
+    | install.sh and the updater only install releases signed with the
+    | offline release key (scripts/release/). key_path holds the PUBLIC
+    | keys (*.pub, PEM) that are trusted; several at once during a key
+    | rotation. Releases are imported with serverscope:release:import and
+    | stored in storage_path. pending_ttl_hours: an update request that no
+    | updater picked up expires after this many hours.
+    |
+    */
+
+    'releases' => [
+        'key_path' => env('SERVERSCOPE_RELEASE_KEY_PATH', resource_path('agent/release-keys')),
+        'storage_path' => storage_path('app/agent-releases'),
+        'pending_ttl_hours' => (int) env('SERVERSCOPE_UPDATE_PENDING_TTL_HOURS', 24),
+        // The updater checks in every 5 minutes; after this many minutes
+        // without a check-in the dashboard shows it as not active.
+        'updater_stale_minutes' => (int) env('SERVERSCOPE_UPDATER_STALE_MINUTES', 30),
     ],
 
     'docs_url' => rtrim((string) env('SERVERSCOPE_DOCS_URL', 'https://info.serverscope.nl/nl/docs'), '/'),
