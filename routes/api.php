@@ -30,6 +30,15 @@ Route::post('/agent/revoke', [\App\Http\Controllers\Api\AgentEnrollmentControlle
     ->middleware([AuthenticateAgent::class, 'throttle:agent-revoke'])
     ->name('agent.revoke');
 
+// The updater (serverscope-updater): asks for an update request and
+// reports the result. Only its own server; own rate limit per credential.
+Route::get('/agent/update', [\App\Http\Controllers\Api\AgentUpdateController::class, 'check'])
+    ->middleware([AuthenticateAgent::class, 'throttle:agent-update'])
+    ->name('agent.update.check');
+Route::post('/agent/update/report', [\App\Http\Controllers\Api\AgentUpdateController::class, 'report'])
+    ->middleware([AuthenticateAgent::class, 'throttle:agent-update'])
+    ->name('agent.update.report');
+
 // Public REST API, authenticated with personal API tokens.
 Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-token')->group(function () {
     Route::middleware(AuthenticateApiToken::class.':read')->group(function () {

@@ -60,6 +60,8 @@ class AgentEnrollmentController extends Controller
             'server_name' => $server->name,
             'status' => $server->displayStatus(),
             'last_seen_at' => $server->last_seen_at?->toIso8601String(),
+            // Added in phase 3 (the updater confirms the new version runs).
+            'agent_version' => $server->agent_version,
         ]]);
     }
 

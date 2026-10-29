@@ -55,6 +55,9 @@ class Server extends Model
         'anomaly_sensitivity',
     ];
 
+    // auto_update_enabled and the updater_* fields are only set with
+    // forceFill (by a team administrator, or by the updater check-in).
+
     protected function casts(): array
     {
         return [
@@ -64,12 +67,20 @@ class Server extends Model
             'sla_target' => 'float',
             'maintenance_starts_at' => 'datetime',
             'maintenance_ends_at' => 'datetime',
+            'auto_update_enabled' => 'boolean',
+            'updater_version' => 'integer',
+            'updater_last_seen_at' => 'datetime',
         ];
     }
 
     public function agentCredentials(): HasMany
     {
         return $this->hasMany(AgentCredential::class);
+    }
+
+    public function updateRequests(): HasMany
+    {
+        return $this->hasMany(AgentUpdateRequest::class);
     }
 
     public function metricSamples(): HasMany
