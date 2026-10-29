@@ -99,8 +99,14 @@ curl_api() {
     curl --proto '=https' --tlsv1.2 -sS --connect-timeout 10 --max-time 60 -H @"${HEADER_FILE}" -H 'Accept: application/json' "$@"
 }
 
+# Downloads URL $3 to file $2, at most $1 bytes. curl's --max-filesize
+# alone does not stop a server that sends no length (curl < 8.4), so the
+# stream itself is cut off as well.
 curl_download() {
-    curl --proto '=https' --tlsv1.2 -fsS --connect-timeout 10 --max-time 300 "$@"
+    local limit="$1" file="$2" url="$3"
+    curl --proto '=https' --tlsv1.2 -fsS --connect-timeout 10 --max-time 300 --max-filesize "${limit}" "${url}" |
+        head -c "$((limit + 1))" >"${file}" || return 1
+    [ "$(stat -c %s "${file}")" -le "${limit}" ]
 }
 
 json_field() {
@@ -212,8 +218,7 @@ fetch_and_verify() {
     local manifest="${WORK_DIR}/manifest" sig_b64="${WORK_DIR}/manifest.sig" sig="${WORK_DIR}/manifest.sig.bin"
     local tarball="${WORK_DIR}/release.tar.gz"
 
-    if ! curl_download --max-filesize 4096 -o "${manifest}" "${base}/manifest" ||
-        ! curl_download --max-filesize 512 -o "${sig_b64}" "${base}/manifest.sig"; then
+    if ! curl_download 4096 "${manifest}" "${base}/manifest" || ! curl_download 512 "${sig_b64}" "${base}/manifest.sig"; then
         REASON=download_failed
         return 1
     fi
@@ -245,7 +250,7 @@ fetch_and_verify() {
     fi
 
     # 3. The tarball against the manifest, then its contents.
-    if ! curl_download --max-filesize "${MAX_TARBALL_BYTES}" -o "${tarball}" "${base}/${M_FILENAME}"; then
+    if ! curl_download "${MAX_TARBALL_BYTES}" "${tarball}" "${base}/${M_FILENAME}"; then
         REASON=download_failed
         return 1
     fi
@@ -418,7 +423,7 @@ run_once() {
     previous="${installed}"
     log "Overschakelen van ${previous} naar ${version} en de agent herstarten…"
     switch_to "${version}"
-    systemctl restart "${AGENT_UNIT}" || true
+    systemctl restart "${AGENT_UNIT}" 9>&- || true
 
     if wait_for_sample "${version}"; then
         printf '%s\n' "${version}" >"${HIGHEST_FILE}"
@@ -430,7 +435,7 @@ run_once() {
 
     log "Geen meting van versie ${version} ontvangen; terug naar ${previous}."
     switch_to "${previous}"
-    systemctl restart "${AGENT_UNIT}" || true
+    systemctl restart "${AGENT_UNIT}" 9>&- || true
     printf '%s\n' "${version}" >>"${FAILED_FILE}"
     report "${request_id}" rolled_back no_sample "${previous}" >/dev/null
     log "Versie ${previous} is teruggezet."
@@ -453,6 +458,8 @@ chmod 700 "${STATE_DIR}"
 
 case "${1:-}" in
     "")
+        # fd 9 holds the lock; it is closed for every process that may
+        # outlive this run (the restarted agent), or the lock would stay.
         exec 9>"${LOCK_FILE}"
         if ! flock -n 9; then
             log "Er draait al een updateprogramma; deze run stopt."

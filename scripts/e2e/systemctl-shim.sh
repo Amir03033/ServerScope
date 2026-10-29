@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Test stand-in for systemctl in containers without systemd. Starts the
 # agent exactly like serverscope-agent.service does (same user, working
-# directory and command) and answers the calls install.sh makes.
+# directory and command) and answers the calls install.sh and
+# serverscope-updater make.
 set -euo pipefail
 PIDFILE=/run/serverscope-agent.pid
 start() {
@@ -29,12 +30,22 @@ stop() {
     fi
 }
 args=("$@")
+# The updater timer is only recorded (the test runs the updater itself);
+# every other unit is the agent.
+if [[ " ${args[*]} " == *" serverscope-updater.timer "* ]]; then
+    case "${args[0]}" in
+        enable) echo enabled >/run/shim-updater-timer ;;
+        disable) echo disabled >/run/shim-updater-timer ;;
+        *) echo "shim: unsupported: ${args[*]}" >&2; exit 1 ;;
+    esac
+    exit 0
+fi
 case "${args[0]:-}" in
     daemon-reload) ;;
     enable) ;;
     restart | start) start ;;
     is-active) [ -f "${PIDFILE}" ] && kill -0 "$(cat "${PIDFILE}")" 2>/dev/null ;;
-    disable) [[ " ${args[*]} " == *" --now "* ]] && stop ;;
+    disable) if [[ " ${args[*]} " == *" --now "* ]]; then stop; fi ;;
     stop) stop ;;
     *) echo "shim: unsupported: ${args[*]}" >&2; exit 1 ;;
 esac
