@@ -29,6 +29,11 @@ umask 022
 readonly SERVERSCOPE_URL_DEFAULT='__SERVERSCOPE_URL__'
 readonly AGENT_VERSION='__AGENT_VERSION__'
 readonly ALLOW_INSECURE='__ALLOW_INSECURE__'
+# The public key of the offline release key. Every release is checked
+# against it, and it is stored in /etc/serverscope/release.pub for the
+# updater. Compare the fingerprint with the one in the documentation.
+readonly RELEASE_PUBLIC_KEY='__RELEASE_PUBLIC_KEY__'
+readonly RELEASE_KEY_FINGERPRINT='__RELEASE_KEY_FINGERPRINT__'
 
 readonly INSTALL_DIR=/opt/serverscope-agent
 readonly ENV_FILE="${INSTALL_DIR}/.env"
@@ -333,8 +338,17 @@ wait_for_first_sample() {
         "Controleer de klok (timedatectl; zet NTP aan met: timedatectl set-ntp true) en de logboeken: journalctl -u serverscope-agent -n 50. Het script opnieuw draaien is veilig."
 }
 
+# Before anything on this server is changed: is there a signed release?
+check_release_available() {
+    if [ -z "${AGENT_VERSION}" ] || [ -z "${RELEASE_PUBLIC_KEY}" ] || [ -z "${RELEASE_KEY_FINGERPRINT}" ]; then
+        die "Er is nog geen ondertekende agentrelease beschikbaar op ${BASE_URL}. Er is niets op deze server gewijzigd." \
+            "De beheerder van ServerScope moet eerst een release importeren. Probeer het later opnieuw."
+    fi
+}
+
 do_install() {
     check_url
+    check_release_available
     check_system
 
     if [ -d "${INSTALL_DIR}" ] && [ ! -f "${MARKER}" ] && { [ -f "${ENV_FILE}" ] || [ -d "${INSTALL_DIR}/serverscope_agent" ]; }; then

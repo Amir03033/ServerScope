@@ -73,6 +73,10 @@ Route::get('/agent/ping', function (Request $request) {
 Route::get('/install.sh', [\App\Http\Controllers\AgentDownloadController::class, 'script'])->middleware('throttle:60,1')->name('agent.install-script');
 Route::get('/agent/serverscope-agent-{version}.tar.gz', [\App\Http\Controllers\AgentDownloadController::class, 'package'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:30,1')->name('agent.package');
 Route::get('/agent/serverscope-agent-{version}.tar.gz.sha256', [\App\Http\Controllers\AgentDownloadController::class, 'checksum'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:60,1')->name('agent.checksum');
+// Signed releases (phase 3): only imported, not withdrawn releases.
+Route::get('/agent/releases/{version}/manifest', [\App\Http\Controllers\AgentDownloadController::class, 'manifest'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:60,1')->name('agent.release.manifest');
+Route::get('/agent/releases/{version}/manifest.sig', [\App\Http\Controllers\AgentDownloadController::class, 'signature'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:60,1')->name('agent.release.signature');
+Route::get('/agent/releases/{version}/{file}', [\App\Http\Controllers\AgentDownloadController::class, 'tarball'])->where(['version' => '\d+\.\d+\.\d+', 'file' => 'serverscope-agent-\d+\.\d+\.\d+\.tar\.gz'])->middleware('throttle:30,1')->name('agent.release.tarball');
 
 // Public status pages (no login unless the page is private).
 Route::get('/status/{slug}.json', [PublicStatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.json');
