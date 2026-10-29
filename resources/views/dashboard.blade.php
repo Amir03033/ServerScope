@@ -284,7 +284,7 @@
         </form>
 
         @can('admin')
-            <a class="button button-primary" href="{{ route('servers.create') }}">＋ Server toevoegen</a>
+            <a class="button button-primary" href="{{ route('servers.add') }}">＋ Server toevoegen</a>
         @endcan
     </x-slot:actions>
 
@@ -552,7 +552,7 @@
                 <h3>Nog geen servers geregistreerd</h3>
                 <p>Registreer je eerste server om de prestaties en gezondheid te monitoren.</p>
                 @can('admin')
-                    <a class="button button-primary" href="{{ route('servers.create') }}">＋ Eerste server toevoegen</a>
+                    <a class="button button-primary" href="{{ route('servers.add') }}">＋ Eerste server toevoegen</a>
                 @endcan
             </div>
         @else

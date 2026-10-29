@@ -96,6 +96,24 @@ class AppServiceProvider extends ServiceProvider
             ->by('api:'.hash('sha256', (string) ($request->bearerToken() ?? $request->ip())))
             ->response(fn () => response()->json(['message' => 'Te veel verzoeken.'], 429)));
 
+        // Enrollment: strict per address, plus a ceiling for the whole
+        // platform against token guessing from many addresses.
+        \Illuminate\Support\Facades\RateLimiter::for('agent-enroll', fn (\Illuminate\Http\Request $request) => [
+            \Illuminate\Cache\RateLimiting\Limit::perMinute(max(1, (int) config('serverscope.enrollment.attempts_per_minute', 10)))
+                ->by('enroll:'.$request->ip())
+                ->response(fn () => response()->json(['message' => 'Te veel koppelpogingen. Probeer het over een minuut opnieuw.'], 429)),
+            \Illuminate\Cache\RateLimiting\Limit::perMinute(300)->by('enroll:all')
+                ->response(fn () => response()->json(['message' => 'Te veel koppelpogingen. Probeer het over een minuut opnieuw.'], 429)),
+        ]);
+
+        // Own counters per credential: plain throttle:N,1 shares one counter
+        // per IP across routes, so install.sh polling would eat the budget
+        // of /api/agent/metrics for every server behind the same address.
+        \Illuminate\Support\Facades\RateLimiter::for('agent-self', fn (\Illuminate\Http\Request $request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(30)
+            ->by('agent-self:'.($request->attributes->get('agentCredential')?->id ?? $request->ip())));
+        \Illuminate\Support\Facades\RateLimiter::for('agent-revoke', fn (\Illuminate\Http\Request $request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(5)
+            ->by('agent-revoke:'.($request->attributes->get('agentCredential')?->id ?? $request->ip())));
+
         \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(fn (User $user, string $token) => (new \Illuminate\Notifications\Messages\MailMessage)
             ->subject('[ServerScope] Wachtwoord opnieuw instellen')
             ->line('Je ontvangt deze e-mail omdat er een nieuw wachtwoord is aangevraagd voor je ServerScope-account.')

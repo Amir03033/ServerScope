@@ -43,6 +43,7 @@ class ServerRegistrationService
                 'hostname' => trim($serverData['hostname']),
                 'ip_address' => $serverData['ip_address'] ?? null,
                 'operating_system' => $serverData['operating_system'] ?? null,
+                'agent_version' => $serverData['agent_version'] ?? null,
                 'environment' => $serverData['environment'] ?? 'production',
                 'notes' => $serverData['notes'] ?? null,
                 'status' => 'pending',

@@ -131,6 +131,12 @@ class ApiIsolationTest extends TestCase
 
     public function test_agents_keep_working_and_only_feed_their_own_team(): void
     {
+        // The rules need one minute above the threshold; without a frozen
+        // clock a second ticking by pushes the fixture sample out of that
+        // window (seen on MySQL).
+        $this->freezeSecond();
+        \App\Models\MetricSample::query()->where('server_id', $this->b['server']->id)->update(['collected_at' => now()->subMinute()]);
+
         $this->postJson('/api/agent/metrics', ['collected_at' => now()->toIso8601String(), 'cpu_percent' => 99.9], ['Authorization' => 'Bearer '.hash('sha256', 'x')])->assertUnauthorized();
 
         $token = bin2hex(random_bytes(32));

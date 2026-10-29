@@ -18,6 +18,18 @@ Route::post('/agent/metrics', [
     ])
     ->name('agent.metrics.store');
 
+// One-command install (install.sh): exchange a one-time enrollment token
+// for an agent credential, check the first sample, revoke on uninstall.
+Route::post('/agent/enroll', [\App\Http\Controllers\Api\AgentEnrollmentController::class, 'enroll'])
+    ->middleware('throttle:agent-enroll')
+    ->name('agent.enroll');
+Route::get('/agent/self', [\App\Http\Controllers\Api\AgentEnrollmentController::class, 'self'])
+    ->middleware([AuthenticateAgent::class, 'throttle:agent-self'])
+    ->name('agent.self');
+Route::post('/agent/revoke', [\App\Http\Controllers\Api\AgentEnrollmentController::class, 'revoke'])
+    ->middleware([AuthenticateAgent::class, 'throttle:agent-revoke'])
+    ->name('agent.revoke');
+
 // Public REST API, authenticated with personal API tokens.
 Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-token')->group(function () {
     Route::middleware(AuthenticateApiToken::class.':read')->group(function () {
