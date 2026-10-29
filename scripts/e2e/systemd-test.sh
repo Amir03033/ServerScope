@@ -37,7 +37,7 @@ python3 "${HERE}/evil_proxy.py" 8443 8001 "${E2E_DIR}/server.crt" "${E2E_DIR}/se
 PIDS+=($!)
 sleep 2
 
-sql "UPDATE agent_releases SET withdrawn_at = IF(version IN ('0.3.0','0.3.1'), NULL, NOW())"
+sql "UPDATE agent_releases SET withdrawn_at = IF(version = '0.3.0', NULL, NOW())"
 # shellcheck disable=SC2016 # PHP code
 TOKEN="$(cd "${REPO}" && php artisan tinker --execute='
     $team = App\Models\Team::query()->where("is_default", true)->first();
@@ -78,6 +78,8 @@ SERVER_ID="$(sql 'SELECT MAX(id) FROM servers')"
 check "agent-service actief" "in_container 'systemctl is-active --quiet serverscope-agent'"
 check "updatetimer actief en ingepland" "in_container 'systemctl is-active --quiet serverscope-updater.timer && systemctl list-timers serverscope-updater.timer --no-legend | grep -q serverscope-updater'"
 
+sql "UPDATE agent_releases SET withdrawn_at = IF(version IN ('0.3.0','0.3.1'), NULL, NOW())"
+check "geïnstalleerd als 0.3.0" "[ \"$(in_container 'readlink /opt/serverscope-agent/serverscope_agent')\" = releases/0.3.0/serverscope_agent ]"
 sql "INSERT INTO agent_update_requests (team_id, server_id, agent_release_id, from_version, target_version, status, source, created_at, updated_at)
      SELECT s.team_id, s.id, r.id, s.agent_version, r.version, 'pending', 'manual', NOW(), NOW() FROM servers s, agent_releases r WHERE s.id=${SERVER_ID} AND r.version='0.3.1'"
 # Start the oneshot service the timer would start: the real, hardened unit.

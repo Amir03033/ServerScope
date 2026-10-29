@@ -18,6 +18,12 @@
   fails) and 36 agent tests; afterwards 482 of 483 (the 449 plus 33 new) and 39 agent tests,
   plus a container test of `install.sh` on Ubuntu 22.04, Ubuntu 24.04 and
   Debian 12. See §6.
+- Signed agent releases and updates from the dashboard (phase 3): branch
+  `claude/admiring-darwin-oiqti5`. Baseline 482 of 483 PHPUnit tests (only
+  the known TLS test fails) and 39 agent tests; afterwards 533 of 534 (the
+  483 plus 51 new; still only the known TLS test fails) and 43 agent tests,
+  plus container tests on Ubuntu 22.04, Ubuntu 24.04 and Debian 12 and one
+  with real systemd. See §7.
 
 Scope: the ServerScope Laravel application (not `info.serverscope.nl`).
 Statuses are based on code plus automated tests and local runs in a
@@ -369,4 +375,221 @@ registration and every existing agent keep working unchanged;
    counter per IP address: many agents behind one NAT address share it
    (pre-existing; unchanged so the contract stays exactly the same).
 6. The checksum is not a signature (see above); signed releases and
-   automatic updates are phase 3.
+   automatic updates are phase 3 (done, see §7).
+
+## 7. Signed agent releases and updates from the dashboard (phase 3)
+
+### What it does
+A team administrator sees per server the installed and the newest agent
+version and the state of the updater, and clicks **Bijwerken** (or
+**Alles bijwerken** on the server list, or turns on **automatisch
+bijwerken** per server, off by default). The updater on that server
+installs the release only after checking its signature with the key it
+stored at installation, and switches back when the new version sends no
+sample. Platform administrators see the releases and the number of
+servers per version (**Agentreleases**). Key handling: `docs/RELEASE_KEYS.md`;
+for server owners: `agent/README.md`.
+
+### Design
+- **Signature**: Ed25519 over a strict line-based manifest (format,
+  product, version, file name, SHA-256, size, commit, date,
+  `min_updater_version`, `key_id`); the manifest covers the tarball.
+  Made on the owner's Mac with OpenSSL 3 (`scripts/release/`), checked
+  with `openssl pkeyutl -rawin` on customer servers and with PHP sodium in
+  ServerScope. minisign was rejected: it is not available on Ubuntu 22.04.
+  Verified in containers: OpenSSL 3.0.2 (Ubuntu 22.04, main), 3.0.13
+  (Ubuntu 24.04), 3.0.x (Debian 12) accept a valid signature and refuse a
+  changed manifest; PHP sodium accepts the OpenSSL signature.
+- **Private key**: only offline (encrypted PKCS#8, scrypt). Not in the
+  repository, the tests, the logs or any server; tests generate key pairs
+  at runtime. `*.pem` and `release-key*` are git-ignored.
+- **Releases on the server**: table `agent_releases` (platform-wide),
+  filled only by `serverscope:release:import <bundle> --admin=<platform
+  administrator>` after checking signature, manifest, checksum and
+  contents (only the expected regular files; no links, pax headers,
+  absolute paths or `..`). `serverscope:release:withdraw`, `:list`. No web
+  route adds releases. Nothing is built on the server any more:
+  `AgentPackage` is no longer used by any route (a test proves it); the
+  class stays for its existing tests.
+- **Downloads**: `/agent/releases/<v>/manifest`, `manifest.sig`,
+  `serverscope-agent-<v>.tar.gz` (public, only imported and not
+  withdrawn). The phase 2 URLs `/agent/serverscope-agent-<v>.tar.gz(.sha256)`
+  serve the signed tarball of an imported version and answer
+  404 "Deze versie wordt niet meer aangeboden; download install.sh
+  opnieuw" otherwise.
+- **Update API** (agent credential, own limiter `agent-update` 30/min per
+  credential): `GET /api/agent/update?installed=&updater=&state=` (strictly
+  validated; unknown or extra values are refused with 422 and not stored)
+  answers only `{request_id, version}` or null; `POST
+  /api/agent/update/report` with a status and a fixed reason code, only
+  for the server's own requests (others: 404), only valid transitions
+  (otherwise 409). `GET /api/agent/self` gained `agent_version`.
+  `POST /api/agent/metrics` is unchanged (tested: route, controller,
+  middleware).
+- **Update requests** (`agent_update_requests`, per team): pending,
+  in progress, succeeded, rolled back, refused, failed, expired (after 24 h,
+  on withdrawal, or when the version already runs). At most one open
+  request per server. Automatic updates never retry a version that failed
+  on that server. Audit entries: `agent_update.requested` (who, from →
+  to, source), `.started`, `.succeeded`, `.rolled_back`, `.rejected`,
+  `.failed`, `.expired`, `.auto_enabled`, `.auto_disabled`. Release
+  imports and withdrawals are platform actions without a team: they are
+  recorded on the release row (`imported_by`, `withdrawn_by`, reason) and
+  in the Laravel log.
+- **Layout on customer servers**: `/opt/serverscope-agent/releases/<v>/`,
+  the symlink `serverscope_agent` → `releases/<v>/serverscope_agent`
+  (switched atomically with `mv -T`), and a `.env` link to `../../.env` in
+  every release directory, because agent 0.2.0 resolves its own path and
+  would otherwise look for `releases/<v>/.env`. Agent 0.3.0 finds `.env`
+  without resolving the symlink. The agent unit is unchanged
+  (`ReadOnlyPaths` only needs to read through the links).
+- **Updater** (`serverscope-updater`, Bash, root, `serverscope-updater.timer`
+  every 5 minutes, hardened unit: `ProtectSystem=strict`, writable only
+  `/opt/serverscope-agent` and its own state, `NoNewPrivileges`, limited
+  capabilities and address families). Order: local emergency switch (no
+  network at all) → check-in → signature with the local key(s) → manifest
+  (same rules as ServerScope; the verifying key must be the manifest's
+  `key_id`; version must be the offered one; `min_updater_version`) →
+  SHA-256, size and contents → version strictly higher than the installed
+  one and the highest ever installed here, and not failed here before →
+  install next to the current version → switch → restart → wait (at least
+  3 minutes) for ServerScope to report the new version → otherwise switch
+  back. The version check against the offered number is also done before
+  downloading (to avoid needless downloads); the decisive check uses the
+  signed manifest.
+- **install.sh**: verifies the newest signed release with the key written
+  in the script and prints its fingerprint; stores it in
+  `/etc/serverscope/release.pub` (root:root 644) and refuses to replace a
+  different stored key without `--replace-release-key`; asks "Updateprogramma
+  installeren? [J/n]" (default yes; `--updates=on|off`,
+  `SERVERSCOPE_UPDATES`; when updates were disabled earlier the default is
+  no); `--disable-updates` / `--enable-updates`; converts 0.2.0
+  installations; never downgrades. Without an imported release it stops
+  before changing anything.
+
+### Owner-approved changes to existing tests
+- `AgentDownloadTest::test_download_and_checksum_match`: rewritten for the
+  new behaviour of the phase 2 URLs (signed tarball and checksum from the
+  manifest for an imported version, 404 with an explanation for 0.2.0 and
+  unknown versions, invalid versions 404, withdrawn 404). Reason: the
+  server no longer builds unsigned packages.
+- Only the agent version number `0.2.0` → `0.3.0`:
+  `AgentDownloadTest::test_the_package_contains_exactly_the_agent_files_in_the_installed_layout`
+  (line `assertSame('0.3.0', $package->version())`) and
+  `agent/tests/test_collector.py` (`result["agent_version"] == "0.3.0"`).
+- `RouteTenancyTest::PUBLIC_ROUTES` lists the three new public download
+  routes (the mechanism that test asks for).
+
+### Also fixed
+- `config/serverscope.php` defined `'agent'` twice; the second replaced
+  the first, so `latest_version` and `known_checksums` never worked
+  ("verouderd" was never shown). Merged, with a test. The newest imported
+  release now counts as the latest version.
+- The `agent-self` and `agent-revoke` limiters (phase 2) were meant to
+  count per credential, but the throttle middleware runs before
+  `AuthenticateAgent`, so they fell back to the IP address: all servers
+  behind one address shared one counter. They are now keyed by a hash of
+  the presented token, with a ceiling of 600/min per address.
+
+### Security review: an attacker who fully controls the ServerScope server
+Assumption: the attacker controls the code, database, configuration,
+storage, TLS certificate and every response of ServerScope, but not the
+offline private key and not the customer server itself.
+
+| What the attacker tries | Why it fails (or what is left) |
+|---|---|
+| Push own code through the updater | The updater installs only a manifest whose Ed25519 signature verifies against a key in `/etc/serverscope/` (root:root, written at installation; neither ServerScope nor the agent user can write there). Without the private key no valid signature can be made. The tarball must match the SHA-256 and size in that signed manifest. Tested: other key, changed manifest, changed tarball → refused, nothing changed (container test D/E). |
+| Make the updater run something else | The server's answer is reduced to an integer request id and a version matching `^\d+\.\d+\.\d+$`; everything else is ignored. URLs are built locally from the local `SERVERSCOPE_URL` (root-owned `.env`) and fixed paths; https only. No value from the server is evaluated; JSON is parsed by Python's `json`. Before the signature is checked, only three small downloads are handled (4 KB, 512 bytes, 10 MB, each cut off hard). |
+| Install an old, vulnerable release (validly signed) | Refused: the version must be higher than the installed one and than the highest ever installed on that server (`/var/lib/serverscope-updater/highest-version`, root 700). Tested with an older and the same version (F). |
+| Mix parts of different releases | The signed manifest binds product, format, version, file name, checksum, size and key ID; the version must equal the offered one; the verifying key must be the one the manifest names. |
+| Unsafe archive contents | Only after the checksum matches the signed manifest; even then only the expected regular files are accepted (no links, devices, `..`, absolute paths). |
+| Abuse the emergency switch | `/etc/serverscope/updates-disabled` is checked first, before any network traffic (tested: zero requests reach the server, H), again just before switching, and by the unit (`ConditionPathExists`). The server cannot remove it. |
+| Fake success or failure | Claiming failure only makes the updater switch back to the previous (signed) version; claiming success keeps the new (signed) version. A version that failed is never retried automatically. Effect: at most a restart of the agent per published release. |
+| Withhold updates (freeze) | Possible: a compromised server can simply never offer an update. Not preventable by design; servers keep running their current signed version. |
+| Through the agent itself | The agent (unprivileged, read-only directory) executes nothing the server sends; unchanged from phase 2. |
+| **New installations** | **Possible.** install.sh comes from the server and contains the public key, so a compromised server can give a new installation its own key and code. The same holds when an owner runs install.sh again (for example to add the updater to a 0.2.0 installation): running a script from a server as root means trusting that server. The script refuses a different key than the stored one unless `--replace-release-key` is given, but a malicious script would not do that check. Mitigation: compare the fingerprint (printed by the script, published in `agent/README.md`). |
+| Dashboard / platform accounts | A team administrator can only request signed releases for the team's own servers (other teams 404, members 403). A platform administrator account cannot import releases from the web (artisan only, and the server still cannot sign). |
+
+Conclusion: with only the ServerScope server, an attacker cannot install
+code of their own on EXISTING customer servers that have the updater. The
+residual risks are new installations or re-runs of install.sh (trust on
+first use, documented in `agent/README.md`), withholding updates, and
+agent restarts. With the private key AND the server, an attacker could
+install code: the key must stay offline (`docs/RELEASE_KEYS.md` §4).
+
+### Tests
+- PHPUnit: 51 new tests (`tests/Unit/Releases`, `tests/Feature/Releases`,
+  `tests/Feature/AgentConfigTest.php`): manifest and signature (valid,
+  other key, changed manifest, malformed signature, no trusted key, wrong
+  `key_id`, strict parsing, archive contents); import (valid, invalid
+  signature, other key, changed tarball, changed manifest, extra/missing
+  files, duplicate version, only platform administrators, no web route,
+  withdraw, numeric ordering); downloads (only imported and not withdrawn,
+  old URLs, install.sh embeds the newest release and its key, no route uses
+  `AgentPackage`); update API (own server only, other server's request
+  404, strict check-in validation with nothing stored, report validation,
+  transitions, disabled updater, automatic updates, withdrawn/stale
+  requests, credential required, own rate limit per credential, existing
+  agent API unchanged); dashboard (team administrator of the own team,
+  another team 404, member 403, update all, automatic setting, audit log,
+  refusals, platform overview with counts only); migrations up/down/up;
+  `scripts/release/` end to end with a key made during the test (keygen,
+  build, verify, import; refusal of a dirty tree, an untagged commit, a
+  commit not equal to origin/main, and LibreSSL); shellcheck of the
+  updater and the release scripts. All pass on SQLite; the migrations also
+  ran up, down and up again on MariaDB 10.11 (not MySQL 8.0).
+- pytest: 4 new tests for the release layout: agent 0.2.0 code finds its
+  `.env` through the release link (and does not without it), 0.3.0 finds it
+  without the link, and after switching releases.
+- `scripts/e2e/update-test.sh` (Ubuntu 22.04, Ubuntu 24.04, Debian 12,
+  amd64): 52 of 52 checks on each. The ServerScope side runs behind
+  `evil_proxy.py`, which plays a compromised server. Covered: install
+  without a release changes nothing (no packages, files, user or server);
+  agent 0.2.0 installed with the phase 2 code keeps reporting after the
+  upgrade of ServerScope; running install.sh again converts it (same
+  server and credential, the question with Enter = yes, fingerprint
+  shown, `release.pub` root:root 644, updater root 755, agent cannot write
+  its files or the key, `.env` 640); a successful update 0.3.0 → 0.3.1;
+  refused: changed tarball (`bad_checksum`), other key and changed
+  manifest (`bad_signature`), an older and the same version (`downgrade`);
+  roll back when the new version sends no sample (`no_sample`), agent 0.3.1
+  reports again, the failed version is not retried (`already_failed`);
+  the emergency switch: no request at all reaches the server while an
+  update is offered, and after `--enable-updates` the update succeeds
+  (0.3.1 → 0.3.2, only current and previous release kept); uninstall
+  removes everything including the updater.
+- `scripts/e2e/systemd-test.sh` (Ubuntu 24.04 with systemd as PID 1, privileged
+  container): install.sh with real systemd, agent unit and updater timer
+  active, an update through the real hardened `serverscope-updater.service`
+  (including `systemctl restart` from inside the sandbox), no credential in
+  the journal, `--disable-updates` stops the timer and the unit does not
+  start while the switch exists. `systemd-analyze security`: updater 3.7
+  ("OK"), agent 6.3 ("MEDIUM", unchanged unit).
+- Found and fixed by these tests: the updater's lock descriptor was
+  inherited by the restarted agent (later runs were locked out), and
+  downloads are now cut off hard even when the server sends no length.
+
+### Not tested / limitations
+1. **Signing on macOS** was not run (no Mac here). The scripts were
+   checked for bash 3.2 (the macOS default) by syntax and the array
+   handling in a bash 3.2 container, and run end to end with OpenSSL 3
+   and bash 5 on Linux. The LibreSSL refusal was tested with a stand-in.
+2. **The timer firing on its own** (after 5 minutes) was not waited for;
+   it was verified as active and scheduled, and the service it starts was
+   run for real. **arm64** was not tested (amd64 containers only).
+3. **Production on Plesk** (import as root, file ownership, config cache)
+   was not tested; see `docs/FASE3_STAPPENPLAN.md`.
+4. **MySQL 8.0**: the migrations ran on MariaDB 10.11 only.
+5. `scripts/e2e/install-test.sh` (phase 2) was not changed and was not run
+   again: with a terminal, install.sh now asks the update question, which
+   that test does not answer. `update-test.sh` covers its main paths; the
+   phase 2 checks for re-enrolment after a revoked credential, an invalid
+   token, a manual installation and the `.env` watcher were not re-run.
+6. **Trust on first use**: new installations (and re-runs of install.sh)
+   trust the key in the script from the server (see the security review).
+7. Updating the **updater itself** is not built: it is installed and
+   replaced only by install.sh; `min_updater_version` is reserved for that.
+8. Key rotation is designed but only minimally built (several trusted keys
+   on both sides); see `docs/RELEASE_KEYS.md` §6.
+9. A compromised server can **withhold** updates and can cause at most one
+   agent restart per published release.

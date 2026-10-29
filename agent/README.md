@@ -30,20 +30,26 @@ What the script does:
 
 - stops on anything but Ubuntu 22.04+ or Debian 12+ on amd64/arm64 with
   systemd (the agent needs Python 3.10+);
-- installs `python3`, `python3-venv`, `python3-psutil`, `python3-requests`
-  and `python3-dotenv` from the distribution's package sources (no pip, no
-  PyPI) and creates a venv with `--system-site-packages`;
+- stops **before changing anything** when ServerScope has no signed
+  release yet, or when this server stored a different release key earlier;
+- installs `python3`, `python3-venv`, `python3-psutil`, `python3-requests`,
+  `python3-dotenv` and `openssl` from the distribution's package sources
+  (no pip, no PyPI) and creates a venv with `--system-site-packages`;
 - creates the system user `serverscope` without a shell (if missing);
-- downloads `serverscope-agent-<version>.tar.gz` and its `.sha256` from
-  ServerScope over HTTPS only (TLS 1.2+) and checks the checksum. The
-  checksum comes from the same server as the package: it protects against a
-  corrupt or truncated download, **not** against a compromised ServerScope
-  server. Signed releases are planned;
-- installs the agent exactly like the manual installation:
-  `/opt/serverscope-agent/serverscope_agent/` with `/opt/serverscope-agent/.env`
-  next to it (`root:serverscope`, `640`, `KEY=value` without quotes) and the
-  unchanged `serverscope-agent.service` (the agent reads its own `.env`; the
-  unit has no `EnvironmentFile`);
+- downloads the newest **signed release** (manifest, signature, tarball)
+  over HTTPS only (TLS 1.2+), checks the signature with the public key
+  written in the script (and prints its fingerprint), then the SHA-256 and
+  size of the tarball and its contents;
+- installs it in `/opt/serverscope-agent/releases/<version>/` with the
+  symlink `/opt/serverscope-agent/serverscope_agent` pointing to it, and
+  `/opt/serverscope-agent/.env` next to it (`root:serverscope`, `640`,
+  `KEY=value` without quotes). Each release directory has a `.env` link to
+  `../../.env`. The `serverscope-agent.service` unit is unchanged (the
+  agent reads its own `.env`; the unit has no `EnvironmentFile`);
+- stores the public release key in `/etc/serverscope/release.pub`
+  (`root:root`, `644`);
+- asks whether the **updater** may be installed (see below; default yes;
+  `--updates=on|off` or `SERVERSCOPE_UPDATES=on|off` for automation);
 - exchanges the enrollment token for a normal agent credential, enables and
   starts the service and waits up to 90 seconds for the first sample, with
   a clear message and a fix when it does not arrive.
@@ -62,9 +68,87 @@ sudo bash serverscope-install.sh --uninstall
 ```
 
 This revokes the agent's own credential in ServerScope, stops and removes
-the service, `/opt/serverscope-agent`, and the `serverscope` user if the
+the service, the updater, `/opt/serverscope-agent`, `/etc/serverscope`,
+`/var/lib/serverscope-updater`, and the `serverscope` user if the
 script created it. The server and its history stay in ServerScope. The
 Python packages from apt are kept.
+
+## Signed releases and the updater (agent 0.3.0+)
+
+Every agent release is signed with a private key that is kept **offline**
+by the ServerScope maintainer, never on the ServerScope server, in the
+repository or in CI (`docs/RELEASE_KEYS.md`).
+
+**Release key fingerprint (SHA-256 of the public key, DER):**
+`(wordt ingevuld zodra de releasesleutel is aangemaakt)`
+
+Compare it with the line `Releasesleutel: vingerafdruk …` that install.sh
+prints, and on an installed server with:
+
+```sh
+openssl pkey -pubin -in /etc/serverscope/release.pub -outform DER | sha256sum
+```
+
+**Be aware:** on a FIRST installation the public key itself comes from
+install.sh, which comes from the ServerScope server. A compromised
+ServerScope server could therefore mislead NEW installations (as it could
+with any install script you run as root). It cannot take over EXISTING
+installations through the updater: they keep the key they stored at
+installation, which ServerScope cannot change. Compare the fingerprint
+above on a first installation.
+
+### The updater (`serverscope-updater`)
+
+The agent runs as the unprivileged user `serverscope` with a read-only
+installation directory, so it cannot update itself. A small separate
+program, `/usr/local/sbin/serverscope-updater`, runs as root from the
+systemd timer `serverscope-updater.timer` (every 5 minutes). It does one
+thing only: when a team administrator clicks **Bijwerken** in the dashboard
+(or **automatisch bijwerken** is on for the server; off by default), it
+
+1. receives a request id and a version number, nothing else (no URLs,
+   scripts or commands), and downloads that release from fixed paths;
+2. checks the signature over the manifest with the **local** key
+   (`/etc/serverscope/release.pub`, plus `/etc/serverscope/release.d/*.pub`
+   for a future key rotation), then the manifest, then the SHA-256 and the
+   contents of the tarball, then the version: it refuses any version that
+   is equal to or lower than the installed one or the highest one ever
+   installed here (no downgrades), and a version that already failed here;
+3. installs it next to the current version, switches the symlink
+   atomically, restarts the agent and waits (at least 3 minutes) until
+   ServerScope received a sample from the new version;
+4. without that sample it switches back to the previous version and
+   restarts it;
+5. reports the result: succeeded, failed and rolled back, or refused (with
+   a fixed reason such as `bad_signature`).
+
+Logs: `journalctl -u serverscope-updater` (no credentials). Local state:
+`sudo serverscope-updater --status`.
+
+**Emergency switch** (ServerScope cannot override it):
+
+```sh
+sudo bash serverscope-install.sh --disable-updates
+```
+
+This creates `/etc/serverscope/updates-disabled` and stops the timer; as
+long as that file exists the updater does nothing at all (not even a
+network request). `--enable-updates` turns updates back on.
+
+### Existing installations (agent 0.2.0)
+
+They keep working without doing anything (`POST /api/agent/metrics` is
+unchanged). To get signed updates, run install.sh again on the server (the
+same command as for a new server; no new enrollment token, no new server):
+
+```sh
+curl --proto '=https' --tlsv1.2 -fsSL https://<your ServerScope>/install.sh -o serverscope-install.sh && sudo bash serverscope-install.sh
+```
+
+It converts the installation to the release layout, installs the newest
+signed release and asks about the updater. Manual installations (without
+`/opt/serverscope-agent/.installed-by-serverscope-script`) and the Bash
+agent are never touched by the updater.
 
 ## Manual install (Ubuntu/Debian)
 
@@ -114,6 +198,8 @@ separately from an unreachable server or a silent agent.
 ## Integrity
 
 Each sample includes a SHA-256 checksum of the agent's own source files.
+The agent version shown as "verouderd" is compared with the newest
+imported signed release.
 Set `SERVERSCOPE_AGENT_CHECKSUMS` in ServerScope to the checksums of your
 released builds to flag modified agents; without it the checksum is shown
 as "not verified".
