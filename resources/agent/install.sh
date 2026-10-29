@@ -187,8 +187,15 @@ install_files() {
     "${INSTALL_DIR}/.venv/bin/python" -I -c 'import psutil, requests, dotenv' ||
         die "De agent kan zijn Python-pakketten niet laden." "Installeer python3-psutil, python3-requests en python3-dotenv opnieuw."
 
+    # Temporary files of an interrupted earlier run may hold a credential.
+    find "${INSTALL_DIR}" -maxdepth 1 -type f -name '.env.*' -delete
+
     chown -R root:"${AGENT_USER}" "${INSTALL_DIR}"
-    chmod -R u=rwX,g=rX,o=rX "${INSTALL_DIR}"
+    # Everything readable except the configuration: .env* is never touched
+    # by this recursive chmod, so it is not readable for others even for a
+    # moment while the script runs again.
+    find "${INSTALL_DIR}" ! -name '.env*' -exec chmod u=rwX,g=rX,o=rX {} +
+    find "${INSTALL_DIR}" -name '.env*' -exec chmod o-rwx {} +
     if [ -f "${ENV_FILE}" ]; then
         chmod 640 "${ENV_FILE}"
     fi

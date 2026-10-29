@@ -16,7 +16,8 @@
 - One-command server enrollment (phase 2): same branch, on top of phase 1
   in `main`. Baseline 449 of 450 PHPUnit tests (only the known TLS test
   fails) and 36 agent tests; afterwards 482 of 483 (the 449 plus 33 new) and 39 agent tests,
-  plus a container test of `install.sh` on Ubuntu 22.04 and 24.04. See §6.
+  plus a container test of `install.sh` on Ubuntu 22.04, Ubuntu 24.04 and
+  Debian 12. See §6.
 
 Scope: the ServerScope Laravel application (not `info.serverscope.nl`).
 Statuses are based on code plus automated tests and local runs in a
@@ -335,31 +336,37 @@ registration and every existing agent keep working unchanged;
   credential.
 - `install.sh` passes shellcheck (style level).
 - `scripts/e2e/install-test.sh`: the documented command in clean
-  **Ubuntu 22.04 and 24.04** containers (amd64) against a local ServerScope
-  over HTTPS: install via the hidden prompt, server online in the token's
-  team, `.env` layout/owner/mode/format, user without shell, the agent
-  running as `serverscope`, running twice, re-enrolling after a revoked
-  credential (new server, via the environment variable), `--uninstall`
-  (credential revoked via the API, only own files and user removed), a
-  manual installation left alone, an invalid token, and no token or
-  credential in the output: 35 of 35 checks on both. Ubuntu 20.04 is
-  refused with a clear message.
+  **Ubuntu 22.04, Ubuntu 24.04 and Debian 12** containers (amd64) against a
+  local ServerScope over HTTPS: install via the hidden prompt, server online
+  in the token's team, `.env` layout/owner/mode/format, user without shell,
+  the agent running as `serverscope`, running twice (afterwards `.env` is
+  still 640, a planted leftover `.env.XXXXXX` is removed, and a watcher
+  polling every 50 ms never saw a `.env*` readable for others),
+  re-enrolling after a revoked credential (new server, via the environment
+  variable), `--uninstall` (credential revoked via the API, only own files
+  and user removed), a manual installation left alone, an invalid token,
+  and no token or credential in the output: 39 of 39 checks on all three.
+  Against the previous `install.sh` the three `.env*` checks fail, so they
+  catch the issue. Ubuntu 20.04 is refused with a clear message. In this
+  test environment Debian's package mirrors are only reachable through an
+  HTTPS proxy, so for Debian the test points apt (only apt) at that proxy.
+- `install.sh` never makes `.env*` readable for others: the recursive
+  `chmod` of the installation directory skips `.env*`, which then get
+  `o-rwx` (`.env`: 640), and temporary `.env.XXXXXX` files left by an
+  interrupted run are removed (they may hold a credential).
 
 ### Not tested / limitations
-1. **Debian 12**: the network policy of the test environment blocks
-   `deb.debian.org`, so the Debian packages and a full install on Debian 12
-   were not tested. The script stops with a clear message when apt fails.
-2. **systemd** itself was not exercised: the containers run without
+1. **systemd** itself was not exercised: the containers run without
    systemd; a stand-in starts the agent exactly like the (unchanged) unit.
    The unit's sandboxing options are therefore not re-tested here (they are
    unchanged from the manual installation).
-3. **arm64** was not tested (amd64 containers only).
-4. Production on Plesk (APP_URL, reverse proxy, TLS certificate) was not
+2. **arm64** was not tested (amd64 containers only).
+3. Production on Plesk (APP_URL, reverse proxy, TLS certificate) was not
    tested.
-5. Re-enrolling after a revoked credential creates a **new** server; the
+4. Re-enrolling after a revoked credential creates a **new** server; the
    old one stays (with its history) until it is deleted in the dashboard.
-6. `POST /api/agent/metrics` keeps its existing `throttle:60,1`, which is one
+5. `POST /api/agent/metrics` keeps its existing `throttle:60,1`, which is one
    counter per IP address: many agents behind one NAT address share it
    (pre-existing; unchanged so the contract stays exactly the same).
-7. The checksum is not a signature (see above); signed releases and
+6. The checksum is not a signature (see above); signed releases and
    automatic updates are phase 3.

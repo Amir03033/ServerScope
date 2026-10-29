@@ -11,9 +11,20 @@ start() {
     echo $! >"${PIDFILE}"
 }
 stop() {
+    # Like systemctl stop: return only when the agent has exited.
     if [ -f "${PIDFILE}" ]; then
-        pkill -P "$(cat "${PIDFILE}")" 2>/dev/null || true
-        kill "$(cat "${PIDFILE}")" 2>/dev/null || true
+        local pid children _
+        pid="$(cat "${PIDFILE}")"
+        children="$(pgrep -P "${pid}" || true)"
+        # shellcheck disable=SC2086 # several pids, one per word
+        kill ${children} "${pid}" 2>/dev/null || true
+        for _ in $(seq 1 50); do
+            # shellcheck disable=SC2086
+            kill -0 ${children} "${pid}" 2>/dev/null || break
+            sleep 0.1
+        done
+        # shellcheck disable=SC2086
+        kill -9 ${children} "${pid}" 2>/dev/null || true
         rm -f "${PIDFILE}"
     fi
 }

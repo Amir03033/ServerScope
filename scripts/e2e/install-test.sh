@@ -60,6 +60,16 @@ docker run -d --name "${NAME}" --network host --add-host serverscope.test:127.0.
     -v "${HERE}/systemctl-shim.sh:/shim/systemctl:ro" -v "${E2E_DIR}/ca.crt:/shim/ca.crt:ro" \
     "${IMAGE}" sleep infinity >/dev/null
 
+# Optional (test environments whose package mirrors are only reachable
+# through an HTTPS proxy): point apt, and only apt, at that proxy and use
+# https package sources. install.sh, curl and the agent still connect to
+# ServerScope directly.
+if [ -n "${E2E_APT_PROXY:-}" ]; then
+    docker cp "${E2E_APT_CA:?set E2E_APT_CA with E2E_APT_PROXY}" "${NAME}:/etc/apt/e2e-proxy-ca.crt"
+    in_container "printf 'Acquire::https::Proxy \"%s\";\nAcquire::https::CAInfo \"/etc/apt/e2e-proxy-ca.crt\";\n' '${E2E_APT_PROXY}' > /etc/apt/apt.conf.d/99e2e-proxy \
+        && sed -i 's#http://#https://#g' /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null; true"
+fi
+
 # Test harness only (not part of install.sh): curl for the documented
 # command, the test CA, and the systemctl stand-in.
 in_container "export DEBIAN_FRONTEND=noninteractive; apt-get update -qq >/dev/null && apt-get install -y -qq --no-install-recommends curl ca-certificates procps >/dev/null \
@@ -86,11 +96,20 @@ check "gebruiker serverscope zonder shell" "[ \"$(in_container 'getent passwd se
 check "unit ongewijzigd en zonder EnvironmentFile" "in_container '! grep -q EnvironmentFile /etc/systemd/system/serverscope-agent.service'"
 check "agent draait als serverscope" "in_container 'pgrep -u serverscope -f \"[s]erverscope_agent.agent\" >/dev/null'"
 
-# 2. Running it again changes nothing and needs no token.
+# 2. Running it again changes nothing and needs no token. A leftover
+#    temporary .env file (interrupted earlier run) is planted, and a watcher
+#    looks every 50 ms for any .env* that others can read.
+in_container "umask 077; printf 'SERVERSCOPE_TOKEN=achtergebleven\n' > /opt/serverscope-agent/.env.Ab12Cd"
+docker exec -d "${NAME}" bash -c 'echo $$ > /tmp/watch.pid; while true; do find /opt/serverscope-agent -maxdepth 1 -name ".env*" -perm /o=r -printf "%p %m\n" >> /tmp/env-watch 2>/dev/null; sleep 0.05; done'
 if run_install ""; then ok "tweede keer draaien geslaagd"; else fail "tweede keer draaien mislukt"; fi
+in_container 'kill "$(cat /tmp/watch.pid)"'
 grep -q 'al gekoppeld' "${LOG}.step" && ok "herkent bestaande koppeling" || fail "herkent bestaande koppeling niet"
 check "geen extra server" "[ \"$(sql 'SELECT COUNT(*) FROM servers')\" = \"$((before + 1))\" ]"
 check "credential ongewijzigd" "[ \"$(in_container "sed -n 's/^SERVERSCOPE_TOKEN=//p' /opt/serverscope-agent/.env")\" = \"${AGENT_TOKEN}\" ]"
+check ".env na de tweede run root:serverscope 640" "[ \"$(in_container 'stat -c "%U:%G %a" /opt/serverscope-agent/.env')\" = 'root:serverscope 640' ]"
+check "geen .env* leesbaar voor other (na afloop)" "[ -z \"$(in_container 'find /opt/serverscope-agent -maxdepth 1 -name ".env*" -perm /o=r')\" ]"
+check "nooit een .env* leesbaar voor other tijdens de run" "[ -z \"$(in_container 'cat /tmp/env-watch 2>/dev/null')\" ]"
+check "achtergebleven tijdelijk .env-bestand verwijderd" "in_container '! test -e /opt/serverscope-agent/.env.Ab12Cd'"
 
 # 3. Credential revoked in the dashboard: a new token creates a NEW server
 #    (token from the environment variable, the automation path).
