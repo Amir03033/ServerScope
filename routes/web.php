@@ -118,6 +118,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
         return view('system-health', ['report' => $health->report($platform ? null : \App\Tenancy\Tenant::id())]);
     })->name('system-health');
+    Route::get('/platform/agent-releases', \App\Http\Controllers\AgentReleaseOverviewController::class)->name('platform.agent-releases');
 
     Route::post('/teams/{team}/switch', [\App\Http\Controllers\TeamController::class, 'switch'])->middleware('throttle:20,1')->name('teams.switch');
 
@@ -176,6 +177,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::put('/services/{service}', [ServiceCheckController::class, 'update'])->name('services.update');
     Route::delete('/services/{service}', [ServiceCheckController::class, 'destroy'])->name('services.destroy');
+
+    // Agent updates (signed releases only; team administrators).
+    Route::post('/servers/agent-update-all', [\App\Http\Controllers\AgentUpdateRequestController::class, 'storeAll'])->middleware('throttle:10,1')->name('servers.agent-update-all');
+    Route::post('/servers/{server}/agent-update', [\App\Http\Controllers\AgentUpdateRequestController::class, 'store'])->middleware('throttle:30,1')->name('servers.agent-update');
+    Route::put('/servers/{server}/auto-update', [\App\Http\Controllers\AgentUpdateRequestController::class, 'autoUpdate'])->name('servers.auto-update');
 
     Route::post('/servers/{server}/credentials', [AgentCredentialController::class, 'store'])
         ->name('servers.credentials.store');

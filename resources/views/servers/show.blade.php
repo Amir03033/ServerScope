@@ -312,6 +312,8 @@
 
     @include('servers._health')
 
+    @include('servers._agent-updates')
+
     <div class="section-heading" id="metrics">
         <div>
             <h2>Prestatiemonitoring</h2>

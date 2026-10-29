@@ -29,8 +29,10 @@
             ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'i-users', 'label' => 'Gebruikers'],
             ['route' => 'audit-logs.index', 'match' => 'audit-logs.*', 'icon' => 'i-history', 'label' => 'Auditlog'],
             ['route' => 'system-health', 'match' => 'system-health', 'icon' => 'i-pulse', 'label' => 'Systeemstatus'],
+            ...($isPlatform ? [['route' => 'platform.agent-releases', 'match' => 'platform.agent-releases', 'icon' => 'i-key', 'label' => 'Agentreleases']] : []),
         ] : ($isPlatform ? [
             ['route' => 'system-health', 'match' => 'system-health', 'icon' => 'i-pulse', 'label' => 'Systeemstatus'],
+            ['route' => 'platform.agent-releases', 'match' => 'platform.agent-releases', 'icon' => 'i-key', 'label' => 'Agentreleases'],
         ] : []),
         'Account' => [
             ['route' => 'notifications.index', 'match' => 'notifications.*', 'icon' => 'i-message', 'label' => 'Meldingen', 'count' => $sidebarUnreadNotifications ?? 0, 'countClass' => 'info'],

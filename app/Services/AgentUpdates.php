@@ -42,6 +42,25 @@ class AgentUpdates
         return $server->updater_last_seen_at->lt(now()->subMinutes($stale)) ? 'stale' : 'active';
     }
 
+    /**
+     * What the server page shows.
+     *
+     * @return array{installed: ?string, latest: ?AgentRelease, updater: string, request: ?AgentUpdateRequest, blocker: ?string}
+     */
+    public function summary(Server $server): array
+    {
+        $latest = AgentRelease::latestAvailable();
+        $this->expireStale($server);
+
+        return [
+            'installed' => $server->agent_version,
+            'latest' => $latest,
+            'updater' => $this->updaterState($server),
+            'request' => $server->updateRequests()->with('requester')->latest('id')->first(),
+            'blocker' => $this->blocker($server, $latest),
+        ];
+    }
+
     /** Why this server cannot be updated to the release now, or null. */
     public function blocker(Server $server, ?AgentRelease $release): ?string
     {
