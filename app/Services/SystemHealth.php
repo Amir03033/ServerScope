@@ -67,18 +67,18 @@ class SystemHealth
 
         return [
             'key' => 'scheduler',
-            'label' => 'Scheduler',
+            'label' => __('system_health.checks.scheduler'),
             'status' => $at === null ? 'critical' : ($minutes > 5 ? 'critical' : ($minutes > 2 ? 'warning' : 'healthy')),
             'detail' => $at === null
-                ? 'Nog nooit een hartslag ontvangen. Controleer de cronregel voor `php artisan schedule:run`.'
-                : 'Laatste hartslag '.$at->locale('nl')->diffForHumans().'.',
+                ? __('system_health.detail.no_heartbeat')
+                : __('system_health.detail.heartbeat', ['time' => $at->locale(app()->getLocale())->diffForHumans()]),
         ];
     }
 
     private function queue(): array
     {
         if (config('queue.default') !== 'database' || ! Schema::hasTable('jobs')) {
-            return ['key' => 'queue', 'label' => 'Wachtrij', 'status' => 'healthy', 'detail' => 'Wachtrijdriver '.config('queue.default').': achterstand niet meetbaar vanuit de database.'];
+            return ['key' => 'queue', 'label' => __('system_health.checks.queue'), 'status' => 'healthy', 'detail' => __('system_health.detail.queue_driver', ['driver' => config('queue.default')])];
         }
 
         try {
@@ -86,16 +86,18 @@ class SystemHealth
             $oldest = DB::table('jobs')->min('available_at');
             $failed = Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->where('failed_at', '>=', now()->subDay())->count() : 0;
         } catch (Throwable) {
-            return ['key' => 'queue', 'label' => 'Wachtrij', 'status' => 'warning', 'detail' => 'Wachtrij kon niet worden uitgelezen.'];
+            return ['key' => 'queue', 'label' => __('system_health.checks.queue'), 'status' => 'warning', 'detail' => __('system_health.detail.queue_unreadable')];
         }
 
         $age = $oldest ? max(0, now()->getTimestamp() - (int) $oldest) : 0;
 
         return [
             'key' => 'queue',
-            'label' => 'Wachtrij',
+            'label' => __('system_health.checks.queue'),
             'status' => $age > 900 ? 'critical' : ($age > 180 || $failed > 0 ? 'warning' : 'healthy'),
-            'detail' => "{$pending} taken in de wachtrij".($age > 0 ? ', oudste wacht '.round($age / 60, 1).' min' : '')."; {$failed} mislukte taken in 24 uur.",
+            'detail' => __('system_health.detail.queue_pending', ['count' => $pending])
+                .($age > 0 ? __('system_health.detail.queue_oldest', ['minutes' => \App\Support\Format::number($age / 60, 1)]) : '')
+                .__('system_health.detail.queue_failed', ['count' => $failed]),
         ];
     }
 
@@ -108,9 +110,9 @@ class SystemHealth
 
         return [
             'key' => 'overdue',
-            'label' => 'Controles op tijd',
+            'label' => __('system_health.checks.overdue'),
             'status' => $total === 0 ? 'healthy' : ($total > 10 ? 'critical' : 'warning'),
-            'detail' => $total === 0 ? 'Alle controles lopen op schema.' : "{$domains} domein- en {$pages} paginacontroles meer dan ".self::OVERDUE_MINUTES.' minuten achter.',
+            'detail' => $total === 0 ? __('system_health.detail.on_schedule') : __('system_health.detail.overdue', ['domains' => $domains, 'pages' => $pages, 'minutes' => self::OVERDUE_MINUTES]),
         ];
     }
 
@@ -122,9 +124,9 @@ class SystemHealth
 
         return [
             'key' => 'deliveries',
-            'label' => 'Meldingen en webhooks',
+            'label' => __('system_health.checks.deliveries'),
             'status' => $mailFailed + $webhooksFailed === 0 ? 'healthy' : 'warning',
-            'detail' => "{$mailFailed} mislukte meldingen en {$webhooksFailed} mislukte webhookleveringen in 24 uur.",
+            'detail' => __('system_health.detail.deliveries', ['mail' => $mailFailed, 'webhooks' => $webhooksFailed]),
         ];
     }
 
@@ -134,9 +136,9 @@ class SystemHealth
 
         return [
             'key' => 'discovery',
-            'label' => 'Paginaontdekking',
+            'label' => __('system_health.checks.discovery'),
             'status' => $failed === 0 ? 'healthy' : 'warning',
-            'detail' => "{$failed} mislukte ontdekkingen in 24 uur (bestaande monitoring blijft ongewijzigd).",
+            'detail' => __('system_health.detail.discovery', ['count' => $failed]),
         ];
     }
 }

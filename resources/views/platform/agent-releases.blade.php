@@ -1,48 +1,54 @@
-<x-layouts.app title="Agentreleases">
-    <x-slot:subtitle>Ondertekende agentreleases en hoeveel servers elke versie draaien (alleen aantallen, over alle teams). Releases importeren of terugtrekken gaat met <code>php artisan serverscope:release:import</code> en <code>serverscope:release:withdraw</code>.</x-slot:subtitle>
+@php use App\Support\Time; @endphp
 
-    <section class="panel">
-        <div class="section-heading"><div><h2>Releases</h2></div></div>
-        @if ($releases->isEmpty())
-            <x-empty-state icon="i-pulse" title="Nog geen releases">Importeer de eerste ondertekende release (zie docs/RELEASE_KEYS.md).</x-empty-state>
-        @else
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead><tr><th>Versie</th><th>Datum</th><th>Sleutel-ID</th><th>Commit</th><th>SHA-256</th><th>Status</th></tr></thead>
+<x-layouts.app :title="__('admin.releases.title')">
+    <x-slot:subtitle>{!! __('admin.releases.subtitle', ['import' => '<code>php artisan serverscope:release:import</code>', 'withdraw' => '<code>serverscope:release:withdraw</code>']) !!}</x-slot:subtitle>
+
+    <div class="grid gap-4">
+        <section class="ss-panel" aria-labelledby="releases-title">
+            <div class="ss-panel-head"><div><h2 id="releases-title" class="ss-panel-title">{{ __('admin.releases.releases_title') }}</h2></div></div>
+            @if ($releases->isEmpty())
+                <x-empty-state icon="i-pulse" :title="__('admin.releases.empty_title')">{{ __('admin.releases.empty_text') }}</x-empty-state>
+            @else
+                <div class="ss-table-wrap">
+                    <table class="ss-table ss-table-cards">
+                        <thead><tr><th scope="col">{{ __('admin.releases.col_version') }}</th><th scope="col">{{ __('admin.releases.col_date') }}</th><th scope="col">{{ __('admin.releases.col_key') }}</th><th scope="col">{{ __('admin.releases.col_commit') }}</th><th scope="col">{{ __('admin.releases.col_sha') }}</th><th scope="col">{{ __('admin.releases.col_status') }}</th></tr></thead>
+                        <tbody>
+                            @foreach ($releases as $release)
+                                <tr>
+                                    <td class="is-primary"><strong>{{ $release->version }}</strong></td>
+                                    <td data-label="{{ __('admin.releases.col_date') }}" class="whitespace-nowrap">{{ Time::dateTime($release->released_at) }}</td>
+                                    <td data-label="{{ __('admin.releases.col_key') }}" class="font-mono text-xs">{{ $release->key_id }}</td>
+                                    <td data-label="{{ __('admin.releases.col_commit') }}" class="font-mono text-xs" title="{{ $release->commit }}">{{ substr($release->commit, 0, 12) }}</td>
+                                    <td data-label="{{ __('admin.releases.col_sha') }}" class="font-mono text-xs" title="{{ $release->sha256 }}">{{ substr($release->sha256, 0, 16) }}…</td>
+                                    <td data-label="{{ __('admin.releases.col_status') }}">
+                                        <span>
+                                            @if ($release->withdrawn_at)
+                                                <x-status status="expired" :label="__('admin.releases.withdrawn')" /> <span class="block text-xs text-muted">{{ $release->withdraw_reason }}</span>
+                                            @else
+                                                <x-status status="valid" :label="__('admin.releases.available')" />
+                                            @endif
+                                        </span>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </section>
+
+        <section class="ss-panel" aria-labelledby="versions-title">
+            <div class="ss-panel-head"><div><h2 id="versions-title" class="ss-panel-title">{{ __('admin.releases.versions_title') }}</h2><p class="ss-panel-sub">{{ __('admin.releases.versions_text', ['count' => $total]) }}</p></div></div>
+            <div class="ss-table-wrap">
+                <table class="ss-table ss-table-cards">
+                    <thead><tr><th scope="col">{{ __('admin.releases.col_agent_version') }}</th><th scope="col" class="num">{{ __('admin.releases.col_servers') }}</th><th scope="col" class="num">{{ __('admin.releases.col_with_updater') }}</th></tr></thead>
                     <tbody>
-                        @foreach ($releases as $release)
-                            <tr>
-                                <td><strong>{{ $release->version }}</strong></td>
-                                <td class="nowrap">{{ \App\Support\Time::format($release->released_at) }}</td>
-                                <td class="mono">{{ $release->key_id }}</td>
-                                <td class="mono" title="{{ $release->commit }}">{{ substr($release->commit, 0, 12) }}</td>
-                                <td class="mono" title="{{ $release->sha256 }}">{{ substr($release->sha256, 0, 16) }}…</td>
-                                <td>
-                                    @if ($release->withdrawn_at)
-                                        <x-status status="expired" label="Teruggetrokken" /> <span class="cell-sub">{{ $release->withdraw_reason }}</span>
-                                    @else
-                                        <x-status status="valid" label="Beschikbaar" />
-                                    @endif
-                                </td>
-                            </tr>
+                        @foreach ($versions as $row)
+                            <tr><td class="is-primary">{{ $row['version'] === 'onbekend' ? __('servers.unknown') : $row['version'] }}</td><td data-label="{{ __('admin.releases.col_servers') }}" class="num">{{ $row['servers'] }}</td><td data-label="{{ __('admin.releases.col_with_updater') }}" class="num">{{ $row['with_updater'] }}</td></tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
-        @endif
-    </section>
-
-    <section class="panel">
-        <div class="section-heading"><div><h2>Servers per versie</h2><p>{{ $total }} server(s) in totaal.</p></div></div>
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead><tr><th>Agentversie</th><th class="num">Servers</th><th class="num">Met actief updateprogramma</th></tr></thead>
-                <tbody>
-                    @foreach ($versions as $row)
-                        <tr><td>{{ $row['version'] }}</td><td class="num">{{ $row['servers'] }}</td><td class="num">{{ $row['with_updater'] }}</td></tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </section>
+        </section>
+    </div>
 </x-layouts.app>
