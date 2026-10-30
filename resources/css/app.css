@@ -196,6 +196,9 @@
         flex: 0 0 auto;
     }
 
+    /* The icon sprite takes no space. */
+    .ss-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
     .sr-only {
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
@@ -1258,6 +1261,50 @@
     .ss-progress > li[aria-current="step"] { color: var(--ss-text); }
     .ss-progress > li[aria-current="step"]::before { border-color: var(--ss-accent); background: var(--ss-accent); color: var(--ss-on-accent); }
 
+    /* Public status page. The customer's accent arrives as --sp-* (set by app.js);
+       it is used as text only when readable, otherwise the neutral accent. */
+    .ss-public { --sp-text: var(--sp-accent-light, var(--ss-accent)); }
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) .ss-public { --sp-text: var(--sp-accent-dark, var(--ss-accent)); }
+    }
+    :root[data-theme="dark"] .ss-public { --sp-text: var(--sp-accent-dark, var(--ss-accent)); }
+    .ss-public-head { padding-left: .875rem; border-left: 4px solid var(--sp-brand, var(--ss-accent)); }
+    .ss-public-banner {
+        --c: var(--ss-muted);
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        margin: 1.625rem 0;
+        padding: 1.125rem 1.25rem;
+        border: 1px solid color-mix(in srgb, var(--c) 40%, var(--ss-line));
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--c) 9%, var(--ss-surface));
+        font-size: 1.125rem;
+        font-weight: 650;
+    }
+    .ss-public-banner .ss-dot { width: .75rem; height: .75rem; background: var(--c); }
+    .ss-public-banner.is-ok { --c: var(--ss-ok); }
+    .ss-public-banner.is-warn { --c: var(--ss-warn); }
+    .ss-public-banner.is-bad { --c: var(--ss-bad); }
+    .ss-public-banner.is-info { --c: var(--ss-accent); }
+    /* 90 days on a phone: thinner cells so the strip never overflows. */
+    .ss-public .ss-strip { gap: 1px; }
+    .ss-public .ss-strip > i { min-width: 1px; border-radius: 2px; }
+    .ss-public-h2 { margin: 2rem 0 .75rem; font-size: 1.0625rem; font-weight: 600; }
+    .ss-public-row { padding: 1rem 0; border-bottom: 1px solid var(--ss-line); }
+    .ss-public-row:last-child { border-bottom: 0; }
+    .ss-public a, .ss-public-link { color: var(--sp-text); }
+    .ss-public-locale { display: inline-flex; gap: .25rem; }
+    .ss-public-locale button {
+        padding: .1875rem .5625rem;
+        border: 1px solid var(--ss-line-strong);
+        border-radius: 7px;
+        background: transparent;
+        color: var(--ss-muted);
+        font-size: .75rem;
+    }
+    .ss-public-locale button[aria-pressed="true"] { border-color: var(--sp-brand, var(--ss-accent)); background: var(--sp-brand, var(--ss-accent)); color: var(--sp-on-brand, var(--ss-on-accent)); }
+
     /* Pausable automatic refresh (x-auto-refresh). */
     .ss-auto-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; color: var(--ss-muted); font-size: .75rem; }
     .ss-auto-refresh.is-paused [data-auto-refresh-dot] { background: var(--ss-line-strong); }
@@ -1299,6 +1346,8 @@
 }
 
 @media print {
-    .ss-sidebar, .ss-topbar, .ss-noprint { display: none !important; }
+    .ss-sidebar, .ss-topbar, .ss-noprint, .ss-auto-refresh { display: none !important; }
     body { background: #fff; color: #000; }
+    .ss-panel, .ss-stat { box-shadow: none; break-inside: avoid; }
+    .ss-print main { max-width: none; padding: 0; }
 }

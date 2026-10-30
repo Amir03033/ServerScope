@@ -387,6 +387,69 @@ document.querySelectorAll('form[data-rule-preview]').forEach((form) => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Public status page: the customer's accent colour, checked for        */
+/* contrast on the server (data-accent-*); CSSOM, so no inline style.   */
+/* ------------------------------------------------------------------ */
+
+if (document.body.dataset.accent) {
+    const { accent, onAccent, accentLight, accentDark } = document.body.dataset;
+    const style = document.body.style;
+    style.setProperty('--sp-brand', accent);
+    if (onAccent) style.setProperty('--sp-on-brand', onAccent);
+    if (accentLight) style.setProperty('--sp-accent-light', accentLight);
+    if (accentDark) style.setProperty('--sp-accent-dark', accentDark);
+}
+
+/* ------------------------------------------------------------------ */
+/* Status page form: add and remove component rows.                     */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-component-rows]').forEach((rows) => {
+    const form = rows.closest('form');
+
+    rows.addEventListener('click', (event) => {
+        const remove = event.target.closest('[data-component-remove]');
+        if (remove) remove.closest('[data-component-row]')?.remove();
+    });
+
+    // "Empty rows are ignored": leave rows without monitor and name out of the request.
+    form?.addEventListener('submit', () => {
+        rows.querySelectorAll('[data-component-row]').forEach((row) => {
+            const filled = [...row.querySelectorAll('select, input')].some((el) => el.value.trim() !== '');
+            row.querySelectorAll('[name]').forEach((el) => { el.disabled = !filled; });
+        });
+    }, true);
+
+    form?.querySelector('[data-component-add]')?.addEventListener('click', () => {
+        const source = rows.querySelector('[data-component-row]');
+        if (!source) return;
+
+        const row = source.cloneNode(true);
+        const n = Date.now();
+        row.querySelectorAll('[name]').forEach((el) => {
+            el.name = el.name.replace(/components\[\d+\]/, `components[${n}]`);
+            el.value = '';
+            el.removeAttribute('aria-invalid');
+            el.removeAttribute('aria-describedby');
+        });
+        row.querySelectorAll('[id]').forEach((el) => { el.id = el.id.replace(/component-\d+-/, `component-${n}-`); });
+        row.querySelectorAll('label[for]').forEach((el) => { el.htmlFor = el.htmlFor.replace(/component-\d+-/, `component-${n}-`); });
+        row.querySelectorAll('.ss-error').forEach((el) => el.remove());
+        rows.appendChild(row);
+        row.querySelector('select, input')?.focus();
+    });
+});
+
+/* Show the custom date range only for the "custom" period (reports). */
+document.querySelectorAll('select[data-custom-toggle]').forEach((select) => {
+    const target = document.getElementById(select.dataset.customToggle);
+    select.addEventListener('change', () => { if (target) target.hidden = select.value !== 'custom'; });
+});
+
+/* Print button (reports.print). */
+document.querySelectorAll('[data-print]').forEach((button) => button.addEventListener('click', () => window.print()));
+
+/* ------------------------------------------------------------------ */
 /* Secrets: show/hide and copy (x-secret-token).                        */
 /* ------------------------------------------------------------------ */
 
