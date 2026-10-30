@@ -892,6 +892,12 @@
     }
 
     .ss-stat-label { color: var(--ss-muted); font-size: .8125rem; }
+
+    @media (max-width: 479px) {
+        .ss-stat { padding: .875rem; gap: .625rem; }
+        .ss-stat-icon { width: 2rem; height: 2rem; flex-basis: 2rem; font-size: 1rem; }
+        .ss-stat-value { font-size: 1.25rem; }
+    }
     .ss-stat-value { margin-top: .125rem; font-size: 1.5rem; font-weight: 650; letter-spacing: -.02em; line-height: 1.2; font-variant-numeric: tabular-nums; }
     .ss-stat-caption { margin-top: .125rem; color: var(--ss-muted); font-size: .75rem; }
     .ss-stat.is-bad .ss-stat-value, .ss-stat.is-bad .ss-stat-icon { color: var(--ss-bad); }
@@ -998,9 +1004,9 @@
     .ss-strip > i.partial { background: var(--ss-warn); }
     .ss-strip > i.down { background: var(--ss-bad); }
 
-    .ss-dl { display: grid; grid-template-columns: minmax(7rem, 40%) minmax(0, 1fr); margin: 0; font-size: .8125rem; }
+    .ss-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: .75rem; margin: 0; font-size: .8125rem; }
     .ss-dl dt, .ss-dl dd { margin: 0; padding: .5rem 0; border-bottom: 1px solid var(--ss-line); }
-    .ss-dl dt { display: flex; align-items: center; gap: .5rem; padding-right: .75rem; color: var(--ss-muted); }
+    .ss-dl dt { display: flex; align-items: center; gap: .5rem; min-width: 0; color: var(--ss-muted); }
     .ss-dl dd { overflow-wrap: anywhere; }
     .ss-dl dt:last-of-type, .ss-dl dd:last-of-type { border-bottom: 0; }
 

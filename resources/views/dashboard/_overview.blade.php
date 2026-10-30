@@ -10,8 +10,8 @@
 
 <section aria-label="{{ __('dashboard.overview.label') }}" class="grid gap-4">
     {{-- Key figures: grey, colour only where a number points at a problem. --}}
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <a class="ss-stat {{ $srv['offline'] > 0 ? 'is-bad' : '' }}" href="{{ route('servers.index') }}">
+    <div class="grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <a class="ss-stat" href="{{ route('servers.index') }}">
             <span class="ss-stat-icon"><svg class="ico"><use href="#i-server"/></svg></span>
             <span class="min-w-0">
                 <span class="ss-stat-label block">{{ __('dashboard.overview.servers') }}</span>
@@ -19,7 +19,7 @@
                 <span class="ss-stat-caption block"><span class="ss-text-ok">{{ __('dashboard.overview.online', ['count' => $srv['online']]) }}</span> · <span @class(['ss-text-bad' => $srv['offline'] > 0])>{{ __('dashboard.overview.offline', ['count' => $srv['offline']]) }}</span>@if ($srv['maintenance']) · {{ __('dashboard.overview.maintenance', ['count' => $srv['maintenance']]) }}@endif</span>
             </span>
         </a>
-        <a class="ss-stat {{ $dom['critical'] > 0 ? 'is-bad' : ($dom['warning'] > 0 ? 'is-warn' : '') }}" href="{{ route('domains.index') }}">
+        <a class="ss-stat" href="{{ route('domains.index') }}">
             <span class="ss-stat-icon"><svg class="ico"><use href="#i-globe"/></svg></span>
             <span class="min-w-0">
                 <span class="ss-stat-label block">{{ __('dashboard.overview.domains') }}</span>
@@ -43,7 +43,7 @@
                 <span class="ss-stat-caption block">{{ __('dashboard.overview.http_checks', ['count' => $trends['checks_24h']]) }}</span>
             </span>
         </div>
-        <div class="ss-stat sm:col-span-2 xl:col-span-1">
+        <div class="ss-stat col-span-2 xl:col-span-1">
             <span class="ss-stat-icon"><svg class="ico"><use href="#i-pulse"/></svg></span>
             <span class="min-w-0">
                 <span class="ss-stat-label block">{{ __('dashboard.overview.resources') }}</span>
