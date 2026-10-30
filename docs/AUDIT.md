@@ -463,7 +463,9 @@ for server owners: `agent/README.md`.
   different stored key without `--replace-release-key`; asks "Updateprogramma
   installeren? [J/n]" (default yes; `--updates=on|off`,
   `SERVERSCOPE_UPDATES`; when updates were disabled earlier the default is
-  no); `--disable-updates` / `--enable-updates`; converts 0.2.0
+  no; without a terminal the default applies with a clear line in the
+  output; "no" or `--updates=off` installs no updater program and no
+  timer); `--disable-updates` / `--enable-updates`; converts 0.2.0
   installations; never downgrades. Without an imported release it stops
   before changing anything.
 
@@ -479,6 +481,11 @@ for server owners: `agent/README.md`.
   `agent/tests/test_collector.py` (`result["agent_version"] == "0.3.0"`).
 - `RouteTenancyTest::PUBLIC_ROUTES` lists the three new public download
   routes (the mechanism that test asks for).
+- `scripts/e2e/install-test.sh` (phase 2): the three installation runs pass
+  `--updates=on`, the answer to the new update question (otherwise the
+  test waits at the question). Two checks were added: without a terminal
+  and without a flag the default is yes, with a clear line in the output;
+  with `--updates=off` there is no updater program and no timer.
 
 ### Also fixed
 - `config/serverscope.php` defined `'agent'` twice; the second replaced
@@ -568,6 +575,13 @@ install code: the key must stay offline (`docs/RELEASE_KEYS.md` §4).
 - Found and fixed by these tests: the updater's lock descriptor was
   inherited by the restarted agent (later runs were locked out), and
   downloads are now cut off hard even when the server sends no length.
+- `scripts/e2e/install-test.sh` (phase 2 test, answering the update
+  question with `--updates=on`, plus two checks for the question):
+  45 of 45 checks on Ubuntu 22.04, Ubuntu 24.04 and Debian 12. The check
+  without a terminal found that `[ -r /dev/tty ]` is true without a
+  controlling terminal while the device cannot be opened; install.sh now
+  really opens it (`has_tty`), for the update question and the token
+  prompt.
 
 ### Not tested / limitations
 1. **Signing on macOS** was not run (no Mac here). The scripts were
@@ -580,11 +594,11 @@ install code: the key must stay offline (`docs/RELEASE_KEYS.md` §4).
 3. **Production on Plesk** (import as root, file ownership, config cache)
    was not tested; see `docs/FASE3_STAPPENPLAN.md`.
 4. **MySQL 8.0**: the migrations ran on MariaDB 10.11 only.
-5. `scripts/e2e/install-test.sh` (phase 2) was not changed and was not run
-   again: with a terminal, install.sh now asks the update question, which
-   that test does not answer. `update-test.sh` covers its main paths; the
-   phase 2 checks for re-enrolment after a revoked credential, an invalid
-   token, a manual installation and the `.env` watcher were not re-run.
+5. (Resolved) `scripts/e2e/install-test.sh` (phase 2, with `--updates=on`
+   and the two new checks) passes 45 of 45 checks on Ubuntu 22.04,
+   Ubuntu 24.04 and Debian 12, including re-enrolment after a revoked
+   credential, an invalid token, a manual installation left alone and the
+   `.env` watcher.
 6. **Trust on first use**: new installations (and re-runs of install.sh)
    trust the key in the script from the server (see the security review).
 7. Updating the **updater itself** is not built: it is installed and
