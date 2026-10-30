@@ -1,16 +1,14 @@
-<x-layouts.app title="Domein toevoegen">
-    <x-slot:breadcrumb><span>›</span> <a href="{{ route('domains.index') }}">Domeinen</a> <span>›</span> Toevoegen</x-slot:breadcrumb>
-    <x-slot:subtitle>Bewaak beschikbaarheid, certificaat, DNS en registratie van een domein.</x-slot:subtitle>
-    <x-slot:actions><a href="{{ route('domains.index') }}" class="button"><svg class="ico"><use href="#i-arrow-left"/></svg> Terug</a></x-slot:actions>
+<x-layouts.app :title="__('domains.create.title')">
+    <x-slot:breadcrumb><span>›</span> <a href="{{ route('domains.index') }}">{{ __('domains.title') }}</a> <span>›</span> {{ __('domains.create.crumb') }}</x-slot:breadcrumb>
+    <x-slot:subtitle>{{ __('domains.create.subtitle') }}</x-slot:subtitle>
+    <x-slot:actions><a href="{{ route('domains.index') }}" class="ss-btn ss-btn-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('domains.back') }}</a></x-slot:actions>
 
-    <section class="panel">
-        <form method="POST" action="{{ route('domains.store') }}">
-            @csrf
-            @include('domains._form')
-            <div class="form-footer">
-                <button type="submit" class="button button-primary">Domein toevoegen</button>
-                <a href="{{ route('domains.index') }}" class="button">Annuleren</a>
-            </div>
-        </form>
-    </section>
+    <form method="POST" action="{{ route('domains.store') }}" class="grid max-w-4xl gap-4">
+        @csrf
+        @include('domains._form')
+        <div class="flex flex-wrap gap-2">
+            <button type="submit" class="ss-btn ss-btn-primary">{{ __('domains.create.submit') }}</button>
+            <a href="{{ route('domains.index') }}" class="ss-btn ss-btn-ghost">{{ __('domains.cancel') }}</a>
+        </div>
+    </form>
 </x-layouts.app>

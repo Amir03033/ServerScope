@@ -93,16 +93,16 @@ class DomainRequest extends FormRequest
                     ->first();
 
                 if ($existing !== null && $existing->team_id !== Tenant::id()) {
-                    $validator->errors()->add('name', 'Dit domein kan niet worden toegevoegd. Neem contact op met de beheerder van ServerScope als je denkt dat dit niet klopt.');
+                    $validator->errors()->add('name', __('domains.validation.other_team'));
                 } elseif ($existing?->trashed()) {
-                    $validator->errors()->add('name', 'Dit domein is eerder verwijderd. Herstel het via het filter "Verwijderd".');
+                    $validator->errors()->add('name', __('domains.validation.trashed'));
                 } elseif ($existing) {
-                    $validator->errors()->add('name', 'Dit domein wordt al gemonitord.');
+                    $validator->errors()->add('name', __('domains.validation.exists'));
                 }
 
                 // The limit applies per team.
                 if ($this->isMethod('post') && Domain::withTrashed()->where('team_id', Tenant::id())->count() >= (int) config('serverscope.monitoring.max_domains', 1000)) {
-                    $validator->errors()->add('name', 'Het maximale aantal domeinen is bereikt.');
+                    $validator->errors()->add('name', __('domains.validation.limit'));
                 }
             },
         ];
@@ -110,23 +110,7 @@ class DomainRequest extends FormRequest
 
     public function attributes(): array
     {
-        return [
-            'name' => 'domeinnaam',
-            'path' => 'pad',
-            'check_interval_minutes' => 'controle-interval',
-            'timeout_seconds' => 'time-out',
-            'failure_threshold' => 'faaldrempel',
-            'recovery_threshold' => 'hersteldrempel',
-            'expected_status_codes' => 'verwachte statuscodes',
-            'expected_content' => 'verwachte inhoud',
-            'ssl_warning_days' => 'certificaatwaarschuwingen',
-            'ssl_warning_days.*' => 'certificaatwaarschuwing',
-            'expiry_warning_days' => 'vervalwaarschuwingen',
-            'expiry_warning_days.*' => 'vervalwaarschuwing',
-            'maintenance_ends_at' => 'einde onderhoud',
-            'maintenance_starts_at' => 'start onderhoud',
-            'sla_target' => 'beschikbaarheidsdoel',
-        ];
+        return __('domains.attributes');
     }
 
     /**

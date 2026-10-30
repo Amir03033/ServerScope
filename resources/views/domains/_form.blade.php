@@ -7,150 +7,174 @@
     $checked = fn (string $key) => (bool) old($key, $isEditing ? $domain->{$key} : true);
     // Old input holds the parsed array after a failed validation.
     $oldDays = fn (string $key) => is_array(old($key)) ? implode(', ', old($key)) : old($key, $days($domain->{$key}));
+    $field = fn (string ...$names) => collect($names)->contains(fn ($name) => $errors->has($name)) ? 'aria-invalid=true aria-describedby='.$names[0].'-error' : '';
 @endphp
 
-<div class="form-cols">
-    <div @class(['form-field', 'has-error' => $errors->has('name')])>
-        <label for="name">Domeinnaam *</label>
-        <input id="name" name="name" type="text" maxlength="253" required value="{{ old('name_input', old('name', $domain->exists ? $domain->displayName() : '')) }}" placeholder="example.com of www.example.nl" autocomplete="off">
-        <span class="form-help">Een URL mag ook; alleen de hostname wordt bewaard. Internationale domeinnamen worden ondersteund.</span>
-        @error('name')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+<div class="grid gap-4">
+    <section class="ss-panel" aria-labelledby="form-address">
+        <h2 id="form-address" class="ss-panel-title mb-4">{{ __('domains.form.address_title') }}</h2>
+        <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+                <label class="ss-label" for="name">{{ __('domains.form.name') }}</label>
+                <input id="name" class="ss-input mt-1.5" name="name" type="text" maxlength="253" required value="{{ old('name_input', old('name', $domain->exists ? $domain->displayName() : '')) }}" placeholder="{{ __('domains.form.name_placeholder') }}" autocomplete="off" {{ $field('name') }}>
+                <p class="ss-help">{{ __('domains.form.name_help') }}</p>
+                @error('name')<p id="name-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div class="form-field" style="grid-template-columns:110px 1fr;column-gap:10px">
-        <label for="scheme" style="grid-column:1/-1">Te controleren URL</label>
-        <select id="scheme" name="scheme">
-            <option value="https" @selected(old('scheme', $domain->scheme ?? 'https') === 'https')>https://</option>
-            <option value="http" @selected(old('scheme', $domain->scheme) === 'http')>http://</option>
-        </select>
-        <input id="path" name="path" type="text" maxlength="255" value="{{ old('path', $domain->path ?? '/') }}" aria-label="Pad" placeholder="/">
-        @error('path')<span class="form-error" style="grid-column:1/-1">{{ $message }}</span>@enderror
-    </div>
+            <div>
+                <label class="ss-label" for="scheme">{{ __('domains.form.url') }}</label>
+                <div class="mt-1.5 grid grid-cols-[7rem_minmax(0,1fr)] gap-2">
+                    <select id="scheme" class="ss-input" name="scheme">
+                        <option value="https" @selected(old('scheme', $domain->scheme ?? 'https') === 'https')>https://</option>
+                        <option value="http" @selected(old('scheme', $domain->scheme) === 'http')>http://</option>
+                    </select>
+                    <input id="path" class="ss-input" name="path" type="text" maxlength="255" value="{{ old('path', $domain->path ?? '/') }}" aria-label="{{ __('domains.form.path') }}" placeholder="/" {{ $field('path') }}>
+                </div>
+                @error('path')<p id="path-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div class="form-section">
-        <h3>Controles</h3>
-        <p>Kies welke onderdelen van dit domein worden bewaakt.</p>
-    </div>
-
-    <div class="form-field full">
-        <div class="check-group">
-            @foreach (['http_enabled' => 'HTTP-beschikbaarheid', 'ssl_enabled' => 'SSL/TLS-certificaat (alleen https)', 'dns_enabled' => 'DNS-records', 'expiry_enabled' => 'Domeinregistratie (RDAP)'] as $key => $label)
-                <label class="check">
-                    <input type="hidden" name="{{ $key }}" value="0">
-                    <input type="checkbox" name="{{ $key }}" value="1" @checked($checked($key))>
-                    {{ $label }}
-                </label>
-            @endforeach
+            <div class="sm:col-span-2">
+                <label class="ss-label" for="notes">{{ __('domains.form.notes') }}</label>
+                <textarea id="notes" class="ss-input mt-1.5 min-h-24" name="notes" maxlength="2000" {{ $field('notes') }}>{{ old('notes', $domain->notes) }}</textarea>
+                @error('notes')<p id="notes-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
         </div>
-    </div>
+    </section>
 
-    <div @class(['form-field', 'has-error' => $errors->has('check_interval_minutes')])>
-        <label for="check_interval_minutes">Interval (minuten) *</label>
-        <input id="check_interval_minutes" name="check_interval_minutes" type="number" min="{{ config('serverscope.monitoring.min_interval_minutes', 1) }}" max="1440" required value="{{ old('check_interval_minutes', $domain->check_interval_minutes ?? 5) }}">
-        <span class="form-help">Hoe vaak de HTTP-controle draait. DNS minimaal elke {{ config('serverscope.monitoring.dns_interval_minutes') }} min, certificaat elke {{ intdiv(config('serverscope.monitoring.ssl_interval_minutes'), 60) }} uur, registratie dagelijks.</span>
-        @error('check_interval_minutes')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+    <section class="ss-panel" aria-labelledby="form-checks">
+        <h2 id="form-checks" class="ss-panel-title">{{ __('domains.form.checks_title') }}</h2>
+        <p class="ss-panel-sub mb-4">{{ __('domains.form.checks_text') }}</p>
+        <div class="grid gap-5 sm:grid-cols-2">
+            <fieldset class="m-0 grid gap-2.5 border-0 p-0 sm:col-span-2 sm:grid-cols-2">
+                <legend class="sr-only">{{ __('domains.form.checks_title') }}</legend>
+                @foreach (['http_enabled', 'ssl_enabled', 'dns_enabled', 'expiry_enabled'] as $key)
+                    <label class="ss-check">
+                        <input type="hidden" name="{{ $key }}" value="0">
+                        <input type="checkbox" name="{{ $key }}" value="1" @checked($checked($key))>
+                        {{ __('domains.form.checks.'.$key) }}
+                    </label>
+                @endforeach
+            </fieldset>
 
-    <div @class(['form-field', 'has-error' => $errors->has('timeout_seconds')])>
-        <label for="timeout_seconds">Time-out (seconden) *</label>
-        <input id="timeout_seconds" name="timeout_seconds" type="number" min="2" max="30" required value="{{ old('timeout_seconds', $domain->timeout_seconds ?? 10) }}">
-        @error('timeout_seconds')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+            <div>
+                <label class="ss-label" for="check_interval_minutes">{{ __('domains.form.interval') }}</label>
+                <input id="check_interval_minutes" class="ss-input mt-1.5" name="check_interval_minutes" type="number" min="{{ config('serverscope.monitoring.min_interval_minutes', 1) }}" max="1440" required value="{{ old('check_interval_minutes', $domain->check_interval_minutes ?? 5) }}" {{ $field('check_interval_minutes') }}>
+                <p class="ss-help">{{ __('domains.form.interval_help', ['dns' => config('serverscope.monitoring.dns_interval_minutes'), 'ssl' => intdiv(config('serverscope.monitoring.ssl_interval_minutes'), 60)]) }}</p>
+                @error('check_interval_minutes')<p id="check_interval_minutes-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('failure_threshold')])>
-        <label for="failure_threshold">Faaldrempel *</label>
-        <input id="failure_threshold" name="failure_threshold" type="number" min="1" max="10" required value="{{ old('failure_threshold', $domain->failure_threshold ?? 3) }}">
-        <span class="form-help">Aantal opeenvolgende mislukte controles voordat er een incident ontstaat.</span>
-        @error('failure_threshold')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+            <div>
+                <label class="ss-label" for="timeout_seconds">{{ __('domains.form.timeout') }}</label>
+                <input id="timeout_seconds" class="ss-input mt-1.5" name="timeout_seconds" type="number" min="2" max="30" required value="{{ old('timeout_seconds', $domain->timeout_seconds ?? 10) }}" {{ $field('timeout_seconds') }}>
+                @error('timeout_seconds')<p id="timeout_seconds-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('recovery_threshold')])>
-        <label for="recovery_threshold">Hersteldrempel *</label>
-        <input id="recovery_threshold" name="recovery_threshold" type="number" min="1" max="10" required value="{{ old('recovery_threshold', $domain->recovery_threshold ?? 2) }}">
-        <span class="form-help">Aantal geslaagde controles op rij voordat een storing als hersteld geldt.</span>
-        @error('recovery_threshold')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+            <div>
+                <label class="ss-label" for="expected_status_codes">{{ __('domains.form.status_codes') }}</label>
+                <input id="expected_status_codes" class="ss-input mt-1.5" name="expected_status_codes" type="text" maxlength="100" value="{{ old('expected_status_codes', $domain->expected_status_codes) }}" placeholder="200-399" {{ $field('expected_status_codes') }}>
+                <p class="ss-help">{!! __('domains.form.status_codes_help', ['one' => '<code>200</code>', 'many' => '<code>200-299,301</code>']) !!}</p>
+                @error('expected_status_codes')<p id="expected_status_codes-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('expected_status_codes')])>
-        <label for="expected_status_codes">Verwachte statuscodes</label>
-        <input id="expected_status_codes" name="expected_status_codes" type="text" maxlength="100" value="{{ old('expected_status_codes', $domain->expected_status_codes) }}" placeholder="200-399">
-        <span class="form-help">Bijv. <code>200</code> of <code>200-299,301</code>. Leeg = 200–399.</span>
-        @error('expected_status_codes')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+            <div>
+                <label class="ss-label" for="expected_content">{{ __('domains.form.content') }}</label>
+                <input id="expected_content" class="ss-input mt-1.5" name="expected_content" type="text" maxlength="255" value="{{ old('expected_content', $domain->expected_content) }}" placeholder="{{ __('domains.form.content_placeholder') }}" {{ $field('expected_content') }}>
+                <p class="ss-help">{{ __('domains.form.content_help', ['mb' => number_format(config('serverscope.monitoring.max_response_bytes') / 1048576, 0)]) }}</p>
+                @error('expected_content')<p id="expected_content-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('expected_content')])>
-        <label for="expected_content">Verwachte inhoud (optioneel)</label>
-        <input id="expected_content" name="expected_content" type="text" maxlength="255" value="{{ old('expected_content', $domain->expected_content) }}" placeholder="Bijv. een tekst die altijd op de pagina staat">
-        <span class="form-help">Hoofdlettergevoelig; doorzoekt de eerste {{ number_format(config('serverscope.monitoring.max_response_bytes') / 1048576, 0) }} MB van het antwoord.</span>
-        @error('expected_content')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+            <div class="sm:col-span-2">
+                <label class="ss-check">
+                    <input type="hidden" name="follow_redirects" value="0">
+                    <input type="checkbox" name="follow_redirects" value="1" @checked($checked('follow_redirects'))>
+                    {{ __('domains.form.follow_redirects', ['max' => config('serverscope.monitoring.max_redirects')]) }}
+                </label>
+            </div>
+        </div>
+    </section>
 
-    <div class="form-field full">
-        <label class="check">
-            <input type="hidden" name="follow_redirects" value="0">
-            <input type="checkbox" name="follow_redirects" value="1" @checked($checked('follow_redirects'))>
-            Redirects volgen (maximaal {{ config('serverscope.monitoring.max_redirects') }}; elke stap wordt gevalideerd)
-        </label>
-    </div>
+    <section class="ss-panel" aria-labelledby="form-thresholds">
+        <h2 id="form-thresholds" class="ss-panel-title mb-4">{{ __('domains.form.thresholds_title') }}</h2>
+        <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+                <label class="ss-label" for="failure_threshold">{{ __('domains.form.failure_threshold') }}</label>
+                <input id="failure_threshold" class="ss-input mt-1.5" name="failure_threshold" type="number" min="1" max="10" required value="{{ old('failure_threshold', $domain->failure_threshold ?? 3) }}" {{ $field('failure_threshold') }}>
+                <p class="ss-help">{{ __('domains.form.failure_threshold_help') }}</p>
+                @error('failure_threshold')<p id="failure_threshold-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('ssl_warning_days') || $errors->has('ssl_warning_days.*')])>
-        <label for="ssl_warning_days">Certificaatwaarschuwingen (dagen)</label>
-        <input id="ssl_warning_days" name="ssl_warning_days" type="text" value="{{ $oldDays('ssl_warning_days') }}">
-        @error('ssl_warning_days')<span class="form-error">{{ $message }}</span>@enderror
-        @error('ssl_warning_days.*')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+            <div>
+                <label class="ss-label" for="recovery_threshold">{{ __('domains.form.recovery_threshold') }}</label>
+                <input id="recovery_threshold" class="ss-input mt-1.5" name="recovery_threshold" type="number" min="1" max="10" required value="{{ old('recovery_threshold', $domain->recovery_threshold ?? 2) }}" {{ $field('recovery_threshold') }}>
+                <p class="ss-help">{{ __('domains.form.recovery_threshold_help') }}</p>
+                @error('recovery_threshold')<p id="recovery_threshold-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('expiry_warning_days') || $errors->has('expiry_warning_days.*')])>
-        <label for="expiry_warning_days">Vervalwaarschuwingen registratie (dagen)</label>
-        <input id="expiry_warning_days" name="expiry_warning_days" type="text" value="{{ $oldDays('expiry_warning_days') }}">
-        @error('expiry_warning_days')<span class="form-error">{{ $message }}</span>@enderror
-        @error('expiry_warning_days.*')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+            <div>
+                <label class="ss-label" for="ssl_warning_days">{{ __('domains.form.ssl_warning_days') }}</label>
+                <input id="ssl_warning_days" class="ss-input mt-1.5" name="ssl_warning_days" type="text" value="{{ $oldDays('ssl_warning_days') }}" {{ $field('ssl_warning_days', 'ssl_warning_days.*') }}>
+                @if ($errors->has('ssl_warning_days') || $errors->has('ssl_warning_days.*'))
+                    <div id="ssl_warning_days-error">
+                        @error('ssl_warning_days')<p class="ss-error">{{ $message }}</p>@enderror
+                        @error('ssl_warning_days.*')<p class="ss-error">{{ $message }}</p>@enderror
+                    </div>
+                @endif
+            </div>
 
-    <div @class(['form-field full', 'has-error' => $errors->has('notes')])>
-        <label for="notes">Notities</label>
-        <textarea id="notes" name="notes" maxlength="2000">{{ old('notes', $domain->notes) }}</textarea>
-    </div>
+            <div>
+                <label class="ss-label" for="expiry_warning_days">{{ __('domains.form.expiry_warning_days') }}</label>
+                <input id="expiry_warning_days" class="ss-input mt-1.5" name="expiry_warning_days" type="text" value="{{ $oldDays('expiry_warning_days') }}" {{ $field('expiry_warning_days', 'expiry_warning_days.*') }}>
+                @if ($errors->has('expiry_warning_days') || $errors->has('expiry_warning_days.*'))
+                    <div id="expiry_warning_days-error">
+                        @error('expiry_warning_days')<p class="ss-error">{{ $message }}</p>@enderror
+                        @error('expiry_warning_days.*')<p class="ss-error">{{ $message }}</p>@enderror
+                    </div>
+                @endif
+            </div>
+        </div>
+    </section>
 
-    <div class="form-section">
-        <h3>Meldingen en beschikbaarheidsdoel</h3>
-        <p>Incidenten worden altijd vastgelegd; met meldingen uit worden er geen e-mails, in-app- of chatmeldingen voor dit domein verstuurd.</p>
-    </div>
+    <section class="ss-panel" aria-labelledby="form-notifications">
+        <h2 id="form-notifications" class="ss-panel-title">{{ __('domains.form.notifications_title') }}</h2>
+        <p class="ss-panel-sub mb-4">{{ __('domains.form.notifications_text') }}</p>
+        <div class="grid gap-5 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+                <label class="ss-check">
+                    <input type="hidden" name="notifications_enabled" value="0">
+                    <input type="checkbox" name="notifications_enabled" value="1" @checked(old('notifications_enabled', $domain->notifications_enabled ?? true))>
+                    {{ __('domains.form.notifications') }}
+                </label>
+            </div>
 
-    <div class="form-field">
-        <label class="check">
-            <input type="hidden" name="notifications_enabled" value="0">
-            <input type="checkbox" name="notifications_enabled" value="1" @checked(old('notifications_enabled', $domain->notifications_enabled ?? true))>
-            Meldingen versturen voor dit domein
-        </label>
-    </div>
+            <div>
+                <label class="ss-label" for="sla_target">{{ __('domains.form.sla') }}</label>
+                <input id="sla_target" class="ss-input mt-1.5" name="sla_target" type="text" inputmode="decimal" value="{{ old('sla_target', $domain->sla_target) }}" placeholder="{{ __('domains.form.sla_placeholder', ['value' => config('serverscope.reports.default_target')]) }}" {{ $field('sla_target') }}>
+                <p class="ss-help">{{ __('domains.form.sla_help') }}</p>
+                @error('sla_target')<p id="sla_target-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
+        </div>
+    </section>
 
-    <div @class(['form-field', 'has-error' => $errors->has('sla_target')])>
-        <label for="sla_target">Beschikbaarheidsdoel (%)</label>
-        <input id="sla_target" name="sla_target" type="text" inputmode="decimal" value="{{ old('sla_target', $domain->sla_target) }}" placeholder="{{ config('serverscope.reports.default_target') }} (standaard)">
-        <span class="form-help">Gebruikt in rapporten; leeg = standaarddoel.</span>
-        @error('sla_target')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
+    <section class="ss-panel" aria-labelledby="form-maintenance">
+        <h2 id="form-maintenance" class="ss-panel-title">{{ __('domains.form.maintenance_title') }}</h2>
+        <p class="ss-panel-sub mb-4">{{ __('domains.form.maintenance_text', ['zone' => Time::zone()]) }}</p>
+        <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+                <label class="ss-label" for="maintenance_starts_at">{{ __('domains.form.start') }}</label>
+                <input id="maintenance_starts_at" class="ss-input mt-1.5" name="maintenance_starts_at" type="datetime-local" value="{{ old('maintenance_starts_at', Time::input($domain->maintenance_starts_at)) }}" {{ $field('maintenance_starts_at') }}>
+                @error('maintenance_starts_at')<p id="maintenance_starts_at-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div class="form-section">
-        <h3>Onderhoudsvenster</h3>
-        <p>Tijdens onderhoud lopen de controles door, maar worden er geen incidenten aangemaakt. Tijden in {{ Time::zone() }}.</p>
-    </div>
+            <div>
+                <label class="ss-label" for="maintenance_ends_at">{{ __('domains.form.end') }}</label>
+                <input id="maintenance_ends_at" class="ss-input mt-1.5" name="maintenance_ends_at" type="datetime-local" value="{{ old('maintenance_ends_at', Time::input($domain->maintenance_ends_at)) }}" {{ $field('maintenance_ends_at') }}>
+                @error('maintenance_ends_at')<p id="maintenance_ends_at-error" class="ss-error">{{ $message }}</p>@enderror
+            </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('maintenance_starts_at')])>
-        <label for="maintenance_starts_at">Start</label>
-        <input id="maintenance_starts_at" name="maintenance_starts_at" type="datetime-local" value="{{ old('maintenance_starts_at', Time::input($domain->maintenance_starts_at)) }}">
-        @error('maintenance_starts_at')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
-
-    <div @class(['form-field', 'has-error' => $errors->has('maintenance_ends_at')])>
-        <label for="maintenance_ends_at">Einde</label>
-        <input id="maintenance_ends_at" name="maintenance_ends_at" type="datetime-local" value="{{ old('maintenance_ends_at', Time::input($domain->maintenance_ends_at)) }}">
-        @error('maintenance_ends_at')<span class="form-error">{{ $message }}</span>@enderror
-    </div>
-
-    <div class="form-field full">
-        <label for="maintenance_reason">Reden</label>
-        <input id="maintenance_reason" name="maintenance_reason" type="text" maxlength="255" value="{{ old('maintenance_reason', $domain->maintenance_reason) }}">
-    </div>
+            <div class="sm:col-span-2">
+                <label class="ss-label" for="maintenance_reason">{{ __('domains.form.reason') }}</label>
+                <input id="maintenance_reason" class="ss-input mt-1.5" name="maintenance_reason" type="text" maxlength="255" value="{{ old('maintenance_reason', $domain->maintenance_reason) }}">
+            </div>
+        </div>
+    </section>
 </div>

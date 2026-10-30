@@ -1,36 +1,30 @@
-<x-layouts.app :title="'Bewerken: '.$domain->displayName()">
+<x-layouts.app :title="__('domains.edit.title', ['name' => $domain->displayName()])">
     <x-slot:breadcrumb>
-        <span>›</span> <a href="{{ route('domains.index') }}">Domeinen</a>
-        <span>›</span> <a href="{{ route('domains.show', $domain) }}">{{ $domain->displayName() }}</a> <span>›</span> Bewerken
+        <span>›</span> <a href="{{ route('domains.index') }}">{{ __('domains.title') }}</a>
+        <span>›</span> <a href="{{ route('domains.show', $domain) }}">{{ $domain->displayName() }}</a> <span>›</span> {{ __('domains.edit_button') }}
     </x-slot:breadcrumb>
-    <x-slot:pageTitle>Domein bewerken</x-slot:pageTitle>
+    <x-slot:pageTitle>{{ __('domains.edit.page_title') }}</x-slot:pageTitle>
     <x-slot:subtitle>{{ $domain->url() }}</x-slot:subtitle>
-    <x-slot:actions><a href="{{ route('domains.show', $domain) }}" class="button"><svg class="ico"><use href="#i-arrow-left"/></svg> Terug naar domein</a></x-slot:actions>
+    <x-slot:actions><a href="{{ route('domains.show', $domain) }}" class="ss-btn ss-btn-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('domains.edit.back_to_domain') }}</a></x-slot:actions>
 
-    <div class="stack">
-        <section class="panel">
-            <form method="POST" action="{{ route('domains.update', $domain) }}">
-                @csrf
-                @method('PUT')
-                @include('domains._form')
-                <div class="form-footer">
-                    <button type="submit" class="button button-primary">Wijzigingen opslaan</button>
-                    <a href="{{ route('domains.show', $domain) }}" class="button">Annuleren</a>
-                </div>
-            </form>
-        </section>
-
-        <section class="panel">
-            <div class="section-heading">
-                <div>
-                    <h2>Domein verwijderen</h2>
-                    <p>Monitoring stopt. Controlegeschiedenis, DNS-historie en incidenten blijven bewaard; het domein kan worden hersteld.</p>
-                </div>
+    <div class="grid max-w-4xl gap-4">
+        <form method="POST" action="{{ route('domains.update', $domain) }}" class="grid gap-4">
+            @csrf
+            @method('PUT')
+            @include('domains._form')
+            <div class="flex flex-wrap gap-2">
+                <button type="submit" class="ss-btn ss-btn-primary">{{ __('domains.edit.submit') }}</button>
+                <a href="{{ route('domains.show', $domain) }}" class="ss-btn ss-btn-ghost">{{ __('domains.cancel') }}</a>
             </div>
-            <form method="POST" action="{{ route('domains.destroy', $domain) }}" data-confirm="Domein {{ $domain->displayName() }} verwijderen?">
+        </form>
+
+        <section class="ss-panel ss-panel-danger mt-4" aria-labelledby="delete-title">
+            <h2 id="delete-title" class="ss-panel-title">{{ __('domains.edit.delete_title') }}</h2>
+            <p class="ss-panel-sub mb-4">{{ __('domains.edit.delete_text') }}</p>
+            <form method="POST" action="{{ route('domains.destroy', $domain) }}" data-confirm="{{ __('domains.edit.delete_confirm', ['name' => $domain->displayName()]) }}">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="button button-danger"><svg class="ico"><use href="#i-trash"/></svg> Domein verwijderen</button>
+                <button type="submit" class="ss-btn ss-btn-danger"><svg class="ico"><use href="#i-trash"/></svg> {{ __('domains.edit.delete') }}</button>
             </form>
         </section>
     </div>
