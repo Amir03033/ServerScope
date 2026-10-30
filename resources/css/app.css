@@ -1,14 +1,11 @@
 /*
  * ServerScope app. Same design tokens and components as the info site
  * (ServerScope-Info/resources/css/app.css), plus the application shell.
- *
- * Tailwind's preflight is left out until every screen is rebuilt (the
- * older screens still rely on browser defaults; public/css/serverscope.css
- * maps their classes onto these tokens). It comes back when that file is
- * removed.
+ * Every screen is built on these components; Tailwind's preflight is on.
  */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @source "../views/**/*.blade.php";
@@ -150,7 +147,7 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Base (a small subset of preflight; see the note at the top)         */
+/* Base (on top of Tailwind's preflight)                               */
 /* ------------------------------------------------------------------ */
 
 @layer base {
@@ -216,6 +213,24 @@
     }
 
     [hidden] { display: none !important; }
+
+    /* Links inside running text stay recognisable without colour alone. */
+    a:not([class]), a.text-accent { text-decoration: underline; text-decoration-thickness: from-font; text-underline-offset: 2px; }
+    a.text-accent:hover { text-decoration-thickness: 2px; }
+
+    /* Inline code and lists inside messages (preflight resets both). */
+    :not(pre) > code {
+        padding: .0625rem .3125rem;
+        border: 1px solid var(--ss-line);
+        border-radius: 5px;
+        background: var(--ss-code-bg);
+        color: var(--ss-code-text);
+        font-size: .875em;
+        overflow-wrap: anywhere;
+    }
+    .ss-chip > code, code.ss-chip { padding: 0; border: 0; background: none; color: inherit; }
+    .ss-alert ul { margin: .25rem 0 0; padding-left: 1.125rem; list-style: disc; }
+    details > summary { cursor: pointer; }
 }
 
 /* ------------------------------------------------------------------ */
@@ -1304,6 +1319,50 @@
         font-size: .75rem;
     }
     .ss-public-locale button[aria-pressed="true"] { border-color: var(--sp-brand, var(--ss-accent)); background: var(--sp-brand, var(--ss-accent)); color: var(--sp-on-brand, var(--ss-on-accent)); }
+
+    /* Page header actions and empty-state actions. */
+    .actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: .5rem; }
+    @media (min-width: 640px) { .actions { justify-content: flex-end; } }
+    .actions form { margin: 0; }
+
+    /* Search results (the class names are part of SearchJsonTest). */
+    .ov-row {
+        display: flex;
+        align-items: center;
+        gap: .625rem;
+        min-width: 0;
+        padding: .5625rem .5rem;
+        margin: 0 -.5rem;
+        border-radius: 8px;
+        color: inherit;
+        font-size: .875rem;
+        text-decoration: none;
+        transition: background-color .15s ease;
+    }
+    .ov-row + .ov-row { border-top: 1px solid var(--ss-line); }
+    .ov-row:hover { background: var(--ss-surface-2); }
+    .ov-main { display: grid; flex: 1; min-width: 0; }
+    .ov-main strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ov-sub { color: var(--ss-muted); font-size: .75rem; overflow-wrap: anywhere; }
+    .ss-mark { padding: 0 .0625rem; border-radius: 3px; background: var(--ss-accent-soft); color: inherit; }
+
+    /* Pagination (x-pagination). */
+    .pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-top: 1.125rem; color: var(--ss-muted); font-size: .8125rem; }
+    .pagination-links { display: flex; gap: .5rem; }
+    .pagination-links a, .pagination-links span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.25rem;
+        padding: 0 .75rem;
+        border: 1px solid var(--ss-line-strong);
+        border-radius: 8px;
+        background: var(--ss-surface);
+        text-decoration: none;
+        transition: border-color .2s ease, color .2s ease;
+    }
+    .pagination-links a:hover { border-color: var(--ss-subtle); color: var(--ss-text); }
+    .pagination-links span { color: var(--ss-subtle); cursor: not-allowed; }
 
     /* Pausable automatic refresh (x-auto-refresh). */
     .ss-auto-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; color: var(--ss-muted); font-size: .75rem; }

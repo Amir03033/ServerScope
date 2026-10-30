@@ -68,12 +68,7 @@
     {{-- Applies the saved theme before the first paint (no flash). --}}
     <script src="{{ asset('js/theme-init.js') }}?v={{ @filemtime(public_path('js/theme-init.js')) }}"></script>
     @include('partials.vite-assets')
-    {{-- Older screens: their classes mapped onto the design tokens. Removed once every screen is rebuilt. --}}
-    <link rel="stylesheet" href="{{ asset('css/serverscope.css') }}?v={{ @filemtime(public_path('css/serverscope.css')) }}">
     {{ $head ?? '' }}
-    @isset($styles)
-        <style>{{ $styles }}</style>
-    @endisset
 </head>
 <body>
 @include('partials.icons')
@@ -277,6 +272,5 @@
 @include('partials.search-dialog')
 @include('partials.confirm-dialog')
 @include('partials.i18n')
-{{ $scripts ?? '' }}
 </body>
 </html>

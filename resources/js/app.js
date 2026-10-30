@@ -449,6 +449,36 @@ document.querySelectorAll('select[data-custom-toggle]').forEach((select) => {
 /* Print button (reports.print). */
 document.querySelectorAll('[data-print]').forEach((button) => button.addEventListener('click', () => window.print()));
 
+/* Search results (/search): mark the search term in names and subtitles. */
+document.querySelectorAll('[data-highlight]').forEach((root) => {
+    const needle = root.dataset.highlight.trim().toLocaleLowerCase();
+    if (needle.length < 2) return;
+
+    root.querySelectorAll('.ov-main strong, .ov-main .ov-sub').forEach((el) => {
+        [...el.childNodes].forEach((node) => {
+            if (node.nodeType !== Node.TEXT_NODE) return;
+            const text = node.textContent;
+            const lower = text.toLocaleLowerCase();
+            let index = lower.indexOf(needle);
+            if (index === -1) return;
+
+            const fragment = document.createDocumentFragment();
+            let start = 0;
+            while (index !== -1) {
+                fragment.append(text.slice(start, index));
+                const mark = document.createElement('mark');
+                mark.className = 'ss-mark';
+                mark.textContent = text.slice(index, index + needle.length);
+                fragment.append(mark);
+                start = index + needle.length;
+                index = lower.indexOf(needle, start);
+            }
+            fragment.append(text.slice(start));
+            node.replaceWith(fragment);
+        });
+    });
+});
+
 /* ------------------------------------------------------------------ */
 /* Secrets: show/hide and copy (x-secret-token).                        */
 /* ------------------------------------------------------------------ */
