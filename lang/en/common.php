@@ -27,4 +27,12 @@ return [
         'load_5' => '5 minutes',
         'load_15' => '15 minutes',
     ],
+    'auto_refresh' => [
+        'active' => 'Refreshes automatically every :seconds s',
+        'paused' => 'Automatic refresh paused',
+        'reduced' => 'Automatic refresh is off (reduced motion)',
+        'pause' => 'Pause',
+        'resume' => 'Resume',
+        'refresh' => 'Refresh now',
+    ],
 ];

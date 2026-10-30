@@ -189,7 +189,8 @@ function askConfirmation(form, submitter) {
 
     const button = confirmDialog.querySelector('[data-confirm-button]');
     const label = (submitter?.textContent || '').trim();
-    const destructive = (form.querySelector('input[name="_method"]')?.value || '').toUpperCase() === 'DELETE';
+    const destructive = (form.querySelector('input[name="_method"]')?.value || '').toUpperCase() === 'DELETE'
+        || form.dataset.confirmDanger === 'yes';
 
     button.dataset.defaultLabel ??= button.textContent;
     confirmDialog.querySelector('[data-confirm-text]').textContent = form.dataset.confirm;
@@ -251,6 +252,99 @@ window.addEventListener('pageshow', (event) => {
         button.disabled = false;
         button.classList.remove('is-loading');
     });
+});
+
+/* ------------------------------------------------------------------ */
+/* Bulk selection (websites.pages): select all, a live count, a sticky  */
+/* bar while rows are selected, and a confirmation before deleting.     */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('form[data-bulk-form]').forEach((form) => {
+    const all = form.querySelector('[data-select-all]');
+    const rows = () => [...form.querySelectorAll('[data-row-select]')];
+    const counter = form.querySelector('[data-selected-count]');
+    const bar = form.querySelector('[data-bulk-bar]');
+    const action = form.querySelector('select[name="action"]');
+
+    const update = () => {
+        const selected = rows().filter((row) => row.checked).length;
+        if (counter) counter.textContent = (form.dataset.selectedText || ':count').replace(':count', String(selected));
+        bar?.classList.toggle('is-active', selected > 0);
+        if (all) {
+            all.checked = selected > 0 && selected === rows().length;
+            all.indeterminate = selected > 0 && selected < rows().length;
+        }
+    };
+
+    const syncConfirm = () => {
+        if (action?.value === 'delete') {
+            form.dataset.confirm = form.dataset.deleteConfirm || '';
+            form.dataset.confirmDanger = 'yes';
+        } else {
+            delete form.dataset.confirm;
+            delete form.dataset.confirmDanger;
+        }
+    };
+
+    all?.addEventListener('change', () => {
+        rows().forEach((row) => { row.checked = all.checked; });
+        update();
+    });
+    form.addEventListener('change', update);
+    action?.addEventListener('change', syncConfirm);
+    syncConfirm();
+    update();
+});
+
+/* ------------------------------------------------------------------ */
+/* Automatic refresh (x-auto-refresh): pausable, and off by default     */
+/* with prefers-reduced-motion. The choice is kept for this tab.        */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-auto-refresh]').forEach((box) => {
+    const seconds = Math.max(5, Number(box.dataset.autoRefresh) || 30);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const key = `ss-auto-refresh:${window.location.pathname}`;
+    const text = box.querySelector('[data-auto-refresh-text]');
+    const toggle = box.querySelector('[data-auto-refresh-toggle]');
+    let timer = null;
+    let stored = null;
+
+    try { stored = window.sessionStorage.getItem(key); } catch { /* storage unavailable */ }
+
+    let paused = stored === null ? reduced : stored === 'paused';
+
+    const render = () => {
+        box.classList.toggle('is-paused', paused);
+        text.textContent = paused ? (reduced && stored === null ? box.dataset.textReduced : box.dataset.textPaused) : box.dataset.textActive;
+        toggle.textContent = paused ? box.dataset.labelResume : box.dataset.labelPause;
+        toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
+    };
+
+    const schedule = () => {
+        window.clearTimeout(timer);
+        if (paused) return;
+        timer = window.setTimeout(() => {
+            // A hidden tab waits until it is visible again.
+            if (document.hidden) {
+                document.addEventListener('visibilitychange', () => window.location.reload(), { once: true });
+            } else {
+                window.location.reload();
+            }
+        }, seconds * 1000);
+    };
+
+    toggle.addEventListener('click', () => {
+        paused = !paused;
+        stored = paused ? 'paused' : 'running';
+        try { window.sessionStorage.setItem(key, stored); } catch { /* storage unavailable */ }
+        render();
+        schedule();
+    });
+
+    box.hidden = false;
+    render();
+    schedule();
 });
 
 /* ------------------------------------------------------------------ */

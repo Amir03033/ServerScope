@@ -67,7 +67,7 @@ class WebsiteDiscoveryController extends Controller
 
         foreach ($validated['sitemap_urls'] as $url) {
             if (UrlNormalizer::normalize($url, keepQuery: true) === null) {
-                throw ValidationException::withMessages(['sitemap_urls' => "Ongeldige sitemap-URL: {$url}"]);
+                throw ValidationException::withMessages(['sitemap_urls' => __('websites.validation.invalid_sitemap', ['url' => $url])]);
             }
         }
 
@@ -76,7 +76,7 @@ class WebsiteDiscoveryController extends Controller
             || $validated['max_depth'] > 2 || $validated['include_subdomains'] || $validated['auto_monitor'];
 
         if ($broad && ! $validated['broad_confirmed']) {
-            throw ValidationException::withMessages(['broad_confirmed' => 'Bevestig dat je een bredere ontdekking wilt (meer pagina\'s, grotere diepte, subdomeinen of automatisch monitoren).']);
+            throw ValidationException::withMessages(['broad_confirmed' => __('websites.validation.broad_confirm')]);
         }
 
         unset($validated['broad_confirmed']);
@@ -84,7 +84,7 @@ class WebsiteDiscoveryController extends Controller
         $domain->forceFill(['discovery_settings' => $validated])->save();
         Audit::log('website.discovery_settings', "Ontdekkingsinstellingen van {$domain->name} bijgewerkt", $domain, ['old' => $old, 'new' => $validated]);
 
-        return back()->with('success', 'Ontdekkingsinstellingen opgeslagen.');
+        return back()->with('success', __('websites.flash.discovery_saved'));
     }
 
     public function run(Request $request, Domain $domain, DiscoveryLauncher $launcher): RedirectResponse
@@ -97,6 +97,6 @@ class WebsiteDiscoveryController extends Controller
             return back()->with('error', $result['error']);
         }
 
-        return redirect()->route('websites.discovery', $domain)->with('success', 'Ontdekking gestart. Gevonden pagina\'s verschijnen onder "Wacht op goedkeuring".');
+        return redirect()->route('websites.discovery', $domain)->with('success', __('websites.flash.discovery_started'));
     }
 }

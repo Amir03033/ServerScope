@@ -103,12 +103,12 @@ class WebsitePageController extends Controller
         if ($result['limit_reached']) {
             $limit = (int) config('serverscope.websites.max_pages_per_website', 1000);
 
-            return redirect()->route('websites.pages', $domain)->with('error', "Maximaal {$limit} pagina's per website; {$added} toegevoegd.");
+            return redirect()->route('websites.pages', $domain)->with('error', __('websites.flash.limit', ['limit' => $limit, 'added' => $added]));
         }
 
-        $message = $added === 1 ? 'Pagina toegevoegd. De eerste controle is ingepland.' : "{$added} pagina's toegevoegd. De eerste controles zijn ingepland.";
+        $message = $added === 1 ? __('websites.flash.added_one') : __('websites.flash.added_many', ['count' => $added]);
 
-        return redirect()->route('websites.pages', $domain)->with('success', $message.($result['duplicates'] ? " {$result['duplicates']} URL('s) werden al gemonitord." : ''));
+        return redirect()->route('websites.pages', $domain)->with('success', $message.($result['duplicates'] ? __('websites.flash.duplicates', ['count' => $result['duplicates']]) : ''));
     }
 
     public function show(Request $request, MonitoredPage $page, WebsiteOverview $overview): View
@@ -164,7 +164,7 @@ class WebsitePageController extends Controller
             Audit::log('website.page_updated', "Pagina {$page->url} bijgewerkt", $page, ['changes' => $changes]);
         }
 
-        return redirect()->route('pages.show', $page)->with('success', 'Pagina-instellingen opgeslagen.');
+        return redirect()->route('pages.show', $page)->with('success', __('websites.flash.saved'));
     }
 
     public function destroy(MonitoredPage $page): RedirectResponse
@@ -175,7 +175,7 @@ class WebsitePageController extends Controller
         $this->deletePage($page);
         Audit::log('website.page_deleted', "Pagina {$page->url} verwijderd inclusief controlegeschiedenis", $domain);
 
-        return redirect()->route('websites.pages', $domain)->with('success', 'Pagina en controlegeschiedenis verwijderd. Pauzeer een pagina als je de geschiedenis wilt bewaren.');
+        return redirect()->route('websites.pages', $domain)->with('success', __('websites.flash.deleted'));
     }
 
     public function pause(MonitoredPage $page): RedirectResponse
@@ -185,7 +185,7 @@ class WebsitePageController extends Controller
         $page->forceFill(['is_active' => false, 'paused_at' => now()])->save();
         Audit::log('website.page_paused', "Monitoring gepauzeerd voor {$page->url}", $page);
 
-        return back()->with('success', 'Monitoring van deze pagina is gepauzeerd. De geschiedenis blijft bewaard.');
+        return back()->with('success', __('websites.flash.paused'));
     }
 
     public function resume(MonitoredPage $page): RedirectResponse
@@ -196,7 +196,7 @@ class WebsitePageController extends Controller
         $this->queueCheck($page);
         Audit::log('website.page_resumed', "Monitoring hervat voor {$page->url}", $page);
 
-        return back()->with('success', 'Monitoring hervat.');
+        return back()->with('success', __('websites.flash.resumed'));
     }
 
     public function check(MonitoredPage $page): RedirectResponse
@@ -204,19 +204,19 @@ class WebsitePageController extends Controller
         Gate::authorize('admin');
 
         if (! $page->isMonitored()) {
-            return back()->with('error', 'Alleen actieve, goedgekeurde pagina\'s kunnen worden gecontroleerd.');
+            return back()->with('error', __('websites.flash.not_checkable'));
         }
 
         $key = 'page-check-now:'.$page->id;
 
         if (RateLimiter::tooManyAttempts($key, 1)) {
-            return back()->with('error', 'Wacht '.RateLimiter::availableIn($key).' seconden voordat je opnieuw controleert.');
+            return back()->with('error', __('websites.flash.wait', ['seconds' => RateLimiter::availableIn($key)]));
         }
 
         RateLimiter::hit($key, 60);
         $this->queueCheck($page);
 
-        return back()->with('success', 'Controle ingepland. Ververs de pagina over enkele seconden.');
+        return back()->with('success', __('websites.flash.check_queued'));
     }
 
     public function bulk(Request $request, Domain $domain, TargetGuard $guard): RedirectResponse
@@ -228,7 +228,7 @@ class WebsitePageController extends Controller
             'ids' => ['required', 'array', 'min:1', 'max:500'],
             'ids.*' => ['integer'],
             'interval' => ['required_if:action,interval', 'nullable', 'integer', 'between:'.(int) config('serverscope.monitoring.min_interval_minutes', 1).',1440'],
-        ], ['ids.required' => 'Selecteer eerst een of meer pagina\'s.']);
+        ], ['ids.required' => __('websites.validation.select_first')]);
 
         // Only pages of this website, whatever ids were posted.
         $pages = MonitoredPage::query()->where('domain_id', $domain->id)->whereIn('id', $validated['ids'])->get();
@@ -239,7 +239,7 @@ class WebsitePageController extends Controller
             $key = 'website-bulk-check:'.$domain->id;
 
             if (RateLimiter::tooManyAttempts($key, 1)) {
-                return back()->with('error', 'Wacht '.RateLimiter::availableIn($key).' seconden voordat je opnieuw controleert.');
+                return back()->with('error', __('websites.flash.wait', ['seconds' => RateLimiter::availableIn($key)]));
             }
 
             RateLimiter::hit($key, 60);
@@ -257,7 +257,7 @@ class WebsitePageController extends Controller
                     // Discovered URLs are validated again before monitoring starts.
                     try {
                         if (! $scope->hostAllowed($page->host())) {
-                            throw new BlockedTargetException('Buiten het domein.', 'scope');
+                            throw new BlockedTargetException(__('websites.validation.outside_domain'), 'scope');
                         }
 
                         $guard->resolve($page->url);
@@ -308,10 +308,9 @@ class WebsitePageController extends Controller
 
         Audit::log('website.bulk_'.$validated['action'], "Bulkactie {$validated['action']} op {$done} pagina('s) van {$domain->name}", $domain, ['ids' => $pages->pluck('id')->all()]);
 
-        $labels = ['approve' => 'goedgekeurd', 'reject' => 'afgewezen', 'pause' => 'gepauzeerd', 'resume' => 'hervat', 'check' => 'ingepland voor controle', 'delete' => 'verwijderd', 'interval' => 'bijgewerkt'];
-        $response = back()->with('success', "{$done} pagina('s) {$labels[$validated['action']]}.");
+        $response = back()->with('success', __('websites.flash.bulk_done', ['count' => $done, 'action' => __('websites.flash.bulk_actions.'.$validated['action'])]));
 
-        return $skipped !== [] ? $response->with('error', 'Niet goedgekeurd: '.implode('; ', array_slice($skipped, 0, 5))) : $response;
+        return $skipped !== [] ? $response->with('error', __('websites.flash.not_approved', ['list' => implode('; ', array_slice($skipped, 0, 5))])) : $response;
     }
 
     public function acknowledgeChange(Request $request, PageChange $change): RedirectResponse
@@ -323,7 +322,7 @@ class WebsitePageController extends Controller
             Audit::log('website.change_acknowledged', "Wijziging van {$change->page?->url} bevestigd als verwacht", $change->page);
         }
 
-        return back()->with('success', 'Wijziging bevestigd als verwacht.');
+        return back()->with('success', __('websites.flash.acknowledged'));
     }
 
     private function queueCheck(MonitoredPage $page): void

@@ -1179,6 +1179,66 @@
     .ss-details > summary::-webkit-details-marker { display: none; }
     .ss-details > summary .ss-chevron { transition: transform .2s ease; color: var(--ss-muted); }
     .ss-details[open] > summary .ss-chevron { transform: rotate(180deg); }
+
+    /* Vertical timeline; the dot carries the colour only for a status. */
+    .ss-timeline { margin: 0; padding: 0 0 0 1.125rem; list-style: none; border-left: 2px solid var(--ss-line); }
+    .ss-timeline > li { --c: var(--ss-line-strong); position: relative; padding: 0 0 1.125rem .75rem; min-width: 0; }
+    .ss-timeline > li:last-child { padding-bottom: 0; }
+    .ss-timeline > li::before {
+        content: "";
+        position: absolute;
+        left: -1.5rem;
+        top: .3125rem;
+        width: .625rem;
+        height: .625rem;
+        border-radius: 999px;
+        background: var(--c);
+        box-shadow: 0 0 0 3px var(--ss-surface);
+    }
+    .ss-timeline > li.is-ok { --c: var(--ss-ok); }
+    .ss-timeline > li.is-warn { --c: var(--ss-warn); }
+    .ss-timeline > li.is-bad { --c: var(--ss-bad); }
+    .ss-timeline > li.is-info { --c: var(--ss-accent); }
+    .ss-timeline-when { color: var(--ss-muted); font-size: .75rem; }
+    .ss-timeline-what { margin-top: .125rem; font-size: .875rem; overflow-wrap: anywhere; }
+    .ss-timeline-body { margin-top: .375rem; color: var(--ss-muted); font-size: .8125rem; overflow-wrap: anywhere; }
+
+    /* Added and removed lines (DNS, page content). */
+    .ss-diff { display: grid; gap: .125rem; margin-top: .375rem; padding: .5rem .625rem; border: 1px solid var(--ss-line); border-radius: 8px; background: var(--ss-surface-2); font-family: var(--font-mono); font-size: .75rem; overflow-wrap: anywhere; }
+    .ss-diff-add { color: var(--ss-ok); }
+    .ss-diff-del { color: var(--ss-bad); }
+
+    /* Compact list in a side panel. */
+    .ss-list { margin: 0; padding: 0; list-style: none; font-size: .8125rem; }
+    .ss-list > li { display: flex; align-items: flex-start; gap: .5rem; min-width: 0; padding: .625rem 0; border-bottom: 1px solid var(--ss-line); }
+    .ss-list > li:last-child { border-bottom: 0; }
+    .ss-list-sub { color: var(--ss-muted); font-size: .75rem; }
+
+    /* SVG line chart (x-line-chart). */
+    .ss-linechart { display: block; width: 100%; height: auto; }
+
+    /* Sortable column heading. */
+    .ss-sort { color: inherit; text-decoration: none; }
+    .ss-sort:hover { color: var(--ss-text); }
+    .ss-sort[aria-sort] { color: var(--ss-text); }
+
+    /* Pausable automatic refresh (x-auto-refresh). */
+    .ss-auto-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; color: var(--ss-muted); font-size: .75rem; }
+    .ss-auto-refresh.is-paused [data-auto-refresh-dot] { background: var(--ss-line-strong); }
+
+    /* Bulk action bar: sticks to the top while rows are selected. */
+    .ss-bulkbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: .75rem;
+        margin-bottom: 1rem;
+        padding: .75rem;
+        border: 1px solid var(--ss-line);
+        border-radius: 10px;
+        background: var(--ss-surface-2);
+    }
+    .ss-bulkbar.is-active { position: sticky; top: 4.25rem; z-index: 5; border-color: color-mix(in srgb, var(--ss-accent) 40%, var(--ss-line)); box-shadow: var(--ss-shadow-lift); }
 }
 
 /* ------------------------------------------------------------------ */

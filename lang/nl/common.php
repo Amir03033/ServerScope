@@ -27,4 +27,12 @@ return [
         'load_5' => '5 minuten',
         'load_15' => '15 minuten',
     ],
+    'auto_refresh' => [
+        'active' => 'Ververst automatisch elke :seconds s',
+        'paused' => 'Automatisch verversen gepauzeerd',
+        'reduced' => 'Automatisch verversen staat uit (minder beweging)',
+        'pause' => 'Pauzeren',
+        'resume' => 'Hervatten',
+        'refresh' => 'Nu verversen',
+    ],
 ];
