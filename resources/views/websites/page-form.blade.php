@@ -34,7 +34,7 @@
                 @else
                     <div class="sm:col-span-2">
                         <label class="ss-label" for="urls">{{ __('websites.form.urls') }}</label>
-                        <textarea id="urls" class="ss-input mt-1.5 font-mono text-[13px]" name="urls" required rows="6" placeholder="{{ $domain->scheme }}://{{ $domain->name }}/&#10;/prijzen&#10;/docs&#10;/api/health" {{ $field('urls') }}>{{ old('urls') }}</textarea>
+                        <textarea id="urls" class="ss-input mt-1.5 font-mono text-[13px]" name="urls" required rows="6" placeholder="{{ $domain->scheme }}://{{ $domain->name }}/&#10;{{ __('websites.form.urls_example_path') }}&#10;/docs&#10;/api/health" {{ $field('urls') }}>{{ old('urls') }}</textarea>
                         <p class="ss-help">{{ __('websites.form.urls_help', ['domain' => $domain->name, 'max' => PageRequest::MAX_URLS_PER_REQUEST]) }}</p>
                         @error('urls')<p id="urls-error" class="ss-error">{{ $message }}</p>@enderror
                     </div>
@@ -129,7 +129,7 @@
 
                 <div>
                     <label class="ss-label" for="content_exclusions">{{ __('websites.form.content_exclusions') }}</label>
-                    <textarea id="content_exclusions" class="ss-input mt-1.5 font-mono text-[13px]" name="content_exclusions" rows="3" placeholder=".advertentie&#10;#laatste-nieuws">{{ $exclusions }}</textarea>
+                    <textarea id="content_exclusions" class="ss-input mt-1.5 font-mono text-[13px]" name="content_exclusions" rows="3" placeholder="{{ __('websites.form.exclusions_example_1') }}&#10;{{ __('websites.form.exclusions_example_2') }}">{{ $exclusions }}</textarea>
                 </div>
             </div>
         </section>

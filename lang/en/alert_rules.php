@@ -3,6 +3,7 @@
 // Alert rules: list, create and edit.
 return [
     'title' => 'Alert rules',
+    'forbidden' => 'You are not allowed to manage alert rules.',
     'subtitle' => 'Configure the thresholds ServerScope uses to detect incidents.',
     'dashboard' => 'Dashboard',
     'new' => 'New rule',

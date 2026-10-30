@@ -60,6 +60,6 @@ class ResolveTenant
 
         return $request->expectsJson()
             ? response()->json(['message' => $message], 403)
-            : redirect()->route('login')->with('error', $message);
+            : redirect()->route('login')->with('error', __('common.no_team_access'));
     }
 }

@@ -298,6 +298,7 @@ return [
     ],
 
     'validation' => [
+        'invalid_name' => 'Enter a valid public domain name, for example example.com or www.example.org.',
         'confirm_name' => 'Type the exact domain name to confirm permanent deletion.',
         'other_team' => 'This domain cannot be added. Contact the ServerScope administrator if you think this is wrong.',
         'trashed' => 'This domain was deleted earlier. Restore it via the "Deleted" filter.',

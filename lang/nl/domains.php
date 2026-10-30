@@ -298,6 +298,7 @@ return [
     ],
 
     'validation' => [
+        'invalid_name' => 'Voer een geldige publieke domeinnaam in, bijvoorbeeld example.com of www.example.nl.',
         'confirm_name' => 'Typ de exacte domeinnaam om permanent verwijderen te bevestigen.',
         'other_team' => 'Dit domein kan niet worden toegevoegd. Neem contact op met de beheerder van ServerScope als je denkt dat dit niet klopt.',
         'trashed' => 'Dit domein is eerder verwijderd. Herstel het via het filter "Verwijderd".',

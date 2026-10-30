@@ -54,16 +54,6 @@ class ServerRequest extends FormRequest
 
     public function attributes(): array
     {
-        return [
-            'name' => 'servernaam',
-            'hostname' => 'hostname',
-            'ip_address' => 'IP-adres',
-            'operating_system' => 'besturingssysteem',
-            'environment' => 'omgeving',
-            'credential_name' => 'naam van de agentcredential',
-            'maintenance_starts_at' => 'start onderhoud',
-            'maintenance_ends_at' => 'einde onderhoud',
-            'sla_target' => 'beschikbaarheidsdoel',
-        ];
+        return __('servers.attributes');
     }
 }

@@ -79,7 +79,7 @@ class DomainRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 if (! $this->boolean('name_valid')) {
-                    $validator->errors()->add('name', 'Voer een geldige publieke domeinnaam in, bijvoorbeeld example.com of www.example.nl.');
+                    $validator->errors()->add('name', __('domains.validation.invalid_name'));
 
                     return;
                 }

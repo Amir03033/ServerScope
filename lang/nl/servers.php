@@ -474,4 +474,16 @@ return [
             'checksum' => 'De agent meldt een controlesom die niet overeenkomt met een bekende build.',
         ],
     ],
+
+    'attributes' => [
+        'name' => 'servernaam',
+        'hostname' => 'hostname',
+        'ip_address' => 'IP-adres',
+        'operating_system' => 'besturingssysteem',
+        'environment' => 'omgeving',
+        'credential_name' => 'naam van de agentcredential',
+        'maintenance_starts_at' => 'start onderhoud',
+        'maintenance_ends_at' => 'einde onderhoud',
+        'sla_target' => 'beschikbaarheidsdoel',
+    ],
 ];

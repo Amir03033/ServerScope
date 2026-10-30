@@ -14,6 +14,7 @@ return [
     'close' => 'Close',
     'previous' => 'Previous',
     'next' => 'Next',
+    'no_team_access' => 'You no longer have access to this team. Sign in again or contact your administrator.',
     'pagination' => [
         'label' => 'Pagination',
         'results' => 'Results :from–:to of :total',

@@ -3,6 +3,7 @@
 // Alert rules: list, create and edit.
 return [
     'title' => 'Alertregels',
+    'forbidden' => 'Je hebt geen toestemming om alertregels te beheren.',
     'subtitle' => 'Configureer de drempelwaarden waarmee ServerScope incidenten detecteert.',
     'dashboard' => 'Dashboard',
     'new' => 'Nieuwe regel',

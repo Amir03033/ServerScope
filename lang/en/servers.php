@@ -474,4 +474,16 @@ return [
             'checksum' => 'The agent reports a checksum that does not match a known build.',
         ],
     ],
+
+    'attributes' => [
+        'name' => 'server name',
+        'hostname' => 'hostname',
+        'ip_address' => 'IP address',
+        'operating_system' => 'operating system',
+        'environment' => 'environment',
+        'credential_name' => 'agent credential name',
+        'maintenance_starts_at' => 'maintenance start',
+        'maintenance_ends_at' => 'maintenance end',
+        'sla_target' => 'availability target',
+    ],
 ];
