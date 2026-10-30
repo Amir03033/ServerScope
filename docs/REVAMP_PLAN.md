@@ -1,6 +1,6 @@
 # Revamp ServerScope-app — stap A: onderzoek en plan
 
-Status: **wacht op akkoord**. Er is nog geen applicatiecode gewijzigd.
+Status: **plan goedgekeurd (30-10); aanpassing voor tweetaligheid (§12) wacht op akkoord**. Er is nog geen applicatiecode gewijzigd.
 Branch: `claude/serverscope-design-overhaul-a4kfxq`. Niets gaat naar `main`.
 Referentie: de vernieuwde info-site (`ServerScope-Info`, `resources/css/app.css`, componenten in `resources/views/components`).
 
@@ -20,12 +20,19 @@ De drie mislukte tests:
 2. `ReleaseScriptsTest::test_a_built_bundle_verifies_and_imports`
 3. `ReleaseScriptsTest::test_build_refuses_anything_but_a_clean_tagged_commit_on_origin_main`
 
-   Nummers 2 en 3 zijn **niet verwacht, en ze falen ook al op `main`**. De test zet vast de tag
-   `agent-v0.3.0`, maar PR #7 ("Agent 0.3.1: version bump") heeft de agent naar 0.3.1 gezet.
-   `build.sh` eist nu `agent-v0.3.1`. Dit heeft niets met de revamp te maken, en volgens regel 3
-   en 5 raak ik de agent en deze test niet aan. **Vraag:** wil je dit apart laten oplossen
-   (bijvoorbeeld de test de versie uit `agent.py` laten lezen)? Tot die tijd geldt
-   "3 bekende fouten" als baseline voor elk pull request.
+   Nummers 2 en 3 faalden op `main`: de test zette vast `agent-v0.3.0`, terwijl de agent op
+   0.3.1 staat. **Opgelost in PR #8** (de test leest de versie nu uit `collector.py`). Ik heb main
+   in deze branch gemerged en de reparatie gecontroleerd met PHP 8.4.27.
+
+**Baseline na de merge van main (30-10):** 535 tests, **532 geslaagd, 2 overgeslagen, alleen
+`TlsInspectorTest::test_expired_certificate` mislukt**. `ReleaseScriptsTest` heeft 4 geslaagde
+tests en 1 overgeslagen (de LibreSSL-test, zoals verwacht met OpenSSL 3). pytest: 43 geslaagd.
+Dit is de baseline voor elk pull request.
+
+Opmerking bij PR #8: als `collector.py` ooit geen regel `AGENT_VERSION = "x.y.z"` meer heeft,
+faalt de test met "Undefined array key 1" in plaats van een duidelijke melding. Dat werkt
+correct, maar een `assertSame(1, preg_match(...))` ervoor zou de oorzaak meteen tonen. Ik pas het
+niet aan (regel 5); het is alleen een suggestie.
 
 **Laravel Boost** (`CLAUDE.md`/`AGENTS.md` vragen erom) heb ik niet geïnstalleerd. Dat is een
 nieuw Composer-pakket, en dat mag volgens regel 6 pas na je akkoord. De info-site deed hetzelfde.
@@ -204,7 +211,7 @@ naar derden.
 ## 6. Bediening
 
 - **Thema**: systeem (standaard) → licht → donker, onthouden in `localStorage` (`ss-theme`, dezelfde sleutel als de info-site). Er is geen flits bij het laden: een klein **extern** script `public/js/theme-init.js` (blokkerend in `<head>`, zo'n 300 bytes) zet `data-theme` vóór de eerste weergave. Er komt dus geen inline script bij.
-- **⌘K / Ctrl+K**: een zoekdialoog zoals op de info-site. Zonder JS blijft het een gewoon formulier naar `GET /search?q=`, dus dezelfde zoekfunctie. Met JS haalt de dialoog terwijl je typt `/search?q=` op en toont hij de resultaten uit die HTML (ik voeg `data-search-result` toe aan `search.blade.php`). De controller verandert niet. Zie de vragen in §11 voor een alternatief.
+- **⌘K / Ctrl+K** (goedgekeurd: de nette weg): een zoekdialoog zoals op de info-site. `SearchController` krijgt een JSON-antwoord bij `Accept: application/json`. Het gebruikt **dezelfde methode voor queries en team-scoping** als de HTML-versie: de bestaande zoeklogica gaat naar één private methode, en beide antwoorden gebruiken die. Zo kunnen de twee versies niet uit elkaar lopen. In de JSON staan alleen type, titel, subtitel, status en URL; geen interne velden. De HTML-pagina `/search` blijft ongewijzigd, en zonder JS doet de dialoog gewoon een `GET /search?q=`. Nieuwe tests: de JSON-structuur; dezelfde resultaten als de HTML voor dezelfde `q`; **nooit resultaten van een ander team** (met `TwoTeams`: elk woord "bravo" is verboden in de JSON van team A); de throttle en de auth gelden ook voor JSON; en een snapshot die bewaakt dat de HTML gelijk blijft.
 - **Bevestigingsdialogen**: elk bestaand `data-confirm` (19 plekken) opent een `<dialog>` in de huisstijl, met **dezelfde tekst**. Bij een gevaarlijke actie heet de knop "Verwijderen", in de danger-stijl. Annuleren houdt het verzenden tegen, net als nu. Zonder `<dialog>`-ondersteuning valt het terug op `window.confirm`. De laadtoestand bij het verzenden blijft.
 - **Animaties**: overgangen bij hover en focus (0,2 s), inhoud die zacht infadet (alleen `opacity` en `transform`, dus geen layoutsprongen), een statusbadge die vloeiend van kleur wisselt, en een pulserende stip alleen bij "live". Met `prefers-reduced-motion` staat dit allemaal uit.
 - **Toegankelijkheid**: een skip-link, landmarks, `aria-current`, zichtbare focus, dialogen met focus-trap en Escape, en bediening met het toetsenbord (ook de lade en de menu's). Elk statuskleurtje heeft ook tekst. Per PR controleer ik met axe-core via Playwright (alleen tijdens het testen: een tijdelijke `npm install --no-save` buiten de repository, zonder wijziging aan `package.json`).
@@ -221,21 +228,29 @@ naar derden.
 
 ## 8. Volgorde van de pull requests
 
-| PR | Inhoud | Schermen volledig omgebouwd |
+| PR | Inhoud | Schermen volledig omgebouwd en vertaalbaar |
 |---|---|---|
-| **1. Basis** | tokens, lettertypen, componenten (CSS en Blade), de nieuwe schil (zijbalk met groepen, topbalk, mobiele lade, gebruikersmenu), thema en themaknop, ⌘K, bevestigingsdialoog, het Chart.js-thema, de overgangslaag `serverscope.css`, `theme-init.js` en de inline scripts van de layout naar `app.js` | geen; alleen de schil |
-| **2. Dashboard** | "Aandacht nodig", de nieuwe indeling, de grafieken | `dashboard`, `dashboard/_overview` |
+| **1. Basis** | Tokens, lettertypen, componenten (CSS en Blade), de nieuwe schil (zijbalk met groepen, topbalk, mobiele lade, gebruikersmenu), thema en themaknop, bevestigingsdialoog, het Chart.js-thema, de overgangslaag `serverscope.css`, `theme-init.js` en de inline scripts van de layout naar `app.js`. **⌘K** met het JSON-antwoord van `SearchController` en tests. **Taal-infrastructuur** (§12.2): migratie `users.locale`, middleware, `lang/en` en `lang/nl` (ook validatie, auth, wachtwoorden en paginering), taalkeuze in het profiel, snelle wissel in het gebruikersmenu en op de gastpagina's, helpers voor datum en getal, de sleuteltest en de testopzet. De schil zelf (navigatie, topbalk, menu, flash-meldingen) is al tweetalig. | geen scherm; alleen de schil |
+| **2. Dashboard** | "Aandacht nodig" met de **telling voor agentupdates** (weergavedata in `DashboardController`, met een test die ook controleert dat een ander team niet meetelt), de nieuwe indeling en de grafieken | `dashboard`, `dashboard/_overview` |
 | **3. Servers** | lijst met mobiele kaarten, detail met sectienavigatie, toevoegen met stappen, formulieren | `servers/*` (9 views) |
 | **4. Domeinen en pagina's** | | `domains/*`, `websites/*` (10 views) |
 | **5. Incidenten en alerts** | statusbalk, tijdlijn, alertregels | `incidents/*`, `alerts`, `alert-rules/*`, `dependencies` |
 | **6. Rapporten en statuspagina's** | inclusief de openbare statuspagina en de afdrukversie | `reports/*`, `status-pages/*` |
-| **7. Beheer, profiel en inloggen** | gastlayout, profiel, gebruikers, webhooks, audit, systeemstatus, releases, meldingen, zoeken. **Verwijdert `serverscope.css`.** | de rest |
+| **7. Beheer, profiel en inloggen** | gastlayout, profiel, gebruikers, webhooks, audit, systeemstatus, releases, meldingen, zoeken. **Verwijdert `serverscope.css`** en past de ene goedgekeurde regel in `LayoutTest` aan. | de rest |
+| **8. Berichten in de taal van de ontvanger** | e-mails, in-app-meldingen, Discord- en webhookberichten (§12.5) | geen scherm |
 
 Elk pull request krijgt kleine commits, de volledige testsuite (PHP en pytest), Playwright-beelden
-vóór en na (licht en donker × desktop en mobiel), een klikcontrole (elke link geeft geen 404/500,
-elk formulier wordt ingediend en geeft de verwachte redirect), axe-core, een controle op
-horizontaal scrollen (0 px) en layoutverschuiving (CLS), `npm run build` met de build in git, en een
-beschrijving in het Nederlands met de stappen voor staging.
+vóór en na (licht en donker × desktop en mobiel, **en vanaf PR 2 Engels en Nederlands**), een
+klikcontrole (elke link geeft geen 404/500, elk formulier wordt ingediend en geeft de verwachte
+redirect), axe-core, een controle op horizontaal scrollen (0 px) en layoutverschuiving (CLS),
+`npm run build` met de build in git, en een beschrijving in het Nederlands met de stappen voor
+staging (§13).
+
+**Vertaalregel per PR (2 t/m 7):** alle teksten van die schermen gaan via `__('…')`. De
+Nederlandse tekst blijft **exact** gelijk aan nu, het Engels is nieuw, en datums en getallen
+volgen de taal. Ook de nieuwe teksten voor lege toestanden komen er in beide talen. Een
+controlescript vergelijkt per scherm de zichtbare Nederlandse tekst vóór en na; elk verschil staat
+in de PR-beschrijving (alleen goedgekeurde wijzigingen, zoals lege toestanden).
 
 ## 9. Verbeteringen die ik zelf voorstel
 
@@ -261,14 +276,184 @@ beschrijving in het Nederlands met de stappen voor staging.
 | Buildbestanden niet bijgewerkt | De manifest-test, plus een controle in de PR-lijst |
 | De openbare statuspagina krijgt een accentkleur van de klant met te weinig contrast | Contrastcontrole met terugval op het neutrale accent |
 | Cache op Plesk | Vite-bestandsnamen met hash; `serverscope.css` houdt zijn `?v=filemtime` |
+| Nederlandse tekst wijkt ongemerkt af bij het vertalen | Per scherm een vergelijking van de zichtbare tekst in `nl` vóór en na; de test die `lang/nl/labels.php` aan de modelconstanten koppelt; de bestaande tests draaien in het Nederlands |
+| Een vertaalsleutel ontbreekt (je ziet dan `servers.index.title` op het scherm) | `TranslationKeysTest` faalt dan in de suite |
+| De taal lekt naar de API of de agent | De middleware staat alleen in de `web`-groep; een test vergelijkt API-antwoorden in `en` en `nl` |
+| Een Engelse app met Nederlandse opgeslagen teksten (incidenttitels) | Bewuste keuze tot §12.6 punt 5 is beslist; staat in elke PR-beschrijving |
 
-## 11. Vragen aan jou
+## 11. Besluiten (30-10)
 
-1. **ReleaseScriptsTest** (2 fouten op `main`): apart laten oplossen, of als bekende fout laten staan?
-2. **LayoutTest-regel `css/serverscope.css`**: mag die in de laatste PR controleren op de Vite-build? (De rest van de test blijft gelijk.)
-3. **"Beschikbare agentupdates" op het dashboard**: daarvoor moet `DashboardController` één extra telling doorgeven (servers met een verouderde agent, volgens dezelfde logica als `servers/_health`). Dat is puur weergavedata. Akkoord?
-4. **⌘K**: akkoord met de aanpak zonder controllerwijziging (de bestaande HTML van `/search` uitlezen)? Het alternatief is een JSON-antwoord in `SearchController` bij `Accept: application/json`; dat is netter, maar het is een controllerwijziging.
-5. **Teksten van de lege toestanden** (§4): akkoord met de voorstellen?
-6. **Navigatiegroepen** (§4): akkoord met deze indeling?
-7. **Staging voor de app**: bestaat er al een staging-subdomein (bijvoorbeeld `staging.serverscope.nl`) dat op deze branch kan draaien? Dan schrijf ik de stappen daarvoor uit, zoals bij de info-site.
-8. **Laravel Boost**: overslaan, zoals bij de info-site?
+| # | Onderwerp | Besluit |
+|---|---|---|
+| 1 | ReleaseScriptsTest | opgelost in PR #8, gemerged en gecontroleerd (§1) |
+| 2 | LayoutTest-regel `css/serverscope.css` | mag in PR 7 op de Vite-build controleren |
+| 3 | Telling agentupdates op het dashboard | akkoord, als weergavedata in PR 2, met een test (ook voor een ander team) |
+| 4 | ⌘K | JSON-antwoord in `SearchController`, met dezelfde queries en team-scoping, en tests (§6) |
+| 5 | Lege toestanden en navigatiegroepen | akkoord |
+| 6 | Staging | `staging.serverscope.nl` (SQLite); de stappen staan in elke PR (§13) |
+| 7 | Laravel Boost | overslaan |
+| 8 | Tweetalig: Engels standaard, Nederlands als keuze | toegevoegd, zie §12. **De punten in §12.6 wachten op akkoord.** |
+
+## 12. Tweetaligheid: Engels standaard, Nederlands als keuze
+
+### 12.1 Hoeveel teksten het zijn (gemeten)
+
+Geteld met een script over de Blade-views: tekst tussen tags en de attributen `placeholder`,
+`title`, `aria-label`, `data-confirm` en `label`. Het is een schatting met een marge van ongeveer
+10 %; de echte lijst ontstaat per PR.
+
+| Bron | Aantal | Waar |
+|---|---|---|
+| Blade-views | **±1.770 teksten, ±1.320 uniek** | servers 342 · websites 267 · domains 242 · incidents 150 · dashboard 114 · reports 92 · webhooks 77 · alert-rules 75 · status-pages 59 · alerts 51 · profile 50 · components 41 · auth 38 · api-tokens 31 · dependencies 29 · notifications 23 · platform 22 · users 21 · audit-logs 17 · search 15 · system-health 13 |
+| Flash- en foutmeldingen in controllers | **±99** | `with('success'/'error', …)`, `withErrors`, `abort(…, '…')` |
+| Validatie-uitzonderingen in controllers en form requests | **±4** | onder andere "Selecteer eerst een of meer pagina's." |
+| Labels in modelconstanten | **82** | `STATUS_LABELS`, `SOURCE_LABELS`, `TYPE_LABELS`, `METRIC_LABELS`, `FAILURE_LABELS`, `CONFIDENCE_LABELS` (9 modellen), plus 6 `…Label()`-methoden |
+| Teksten die services en helpers bij het tonen maken | **±70** | `ServerDiagnosis` (11), `Services/Websites` (13), `Monitoring/Net` (12), `Services/Domains` (11), `Analytics` (7), `AgentUpdates` (4), `DashboardOverview`, `Support/Time` ("nooit", relatieve tijd) |
+| JavaScript | **±15** | grafieklabels en tooltips ("Geen data", "CPU-gebruik", "1 minuut" …), ⌘K, dialogen |
+| Laravel zelf | **±200 sleutels** | `validation`, `auth`, `passwords`, `pagination`. Engels via `php artisan lang:publish` (uit het framework, geen pakket); Nederlands vertaal ik zelf. |
+| Berichten aan ontvangers (PR 8) | **±50** | `IncidentNotification` (13), `DnsChange…` (3), `PageChange…` (4), `Test…` (2), `DiscordMessage` (19), `NotificationDispatcher` (4), `WebhookDispatcher` (1), plus mailonderwerpen |
+| **Totaal** | **ongeveer 1.850 unieke teksten**, dus ongeveer 3.700 regels in `lang/en` en `lang/nl` samen | |
+
+**Huidige situatie, om te weten:** `APP_LOCALE` staat al op `en` en er is geen map `lang/`.
+Daardoor zijn de **validatiemeldingen van Laravel nu Engels**, met Engelse veldnamen ("The name
+field is required"), op een verder Nederlandse site. In het Nederlands worden die meldingen
+Nederlands, met Nederlandse veldnamen (`lang/nl/validation.php` → `attributes`). Geen enkele
+bestaande test controleert de tekst van een validatiemelding; de tests kijken alleen naar de
+veldnamen in de sessie.
+
+### 12.2 Infrastructuur (PR 1)
+
+- **Migratie** (de goedgekeurde uitzondering): `add_locale_to_users_table` voegt `locale`
+  `string(5)` toe, met standaard `'en'` en niet nullable. Hij is additief, `down()` haalt de kolom
+  weg, en bestaande accounts krijgen `'en'`.
+- **Middleware `SetLocale`** in de `web`-groep, na de sessie:
+  1. de ingelogde gebruiker → `users.locale`;
+  2. anders (gastpagina's, de openbare statuspagina) → de keuze die op die pagina is gemaakt, in een cookie `ss-locale`;
+  3. anders → `config('app.locale')` (`en`).
+
+  Alleen `en` en `nl` zijn toegestaan; al het andere wordt `en`. De middleware zet ook de locale
+  van Carbon en `<html lang>`. De API-routes (`/api/v1`, `/api/agent/*`) krijgen de middleware
+  **niet**; daar verandert niets.
+- **Taalkeuze in het profiel**: een veld "Language / Taal" in de kaart Account. Snelle wissel in het
+  gebruikersmenu en op de gastpagina's: `EN | NL`, een formulier dat `POST`t naar een nieuwe route
+  `locale.update` en terugkeert naar dezelfde pagina. Zie §12.6 voor de akkoordpunten.
+- **Vertaalbestanden**: `lang/{en,nl}/*.php`, met sleutels per gebied (`nav`, `common`, `servers`,
+  `domains`, `incidents`, … en `labels` voor de modelconstanten). Sleutels zijn **betekenisvol**
+  (`servers.index.empty_title`), geen Nederlandse zinnen als sleutel. Zo blijft het Engels de bron.
+- **Datum en getal**: nieuwe helpers in `app/Support` (bestaande code blijft gelijk):
+  `Format::number($v, $decimals)` (nl: `1.234,5` · en: `1,234.5`; vervangt de 69 keer
+  `number_format(…, ',', '.')` in de views), `Format::percent`, `Format::bytes`, en
+  `Time::date`/`Time::dateTime` met een notatie per taal (nl: `30-10-2026 15:51` · en:
+  `30 Oct 2026, 15:51`). Chart.js krijgt de locale via `<html lang>`. `Time::relative` gebruikt
+  nu vast `locale('nl')`; dat wordt de actieve taal (§12.6).
+- **Modellabels zonder modelwijziging**: de views gebruiken `__('labels.domain_status.'.$status)`.
+  De constanten in de modellen blijven gelijk. Een test controleert dat
+  `lang/nl/labels.php` **exact** gelijk is aan elke modelconstante. Zo kan het Nederlands niet
+  ongemerkt afwijken.
+
+### 12.3 Tests
+
+- **Bestaande tests blijven Nederlands, zonder dat er een verwachte tekst verandert.** In
+  `Tests\TestCase` komt één instelling: `protected string $locale = 'nl'`. In `setUp()` zet die
+  `app.locale` op `nl` (voor gastpagina's) en geeft hij elke `User` die in de test wordt aangemaakt
+  zonder expliciete `locale` die taal (via een `creating`-listener die alleen in tests bestaat). De
+  testbestanden zelf blijven ongewijzigd, en de factory en de productiestandaard blijven `en`.
+- **Nieuwe tests** zetten `protected string $locale = 'en'` (of gebruiken de standaard van de app):
+  - standaard Engels: een nieuwe gebruiker en een gast zien Engels, en `<html lang="en">`;
+  - wisselen naar Nederlands via het profiel en via de snelle wissel; de keuze blijft na opnieuw inloggen; een ongeldige taal wordt `en`;
+  - een gast kan op de inlogpagina wisselen (cookie);
+  - de API-antwoorden zijn byte-voor-byte gelijk, ongeacht de taal van de gebruiker;
+  - validatiemeldingen in beide talen;
+  - datum- en getalnotatie per taal.
+- **Sleuteltest** (`TranslationKeysTest`), die faalt als:
+  1. een vertaalbestand in `en` en `nl` niet dezelfde sleutels heeft (in beide richtingen);
+  2. een sleutel die in de code wordt gebruikt (`__('…')`, `trans(…)`, `@lang(…)`,
+     `trans_choice(…)` in `resources/views`, `app` en `resources/js` via `data-i18n`) in `en` of
+     `nl` ontbreekt;
+  3. een waarde leeg is, of de placeholders (`:name`, `:count`) per taal verschillen.
+- Elke PR draait de hele suite. De baseline blijft: alleen `TlsInspectorTest::test_expired_certificate` faalt.
+
+### 12.4 Wat er per PR gebeurt (2 t/m 7)
+
+Elke tekst van die schermen gaat naar `lang/en` en `lang/nl`. Het Nederlands komt letterlijk uit de
+huidige view; een script haalt de zichtbare tekst per scherm in `nl` vóór en na op en eist dat die
+gelijk is, op de goedgekeurde nieuwe teksten na. Het Engels schrijf ik nieuw: kort, zakelijk en
+consequent. Vaste termen: *incident*, *alert*, *alert rule*, *status page*, *agent*, *uptime*,
+*maintenance*, *acknowledge*. Elke PR toont beelden in beide talen.
+
+### 12.5 PR 8: berichten in de taal van de ontvanger
+
+- **E-mail en in-app**: `User` implementeert `HasLocalePreference` (`preferredLocale()` geeft
+  `locale` terug). Laravel verstuurt notificaties dan automatisch in de taal van de ontvanger, ook
+  vanuit de queue. Het gaat om `IncidentNotification`, `DnsChangeNotification`,
+  `PageChangeNotification` en `TestNotification`, en om de onderwerpen en de mailtemplate.
+- **Discord en webhooks**: die hebben geen gebruiker als ontvanger. Voorstel: de taal van de
+  **maker van het endpoint** (`webhook_endpoints.created_by` bestaat al), anders `en`. Er is geen
+  migratie nodig. Bij webhooks worden alleen de leesbare velden vertaald (`message`, `title`,
+  `description`); de **sleutels en de structuur van de JSON blijven gelijk**, zodat integraties
+  niet breken.
+- In-app-meldingen die al in de database staan, blijven zoals ze zijn opgeslagen.
+
+### 12.6 Punten die ik eerst aan je voorleg
+
+1. **Een nieuwe route en een kleine controller** voor de snelle taalwissel: `POST /locale`,
+   naam `locale.update`, met `auth` optioneel (voor gasten zet hij alleen de cookie) en een
+   throttle. Dat is een toevoeging aan de routes. Het alternatief, de wissel via
+   `profile.update` laten lopen, werkt niet voor gasten en vraagt verborgen velden. **Akkoord?**
+2. **`ProfileController@update`** krijgt het veld `locale` (`in:en,nl`). Dat is een
+   controllerwijziging voor de taalkeuze die je al hebt gevraagd; ik noem hem voor de volledigheid.
+   Het formulier krijgt er één veld bij; de andere velden blijven gelijk.
+3. **Flash- en foutmeldingen in controllers (±99)**: om ze te vertalen moet de tekst in de controller
+   `__('…')` worden. Er verandert alleen tekst, geen logica. Zonder deze wijziging blijven de
+   meldingen na een actie Nederlands in een verder Engelse app. **Akkoord om dit per PR te doen
+   voor de controllers van die schermen?**
+4. **Teksten die services bij het tonen maken (±70)**, bijvoorbeeld `ServerDiagnosis` ("Diagnose:
+   Geen agentgegevens — oorzaak onbekend"), `Time::relative` ("nooit", met vast `locale('nl')`) en
+   `DashboardOverview`. Ook hier verandert alleen tekst naar `__('…')`, geen logica. **Akkoord?**
+5. **Opgeslagen teksten blijven in hun taal.** Services slaan nu Nederlandse zinnen op in de
+   database: incidenttitels en -beschrijvingen (`new Signal(…, 'mail-01 reageert niet', …)`),
+   gebeurtenissen in de tijdlijn, controleberichten (`ssl_message`, `dns_message`), samenvattingen
+   van paginawijzigingen en auditregels. Die worden niet bij het tonen vertaald. **Voorstel:** in
+   dit project blijven ze zoals ze zijn opgeslagen. Wil je later dat ook die per lezer vertaald
+   worden, dan moeten de services een sleutel met parameters opslaan in plaats van een zin. Dat is
+   een aparte, grotere wijziging aan services en data, en die stel ik pas voor als je het wilt.
+   Gevolg tot dan: in de Engelse app staan bijvoorbeeld incidenttitels in het Nederlands.
+6. **De openbare statuspagina** (`/status/{slug}`): Engels als standaard, met dezelfde
+   `EN | NL`-wissel (cookie) als op de inlogpagina. Een alternatief is de browsertaal
+   (`Accept-Language`) als eerste keuze. **Voorkeur?** Mijn advies: de browsertaal, omdat bezoekers
+   van een statuspagina geen account hebben.
+
+## 13. Op staging zetten (dit staat in elke PR, ingevuld)
+
+`staging.serverscope.nl`, SQLite. Per PR:
+
+1. **Plesk → Websites & Domains → staging.serverscope.nl → Git**: zet de branch op
+   `claude/serverscope-design-overhaul-a4kfxq` (of de branch van die PR) en kies **Pull updates**.
+   Documentroot: `/httpdocs/public`. PHP 8.4.
+2. **Plesk → PHP Composer** (of SSH in `httpdocs`):
+   ```bash
+   composer install --no-dev --optimize-autoloader --no-interaction
+   ```
+3. Migraties (vanaf PR 1, door `users.locale`):
+   ```bash
+   php artisan migrate --force
+   ```
+4. Caches legen en opnieuw opbouwen:
+   ```bash
+   php artisan optimize:clear
+   ```
+   ```bash
+   php artisan config:cache && php artisan route:cache && php artisan view:cache
+   ```
+5. Eigenaar goed zetten (de systeemgebruiker van het abonnement; zie Plesk → Websites &
+   Domains → Hosting & DNS → Hosting Settings):
+   ```bash
+   chown -R <systeemgebruiker>:psaserv storage bootstrap/cache database/database.sqlite
+   ```
+6. Controleren: inloggen, wisselen tussen licht en donker en tussen EN en NL, en de schermen van die PR doorlopen.
+7. **Terug naar main**: zet de branch in Plesk weer op `main`, kies Pull updates en herhaal stap 2
+   en 4. De kolom `users.locale` mag blijven staan; main gebruikt hem niet. Wil je hem toch weg,
+   draai dan `php artisan migrate:rollback --step=1` **vóór** je terugschakelt, dus nog op de
+   PR-branch (op main ontbreekt het migratiebestand), en alleen zolang die migratie de laatste is.
+
+Er is geen `npm` nodig op de server: `public/build` zit in git.
