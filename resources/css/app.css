@@ -1222,6 +1222,42 @@
     .ss-sort:hover { color: var(--ss-text); }
     .ss-sort[aria-sort] { color: var(--ss-text); }
 
+    /* Status bar: the steps of a lifecycle, the current one highlighted. */
+    .ss-progress { display: flex; margin: 0; padding: 0; list-style: none; counter-reset: ss-progress; overflow-x: auto; scrollbar-width: none; }
+    .ss-progress::-webkit-scrollbar { display: none; }
+    .ss-progress > li {
+        position: relative;
+        display: flex;
+        flex: 1 0 auto;
+        align-items: center;
+        gap: .5rem;
+        min-width: 0;
+        padding: .5rem .875rem .5rem 0;
+        color: var(--ss-subtle);
+        font-size: .8125rem;
+        font-weight: 600;
+        white-space: nowrap;
+        counter-increment: ss-progress;
+    }
+    .ss-progress > li::before {
+        content: counter(ss-progress);
+        display: grid;
+        place-items: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        flex: 0 0 1.5rem;
+        border: 1px solid var(--ss-line-strong);
+        border-radius: 999px;
+        background: var(--ss-surface);
+        font-size: .6875rem;
+    }
+    .ss-progress > li + li { padding-left: .875rem; border-left: 0; }
+    .ss-progress > li:not(:last-child)::after { content: ""; flex: 1; min-width: 1rem; height: 1px; background: var(--ss-line-strong); }
+    .ss-progress > li.is-done { color: var(--ss-muted); }
+    .ss-progress > li.is-done::before { content: "✓"; border-color: var(--ss-ok); color: var(--ss-ok); }
+    .ss-progress > li[aria-current="step"] { color: var(--ss-text); }
+    .ss-progress > li[aria-current="step"]::before { border-color: var(--ss-accent); background: var(--ss-accent); color: var(--ss-on-accent); }
+
     /* Pausable automatic refresh (x-auto-refresh). */
     .ss-auto-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; color: var(--ss-muted); font-size: .75rem; }
     .ss-auto-refresh.is-paused [data-auto-refresh-dot] { background: var(--ss-line-strong); }

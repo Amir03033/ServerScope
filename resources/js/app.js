@@ -3,7 +3,7 @@
  * progressive enhancement: without JavaScript every page and form works.
  * Texts come from the page (resources/js/i18n.js).
  */
-import { t } from './i18n';
+import { numberLocale, t } from './i18n';
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
@@ -345,6 +345,45 @@ document.querySelectorAll('[data-auto-refresh]').forEach((box) => {
     box.hidden = false;
     render();
     schedule();
+});
+
+/* ------------------------------------------------------------------ */
+/* Alert rule form: a live sentence that reads the rule back.          */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('form[data-rule-preview]').forEach((form) => {
+    const out = form.querySelector('[data-preview-text]');
+    let units = {};
+    let operators = {};
+    try {
+        units = JSON.parse(form.dataset.units || '{}');
+        operators = JSON.parse(form.dataset.operators || '{}');
+    } catch { /* keep the server-rendered sentence */ }
+
+    const value = (name) => form.querySelector(`[name="${name}"]`);
+    const number = (raw) => {
+        const parsed = Number(raw);
+        if (raw === '' || Number.isNaN(parsed)) return '…';
+        return new Intl.NumberFormat(numberLocale(), { maximumFractionDigits: 2 }).format(parsed);
+    };
+
+    const render = () => {
+        const metric = value('metric');
+        const threshold = number(value('threshold').value);
+        const text = metric.value === form.dataset.offlineMetric
+            ? form.dataset.templateOffline.replace(':threshold', threshold)
+            : form.dataset.template
+                .replace(':metric', metric.selectedOptions[0]?.textContent.trim() || metric.value)
+                .replace(':operator', operators[value('operator').value] || value('operator').value)
+                .replace(':threshold', threshold + (units[metric.value] || ''))
+                .replace(':minutes', value('duration_minutes').value || '…');
+        out.textContent = text;
+    };
+
+    ['metric', 'threshold', 'operator', 'duration_minutes'].forEach((name) => {
+        value(name)?.addEventListener('input', render);
+        value(name)?.addEventListener('change', render);
+    });
 });
 
 /* ------------------------------------------------------------------ */
