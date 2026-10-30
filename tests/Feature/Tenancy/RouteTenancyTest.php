@@ -44,6 +44,11 @@ class RouteTenancyTest extends TestCase
         'GET|HEAD install.sh',
         'GET|HEAD agent/serverscope-agent-{version}.tar.gz',
         'GET|HEAD agent/serverscope-agent-{version}.tar.gz.sha256',
+        // Signed releases (phase 3): public files, verified on every
+        // customer server with its own copy of the public key.
+        'GET|HEAD agent/releases/{version}/manifest',
+        'GET|HEAD agent/releases/{version}/manifest.sig',
+        'GET|HEAD agent/releases/{version}/{file}',
     ];
 
     /**

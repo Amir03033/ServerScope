@@ -1,0 +1,37 @@
+[Unit]
+Description=ServerScope updater (installs signed agent releases only)
+Documentation=https://serverscope.nl
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/serverscope/updates-disabled
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/serverscope-updater
+# Root is needed to replace the agent's read-only files and restart it;
+# everything else is locked down.
+User=root
+RuntimeDirectory=serverscope-updater
+StateDirectory=serverscope-updater
+StateDirectoryMode=0700
+ProtectSystem=strict
+ReadWritePaths=/opt/serverscope-agent
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+NoNewPrivileges=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=CAP_CHOWN CAP_FOWNER CAP_DAC_OVERRIDE
+TimeoutStartSec=15min

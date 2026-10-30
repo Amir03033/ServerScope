@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 from pathlib import Path
 
@@ -10,7 +11,24 @@ from serverscope_agent.config import load_config
 from serverscope_agent.services import check_services
 
 
-ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
+def _env_file() -> Path:
+    """<install dir>/.env, e.g. /opt/serverscope-agent/.env.
+
+    The package is imported through /opt/serverscope-agent/serverscope_agent,
+    which install.sh 0.3.0+ makes a symlink to releases/<version>/. The path
+    is taken as imported (not resolved), so the symlink is not followed.
+    Each release directory also holds a .env symlink to ../../.env, which is
+    what agents up to 0.2.0 (that resolve the path) find.
+    """
+    unresolved = Path(os.path.abspath(__file__)).parents[1] / ".env"
+
+    if unresolved.exists():
+        return unresolved
+
+    return Path(__file__).resolve().parents[1] / ".env"
+
+
+ENV_FILE = _env_file()
 load_dotenv(ENV_FILE)
 
 logging.basicConfig(

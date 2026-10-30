@@ -49,3 +49,11 @@ _ide_helper.php
 Thumbs.db
 Homestead.json
 Homestead.yaml
+
+# Release signing: the private key never belongs in the repository.
+# Only files are excluded, never the directory with the public keys.
+*.pem
+release-key.pem
+release-key.pem.*
+!resources/agent/release-keys/
+!resources/agent/release-keys/*.pub

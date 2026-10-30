@@ -73,6 +73,10 @@ Route::get('/agent/ping', function (Request $request) {
 Route::get('/install.sh', [\App\Http\Controllers\AgentDownloadController::class, 'script'])->middleware('throttle:60,1')->name('agent.install-script');
 Route::get('/agent/serverscope-agent-{version}.tar.gz', [\App\Http\Controllers\AgentDownloadController::class, 'package'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:30,1')->name('agent.package');
 Route::get('/agent/serverscope-agent-{version}.tar.gz.sha256', [\App\Http\Controllers\AgentDownloadController::class, 'checksum'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:60,1')->name('agent.checksum');
+// Signed releases (phase 3): only imported, not withdrawn releases.
+Route::get('/agent/releases/{version}/manifest', [\App\Http\Controllers\AgentDownloadController::class, 'manifest'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:60,1')->name('agent.release.manifest');
+Route::get('/agent/releases/{version}/manifest.sig', [\App\Http\Controllers\AgentDownloadController::class, 'signature'])->where('version', '\d+\.\d+\.\d+')->middleware('throttle:60,1')->name('agent.release.signature');
+Route::get('/agent/releases/{version}/{file}', [\App\Http\Controllers\AgentDownloadController::class, 'tarball'])->where(['version' => '\d+\.\d+\.\d+', 'file' => 'serverscope-agent-\d+\.\d+\.\d+\.tar\.gz'])->middleware('throttle:30,1')->name('agent.release.tarball');
 
 // Public status pages (no login unless the page is private).
 Route::get('/status/{slug}.json', [PublicStatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.json');
@@ -114,6 +118,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
         return view('system-health', ['report' => $health->report($platform ? null : \App\Tenancy\Tenant::id())]);
     })->name('system-health');
+    Route::get('/platform/agent-releases', \App\Http\Controllers\AgentReleaseOverviewController::class)->name('platform.agent-releases');
 
     Route::post('/teams/{team}/switch', [\App\Http\Controllers\TeamController::class, 'switch'])->middleware('throttle:20,1')->name('teams.switch');
 
@@ -172,6 +177,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::put('/services/{service}', [ServiceCheckController::class, 'update'])->name('services.update');
     Route::delete('/services/{service}', [ServiceCheckController::class, 'destroy'])->name('services.destroy');
+
+    // Agent updates (signed releases only; team administrators).
+    Route::post('/servers/agent-update-all', [\App\Http\Controllers\AgentUpdateRequestController::class, 'storeAll'])->middleware('throttle:10,1')->name('servers.agent-update-all');
+    Route::post('/servers/{server}/agent-update', [\App\Http\Controllers\AgentUpdateRequestController::class, 'store'])->middleware('throttle:30,1')->name('servers.agent-update');
+    Route::put('/servers/{server}/auto-update', [\App\Http\Controllers\AgentUpdateRequestController::class, 'autoUpdate'])->name('servers.auto-update');
 
     Route::post('/servers/{server}/credentials', [AgentCredentialController::class, 'store'])
         ->name('servers.credentials.store');

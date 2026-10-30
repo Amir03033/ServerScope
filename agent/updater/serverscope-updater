@@ -1,0 +1,480 @@
+#!/usr/bin/env bash
+# serverscope-updater: installs signed ServerScope agent releases.
+#
+# Runs as root from serverscope-updater.timer (every 5 minutes), because
+# the agent itself runs as the unprivileged user 'serverscope' and cannot
+# change its own files. It does exactly one thing: when ServerScope asks
+# for an update, it downloads that release from fixed paths, checks
+#   1. the signature over the manifest with the LOCAL public key(s)
+#      /etc/serverscope/release.pub and /etc/serverscope/release.d/*.pub,
+#   2. the manifest (format, version, file name, updater version),
+#   3. the SHA-256 and size of the tarball and its contents,
+#   4. that the version is newer than anything installed before,
+# and only then installs it next to the current version, switches over
+# atomically, restarts the agent and waits for a sample from the new
+# version. Without one it switches back.
+#
+# From ServerScope it takes only a request id and a version number. It
+# never runs commands, scripts or URLs from the server.
+#
+# Emergency switch (the server cannot override it):
+#   touch /etc/serverscope/updates-disabled
+# or: sudo bash serverscope-install.sh --disable-updates
+#
+# Usage: serverscope-updater            one run (what the timer does)
+#        serverscope-updater --status   show the local state
+#        serverscope-updater --forget-failures
+#                                       allow versions that failed here again
+
+set -euo pipefail
+umask 022
+export LC_ALL=C PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+readonly UPDATER_VERSION=1
+readonly INSTALL_DIR=/opt/serverscope-agent
+readonly RELEASES_DIR="${INSTALL_DIR}/releases"
+readonly CURRENT_LINK="${INSTALL_DIR}/serverscope_agent"
+readonly ENV_FILE="${INSTALL_DIR}/.env"
+readonly MARKER="${INSTALL_DIR}/.installed-by-serverscope-script"
+readonly ETC_DIR=/etc/serverscope
+readonly DISABLE_FILE="${ETC_DIR}/updates-disabled"
+readonly STATE_DIR=/var/lib/serverscope-updater
+readonly HIGHEST_FILE="${STATE_DIR}/highest-version"
+readonly FAILED_FILE="${STATE_DIR}/failed-versions"
+readonly LOCK_FILE=/run/serverscope-updater/lock
+readonly AGENT_UNIT=serverscope-agent.service
+readonly AGENT_USER=serverscope
+readonly MAX_TARBALL_BYTES=10485760
+readonly VERSION_RE='^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$'
+
+WORK_DIR=''
+BASE_URL=''
+HEADER_FILE=''
+REASON=''
+
+log() { printf '%s\n' "$*"; }
+cleanup() {
+    if [ -n "${WORK_DIR}" ] && [ -d "${WORK_DIR}" ]; then
+        rm -rf -- "${WORK_DIR}"
+    fi
+}
+trap cleanup EXIT
+
+is_version() { [[ "$1" =~ ${VERSION_RE} ]]; }
+
+# True when version $1 is strictly higher than version $2.
+version_gt() {
+    local a b i
+    IFS=. read -r -a a <<<"$1"
+    IFS=. read -r -a b <<<"$2"
+    for i in 0 1 2; do
+        if [ "$((10#${a[i]}))" -gt "$((10#${b[i]}))" ]; then return 0; fi
+        if [ "$((10#${a[i]}))" -lt "$((10#${b[i]}))" ]; then return 1; fi
+    done
+    return 1
+}
+
+env_value() {
+    sed -n "s/^$1=//p" "${ENV_FILE}" 2>/dev/null | tail -n 1
+}
+
+# The version the agent currently runs: the release the symlink points to.
+installed_version() {
+    local target version
+    target="$(readlink "${CURRENT_LINK}" 2>/dev/null || true)"
+    version="${target#releases/}"
+    version="${version%/serverscope_agent}"
+    if [ "${target}" = "releases/${version}/serverscope_agent" ] && is_version "${version}"; then
+        printf '%s' "${version}"
+    fi
+}
+
+highest_version() {
+    local value
+    value="$(head -n 1 "${HIGHEST_FILE}" 2>/dev/null || true)"
+    if is_version "${value}"; then printf '%s' "${value}"; fi
+}
+
+curl_api() {
+    curl --proto '=https' --tlsv1.2 -sS --connect-timeout 10 --max-time 60 -H @"${HEADER_FILE}" -H 'Accept: application/json' "$@"
+}
+
+# Downloads URL $3 to file $2, at most $1 bytes. curl's --max-filesize
+# alone does not stop a server that sends no length (curl < 8.4), so the
+# stream itself is cut off as well.
+curl_download() {
+    local limit="$1" file="$2" url="$3"
+    curl --proto '=https' --tlsv1.2 -fsS --connect-timeout 10 --max-time 300 --max-filesize "${limit}" "${url}" |
+        head -c "$((limit + 1))" >"${file}" || return 1
+    [ "$(stat -c %s "${file}")" -le "${limit}" ]
+}
+
+json_field() {
+    python3 -I -c 'import json, sys
+try:
+    value = json.load(open(sys.argv[1]))
+    for key in sys.argv[2].split("."):
+        value = value[key]
+    print("" if value is None else value)
+except Exception:
+    pass' "$1" "$2"
+}
+
+# Reports the result for a request; the body is built from fixed values.
+report() {
+    local id="$1" status="$2" reason="${3:-}" installed="${4:-}"
+    python3 -I -c 'import json, sys
+body = {"request_id": int(sys.argv[1]), "status": sys.argv[2]}
+if sys.argv[3]:
+    body["reason"] = sys.argv[3]
+if sys.argv[4]:
+    body["installed"] = sys.argv[4]
+print(json.dumps(body))' "${id}" "${status}" "${reason}" "${installed}" |
+        curl_api -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' --data-binary @- \
+            "${BASE_URL}/api/agent/update/report" 2>/dev/null || printf '000'
+}
+
+# Sets KEY_FILE to the trusted key that made the signature, or fails.
+verify_signature() {
+    local manifest="$1" signature="$2" key
+    KEY_FILE=''
+    for key in "${ETC_DIR}/release.pub" "${ETC_DIR}"/release.d/*.pub; do
+        [ -f "${key}" ] || continue
+        if openssl pkeyutl -verify -pubin -inkey "${key}" -rawin -in "${manifest}" -sigfile "${signature}" >/dev/null 2>&1; then
+            KEY_FILE="${key}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Strict manifest check; sets M_* variables. Same rules as ServerScope's
+# App\Releases\ReleaseManifest.
+parse_manifest() {
+    local file="$1" fields line name value i=0
+    local -a lines patterns
+    M_VERSION='' M_FILENAME='' M_SHA256='' M_SIZE='' M_MIN_UPDATER='' M_KEY_ID='' M_COMMIT=''
+    fields=(format product version filename sha256 size commit released_at min_updater_version key_id)
+    patterns=('^serverscope-agent-release-1$' '^serverscope-agent$' "${VERSION_RE}" '^serverscope-agent-[0-9.]+\.tar\.gz$'
+        '^[a-f0-9]{64}$' '^[1-9][0-9]{0,7}$' '^[a-f0-9]{40}$' '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$'
+        '^[1-9][0-9]{0,2}$' '^[a-f0-9]{16}$')
+
+    # A final newline, no carriage returns, nothing but printable ASCII.
+    [ "$(tail -c 1 "${file}" | od -An -c | tr -d ' ')" = '\n' ] || return 1
+    if LC_ALL=C grep -q '[^ -~]' "${file}"; then return 1; fi
+    mapfile -t lines <"${file}"
+    [ "${#lines[@]}" -eq "${#fields[@]}" ] || return 1
+
+    for line in "${lines[@]}"; do
+        name="${fields[i]}"
+        [[ "${line}" == "${name}="* ]] || return 1
+        value="${line#"${name}="}"
+        [[ "${value}" =~ ${patterns[i]} ]] || return 1
+        case "${name}" in
+            version) M_VERSION="${value}" ;;
+            filename) M_FILENAME="${value}" ;;
+            sha256) M_SHA256="${value}" ;;
+            size) M_SIZE="${value}" ;;
+            commit) M_COMMIT="${value}" ;;
+            min_updater_version) M_MIN_UPDATER="${value}" ;;
+            key_id) M_KEY_ID="${value}" ;;
+        esac
+        i=$((i + 1))
+    done
+
+    [ "${M_FILENAME}" = "serverscope-agent-${M_VERSION}.tar.gz" ] && [ "${M_SIZE}" -le "${MAX_TARBALL_BYTES}" ]
+}
+
+# Only the expected regular files and their two directories.
+check_archive() {
+    local tarball="$1" types names count required line i
+    types="$(tar -tvzf "${tarball}" 2>/dev/null | cut -c1)" || return 1
+    names="$(tar -tzf "${tarball}" 2>/dev/null)" || return 1
+    count="$(printf '%s\n' "${names}" | wc -l)"
+    [ "${count}" -eq "$(printf '%s\n' "${types}" | wc -l)" ] || return 1
+    [ "$(printf '%s\n' "${names}" | sort | uniq -d)" = '' ] || return 1
+
+    i=0
+    local -a type_list
+    mapfile -t type_list <<<"${types}"
+    while IFS= read -r line; do
+        case "${type_list[i]}" in
+            -) [[ "${line}" =~ ^(requirements\.txt|serverscope-agent\.service|serverscope_agent/[a-z_]{1,40}\.py|updater/serverscope-updater(\.service|\.timer)?)$ ]] || return 1 ;;
+            d) [[ "${line}" =~ ^(serverscope_agent|updater)/$ ]] || return 1 ;;
+            *) return 1 ;;
+        esac
+        i=$((i + 1))
+    done <<<"${names}"
+
+    for required in requirements.txt serverscope-agent.service serverscope_agent/__init__.py serverscope_agent/agent.py \
+        serverscope_agent/collector.py updater/serverscope-updater updater/serverscope-updater.service updater/serverscope-updater.timer; do
+        printf '%s\n' "${names}" | grep -qxF "${required}" || return 1
+    done
+}
+
+# Downloads and verifies release $1. On failure REASON says why.
+fetch_and_verify() {
+    local version="$1" base="${BASE_URL}/agent/releases/$1" signing_key_id
+    local manifest="${WORK_DIR}/manifest" sig_b64="${WORK_DIR}/manifest.sig" sig="${WORK_DIR}/manifest.sig.bin"
+    local tarball="${WORK_DIR}/release.tar.gz"
+
+    if ! curl_download 4096 "${manifest}" "${base}/manifest" || ! curl_download 512 "${sig_b64}" "${base}/manifest.sig"; then
+        REASON=download_failed
+        return 1
+    fi
+
+    # 1. The signature, with the key(s) stored locally at installation.
+    if ! base64 -d <"${sig_b64}" >"${sig}" 2>/dev/null || [ "$(stat -c %s "${sig}")" -ne 64 ] || ! verify_signature "${manifest}" "${sig}"; then
+        REASON=bad_signature
+        return 1
+    fi
+    log "Handtekening klopt (sleutel ${KEY_FILE})."
+
+    # 2. The manifest.
+    if ! parse_manifest "${manifest}"; then
+        REASON=bad_manifest
+        return 1
+    fi
+    signing_key_id="$(openssl pkey -pubin -in "${KEY_FILE}" -outform DER 2>/dev/null | sha256sum | cut -c1-16)"
+    if [ "${M_KEY_ID}" != "${signing_key_id}" ]; then
+        REASON=bad_manifest
+        return 1
+    fi
+    if [ "${M_VERSION}" != "${version}" ]; then
+        REASON=version_mismatch
+        return 1
+    fi
+    if [ "${M_MIN_UPDATER}" -gt "${UPDATER_VERSION}" ]; then
+        REASON=updater_too_old
+        return 1
+    fi
+
+    # 3. The tarball against the manifest, then its contents.
+    if ! curl_download "${MAX_TARBALL_BYTES}" "${tarball}" "${base}/${M_FILENAME}"; then
+        REASON=download_failed
+        return 1
+    fi
+    if [ "$(stat -c %s "${tarball}")" != "${M_SIZE}" ] || [ "$(sha256sum "${tarball}" | cut -d' ' -f1)" != "${M_SHA256}" ]; then
+        REASON=bad_checksum
+        return 1
+    fi
+    if ! check_archive "${tarball}"; then
+        REASON=bad_archive
+        return 1
+    fi
+    log "Release ${M_VERSION} (commit ${M_COMMIT}) is ondertekend en compleet."
+}
+
+# Unpacks the verified tarball into releases/<version>.
+install_release() {
+    local version="$1" staging="${RELEASES_DIR}/.staging-$1"
+    rm -rf -- "${staging}"
+    mkdir -p "${staging}"
+    tar -xzf "${WORK_DIR}/release.tar.gz" -C "${staging}" --no-same-owner --no-same-permissions || return 1
+    python3 -I -c 'import ast, sys
+for path in sys.argv[1:]:
+    ast.parse(open(path, encoding="utf-8").read(), path)' "${staging}"/serverscope_agent/*.py || return 1
+
+    # Agents up to 0.2.0 look for ../.env relative to the resolved package.
+    ln -s ../../.env "${staging}/.env"
+    chown -R -h root:"${AGENT_USER}" "${staging}"
+    find "${staging}" -type d -exec chmod 755 {} +
+    find "${staging}" -type f -exec chmod 644 {} +
+    chmod 755 "${staging}/updater/serverscope-updater"
+
+    rm -rf -- "${RELEASES_DIR:?}/${version}"
+    mv -T "${staging}" "${RELEASES_DIR}/${version}"
+}
+
+# Atomic switch of the symlink the agent unit runs from.
+switch_to() {
+    ln -sfn "releases/$1/serverscope_agent" "${INSTALL_DIR}/.serverscope_agent.new"
+    mv -Tf "${INSTALL_DIR}/.serverscope_agent.new" "${CURRENT_LINK}"
+}
+
+# Waits until ServerScope received a sample from version $1.
+wait_for_sample() {
+    local version="$1" interval deadline status
+    interval="$(env_value SERVERSCOPE_INTERVAL)"
+    [[ "${interval}" =~ ^[0-9]+$ ]] || interval=60
+    deadline=$((SECONDS + (interval * 3 > 180 ? interval * 3 : 180)))
+
+    while [ "${SECONDS}" -lt "${deadline}" ]; do
+        sleep 10
+        systemctl is-active --quiet "${AGENT_UNIT}" || continue
+        status="$(curl_api -o "${WORK_DIR}/self.json" -w '%{http_code}' "${BASE_URL}/api/agent/self" 2>/dev/null || printf '000')"
+        # Only the new version reports this version: anything older was
+        # refused above, so this value cannot be left over from before.
+        if [ "${status}" = 200 ] && [ "$(json_field "${WORK_DIR}/self.json" data.agent_version)" = "${version}" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+prune_releases() {
+    local keep_current="$1" keep_previous="$2" dir name
+    for dir in "${RELEASES_DIR}"/*; do
+        [ -d "${dir}" ] || continue
+        name="${dir##*/}"
+        if [ "${name}" != "${keep_current}" ] && [ "${name}" != "${keep_previous}" ]; then
+            rm -rf -- "${dir}"
+        fi
+    done
+}
+
+run_once() {
+    local installed highest token status request_id version previous
+
+    # The emergency switch comes first: no network traffic at all.
+    if [ -e "${DISABLE_FILE}" ]; then
+        log "Updates zijn lokaal uitgeschakeld (${DISABLE_FILE}); er wordt niets gedaan."
+        return 0
+    fi
+
+    if [ ! -f "${MARKER}" ] || [ ! -L "${CURRENT_LINK}" ]; then
+        log "Geen installatie van install.sh met releasemappen gevonden in ${INSTALL_DIR}; er wordt niets gedaan."
+        return 0
+    fi
+
+    installed="$(installed_version)"
+    if [ -z "${installed}" ]; then
+        log "De geïnstalleerde versie is niet te bepalen (${CURRENT_LINK}); er wordt niets gedaan."
+        return 0
+    fi
+
+    BASE_URL="$(env_value SERVERSCOPE_URL)"
+    BASE_URL="${BASE_URL%/}"
+    token="$(env_value SERVERSCOPE_TOKEN)"
+    if ! [[ "${BASE_URL}" =~ ^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?$ ]] || ! [[ "${token}" =~ ^[a-f0-9]{64}$ ]]; then
+        log "Geen geldig ServerScope-adres (alleen https) of credential in ${ENV_FILE}; er wordt niets gedaan."
+        return 0
+    fi
+
+    WORK_DIR="$(mktemp -d)"
+    chmod 700 "${WORK_DIR}"
+    HEADER_FILE="${WORK_DIR}/auth-header"
+    (umask 077 && printf 'Authorization: Bearer %s\n' "${token}" >"${HEADER_FILE}")
+    token=''
+
+    status="$(curl_api -o "${WORK_DIR}/check.json" -w '%{http_code}' -G \
+        --data-urlencode "installed=${installed}" --data-urlencode "updater=${UPDATER_VERSION}" --data-urlencode 'state=enabled' \
+        "${BASE_URL}/api/agent/update" 2>/dev/null || printf '000')"
+    if [ "${status}" != 200 ]; then
+        log "ServerScope gaf HTTP ${status} op de updatecontrole; volgende keer opnieuw."
+        return 0
+    fi
+
+    request_id="$(json_field "${WORK_DIR}/check.json" data.update.request_id)"
+    version="$(json_field "${WORK_DIR}/check.json" data.update.version)"
+    if [ -z "${request_id}" ] && [ -z "${version}" ]; then
+        return 0
+    fi
+    if ! [[ "${request_id}" =~ ^[1-9][0-9]{0,18}$ ]] || ! is_version "${version}"; then
+        log "Onverwacht antwoord van ServerScope; genegeerd."
+        return 0
+    fi
+
+    log "ServerScope vraagt om versie ${version} (verzoek ${request_id}); geïnstalleerd: ${installed}."
+    status="$(report "${request_id}" in_progress)"
+    if [ "${status}" != 200 ]; then
+        log "Het verzoek kon niet worden gestart (HTTP ${status}); er wordt niets gedaan."
+        return 0
+    fi
+
+    # 4. Never the same or an older version (no downgrade to a vulnerable
+    #    release), and not a version that already failed here.
+    highest="$(highest_version)"
+    if ! version_gt "${version}" "${installed}" || { [ -n "${highest}" ] && ! version_gt "${version}" "${highest}"; }; then
+        log "Geweigerd: ${version} is niet nieuwer dan de geïnstalleerde versie ${installed}${highest:+ (hoogste ooit: ${highest})}."
+        report "${request_id}" rejected downgrade "${installed}" >/dev/null
+        return 0
+    fi
+    if grep -qxF "${version}" "${FAILED_FILE}" 2>/dev/null; then
+        log "Geweigerd: ${version} is op deze server al eens mislukt (wissen met: serverscope-updater --forget-failures)."
+        report "${request_id}" rejected already_failed "${installed}" >/dev/null
+        return 0
+    fi
+
+    if ! fetch_and_verify "${version}"; then
+        log "Geweigerd: ${version} (${REASON}). Er is niets gewijzigd."
+        if [ "${REASON}" = download_failed ]; then
+            report "${request_id}" failed "${REASON}" "${installed}" >/dev/null
+        else
+            report "${request_id}" rejected "${REASON}" "${installed}" >/dev/null
+        fi
+        return 0
+    fi
+
+    if ! install_release "${version}"; then
+        rm -rf -- "${RELEASES_DIR:?}/.staging-${version}"
+        log "Installeren van ${version} is mislukt. Er is niets gewijzigd."
+        report "${request_id}" failed install_failed "${installed}" >/dev/null
+        return 0
+    fi
+
+    # The emergency switch may have been set meanwhile.
+    if [ -e "${DISABLE_FILE}" ]; then
+        log "Updates zijn intussen lokaal uitgeschakeld; versie ${version} wordt niet geactiveerd."
+        report "${request_id}" rejected disabled_locally "${installed}" >/dev/null
+        return 0
+    fi
+
+    previous="${installed}"
+    log "Overschakelen van ${previous} naar ${version} en de agent herstarten…"
+    switch_to "${version}"
+    systemctl restart "${AGENT_UNIT}" 9>&- || true
+
+    if wait_for_sample "${version}"; then
+        printf '%s\n' "${version}" >"${HIGHEST_FILE}"
+        prune_releases "${version}" "${previous}"
+        log "Gelukt: de agent draait versie ${version} en stuurt metingen."
+        report "${request_id}" succeeded "" "${version}" >/dev/null
+        return 0
+    fi
+
+    log "Geen meting van versie ${version} ontvangen; terug naar ${previous}."
+    switch_to "${previous}"
+    systemctl restart "${AGENT_UNIT}" 9>&- || true
+    printf '%s\n' "${version}" >>"${FAILED_FILE}"
+    report "${request_id}" rolled_back no_sample "${previous}" >/dev/null
+    log "Versie ${previous} is teruggezet."
+}
+
+show_status() {
+    printf 'updateprogramma: versie %s\n' "${UPDATER_VERSION}"
+    printf 'geïnstalleerde agent: %s\n' "$(installed_version || true)"
+    printf 'hoogste ooit geïnstalleerd: %s\n' "$(highest_version || true)"
+    if [ -e "${DISABLE_FILE}" ]; then printf 'updates: lokaal UITGESCHAKELD (%s)\n' "${DISABLE_FILE}"; else printf 'updates: ingeschakeld\n'; fi
+    printf 'mislukte versies: %s\n' "$(tr '\n' ' ' <"${FAILED_FILE}" 2>/dev/null || true)"
+}
+
+[ "$(id -u)" -eq 0 ] || {
+    printf 'serverscope-updater moet als root draaien.\n' >&2
+    exit 1
+}
+mkdir -p "${STATE_DIR}" "$(dirname "${LOCK_FILE}")"
+chmod 700 "${STATE_DIR}"
+
+case "${1:-}" in
+    "")
+        # fd 9 holds the lock; it is closed for every process that may
+        # outlive this run (the restarted agent), or the lock would stay.
+        exec 9>"${LOCK_FILE}"
+        if ! flock -n 9; then
+            log "Er draait al een updateprogramma; deze run stopt."
+            exit 0
+        fi
+        run_once
+        ;;
+    --status) show_status ;;
+    --forget-failures)
+        rm -f -- "${FAILED_FILE}"
+        log "Lijst met mislukte versies gewist."
+        ;;
+    --version) printf '%s\n' "${UPDATER_VERSION}" ;;
+    *)
+        printf 'Onbekende optie: %s\n' "$1" >&2
+        exit 1
+        ;;
+esac

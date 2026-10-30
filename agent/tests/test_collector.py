@@ -46,7 +46,7 @@ def test_collect_metrics_returns_expected_values(
     assert result["network_tx_bytes"] == 85000
     assert result["uptime_seconds"] == 100
     assert result["disks"] == []
-    assert result["agent_version"] == "0.2.0"
+    assert result["agent_version"] == "0.3.0"
     assert len(result["agent_checksum"]) == 64
     assert result["collected_at"].endswith("+00:00")
 

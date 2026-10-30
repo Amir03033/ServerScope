@@ -135,7 +135,8 @@ class ServerDiagnosis
             }
         }
 
-        $latestVersion = (string) config('serverscope.agent.latest_version');
+        // The newest signed release; the setting only before the first import.
+        $latestVersion = \App\Models\AgentRelease::latestAvailable()?->version ?? (string) config('serverscope.agent.latest_version');
         $outdated = $server->agent_version !== null && $latestVersion !== '' && version_compare(ltrim($server->agent_version, 'v'), $latestVersion, '<');
 
         $known = (array) config('serverscope.agent.known_checksums', []);
@@ -171,6 +172,7 @@ class ServerDiagnosis
             'interval_seconds' => $interval,
             'missing_fields' => $missing,
             'outdated' => $outdated,
+            'latest_version' => $latestVersion,
             'integrity' => $integrity,
             'issues' => $issues,
         ];

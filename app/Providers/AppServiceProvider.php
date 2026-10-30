@@ -109,10 +109,15 @@ class AppServiceProvider extends ServiceProvider
         // Own counters per credential: plain throttle:N,1 shares one counter
         // per IP across routes, so install.sh polling would eat the budget
         // of /api/agent/metrics for every server behind the same address.
-        \Illuminate\Support\Facades\RateLimiter::for('agent-self', fn (\Illuminate\Http\Request $request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(30)
-            ->by('agent-self:'.($request->attributes->get('agentCredential')?->id ?? $request->ip())));
-        \Illuminate\Support\Facades\RateLimiter::for('agent-revoke', fn (\Illuminate\Http\Request $request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(5)
-            ->by('agent-revoke:'.($request->attributes->get('agentCredential')?->id ?? $request->ip())));
+        // The throttle runs before AuthenticateAgent (middleware priority),
+        // so the counter is keyed by a hash of the presented token, with a
+        // generous ceiling per address against random-token floods.
+        foreach (['agent-self' => 30, 'agent-update' => 30, 'agent-revoke' => 5] as $name => $perMinute) {
+            \Illuminate\Support\Facades\RateLimiter::for($name, fn (\Illuminate\Http\Request $request) => [
+                \Illuminate\Cache\RateLimiting\Limit::perMinute($perMinute)->by($name.':'.hash('sha256', (string) ($request->bearerToken() ?? $request->ip()))),
+                \Illuminate\Cache\RateLimiting\Limit::perMinute(600)->by($name.':ip:'.$request->ip()),
+            ]);
+        }
 
         \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(fn (User $user, string $token) => (new \Illuminate\Notifications\Messages\MailMessage)
             ->subject('[ServerScope] Wachtwoord opnieuw instellen')

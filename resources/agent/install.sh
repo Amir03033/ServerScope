@@ -2,8 +2,11 @@
 # ServerScope agent installer for Ubuntu 22.04+ and Debian 12+ (amd64, arm64).
 #
 # Gebruik:
-#   sudo bash serverscope-install.sh             installeren en koppelen
-#   sudo bash serverscope-install.sh --uninstall  verwijderen
+#   sudo bash serverscope-install.sh                    installeren en koppelen
+#   sudo bash serverscope-install.sh --updates=on|off   idem, zonder de vraag over updates
+#   sudo bash serverscope-install.sh --disable-updates  noodknop: updates lokaal uitzetten
+#   sudo bash serverscope-install.sh --enable-updates   updates weer aanzetten
+#   sudo bash serverscope-install.sh --uninstall        verwijderen
 #
 # Het koppeltoken staat bewust niet in het commando (dan belandt het in de
 # shell-geschiedenis en in de proceslijst). Het script vraagt erom, of leest
@@ -14,14 +17,23 @@
 #     python3-dotenv uit de pakketbronnen van je distributie (geen pip);
 #   - maakt de systeemgebruiker 'serverscope' zonder shell (als die nog niet
 #     bestaat);
-#   - installeert de agent in /opt/serverscope-agent (venv met
-#     --system-site-packages) na controle van de SHA-256-checksum;
+#   - downloadt de nieuwste ondertekende release en controleert de
+#     handtekening met de publieke sleutel hieronder (RELEASE_PUBLIC_KEY),
+#     daarna de SHA-256 van het pakket;
+#   - installeert de agent in /opt/serverscope-agent/releases/<versie>
+#     (venv met --system-site-packages) en legt de publieke sleutel vast in
+#     /etc/serverscope/release.pub;
+#   - installeert, als je dat toestaat, het updateprogramma
+#     serverscope-updater (root, systemd-timer) dat alleen releases
+#     installeert die met deze sleutel zijn ondertekend;
 #   - koppelt de server aan je team en schrijft /opt/serverscope-agent/.env
 #     (root:serverscope, 640);
 #   - installeert en start de systemd-service serverscope-agent.
 # De agent leest alleen systeemgegevens en voert geen opdrachten van de
-# server uit. De checksum komt van dezelfde server als het pakket: hij
-# beschermt tegen een kapotte download, niet tegen een gehackte server.
+# server uit. Let op: bij een EERSTE installatie komt de publieke sleutel
+# zelf uit dit script, dus van de server. Vergelijk de vingerafdruk die
+# het script toont met die in de documentatie. Bestaande installaties
+# houden hun eigen, eerder vastgelegde sleutel.
 
 set -euo pipefail
 umask 022
@@ -29,6 +41,11 @@ umask 022
 readonly SERVERSCOPE_URL_DEFAULT='__SERVERSCOPE_URL__'
 readonly AGENT_VERSION='__AGENT_VERSION__'
 readonly ALLOW_INSECURE='__ALLOW_INSECURE__'
+# The public key of the offline release key. Every release is checked
+# against it, and it is stored in /etc/serverscope/release.pub for the
+# updater. Compare the fingerprint with the one in the documentation.
+readonly RELEASE_PUBLIC_KEY='__RELEASE_PUBLIC_KEY__'
+readonly RELEASE_KEY_FINGERPRINT='__RELEASE_KEY_FINGERPRINT__'
 
 readonly INSTALL_DIR=/opt/serverscope-agent
 readonly ENV_FILE="${INSTALL_DIR}/.env"
@@ -37,6 +54,21 @@ readonly UNIT_NAME=serverscope-agent.service
 readonly UNIT_FILE="/etc/systemd/system/${UNIT_NAME}"
 readonly AGENT_USER=serverscope
 readonly BASE_URL="${SERVERSCOPE_URL_DEFAULT%/}"
+readonly RELEASES_DIR="${INSTALL_DIR}/releases"
+readonly CURRENT_LINK="${INSTALL_DIR}/serverscope_agent"
+readonly ETC_DIR=/etc/serverscope
+readonly KEY_FILE="${ETC_DIR}/release.pub"
+readonly DISABLE_FILE="${ETC_DIR}/updates-disabled"
+readonly UPDATER_BIN=/usr/local/sbin/serverscope-updater
+readonly UPDATER_SERVICE=/etc/systemd/system/serverscope-updater.service
+readonly UPDATER_TIMER_NAME=serverscope-updater.timer
+readonly UPDATER_TIMER=/etc/systemd/system/${UPDATER_TIMER_NAME}
+readonly UPDATER_STATE_DIR=/var/lib/serverscope-updater
+readonly VERSION_RE='^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$'
+
+# --updates=on|off or SERVERSCOPE_UPDATES; empty = ask.
+UPDATES_CHOICE="${SERVERSCOPE_UPDATES:-}"
+REPLACE_KEY=0
 
 WORK_DIR=''
 
@@ -114,7 +146,7 @@ install_packages() {
     apt-get update -qq >/dev/null || die "apt-get update is mislukt." "Controleer de internetverbinding en de pakketbronnen (apt-get update)."
     apt-get install -y -qq --no-install-recommends \
         python3 python3-venv python3-psutil python3-requests python3-dotenv \
-        ca-certificates curl tar coreutils >/dev/null ||
+        ca-certificates curl tar coreutils openssl >/dev/null ||
         die "Installeren van de pakketten is mislukt." "Draai 'apt-get install python3-venv python3-psutil python3-requests python3-dotenv' en bekijk de foutmelding."
 }
 
@@ -153,31 +185,147 @@ except Exception:
     pass' "$1" "$2"
 }
 
-download_agent() {
-    local name="serverscope-agent-${AGENT_VERSION}.tar.gz"
-    info "Agent ${AGENT_VERSION} downloaden en checksum controleren…"
-    curl_safe -fo "${WORK_DIR}/${name}" "${BASE_URL}/agent/${name}" ||
-        die "Downloaden van de agent is mislukt." "Controleer of deze server ${BASE_URL} via https kan bereiken (firewall, proxy, DNS)."
-    curl_safe -fo "${WORK_DIR}/${name}.sha256" "${BASE_URL}/agent/${name}.sha256" ||
-        die "Downloaden van de checksum is mislukt." "Controleer de verbinding met ${BASE_URL} en probeer het opnieuw."
-    (cd "${WORK_DIR}" && sha256sum --check --status "${name}.sha256") ||
-        die "De checksum van het agentpakket klopt niet; de download is beschadigd of gewijzigd." "Probeer het opnieuw. Blijft dit gebeuren, neem dan contact op met de beheerder van ServerScope."
+# True when version $1 is strictly higher than version $2.
+version_gt() {
+    local a b i
+    IFS=. read -r -a a <<<"$1"
+    IFS=. read -r -a b <<<"$2"
+    for i in 0 1 2; do
+        if [ "$((10#${a[i]}))" -gt "$((10#${b[i]}))" ]; then return 0; fi
+        if [ "$((10#${a[i]}))" -lt "$((10#${b[i]}))" ]; then return 1; fi
+    done
+    return 1
+}
 
-    mkdir -p "${WORK_DIR}/agent"
-    tar -xzf "${WORK_DIR}/${name}" -C "${WORK_DIR}/agent" --no-same-owner --no-same-permissions
-    if [ ! -f "${WORK_DIR}/agent/serverscope_agent/agent.py" ] || [ ! -f "${WORK_DIR}/agent/${UNIT_NAME}" ]; then
-        die "Het agentpakket is onvolledig." "Probeer het opnieuw."
+# Version the agent runs now: the release the symlink points to (0.3.0+),
+# or the AGENT_VERSION of a 0.2.0-style directory.
+current_version() {
+    local target version
+    if [ -L "${CURRENT_LINK}" ]; then
+        target="$(readlink "${CURRENT_LINK}")"
+        version="${target#releases/}"
+        version="${version%/serverscope_agent}"
+    elif [ -f "${CURRENT_LINK}/collector.py" ]; then
+        version="$(sed -n 's/^AGENT_VERSION = "\(.*\)"$/\1/p' "${CURRENT_LINK}/collector.py" | head -n 1)"
+    fi
+    if [[ "${version:-}" =~ ${VERSION_RE} ]]; then printf '%s' "${version}"; fi
+}
+
+# Before anything on this server is changed: a key that was stored
+# earlier is never replaced silently.
+check_release_key() {
+    if [ -f "${KEY_FILE}" ] && [ "$(cat "${KEY_FILE}")" != "${RELEASE_PUBLIC_KEY}" ]; then
+        if [ "${REPLACE_KEY}" != "1" ]; then
+            die "De releasesleutel in dit script verschilt van de sleutel die eerder op deze server is vastgelegd (${KEY_FILE}). Er is niets gewijzigd." \
+                "Dit gebeurt alleen bij een geplande sleutelwissel. Controleer de vingerafdruk in de documentatie van ServerScope en draai het script dan met --replace-release-key. Twijfel je, neem dan contact op met ServerScope."
+        fi
+        warn "De vastgelegde releasesleutel wordt vervangen (--replace-release-key)."
     fi
 }
 
+# Only the expected regular files and their two directories.
+check_archive() {
+    local tarball="$1" types names line i required
+    local -a type_list
+    types="$(tar -tvzf "${tarball}" 2>/dev/null | cut -c1)" || return 1
+    names="$(tar -tzf "${tarball}" 2>/dev/null)" || return 1
+    [ "$(printf '%s\n' "${names}" | wc -l)" -eq "$(printf '%s\n' "${types}" | wc -l)" ] || return 1
+    [ "$(printf '%s\n' "${names}" | sort | uniq -d)" = '' ] || return 1
+    mapfile -t type_list <<<"${types}"
+    i=0
+    while IFS= read -r line; do
+        case "${type_list[i]}" in
+            -) [[ "${line}" =~ ^(requirements\.txt|serverscope-agent\.service|serverscope_agent/[a-z_]{1,40}\.py|updater/serverscope-updater(\.service|\.timer)?)$ ]] || return 1 ;;
+            d) [[ "${line}" =~ ^(serverscope_agent|updater)/$ ]] || return 1 ;;
+            *) return 1 ;;
+        esac
+        i=$((i + 1))
+    done <<<"${names}"
+    for required in requirements.txt serverscope-agent.service serverscope_agent/agent.py serverscope_agent/collector.py \
+        updater/serverscope-updater updater/serverscope-updater.service updater/serverscope-updater.timer; do
+        printf '%s\n' "${names}" | grep -qxF "${required}" || return 1
+    done
+}
+
+manifest_value() {
+    sed -n "s/^$1=//p" "$2" | head -n 1
+}
+
+download_agent() {
+    local base="${BASE_URL}/agent/releases/${AGENT_VERSION}" name="serverscope-agent-${AGENT_VERSION}.tar.gz"
+    local manifest="${WORK_DIR}/manifest" fingerprint
+    info "Agent ${AGENT_VERSION} downloaden en de handtekening controleren…"
+
+    printf '%s\n' "${RELEASE_PUBLIC_KEY}" >"${WORK_DIR}/release.pub"
+    fingerprint="$(openssl pkey -pubin -in "${WORK_DIR}/release.pub" -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1)"
+    [ "${fingerprint}" = "${RELEASE_KEY_FINGERPRINT}" ] ||
+        die "De releasesleutel in dit script is ongeldig." "Download het script opnieuw vanuit ServerScope."
+    info "Releasesleutel: vingerafdruk ${fingerprint}"
+
+    { curl_safe -fo "${manifest}" "${base}/manifest" && curl_safe -fo "${WORK_DIR}/manifest.sig.b64" "${base}/manifest.sig"; } ||
+        die "Downloaden van de agentrelease is mislukt." "Controleer of deze server ${BASE_URL} via https kan bereiken (firewall, proxy, DNS)."
+    { base64 -d <"${WORK_DIR}/manifest.sig.b64" >"${WORK_DIR}/manifest.sig" 2>/dev/null &&
+        openssl pkeyutl -verify -pubin -inkey "${WORK_DIR}/release.pub" -rawin -in "${manifest}" -sigfile "${WORK_DIR}/manifest.sig" >/dev/null 2>&1; } ||
+        die "De handtekening van de agentrelease klopt niet. Er is niets geïnstalleerd." "Probeer het later opnieuw. Blijft dit gebeuren, neem dan contact op met ServerScope: dit kan op een probleem met de server wijzen."
+
+    { [ "$(manifest_value format "${manifest}")" = serverscope-agent-release-1 ] &&
+        [ "$(manifest_value product "${manifest}")" = serverscope-agent ] &&
+        [ "$(manifest_value version "${manifest}")" = "${AGENT_VERSION}" ] &&
+        [ "$(manifest_value filename "${manifest}")" = "${name}" ] &&
+        [ "$(manifest_value key_id "${manifest}")" = "${fingerprint:0:16}" ]; } ||
+        die "Het manifest van de agentrelease is ongeldig." "Probeer het opnieuw of neem contact op met ServerScope."
+
+    curl_safe --max-time 300 -fo "${WORK_DIR}/${name}" "${base}/${name}" ||
+        die "Downloaden van de agent is mislukt." "Controleer de verbinding met ${BASE_URL} en probeer het opnieuw."
+    { [ "$(stat -c %s "${WORK_DIR}/${name}")" = "$(manifest_value size "${manifest}")" ] &&
+        [ "$(sha256sum "${WORK_DIR}/${name}" | cut -d' ' -f1)" = "$(manifest_value sha256 "${manifest}")" ]; } ||
+        die "Het agentpakket komt niet overeen met de ondertekende checksum; de download is beschadigd of gewijzigd." "Probeer het opnieuw. Blijft dit gebeuren, neem dan contact op met ServerScope."
+    check_archive "${WORK_DIR}/${name}" || die "Het agentpakket bevat onverwachte bestanden." "Neem contact op met ServerScope."
+
+    mkdir -p "${WORK_DIR}/agent"
+    tar -xzf "${WORK_DIR}/${name}" -C "${WORK_DIR}/agent" --no-same-owner --no-same-permissions
+    info "Handtekening en checksum kloppen (release ${AGENT_VERSION}, commit $(manifest_value commit "${manifest}"))."
+}
+
 install_files() {
+    local current release="${RELEASES_DIR}/${AGENT_VERSION}" staging="${RELEASES_DIR}/.staging-${AGENT_VERSION}"
     info "Agent installeren in ${INSTALL_DIR}…"
-    mkdir -p "${INSTALL_DIR}"
-    # The package directory is replaced as a whole; .env and .venv stay.
-    rm -rf -- "${INSTALL_DIR}/serverscope_agent.new"
-    cp -R "${WORK_DIR}/agent/serverscope_agent" "${INSTALL_DIR}/serverscope_agent.new"
-    rm -rf -- "${INSTALL_DIR}/serverscope_agent"
-    mv "${INSTALL_DIR}/serverscope_agent.new" "${INSTALL_DIR}/serverscope_agent"
+    mkdir -p "${RELEASES_DIR}"
+    current="$(current_version)"
+
+    if [ -n "${current}" ] && [ -L "${CURRENT_LINK}" ] && version_gt "${current}" "${AGENT_VERSION}"; then
+        # Never a downgrade: the updater already installed something newer.
+        warn "Op deze server draait al agent ${current} (nieuwer dan ${AGENT_VERSION}); de agent zelf blijft ongewijzigd."
+        INSTALLED_VERSION="${current}"
+    else
+        rm -rf -- "${staging}"
+        mkdir -p "${staging}"
+        cp -R "${WORK_DIR}/agent/serverscope_agent" "${staging}/serverscope_agent"
+        # Agents up to 0.2.0 look for ../.env relative to the resolved package.
+        ln -s ../../.env "${staging}/.env"
+        rm -rf -- "${release}"
+        mv -T "${staging}" "${release}"
+
+        # Atomic switch of the symlink; a 0.2.0 installation has a real
+        # directory there, which is replaced by the symlink.
+        if [ -d "${CURRENT_LINK}" ] && [ ! -L "${CURRENT_LINK}" ]; then
+            rm -rf -- "${INSTALL_DIR}/.serverscope_agent.old"
+            mv -T "${CURRENT_LINK}" "${INSTALL_DIR}/.serverscope_agent.old"
+        fi
+        ln -sfn "releases/${AGENT_VERSION}/serverscope_agent" "${INSTALL_DIR}/.serverscope_agent.new"
+        mv -Tf "${INSTALL_DIR}/.serverscope_agent.new" "${CURRENT_LINK}"
+        rm -rf -- "${INSTALL_DIR}/.serverscope_agent.old"
+        INSTALLED_VERSION="${AGENT_VERSION}"
+
+        # Only the active release stays (and one previous for the updater).
+        local dir
+        for dir in "${RELEASES_DIR}"/*; do
+            [ -d "${dir}" ] || continue
+            if [ "${dir##*/}" != "${AGENT_VERSION}" ] && [ "${dir##*/}" != "${current}" ]; then
+                rm -rf -- "${dir}"
+            fi
+        done
+    fi
     install -m 0644 "${WORK_DIR}/agent/requirements.txt" "${INSTALL_DIR}/requirements.txt"
 
     if [ ! -x "${INSTALL_DIR}/.venv/bin/python" ]; then
@@ -193,15 +341,122 @@ install_files() {
     chown -R root:"${AGENT_USER}" "${INSTALL_DIR}"
     # Everything readable except the configuration: .env* is never touched
     # by this recursive chmod, so it is not readable for others even for a
-    # moment while the script runs again.
-    find "${INSTALL_DIR}" ! -name '.env*' -exec chmod u=rwX,g=rX,o=rX {} +
-    find "${INSTALL_DIR}" -name '.env*' -exec chmod o-rwx {} +
+    # moment while the script runs again. Symlinks are skipped.
+    find "${INSTALL_DIR}" ! -type l ! -name '.env*' -exec chmod u=rwX,g=rX,o=rX {} +
+    find "${INSTALL_DIR}" ! -type l -name '.env*' -exec chmod o-rwx {} +
     if [ -f "${ENV_FILE}" ]; then
         chmod 640 "${ENV_FILE}"
     fi
 
     # The unit from the package, unchanged: the agent reads its own .env.
     install -m 0644 "${WORK_DIR}/agent/${UNIT_NAME}" "${UNIT_FILE}"
+
+    # The public key for the updater: root only, not writable for the
+    # agent or for ServerScope.
+    install -d -m 0755 -o root -g root "${ETC_DIR}"
+    printf '%s\n' "${RELEASE_PUBLIC_KEY}" >"${KEY_FILE}.tmp"
+    chown root:root "${KEY_FILE}.tmp"
+    chmod 0644 "${KEY_FILE}.tmp"
+    mv -f "${KEY_FILE}.tmp" "${KEY_FILE}"
+}
+
+# A terminal to ask on. [ -r /dev/tty ] is not enough: without a
+# controlling terminal the device exists but cannot be opened.
+has_tty() {
+    (exec </dev/tty) 2>/dev/null
+}
+
+# The question (or --updates / SERVERSCOPE_UPDATES); sets UPDATES_ON.
+ask_updates() {
+    local answer default=J
+    case "${UPDATES_CHOICE}" in
+        on) UPDATES_ON=1; return 0 ;;
+        off) UPDATES_ON=0; return 0 ;;
+        "") ;;
+        *) die "Ongeldige waarde voor --updates of SERVERSCOPE_UPDATES: ${UPDATES_CHOICE}" "Gebruik on of off." ;;
+    esac
+
+    # Switched off earlier on this server: that stays the default.
+    if [ -e "${DISABLE_FILE}" ]; then
+        default=N
+    fi
+
+    if ! has_tty; then
+        UPDATES_ON=$([ "${default}" = J ] && echo 1 || echo 0)
+        info "Geen terminal: automatische updates $([ "${UPDATES_ON}" = 1 ] && echo AAN || echo UIT) (kies met --updates=on of --updates=off)."
+        return 0
+    fi
+
+    {
+        printf '\nAutomatische updates van de agent\n'
+        printf 'ServerScope kan deze agent bijwerken wanneer een beheerder van je team\n'
+        printf 'daarom vraagt (of als je dat per server aanzet). Er worden alleen\n'
+        printf 'releases geïnstalleerd die zijn ondertekend met de releasesleutel van\n'
+        printf 'ServerScope; die sleutel wordt nu lokaal vastgelegd. Mislukt een\n'
+        printf 'update, dan komt de vorige versie terug. Je kunt dit altijd lokaal\n'
+        printf 'uitzetten met: sudo bash serverscope-install.sh --disable-updates\n'
+        if [ "${default}" = J ]; then printf 'Updateprogramma installeren? [J/n] '; else printf 'Updates zijn hier eerder uitgezet. Weer aanzetten? [j/N] '; fi
+    } >/dev/tty
+    IFS= read -r answer </dev/tty || answer=''
+    case "${answer:-${default}}" in
+        [JjYy]*) UPDATES_ON=1 ;;
+        *) UPDATES_ON=0 ;;
+    esac
+}
+
+# One check-in that tells ServerScope the updater is switched off here.
+report_updates_disabled() {
+    local token header version
+    token="$(read_env_value SERVERSCOPE_TOKEN)"
+    version="$(current_version)"
+    [ -n "${token}" ] && [ -n "${version}" ] || return 0
+    header="$(auth_header_file "${token}")"
+    curl_safe -o /dev/null -G -H @"${header}" -H 'Accept: application/json' \
+        --data-urlencode "installed=${version}" --data-urlencode 'updater=1' --data-urlencode 'state=disabled' \
+        "${BASE_URL}/api/agent/update" 2>/dev/null || true
+}
+
+# Answered "no": no updater program and no timer on this server (the
+# stored key and the switch file stay, so ServerScope shows it as off).
+remove_updater() {
+    systemctl disable --now "${UPDATER_TIMER_NAME}" >/dev/null 2>&1 || true
+    rm -f -- "${UPDATER_BIN}" "${UPDATER_SERVICE}" "${UPDATER_TIMER}"
+    systemctl daemon-reload
+}
+
+install_updater() {
+    install -m 0755 -o root -g root "${WORK_DIR}/agent/updater/serverscope-updater" "${UPDATER_BIN}"
+    install -m 0644 -o root -g root "${WORK_DIR}/agent/updater/serverscope-updater.service" "${UPDATER_SERVICE}"
+    install -m 0644 -o root -g root "${WORK_DIR}/agent/updater/${UPDATER_TIMER_NAME}" "${UPDATER_TIMER}"
+    install -d -m 0700 -o root -g root "${UPDATER_STATE_DIR}"
+
+    # The updater refuses anything not newer than this.
+    local highest
+    highest="$(head -n 1 "${UPDATER_STATE_DIR}/highest-version" 2>/dev/null || true)"
+    if ! [[ "${highest}" =~ ${VERSION_RE} ]] || version_gt "${INSTALLED_VERSION}" "${highest}"; then
+        printf '%s\n' "${INSTALLED_VERSION}" >"${UPDATER_STATE_DIR}/highest-version"
+    fi
+    systemctl daemon-reload
+}
+
+enable_updates() {
+    rm -f -- "${DISABLE_FILE}"
+    systemctl enable --now "${UPDATER_TIMER_NAME}" >/dev/null 2>&1 ||
+        die "De updatetimer kon niet worden ingeschakeld." "Bekijk: systemctl status ${UPDATER_TIMER_NAME}"
+    info "Automatische updates staan AAN (alleen ondertekende releases). Uitzetten: sudo bash $0 --disable-updates"
+}
+
+disable_updates() {
+    install -d -m 0755 -o root -g root "${ETC_DIR}"
+    printf 'Updates van de ServerScope-agent zijn op deze server uitgeschakeld (%s).\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"${DISABLE_FILE}"
+    chmod 0644 "${DISABLE_FILE}"
+    systemctl disable --now "${UPDATER_TIMER_NAME}" >/dev/null 2>&1 || true
+    report_updates_disabled
+    if [ -x "${UPDATER_BIN}" ]; then
+        info "Automatische updates staan UIT. Het updateprogramma doet niets meer zolang ${DISABLE_FILE} bestaat. Weer aanzetten: sudo bash $0 --enable-updates"
+    else
+        info "Automatische updates staan UIT: er is geen updateprogramma geïnstalleerd. Later alsnog: sudo bash $0 --updates=on"
+    fi
 }
 
 read_enroll_token() {
@@ -209,7 +464,7 @@ read_enroll_token() {
     unset SERVERSCOPE_ENROLL_TOKEN
 
     if [ -z "${ENROLL_TOKEN}" ]; then
-        [ -r /dev/tty ] || die "Geen koppeltoken: er is geen terminal om erom te vragen." \
+        has_tty || die "Geen koppeltoken: er is geen terminal om erom te vragen." \
             "Zet het token in de omgevingsvariabele SERVERSCOPE_ENROLL_TOKEN (niet in een getypt commando)."
         printf 'Plak het koppeltoken uit ServerScope (de invoer blijft verborgen): ' >/dev/tty
         IFS= read -rs ENROLL_TOKEN </dev/tty || true
@@ -280,7 +535,7 @@ write_marker() {
     {
         printf 'created_user=%s\n' "${created_user}"
         printf 'installed_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        printf 'agent_version=%s\n' "${AGENT_VERSION}"
+        printf 'agent_version=%s\n' "${INSTALLED_VERSION}"
     } >"${MARKER}"
     chmod 644 "${MARKER}"
 }
@@ -333,14 +588,25 @@ wait_for_first_sample() {
         "Controleer de klok (timedatectl; zet NTP aan met: timedatectl set-ntp true) en de logboeken: journalctl -u serverscope-agent -n 50. Het script opnieuw draaien is veilig."
 }
 
+# Before anything on this server is changed: is there a signed release?
+check_release_available() {
+    if [ -z "${AGENT_VERSION}" ] || [ -z "${RELEASE_PUBLIC_KEY}" ] || [ -z "${RELEASE_KEY_FINGERPRINT}" ]; then
+        die "Er is nog geen ondertekende agentrelease beschikbaar op ${BASE_URL}. Er is niets op deze server gewijzigd." \
+            "De beheerder van ServerScope moet eerst een release importeren. Probeer het later opnieuw."
+    fi
+}
+
 do_install() {
     check_url
+    check_release_available
     check_system
 
     if [ -d "${INSTALL_DIR}" ] && [ ! -f "${MARKER}" ] && { [ -f "${ENV_FILE}" ] || [ -d "${INSTALL_DIR}/serverscope_agent" ]; }; then
         die "Er staat al een handmatig geïnstalleerde agent in ${INSTALL_DIR}; dit script laat die ongemoeid." \
             "Werk die installatie bij volgens de handmatige instructie, of verwijder hem eerst (systemctl disable --now serverscope-agent; rm -rf ${INSTALL_DIR})."
     fi
+
+    check_release_key
 
     WORK_DIR="$(mktemp -d)"
     chmod 700 "${WORK_DIR}"
@@ -371,6 +637,7 @@ do_install() {
     if [ -z "${existing}" ]; then
         read_enroll_token
     fi
+    ask_updates
 
     install_packages
     ensure_user
@@ -385,8 +652,10 @@ do_install() {
     fi
 
     write_marker "${CREATED_USER}"
+    if [ "${UPDATES_ON}" = 1 ]; then install_updater; else remove_updater; fi
     start_service
     wait_for_first_sample
+    if [ "${UPDATES_ON}" = 1 ]; then enable_updates; else disable_updates; fi
 }
 
 do_uninstall() {
@@ -413,9 +682,11 @@ do_uninstall() {
 
     created_user="$(sed -n 's/^created_user=//p' "${MARKER}")"
 
-    info "Service stoppen en verwijderen…"
+    info "Service en updateprogramma stoppen en verwijderen…"
+    systemctl disable --now "${UPDATER_TIMER_NAME}" >/dev/null 2>&1 || true
     systemctl disable --now "${UNIT_NAME}" >/dev/null 2>&1 || true
-    rm -f -- "${UNIT_FILE}"
+    rm -f -- "${UNIT_FILE}" "${UPDATER_SERVICE}" "${UPDATER_TIMER}" "${UPDATER_BIN}"
+    rm -rf -- "${ETC_DIR}" "${UPDATER_STATE_DIR}"
     systemctl daemon-reload || true
 
     rm -rf -- "${INSTALL_DIR}"
@@ -428,9 +699,37 @@ do_uninstall() {
     printf 'Pakketten zoals python3-psutil zijn niet verwijderd; andere software kan ze gebruiken.\n'
 }
 
-case "${1:-}" in
-    "") do_install ;;
-    --uninstall) do_uninstall ;;
-    -h | --help) sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//' ;;
-    *) die "Onbekende optie: $1" "Gebruik zonder optie om te installeren, of --uninstall om te verwijderen." ;;
+do_switch_updates() {
+    check_url
+    [ "$(id -u)" -eq 0 ] || die "Dit script moet als root draaien." "Start het met: sudo bash $0 $1"
+    [ -f "${MARKER}" ] || die "Geen installatie van dit script gevonden in ${INSTALL_DIR}." \
+        "Updates werken alleen voor installaties van dit script; een handmatige installatie wordt nooit automatisch bijgewerkt."
+    WORK_DIR="$(mktemp -d)"
+    chmod 700 "${WORK_DIR}"
+    if [ "$1" = --disable-updates ]; then
+        disable_updates
+    else
+        { [ -x "${UPDATER_BIN}" ] && [ -f "${KEY_FILE}" ]; } ||
+            die "Het updateprogramma is niet geïnstalleerd." "Draai het script zonder opties om het te installeren."
+        enable_updates
+    fi
+}
+
+ACTION=install
+for arg in "$@"; do
+    case "${arg}" in
+        --uninstall) ACTION=uninstall ;;
+        --disable-updates | --enable-updates) ACTION="${arg}" ;;
+        --updates=on | --updates=off) UPDATES_CHOICE="${arg#--updates=}" ;;
+        --replace-release-key) REPLACE_KEY=1 ;;
+        -h | --help) ACTION=help ;;
+        *) die "Onbekende optie: ${arg}" "Zie: bash $0 --help" ;;
+    esac
+done
+
+case "${ACTION}" in
+    install) do_install ;;
+    uninstall) do_uninstall ;;
+    --disable-updates | --enable-updates) do_switch_updates "${ACTION}" ;;
+    help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
 esac

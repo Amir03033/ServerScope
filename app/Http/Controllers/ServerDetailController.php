@@ -220,6 +220,7 @@ class ServerDetailController extends Controller
             'history' => $this->history($samples),
             'predictions' => \App\Models\Prediction::query()->forResource($server)->current()->orderByDesc('severity_rank')->get(),
             'credentials' => $credentials,
+            'agentUpdate' => app(\App\Services\AgentUpdates::class)->summary($server),
             'recentAlerts' => $recentAlerts,
             'displayStatus' => $displayStatus,
             'range' => $range,

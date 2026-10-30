@@ -1,0 +1,11 @@
+[Unit]
+Description=Check every 5 minutes whether ServerScope asks for a signed agent update
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+RandomizedDelaySec=60
+Persistent=false
+
+[Install]
+WantedBy=timers.target

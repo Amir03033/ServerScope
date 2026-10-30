@@ -14,7 +14,7 @@
             <ul class="small" style="margin:0;padding-left:18px">@foreach ($diagnosis['evidence'] as $line)<li>{{ $line }}</li>@endforeach</ul>
         @endif
         <dl class="dl" style="margin-top:10px">
-            <dt>Agent</dt><dd>{{ $server->agent_version ?? 'onbekend' }}@if ($quality['outdated']) <span class="yellow">(verouderd, huidige versie {{ config('serverscope.agent.latest_version') }})</span>@endif · laatst gezien {{ Time::relative($server->last_seen_at) }}</dd>
+            <dt>Agent</dt><dd>{{ $server->agent_version ?? 'onbekend' }}@if ($quality['outdated']) <span class="yellow">(verouderd, huidige versie {{ $quality['latest_version'] }})</span>@endif · laatst gezien {{ Time::relative($server->last_seen_at) }}</dd>
             <dt>Integriteit</dt><dd>{{ $integrityLabels[$quality['integrity']] ?? $quality['integrity'] }}@if ($server->agent_checksum)<span class="cell-sub mono">{{ substr($server->agent_checksum, 0, 16) }}…</span>@endif</dd>
             <dt>Metingen laatste uur</dt><dd>{{ $quality['received'] }}@if ($quality['expected']) van ~{{ $quality['expected'] }} verwacht ({{ number_format($quality['coverage'], 1, ',', '.') }}%, interval ~{{ $quality['interval_seconds'] }} s)@endif</dd>
             @if ($quality['missing_fields'])<dt>Ontbrekend</dt><dd class="yellow">{{ implode(', ', $quality['missing_fields']) }}</dd>@endif

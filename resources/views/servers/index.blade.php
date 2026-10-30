@@ -20,6 +20,12 @@
 
     <x-slot:actions>
         @can('admin')
+            @if ($latestRelease = \App\Models\AgentRelease::latestAvailable())
+                <form method="POST" action="{{ route('servers.agent-update-all') }}" data-confirm="Alle servers met een actief updateprogramma en een oudere agent bijwerken naar {{ $latestRelease->version }}? De agents herstarten even.">
+                    @csrf
+                    <button class="button" type="submit">Alles bijwerken naar {{ $latestRelease->version }}</button>
+                </form>
+            @endif
             <a href="{{ route('servers.add') }}" class="button button-primary">
                 <svg class="ico"><use href="#i-plus"/></svg> Server toevoegen
             </a>

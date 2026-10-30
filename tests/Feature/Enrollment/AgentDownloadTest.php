@@ -9,6 +9,7 @@ use App\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
+use Tests\Support\SignedReleases;
 use Tests\TestCase;
 
 /**
@@ -17,6 +18,7 @@ use Tests\TestCase;
 class AgentDownloadTest extends TestCase
 {
     use RefreshDatabase;
+    use SignedReleases;
 
     private string $work;
 
@@ -34,6 +36,7 @@ class AgentDownloadTest extends TestCase
     protected function tearDown(): void
     {
         File::deleteDirectory($this->work);
+        $this->cleanReleaseDirs();
 
         parent::tearDown();
     }
@@ -51,7 +54,7 @@ class AgentDownloadTest extends TestCase
     {
         $package = app(AgentPackage::class);
 
-        $this->assertSame('0.2.0', $package->version());
+        $this->assertSame('0.3.0', $package->version());
         $entries = $this->entries($package->path());
         sort($entries);
 
@@ -67,18 +70,47 @@ class AgentDownloadTest extends TestCase
         ], $entries);
     }
 
+    /**
+     * Phase 3: the old URLs only serve imported, signed releases (adapted
+     * with the owner's consent; it used to expect a tarball built on the
+     * server). At least as strict as before: tarball and checksum must
+     * match the signed manifest exactly, everything else is a 404.
+     */
     public function test_download_and_checksum_match(): void
     {
-        $tarball = $this->get(route('agent.package', ['version' => '0.2.0']))->assertOk();
+        $key = $this->releaseKey();
+        $this->trustReleaseKeys($key);
+        config(['serverscope.releases.storage_path' => $this->releaseTempDir('storage')]);
+        User::factory()->create(['email' => 'platform@example.test', 'is_platform_admin' => true]);
+        $this->artisan('serverscope:release:import', ['bundle' => $this->releaseBundle('0.3.0', $key), '--admin' => 'platform@example.test'])->assertSuccessful();
+        $release = \App\Models\AgentRelease::query()->sole();
+        $manifest = \App\Releases\ReleaseManifest::parse($release->manifest);
+
+        $tarball = $this->get(route('agent.package', ['version' => '0.3.0']))->assertOk();
         $this->assertSame('application/gzip', $tarball->headers->get('Content-Type'));
         $body = $tarball->getContent();
+        $this->assertSame($manifest->sha256, hash('sha256', $body));
+        $this->assertSame($manifest->size, strlen($body));
 
-        $checksum = $this->get(route('agent.checksum', ['version' => '0.2.0']))->assertOk()->getContent();
-        $this->assertSame(hash('sha256', $body).'  serverscope-agent-0.2.0.tar.gz'."\n", $checksum);
+        $checksum = $this->get(route('agent.checksum', ['version' => '0.3.0']))->assertOk()->getContent();
+        $this->assertSame($manifest->sha256.'  serverscope-agent-0.3.0.tar.gz'."\n", $checksum);
 
-        // Other versions do not exist.
-        $this->get(route('agent.package', ['version' => '0.1.0']))->assertNotFound();
-        $this->get(route('agent.checksum', ['version' => '9.9.9']))->assertNotFound();
+        // A version that was never imported (such as 0.2.0, which used to be
+        // built on the server): 404 with an explanation.
+        foreach (['agent.package', 'agent.checksum'] as $route) {
+            $this->get(route($route, ['version' => '0.2.0']))->assertNotFound()->assertSee('Deze versie wordt niet meer aangeboden; download install.sh opnieuw');
+            $this->get(route($route, ['version' => '9.9.9']))->assertNotFound();
+        }
+
+        // Invalid versions do not reach the controller at all.
+        $this->get('/agent/serverscope-agent-0.3.tar.gz')->assertNotFound();
+        $this->get('/agent/serverscope-agent-..%2F0.3.0.tar.gz')->assertNotFound();
+        $this->get('/agent/serverscope-agent-0.3.0.tar.gz.sha256x')->assertNotFound();
+
+        // A withdrawn release is no longer served either.
+        $this->artisan('serverscope:release:withdraw', ['version' => '0.3.0', '--admin' => 'platform@example.test', '--reason' => 'test'])->assertSuccessful();
+        $this->get(route('agent.package', ['version' => '0.3.0']))->assertNotFound();
+        $this->get(route('agent.checksum', ['version' => '0.3.0']))->assertNotFound();
     }
 
     public function test_the_package_is_reproducible_and_rebuilt_when_the_code_changes(): void
