@@ -11,7 +11,8 @@
 #       0.3.4  an agent that exits at once (never sends a sample)
 #       0.3.3  signed with the attacker key
 #   - the phase 2 code (E2E_OLD_REF, default origin/main) to install an
-#     agent 0.2.0 the old way.
+#     agent 0.2.0 the old way;
+#   - newtoken.sh, so scripts/e2e/install-test.sh can use the same E2E_DIR.
 # Nothing here is a real key; everything lives in $E2E_DIR.
 #
 # Usage: E2E_DIR=/tmp/e2e scripts/e2e/update-setup.sh
@@ -105,4 +106,23 @@ if [ ! -f bundles/serverscope-agent-0.3.4.bundle.tar ]; then
     printf 'import sys\nsys.exit("e2e: deze versie start niet")\n' >src/agent/serverscope_agent/agent.py
     release 0.3.4 keys
 fi
+
+# --- newtoken.sh for install-test.sh: a fresh enrollment token for the
+#     default team (with an administrator made for the test).
+cat >newtoken.sh <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+. "$(dirname "$0")/app.env"
+cd "${E2E_REPO}"
+php artisan tinker --execute='
+    $team = App\Models\Team::query()->where("is_default", true)->first();
+    $user = App\Models\User::query()->firstOrCreate(["email" => "e2e-admin@example.test"], ["name" => "e2e beheerder", "password" => bcrypt(Illuminate\Support\Str::random(32))]);
+    if (! $user->teams()->whereKey($team->id)->exists()) { $user->teams()->attach($team->id, ["role" => "owner"]); }
+    $user->forceFill(["current_team_id" => $team->id])->save();
+    [, $plain] = App\Tenancy\Tenant::run($team->id, fn () => app(App\Services\EnrollmentService::class)->create($user));
+    echo $plain;' 2>/dev/null | tail -n 1
+SCRIPT
+chmod 755 newtoken.sh
+grep -q '^export E2E_REPO=' app.env || printf 'export E2E_REPO=%s\n' "${REPO}" >>app.env
+
 echo "Klaar: ${E2E_DIR}"

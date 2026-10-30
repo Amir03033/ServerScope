@@ -360,6 +360,12 @@ install_files() {
     mv -f "${KEY_FILE}.tmp" "${KEY_FILE}"
 }
 
+# A terminal to ask on. [ -r /dev/tty ] is not enough: without a
+# controlling terminal the device exists but cannot be opened.
+has_tty() {
+    (exec </dev/tty) 2>/dev/null
+}
+
 # The question (or --updates / SERVERSCOPE_UPDATES); sets UPDATES_ON.
 ask_updates() {
     local answer default=J
@@ -375,7 +381,7 @@ ask_updates() {
         default=N
     fi
 
-    if [ ! -r /dev/tty ]; then
+    if ! has_tty; then
         UPDATES_ON=$([ "${default}" = J ] && echo 1 || echo 0)
         info "Geen terminal: automatische updates $([ "${UPDATES_ON}" = 1 ] && echo AAN || echo UIT) (kies met --updates=on of --updates=off)."
         return 0
@@ -410,6 +416,14 @@ report_updates_disabled() {
         "${BASE_URL}/api/agent/update" 2>/dev/null || true
 }
 
+# Answered "no": no updater program and no timer on this server (the
+# stored key and the switch file stay, so ServerScope shows it as off).
+remove_updater() {
+    systemctl disable --now "${UPDATER_TIMER_NAME}" >/dev/null 2>&1 || true
+    rm -f -- "${UPDATER_BIN}" "${UPDATER_SERVICE}" "${UPDATER_TIMER}"
+    systemctl daemon-reload
+}
+
 install_updater() {
     install -m 0755 -o root -g root "${WORK_DIR}/agent/updater/serverscope-updater" "${UPDATER_BIN}"
     install -m 0644 -o root -g root "${WORK_DIR}/agent/updater/serverscope-updater.service" "${UPDATER_SERVICE}"
@@ -438,7 +452,11 @@ disable_updates() {
     chmod 0644 "${DISABLE_FILE}"
     systemctl disable --now "${UPDATER_TIMER_NAME}" >/dev/null 2>&1 || true
     report_updates_disabled
-    info "Automatische updates staan UIT. Het updateprogramma doet niets meer zolang ${DISABLE_FILE} bestaat. Weer aanzetten: sudo bash $0 --enable-updates"
+    if [ -x "${UPDATER_BIN}" ]; then
+        info "Automatische updates staan UIT. Het updateprogramma doet niets meer zolang ${DISABLE_FILE} bestaat. Weer aanzetten: sudo bash $0 --enable-updates"
+    else
+        info "Automatische updates staan UIT: er is geen updateprogramma geïnstalleerd. Later alsnog: sudo bash $0 --updates=on"
+    fi
 }
 
 read_enroll_token() {
@@ -446,7 +464,7 @@ read_enroll_token() {
     unset SERVERSCOPE_ENROLL_TOKEN
 
     if [ -z "${ENROLL_TOKEN}" ]; then
-        [ -r /dev/tty ] || die "Geen koppeltoken: er is geen terminal om erom te vragen." \
+        has_tty || die "Geen koppeltoken: er is geen terminal om erom te vragen." \
             "Zet het token in de omgevingsvariabele SERVERSCOPE_ENROLL_TOKEN (niet in een getypt commando)."
         printf 'Plak het koppeltoken uit ServerScope (de invoer blijft verborgen): ' >/dev/tty
         IFS= read -rs ENROLL_TOKEN </dev/tty || true
@@ -634,7 +652,7 @@ do_install() {
     fi
 
     write_marker "${CREATED_USER}"
-    install_updater
+    if [ "${UPDATES_ON}" = 1 ]; then install_updater; else remove_updater; fi
     start_service
     wait_for_first_sample
     if [ "${UPDATES_ON}" = 1 ]; then enable_updates; else disable_updates; fi

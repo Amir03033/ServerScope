@@ -79,7 +79,7 @@ in_container "export DEBIAN_FRONTEND=noninteractive; apt-get update -qq >/dev/nu
 # 1. First installation through the hidden prompt.
 TOKEN="$("${E2E_DIR}/newtoken.sh")"
 before="$(sql 'SELECT COUNT(*) FROM servers')"
-if run_install "${TOKEN}"; then ok "installatie geslaagd"; else fail "installatie mislukt (zie ${LOG})"; fi
+if run_install "${TOKEN}" "--updates=on"; then ok "installatie geslaagd"; else fail "installatie mislukt (zie ${LOG})"; fi
 grep -q 'Gelukt:' "${LOG}.step" && ok "succesmelding getoond" || fail "geen succesmelding"
 SERVER_ID="$(sql 'SELECT MAX(id) FROM servers')"
 check "precies één nieuwe server" "[ \"$(sql 'SELECT COUNT(*) FROM servers')\" = \"$((before + 1))\" ]"
@@ -101,7 +101,7 @@ check "agent draait als serverscope" "in_container 'pgrep -u serverscope -f \"[s
 #    looks every 50 ms for any .env* that others can read.
 in_container "umask 077; printf 'SERVERSCOPE_TOKEN=achtergebleven\n' > /opt/serverscope-agent/.env.Ab12Cd"
 docker exec -d "${NAME}" bash -c 'echo $$ > /tmp/watch.pid; while true; do find /opt/serverscope-agent -maxdepth 1 -name ".env*" -perm /o=r -printf "%p %m\n" >> /tmp/env-watch 2>/dev/null; sleep 0.05; done'
-if run_install ""; then ok "tweede keer draaien geslaagd"; else fail "tweede keer draaien mislukt"; fi
+if run_install "" "--updates=on"; then ok "tweede keer draaien geslaagd"; else fail "tweede keer draaien mislukt"; fi
 in_container 'kill "$(cat /tmp/watch.pid)"'
 grep -q 'al gekoppeld' "${LOG}.step" && ok "herkent bestaande koppeling" || fail "herkent bestaande koppeling niet"
 check "geen extra server" "[ \"$(sql 'SELECT COUNT(*) FROM servers')\" = \"$((before + 1))\" ]"
@@ -111,11 +111,23 @@ check "geen .env* leesbaar voor other (na afloop)" "[ -z \"$(in_container 'find 
 check "nooit een .env* leesbaar voor other tijdens de run" "[ -z \"$(in_container 'cat /tmp/env-watch 2>/dev/null')\" ]"
 check "achtergebleven tijdelijk .env-bestand verwijderd" "in_container '! test -e /opt/serverscope-agent/.env.Ab12Cd'"
 
+# 2b. Phase 3: the update question. Without a terminal and without a flag
+#     the default (yes) applies, with a clear line in the output.
+docker exec "${NAME}" bash -c 'cd /root && bash serverscope-install.sh </dev/null' >"${LOG}.step" 2>&1 && ok "zonder terminal en zonder vlag geslaagd" || fail "zonder terminal en zonder vlag mislukt"
+cat "${LOG}.step" >>"${LOG}"
+grep -q 'Geen terminal: automatische updates AAN' "${LOG}.step" && ok "zonder terminal: standaard Ja, met duidelijke melding" || fail "zonder terminal: geen duidelijke melding of niet Ja"
+check "zonder terminal: updateprogramma en timer aanwezig" "in_container 'test -x /usr/local/sbin/serverscope-updater && test -f /etc/systemd/system/serverscope-updater.timer' && [ \"$(in_container 'cat /run/shim-updater-timer')\" = enabled ]"
+
+# 2c. --updates=off: no updater program and no timer.
+if run_install "" "--updates=off"; then ok "--updates=off geslaagd"; else fail "--updates=off mislukt"; fi
+check "--updates=off: geen updateprogramma en geen timer" "in_container '! test -e /usr/local/sbin/serverscope-updater && ! test -e /etc/systemd/system/serverscope-updater.timer && ! test -e /etc/systemd/system/serverscope-updater.service' && [ \"$(in_container 'cat /run/shim-updater-timer')\" != enabled ]"
+check "--updates=off: agent draait gewoon door" "in_container 'pgrep -u serverscope -f \"[s]erverscope_agent.agent\" >/dev/null'"
+
 # 3. Credential revoked in the dashboard: a new token creates a NEW server
 #    (token from the environment variable, the automation path).
 sql "UPDATE agent_credentials SET revoked_at = NOW() WHERE server_id = ${SERVER_ID}"
 TOKEN2="$("${E2E_DIR}/newtoken.sh")"
-if run_install "" "" "SERVERSCOPE_ENROLL_TOKEN=${TOKEN2}"; then ok "opnieuw koppelen geslaagd"; else fail "opnieuw koppelen mislukt"; fi
+if run_install "" "--updates=on" "SERVERSCOPE_ENROLL_TOKEN=${TOKEN2}"; then ok "opnieuw koppelen geslaagd"; else fail "opnieuw koppelen mislukt"; fi
 grep -q 'NIEUWE server' "${LOG}.step" && ok "meldt dat er een nieuwe server komt" || fail "geen melding over nieuwe server"
 SERVER2="$(sql 'SELECT MAX(id) FROM servers')"
 check "nieuwe server aangemaakt en online" "[ \"${SERVER2}\" != \"${SERVER_ID}\" ] && [ \"$(sql "SELECT status FROM servers WHERE id=${SERVER2}")\" = online ]"
