@@ -1,31 +1,36 @@
 @php use App\Support\Time; @endphp
 
-<x-layouts.app title="Webhooks">
-    <x-slot:subtitle>Stuur incident- en DNS-gebeurtenissen naar Discord of naar andere systemen (n8n, je eigen API). Algemene webhooks zijn ondertekend.</x-slot:subtitle>
+<x-layouts.app :title="__('webhooks.title')">
+    <x-slot:subtitle>{{ __('webhooks.subtitle') }}</x-slot:subtitle>
     <x-slot:actions>
-        <a class="button" href="{{ route('webhooks.create', ['type' => 'discord']) }}"><svg class="ico"><use href="#i-message"/></svg> Discord koppelen</a>
-        <a class="button button-primary" href="{{ route('webhooks.create') }}"><svg class="ico"><use href="#i-plus"/></svg> Webhook toevoegen</a>
+        <a class="ss-btn ss-btn-secondary" href="{{ route('webhooks.create', ['type' => 'discord']) }}"><svg class="ico"><use href="#i-message"/></svg> {{ __('webhooks.connect_discord') }}</a>
+        <a class="ss-btn ss-btn-primary" href="{{ route('webhooks.create') }}"><svg class="ico"><use href="#i-plus"/></svg> {{ __('webhooks.add') }}</a>
     </x-slot:actions>
 
-    <section class="panel">
+    <section class="ss-panel">
         @if ($endpoints->isEmpty())
-            <x-empty-state icon="i-webhook" title="Nog geen webhooks">Voeg een endpoint toe om gebeurtenissen automatisch door te sturen.</x-empty-state>
+            <x-empty-state icon="i-webhook" :title="__('webhooks.empty_title')">
+                {{ __('webhooks.empty_text') }}
+                <x-slot:actions><a class="ss-btn ss-btn-primary" href="{{ route('webhooks.create') }}"><svg class="ico"><use href="#i-plus"/></svg> {{ __('webhooks.add') }}</a></x-slot:actions>
+            </x-empty-state>
         @else
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead><tr><th>Naam</th><th>Type</th><th>Gebeurtenissen</th><th>Status</th><th>Laatste levering</th><th class="num">Leveringen</th></tr></thead>
+            <div class="ss-table-wrap">
+                <table class="ss-table ss-table-cards">
+                    <thead><tr><th scope="col">{{ __('webhooks.col_name') }}</th><th scope="col">{{ __('webhooks.col_type') }}</th><th scope="col">{{ __('webhooks.col_events') }}</th><th scope="col">{{ __('webhooks.col_status') }}</th><th scope="col">{{ __('webhooks.col_last') }}</th><th scope="col" class="num">{{ __('webhooks.col_deliveries') }}</th></tr></thead>
                     <tbody>
                         @foreach ($endpoints as $endpoint)
                             <tr>
-                                <td><a class="row-link" href="{{ route('webhooks.show', $endpoint) }}">{{ $endpoint->name }}</a><span class="cell-sub">{{ parse_url($endpoint->url, PHP_URL_HOST) }}</span></td>
-                                <td class="small">{{ $endpoint->isDiscord() ? 'Discord' : 'Algemeen' }}</td>
-                                <td class="small">{{ count($endpoint->events) }} geselecteerd</td>
-                                <td>
-                                    <x-status :status="$endpoint->is_active ? 'enabled' : 'disabled'" />
-                                    @if ($endpoint->consecutive_failures)<span class="cell-sub red">{{ $endpoint->consecutive_failures }} mislukt op rij</span>@endif
+                                <td class="is-primary"><a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('webhooks.show', $endpoint) }}">{{ $endpoint->name }}</a><span class="block text-xs text-muted">{{ parse_url($endpoint->url, PHP_URL_HOST) }}</span></td>
+                                <td data-label="{{ __('webhooks.col_type') }}" class="text-sm">{{ $endpoint->isDiscord() ? __('webhooks.type_discord') : __('webhooks.type_generic') }}</td>
+                                <td data-label="{{ __('webhooks.col_events') }}" class="text-sm">{{ __('webhooks.events_selected', ['count' => count($endpoint->events)]) }}</td>
+                                <td data-label="{{ __('webhooks.col_status') }}">
+                                    <span>
+                                        <x-status :status="$endpoint->is_active ? 'enabled' : 'disabled'" />
+                                        @if ($endpoint->consecutive_failures)<span class="block text-xs ss-text-bad">{{ __('webhooks.failed_in_row', ['count' => $endpoint->consecutive_failures]) }}</span>@endif
+                                    </span>
                                 </td>
-                                <td class="small">{{ Time::relative($endpoint->last_delivery_at) }} @if ($endpoint->last_status)· {{ $endpoint->last_status === 'success' ? 'gelukt' : 'mislukt' }}@endif</td>
-                                <td class="num">{{ $endpoint->deliveries_count }}</td>
+                                <td data-label="{{ __('webhooks.col_last') }}" class="text-sm">{{ Time::relative($endpoint->last_delivery_at) }} @if ($endpoint->last_status)· {{ $endpoint->last_status === 'success' ? __('webhooks.succeeded') : __('webhooks.failed') }}@endif</td>
+                                <td data-label="{{ __('webhooks.col_deliveries') }}" class="num">{{ $endpoint->deliveries_count }}</td>
                             </tr>
                         @endforeach
                     </tbody>

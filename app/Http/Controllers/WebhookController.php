@@ -49,7 +49,7 @@ class WebhookController extends Controller
             $endpoint = WebhookEndpoint::query()->create([...$data, 'type' => $type, 'created_by' => $request->user()->id]);
             Audit::log('webhook.created', "Discord-webhook '{$endpoint->name}' aangemaakt", $endpoint, ['type' => $type, 'url_host' => parse_url($endpoint->url, PHP_URL_HOST)]);
 
-            return redirect()->route('webhooks.show', $endpoint)->with('success', 'Discord-webhook aangemaakt. Stuur een testmelding om de koppeling te controleren.');
+            return redirect()->route('webhooks.show', $endpoint)->with('success', __('webhooks.flash.discord_created'));
         }
 
         $secret = WebhookEndpoint::generateSecret();
@@ -57,7 +57,7 @@ class WebhookController extends Controller
         $endpoint = WebhookEndpoint::query()->create([...$data, 'type' => $type, 'secret' => $secret, 'created_by' => $request->user()->id]);
         Audit::log('webhook.created', "Webhook '{$endpoint->name}' aangemaakt", $endpoint, ['url_host' => parse_url($endpoint->url, PHP_URL_HOST)]);
 
-        return redirect()->route('webhooks.show', $endpoint)->with('success', 'Webhook aangemaakt.')->with('webhook_secret', $secret);
+        return redirect()->route('webhooks.show', $endpoint)->with('success', __('webhooks.flash.created'))->with('webhook_secret', $secret);
     }
 
     public function show(WebhookEndpoint $webhook): View
@@ -92,7 +92,7 @@ class WebhookController extends Controller
         $webhook->save();
         Audit::log($urlReplaced ? 'webhook.secret_rotated' : 'webhook.updated', $urlReplaced ? "Discord-URL van webhook '{$webhook->name}' vervangen" : "Webhook '{$webhook->name}' bijgewerkt", $webhook);
 
-        return redirect()->route('webhooks.show', $webhook)->with('success', 'Webhook opgeslagen.');
+        return redirect()->route('webhooks.show', $webhook)->with('success', __('webhooks.flash.saved'));
     }
 
     public function destroy(WebhookEndpoint $webhook): RedirectResponse
@@ -102,7 +102,7 @@ class WebhookController extends Controller
         $webhook->delete();
         Audit::log('webhook.deleted', "Webhook '{$webhook->name}' verwijderd");
 
-        return redirect()->route('webhooks.index')->with('success', 'Webhook verwijderd.');
+        return redirect()->route('webhooks.index')->with('success', __('webhooks.flash.deleted'));
     }
 
     public function rotateSecret(WebhookEndpoint $webhook): RedirectResponse
@@ -116,7 +116,7 @@ class WebhookController extends Controller
         $webhook->forceFill(['secret' => $secret])->save();
         Audit::log('webhook.secret_rotated', "Geheim van webhook '{$webhook->name}' vernieuwd", $webhook);
 
-        return back()->with('success', 'Nieuw geheim gegenereerd; het oude is direct ongeldig.')->with('webhook_secret', $secret);
+        return back()->with('success', __('webhooks.flash.rotated'))->with('webhook_secret', $secret);
     }
 
     public function test(WebhookEndpoint $webhook, WebhookDispatcher $dispatcher): RedirectResponse
@@ -126,13 +126,13 @@ class WebhookController extends Controller
         $key = 'webhook-test:'.$webhook->id;
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            return back()->with('error', 'Te veel testleveringen; wacht even.');
+            return back()->with('error', __('webhooks.flash.test_throttled'));
         }
 
         RateLimiter::hit($key, 60);
         $dispatcher->test($webhook);
 
-        return back()->with('success', 'Testlevering ingepland.');
+        return back()->with('success', __('webhooks.flash.test_queued'));
     }
 
     public function redeliver(WebhookEndpoint $webhook, WebhookDelivery $delivery, WebhookDispatcher $dispatcher): RedirectResponse
@@ -142,7 +142,7 @@ class WebhookController extends Controller
 
         $dispatcher->redeliver($delivery);
 
-        return back()->with('success', 'Opnieuw ingepland als nieuwe levering.');
+        return back()->with('success', __('webhooks.flash.redelivered'));
     }
 
     private function validated(Request $request, TargetGuard $guard, string $type, ?WebhookEndpoint $existing): array
@@ -174,7 +174,7 @@ class WebhookController extends Controller
             // Only real Discord webhook endpoints; the message never
             // repeats the submitted value.
             if (! DiscordMessage::isValidUrl($url)) {
-                throw ValidationException::withMessages(['url' => 'Gebruik een Discord-webhook-URL in de vorm https://discord.com/api/webhooks/{id}/{token}.']);
+                throw ValidationException::withMessages(['url' => __('webhooks.flash.discord_url')]);
             }
 
             $this->guard($guard, $url);
@@ -183,7 +183,7 @@ class WebhookController extends Controller
         }
 
         if (str_starts_with(strtolower($data['url']), 'http://') && ! config('serverscope.webhooks.allow_http')) {
-            throw ValidationException::withMessages(['url' => 'Gebruik een https-URL; webhooks bevatten monitoringgegevens.']);
+            throw ValidationException::withMessages(['url' => __('webhooks.flash.https')]);
         }
 
         $this->guard($guard, $data['url']);
@@ -200,7 +200,7 @@ class WebhookController extends Controller
         try {
             $guard->resolve($url);
         } catch (BlockedTargetException $exception) {
-            throw ValidationException::withMessages(['url' => 'Deze URL is niet toegestaan: '.DiscordMessage::redact($exception->getMessage())]);
+            throw ValidationException::withMessages(['url' => __('webhooks.flash.not_allowed', ['reason' => DiscordMessage::redact($exception->getMessage())])]);
         }
     }
 }

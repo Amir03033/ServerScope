@@ -164,4 +164,20 @@ return [
         'page' => 'Websitepagina',
         'service' => 'Service',
     ],
+    'webhook_event' => [
+        'incident.opened' => 'Incident geopend',
+        'incident.reopened' => 'Incident heropend',
+        'incident.resolved' => 'Incident opgelost',
+        'incident.escalated' => 'Incident geëscaleerd (drempel/ernst/niet bevestigd)',
+        'dns.changed' => 'DNS-records gewijzigd',
+        'page.changed' => 'Pagina-inhoud gewijzigd (alleen pagina\'s met wijzigingsmeldingen)',
+    ],
+    'webhook_type' => [
+        'generic' => 'Algemeen (ondertekende JSON)',
+        'discord' => 'Discord',
+    ],
+    'api_ability' => [
+        'read' => 'Lezen',
+        'write' => 'Schrijven (incidenten bevestigen/oplossen, notities)',
+    ],
 ];

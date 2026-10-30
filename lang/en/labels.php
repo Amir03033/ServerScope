@@ -164,4 +164,20 @@ return [
         'page' => 'Website page',
         'service' => 'Service',
     ],
+    'webhook_event' => [
+        'incident.opened' => 'Incident opened',
+        'incident.reopened' => 'Incident reopened',
+        'incident.resolved' => 'Incident resolved',
+        'incident.escalated' => 'Incident escalated (threshold/severity/not acknowledged)',
+        'dns.changed' => 'DNS records changed',
+        'page.changed' => 'Page content changed (only pages with change notifications)',
+    ],
+    'webhook_type' => [
+        'generic' => 'Generic (signed JSON)',
+        'discord' => 'Discord',
+    ],
+    'api_ability' => [
+        'read' => 'Read',
+        'write' => 'Write (acknowledge/resolve incidents, notes)',
+    ],
 ];

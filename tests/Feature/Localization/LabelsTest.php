@@ -51,6 +51,9 @@ class LabelsTest extends TestCase
             'incident_source' => \App\Models\Incident::SOURCE_LABELS,
             'incident_event' => \App\Models\IncidentEvent::TYPE_LABELS,
             'resource_type' => \App\Services\Dependencies\ResourceCatalog::TYPES,
+            'webhook_event' => \App\Models\WebhookEndpoint::EVENTS,
+            'webhook_type' => \App\Models\WebhookEndpoint::TYPES,
+            'api_ability' => \App\Models\ApiToken::ABILITIES,
         ];
     }
 
