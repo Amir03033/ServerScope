@@ -44,6 +44,11 @@ class LabelsTest extends TestCase
             'prediction_metric' => \App\Models\Prediction::METRIC_LABELS,
             'prediction_confidence' => \App\Models\Prediction::CONFIDENCE_LABELS,
             'alert_metric' => \App\Models\AlertRule::METRIC_LABELS,
+            'domain_status' => \App\Models\Domain::STATUS_LABELS,
+            'page_source' => \App\Models\MonitoredPage::SOURCES,
+            'page_failure' => \App\Models\MonitoredPage::FAILURE_LABELS,
+            'page_status' => \App\Models\MonitoredPage::STATUS_LABELS,
+            'incident_source' => \App\Models\Incident::SOURCE_LABELS,
         ];
     }
 
