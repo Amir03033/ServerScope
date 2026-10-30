@@ -51,7 +51,7 @@ class StatusPageController extends Controller
 
         Audit::log('status_page.created', "Statuspagina '{$page->name}' aangemaakt", $page);
 
-        return redirect()->route('status-pages.index')->with('success', 'Statuspagina aangemaakt.');
+        return redirect()->route('status-pages.index')->with('success', __('status_pages.flash.created'));
     }
 
     public function update(Request $request, StatusPage $statusPage): RedirectResponse
@@ -65,7 +65,7 @@ class StatusPageController extends Controller
 
         Audit::log('status_page.updated', "Statuspagina '{$statusPage->name}' bijgewerkt", $statusPage);
 
-        return redirect()->route('status-pages.index')->with('success', 'Statuspagina opgeslagen.');
+        return redirect()->route('status-pages.index')->with('success', __('status_pages.flash.saved'));
     }
 
     public function destroy(StatusPage $statusPage): RedirectResponse
@@ -75,7 +75,7 @@ class StatusPageController extends Controller
         $statusPage->delete();
         Audit::log('status_page.deleted', "Statuspagina '{$statusPage->name}' verwijderd");
 
-        return redirect()->route('status-pages.index')->with('success', 'Statuspagina verwijderd.');
+        return redirect()->route('status-pages.index')->with('success', __('status_pages.flash.deleted'));
     }
 
     private function form(StatusPage $page): View
@@ -122,7 +122,7 @@ class StatusPageController extends Controller
             $exists = ($type === 'server' ? Server::query() : Domain::query())->whereKey((int) $id)->exists();
 
             if (! $exists) {
-                throw ValidationException::withMessages(["components.{$index}.subject" => 'Onbekende server of domein.']);
+                throw ValidationException::withMessages(["components.{$index}.subject" => __('status_pages.flash.unknown_subject')]);
             }
 
             $page->components()->create([
