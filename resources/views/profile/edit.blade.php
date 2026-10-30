@@ -18,6 +18,16 @@
                             <input id="email" name="email" type="email" required maxlength="255" value="{{ old('email', $user->email) }}" autocomplete="email">
                             @error('email')<span class="form-error">{{ $message }}</span>@enderror
                         </div>
+                        <div @class(['form-field', 'has-error' => $errors->has('locale')])>
+                            <label for="locale">{{ __('profile.locale.label') }}</label>
+                            <select id="locale" name="locale">
+                                @foreach (\App\Support\Locale::SUPPORTED as $code)
+                                    <option value="{{ $code }}" lang="{{ $code }}" @selected(old('locale', $user->locale ?? \App\Support\Locale::DEFAULT) === $code)>{{ __('locale.names.'.$code) }}</option>
+                                @endforeach
+                            </select>
+                            <span class="form-help">{{ __('profile.locale.help') }}</span>
+                            @error('locale')<span class="form-error">{{ $message }}</span>@enderror
+                        </div>
                     </div>
                     <div class="form-footer"><button class="button button-primary" type="submit">Opslaan</button></div>
                 </form>

@@ -28,7 +28,7 @@ class PasswordResetController extends Controller
         Password::sendResetLink(['email' => Str::lower(trim($request->input('email')))]);
 
         // Same answer whether or not the account exists (no enumeration).
-        return back()->with('status', 'Als dit e-mailadres bij een account hoort, is er een resetlink verstuurd. De link is 60 minuten geldig.');
+        return back()->with('status', __('auth.messages.reset_link_sent'));
     }
 
     public function edit(Request $request, string $token): View
@@ -54,7 +54,7 @@ class PasswordResetController extends Controller
         );
 
         return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('status', 'Je wachtwoord is opnieuw ingesteld. Je kunt nu inloggen.')
-            : back()->withInput($request->only('email'))->withErrors(['email' => 'Deze resetlink is ongeldig of verlopen.']);
+            ? redirect()->route('login')->with('status', __('auth.messages.password_reset'))
+            : back()->withInput($request->only('email'))->withErrors(['email' => __('auth.messages.reset_link_invalid')]);
     }
 }

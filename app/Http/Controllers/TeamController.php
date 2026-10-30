@@ -22,6 +22,6 @@ class TeamController extends Controller
         $user->saveQuietly();
         \App\Tenancy\Tenant::run($team, fn () => Audit::log('team.switched', "Gewisseld naar team {$team->name}"));
 
-        return redirect()->route('dashboard')->with('success', "Je werkt nu in team {$team->name}.");
+        return redirect()->route('dashboard')->with('success', __('nav.team.switched', ['team' => $team->name]));
     }
 }

@@ -58,6 +58,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/two-factor-challenge/cancel', [TwoFactorController::class, 'cancel'])->name('two-factor.challenge.cancel');
 });
 
+// Language switch for visitors and signed-in users (public; only en/nl).
+Route::post('/locale', [\App\Http\Controllers\LocaleController::class, 'update'])->middleware('throttle:30,1')->name('locale.update');
+
 Route::get('/agent/ping', function (Request $request) {
     $server = $request->attributes->get('agentServer');
 

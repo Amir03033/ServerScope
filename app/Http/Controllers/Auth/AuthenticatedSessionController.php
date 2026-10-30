@@ -30,7 +30,7 @@ class AuthenticatedSessionController extends Controller
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages([
-                'email' => 'Te veel inlogpogingen. Probeer het later opnieuw.',
+                'email' => __('auth.messages.throttled'),
             ]);
         }
 
@@ -40,7 +40,7 @@ class AuthenticatedSessionController extends Controller
             RateLimiter::hit($key, 60);
 
             throw ValidationException::withMessages([
-                'email' => 'De opgegeven inloggegevens zijn onjuist.',
+                'email' => __('auth.messages.invalid_credentials'),
             ]);
         }
 

@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
+        // Interface language (users.locale, session, browser on public status pages).
+        $middleware->web(append: \App\Http\Middleware\SetLocale::class);
+
         // The tenant must be known before route model binding, so that IDs
         // of another team resolve to 404.
         $middleware->alias(['tenant' => \App\Http\Middleware\ResolveTenant::class]);
