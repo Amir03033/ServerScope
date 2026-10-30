@@ -1,6 +1,6 @@
 <x-layouts.app :title="$server->name">
     <x-slot:head>
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite('resources/js/charts.js')
     </x-slot:head>
 
     <x-slot:styles>
@@ -10,7 +10,7 @@
             padding: 20px;
             border: 1px solid var(--border); border-radius: var(--radius);
             background:
-                radial-gradient(ellipse at top right, #0e4a6a30, transparent 55%),
+                linear-gradient(transparent, transparent),
                 var(--panel);
         }
         .server-identity { display: flex; align-items: center; gap: 16px; min-width: 0; }
@@ -21,14 +21,14 @@
             width: 34px; height: 34px; flex: 0 0 34px;
             border: 1px solid color-mix(in srgb, var(--tone, var(--cyan)) 40%, transparent);
             border-radius: 10px;
-            background: color-mix(in srgb, var(--tone, var(--cyan)) 14%, #0b1424);
+            background: color-mix(in srgb, var(--tone, var(--cyan)) 14%, var(--ss-surface));
             color: var(--tone, var(--cyan)); font-size: 17px;
         }
         .badge-icon.lg { width: 56px; height: 56px; flex-basis: 56px; border-radius: 15px; font-size: 27px; }
         .badge {
             display: inline-flex; align-items: center; gap: 7px;
             padding: 6px 11px;
-            border: 1px solid #2c4058; border-radius: 99px; background: #152237;
+            border: 1px solid var(--ss-line-strong); border-radius: 99px; background: var(--ss-surface-2);
             font-size: 11px; font-weight: 700; white-space: nowrap;
         }
         .badge::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
@@ -39,7 +39,7 @@
         .stat {
             min-width: 0; padding: 16px;
             border: 1px solid var(--border); border-radius: var(--radius);
-            background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 9%, #0e1829), #0b1424 70%);
+            background: var(--ss-surface);
         }
         .stat-body { display: flex; align-items: center; gap: 12px; }
         .stat-icon {
@@ -47,11 +47,11 @@
             width: 44px; height: 44px; flex: 0 0 44px;
             border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
             border-radius: 12px;
-            background: color-mix(in srgb, var(--tone) 14%, #0b1424);
+            background: color-mix(in srgb, var(--tone) 14%, var(--ss-surface));
             color: var(--tone); font-size: 22px;
         }
         .stat-text { min-width: 0; }
-        .stat-label { color: #c3d1e4; font-size: 12px; }
+        .stat-label { color: var(--ss-muted); font-size: 12px; }
         .stat-value { margin-top: 1px; font-size: clamp(21px, 1.8vw, 27px); font-weight: 700; letter-spacing: -.6px; line-height: 1.15; color: var(--tone); overflow-wrap: anywhere; }
         .stat-description { margin-top: 2px; color: var(--muted); font-size: 11px; }
         .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin: 26px 0 14px; }
@@ -59,7 +59,7 @@
         .section-heading p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
         .range-form {
             display: flex; flex-wrap: wrap; gap: 4px; padding: 4px;
-            border: 1px solid #2a3c58; border-radius: 11px; background: #0a1322;
+            border: 1px solid var(--ss-line-strong); border-radius: 11px; background: var(--ss-surface-2);
         }
         .range-option {
             padding: 7px 12px; border: 0; border-radius: 8px;
@@ -67,27 +67,27 @@
             transition: background .15s, color .15s;
         }
         .range-option:hover { color: var(--text); }
-        .range-option.active { background: linear-gradient(100deg, #15386a, #112a50); color: #e0f2fe; }
+        .range-option.active { background: linear-gradient(100deg, var(--ss-accent-soft), var(--ss-accent-soft)); color: var(--ss-text); }
         .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
         .panel { min-width: 0; padding: 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); }
         .chart-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
         .chart-title { display: flex; align-items: center; gap: 11px; min-width: 0; }
         .chart-title h3 { margin: 0; font-size: 14px; font-weight: 600; }
         .chart-title p { margin: 1px 0 0; color: var(--muted); font-size: 11px; }
-        .pill { padding: 4px 10px; border: 1px solid #2a3c58; border-radius: 8px; background: #121f36; color: #b9c8dc; font-size: 11px; white-space: nowrap; }
-        .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: -4px 0 8px; font-size: 11px; color: #b9c8dc; }
+        .pill { padding: 4px 10px; border: 1px solid var(--ss-line-strong); border-radius: 8px; background: var(--ss-surface-2); color: var(--ss-muted); font-size: 11px; white-space: nowrap; }
+        .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: -4px 0 8px; font-size: 11px; color: var(--ss-muted); }
         .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; }
         .chart-wrap { position: relative; height: 215px; }
         .empty-chart {
             display: grid; place-items: center; min-height: 215px; padding: 20px;
-            border: 1px dashed #2c3c53; border-radius: 10px;
+            border: 1px dashed var(--ss-line-strong); border-radius: 10px;
             color: var(--muted); text-align: center; font-size: 12px;
         }
         .empty-chart strong { display: block; margin-bottom: 6px; color: var(--text); font-size: 13px; }
         .network-list { min-height: 215px; display: grid; align-content: center; }
-        .network-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid #1a2840; }
+        .network-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--ss-line); }
         .network-item:last-child { border-bottom: 0; }
-        .network-label { display: flex; align-items: center; gap: 6px; color: #c3d1e4; font-size: 12px; }
+        .network-label { display: flex; align-items: center; gap: 6px; color: var(--ss-muted); font-size: 12px; }
         .network-label .ico { font-size: 16px; }
         .network-value { margin-top: 2px; font-size: 22px; font-weight: 700; letter-spacing: -.4px; font-variant-numeric: tabular-nums; }
         .network-total { text-align: right; color: var(--muted); font-size: 11px; }
@@ -97,18 +97,18 @@
         .disk-heading { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 12px; }
         .disk-heading strong { overflow-wrap: anywhere; }
         .disk-heading span { color: var(--purple); font-weight: 600; white-space: nowrap; }
-        .track { height: 7px; overflow: hidden; border-radius: 99px; background: #25364b; }
-        .fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0891b2, var(--cyan)); }
+        .track { height: 7px; overflow: hidden; border-radius: 99px; background: var(--ss-line-strong); }
+        .fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--ss-accent), var(--cyan)); }
         .disk-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; margin-top: 7px; color: var(--muted); font-size: 11px; }
         .details-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; }
         .detail-row {
             display: flex; align-items: center; justify-content: space-between; gap: 12px;
-            padding: 12px 0; border-bottom: 1px solid #1a2840; font-size: 12px;
+            padding: 12px 0; border-bottom: 1px solid var(--ss-line); font-size: 12px;
         }
         .detail-row span { display: flex; align-items: center; gap: 9px; color: var(--muted); }
-        .detail-row span .ico { font-size: 15px; color: #9db1ca; }
-        .detail-row strong { font-weight: 500; text-align: right; overflow-wrap: anywhere; color: #e3edf9; }
-        .empty { padding: 34px 20px; border: 1px dashed #304158; border-radius: 12px; color: var(--muted); text-align: center; }
+        .detail-row span .ico { font-size: 15px; color: var(--ss-muted); }
+        .detail-row strong { font-weight: 500; text-align: right; overflow-wrap: anywhere; color: var(--ss-text); }
+        .empty { padding: 34px 20px; border: 1px dashed var(--ss-line-strong); border-radius: 12px; color: var(--muted); text-align: center; }
         @media (max-width: 1280px) {
     .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -403,9 +403,9 @@
             </div>
 
             <div class="legend">
-                <span><i style="background:#38bdf8"></i>1 minuut</span>
-                <span><i style="background:#a78bfa"></i>5 minuten</span>
-                <span><i style="background:#4ade80"></i>15 minuten</span>
+                <span><i style="background:var(--ss-accent)"></i>1 minuut</span>
+                <span><i style="background:var(--ss-subtle)"></i>5 minuten</span>
+                <span><i style="background:var(--ss-ok)"></i>15 minuten</span>
             </div>
 
             @if ($samples->contains(fn ($sample) =>
@@ -442,7 +442,7 @@
                     <div>
                         <div class="network-label cyan" style="color:var(--cyan)">
                             <svg class="ico"><use href="#i-down"/></svg>
-                            <span style="color:#c3d1e4">Inkomend</span>
+                            <span style="color:var(--ss-muted)">Inkomend</span>
                         </div>
                         <div class="network-value">
                             {{ $networkRates['rx'] !== null ? $formatBytes((int) $networkRates['rx']) . '/s' : '—' }}
@@ -461,7 +461,7 @@
                     <div>
                         <div class="network-label" style="color:var(--purple)">
                             <svg class="ico"><use href="#i-up"/></svg>
-                            <span style="color:#c3d1e4">Uitgaand</span>
+                            <span style="color:var(--ss-muted)">Uitgaand</span>
                         </div>
                         <div class="network-value">
                             {{ $networkRates['tx'] !== null ? $formatBytes((int) $networkRates['tx']) . '/s' : '—' }}

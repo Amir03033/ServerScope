@@ -62,29 +62,29 @@
 
 <x-layouts.app :title="'Dashboard'">
     <x-slot:head>
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite('resources/js/charts.js')
     </x-slot:head>
 
     <x-slot:styles>
         .live-status {
             display: inline-flex; align-items: center;
             height: 40px; padding: 0 14px;
-            border: 1px solid #14583f; border-radius: 10px;
-            background: #0a2a24; color: var(--green); font-size: 12px; white-space: nowrap;
+            border: 1px solid color-mix(in srgb, var(--ss-ok) 35%, var(--ss-line)); border-radius: 10px;
+            background: color-mix(in srgb, var(--ss-ok) 8%, var(--ss-surface)); color: var(--green); font-size: 12px; white-space: nowrap;
         }
         .last-update { font-size: 10px; line-height: 1.35; color: var(--muted); }
-        .last-update strong { display: block; font-weight: 500; color: #c7d5e8; font-size: 11px; }
+        .last-update strong { display: block; font-weight: 500; color: var(--ss-muted); font-size: 11px; }
         .button:disabled { cursor: wait; opacity: .6; }
         .button-icon { width: 40px; padding: 0; font-size: 17px; }
         .select-wrap { position: relative; display: inline-flex; align-items: center; }
-        .select-wrap > .ico { position: absolute; left: 12px; font-size: 16px; color: #b6c6dd; pointer-events: none; }
+        .select-wrap > .ico { position: absolute; left: 12px; font-size: 16px; color: var(--ss-muted); pointer-events: none; }
         .select-wrap select {
             appearance: none; -webkit-appearance: none;
             height: 40px; padding: 0 34px 0 38px;
-            border: 1px solid #2a3c58; border-radius: 10px;
-            background: #111d33; color: var(--text); outline: none;
+            border: 1px solid var(--ss-line-strong); border-radius: 10px;
+            background: var(--ss-surface-2); color: var(--text); outline: none;
         }
-        .select-wrap select:focus-visible { border-color: #0891b2; box-shadow: 0 0 0 3px #0891b230; }
+        .select-wrap select:focus-visible { border-color: var(--ss-accent); box-shadow: 0 0 0 3px var(--ss-accent-soft); }
         .select-wrap .chev { left: auto; right: 12px; font-size: 14px; }
         .register-panel[hidden], .token-area[hidden] { display: none; }
         .panel {
@@ -102,7 +102,7 @@
             min-width: 0; min-height: 138px; overflow: hidden;
             padding: 16px 16px 0;
             border: 1px solid var(--border); border-radius: var(--radius);
-            background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 9%, #0e1829), #0b1424 70%);
+            background: var(--ss-surface);
         }
         .stat-body { display: flex; align-items: flex-start; gap: 12px; position: relative; z-index: 1; }
         .stat-icon {
@@ -110,19 +110,19 @@
             width: 44px; height: 44px; flex: 0 0 44px;
             border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
             border-radius: 12px;
-            background: color-mix(in srgb, var(--tone) 14%, #0b1424);
+            background: color-mix(in srgb, var(--tone) 14%, var(--ss-surface));
             color: var(--tone); font-size: 22px;
         }
         .stat-text { min-width: 0; flex: 1; }
-        .stat-label { color: #c3d1e4; font-size: 12px; }
+        .stat-label { color: var(--ss-muted); font-size: 12px; }
         .stat-value { margin-top: 1px; font-size: clamp(22px, 1.9vw, 28px); font-weight: 700; letter-spacing: -.6px; line-height: 1.15; }
         .stat-caption { margin-top: 2px; color: var(--muted); font-size: 11px; }
         .trend {
             align-self: center; padding: 3px 8px; border-radius: 7px;
             font-size: 11px; font-weight: 600; white-space: nowrap;
         }
-        .trend.good { background: #0d3322; color: var(--green); }
-        .trend.bad { background: #3a1420; color: var(--red); }
+        .trend.good { background: color-mix(in srgb, var(--ss-ok) 8%, var(--ss-surface)); color: var(--green); }
+        .trend.bad { background: color-mix(in srgb, var(--ss-bad) 8%, var(--ss-surface)); color: var(--red); }
         .spark { display: block; width: calc(100% + 32px); height: 42px; margin: auto -16px 0; }
         .chart-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
         .chart-panel { min-width: 0; padding: 16px 16px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel); }
@@ -130,21 +130,21 @@
         .chart-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
         .chart-title .badge-icon { width: 30px; height: 30px; flex-basis: 30px; font-size: 16px; border-radius: 9px; }
         .chart-title h3 { margin: 0; font-size: 14px; font-weight: 600; }
-        .pill { padding: 4px 10px; border: 1px solid #2a3c58; border-radius: 8px; background: #121f36; color: #b9c8dc; font-size: 11px; white-space: nowrap; }
+        .pill { padding: 4px 10px; border: 1px solid var(--ss-line-strong); border-radius: 8px; background: var(--ss-surface-2); color: var(--ss-muted); font-size: 11px; white-space: nowrap; }
         .badge-icon {
             display: grid; place-items: center;
             width: 34px; height: 34px; flex: 0 0 34px;
             border: 1px solid color-mix(in srgb, var(--tone, var(--cyan)) 40%, transparent);
             border-radius: 10px;
-            background: color-mix(in srgb, var(--tone, var(--cyan)) 14%, #0b1424);
+            background: color-mix(in srgb, var(--tone, var(--cyan)) 14%, var(--ss-surface));
             color: var(--tone, var(--cyan)); font-size: 17px;
         }
-        .legend { display: flex; gap: 14px; margin: -2px 0 8px; font-size: 11px; color: #b9c8dc; }
+        .legend { display: flex; gap: 14px; margin: -2px 0 8px; font-size: 11px; color: var(--ss-muted); }
         .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; }
         .chart-wrap { position: relative; height: 215px; }
         .chart-empty {
             display: grid; place-items: center; min-height: 215px; padding: 20px;
-            border: 1px dashed #2c3c53; border-radius: 10px;
+            border: 1px dashed var(--ss-line-strong); border-radius: 10px;
             color: var(--muted); text-align: center; font-size: 12px;
         }
         .details-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
@@ -153,16 +153,16 @@
         .info-list { margin: 0; }
         .info-row {
             display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 10px; align-items: center;
-            padding: 9px 0; border-bottom: 1px solid #1a2840; font-size: 12px;
+            padding: 9px 0; border-bottom: 1px solid var(--ss-line); font-size: 12px;
         }
         .info-row:last-child { border-bottom: 0; }
         .info-row dt { display: flex; align-items: center; gap: 9px; color: var(--muted); }
-        .info-row dt .ico { font-size: 15px; color: #9db1ca; }
-        .info-row dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #e3edf9; }
+        .info-row dt .ico { font-size: 15px; color: var(--ss-muted); }
+        .info-row dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--ss-text); }
         .donut-row { display: flex; align-items: center; gap: 22px; }
         .donut {
             position: relative; flex: 0 0 132px; width: 132px; height: 132px; border-radius: 50%;
-            background: conic-gradient(var(--cyan) calc(var(--p) * 1%), #25364b 0);
+            background: conic-gradient(var(--cyan) calc(var(--p) * 1%), var(--ss-line-strong) 0);
         }
         .donut::after { content: ""; position: absolute; inset: 14px; border-radius: 50%; background: var(--panel); }
         .donut-center { position: absolute; inset: 0; z-index: 1; display: grid; place-content: center; text-align: center; }
@@ -174,11 +174,11 @@
         .donut-mount { margin: 0 0 10px; font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
         .disk-item { margin-top: 14px; }
         .disk-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 11px; }
-        .disk-track { height: 6px; overflow: hidden; border-radius: 99px; background: #25364b; }
-        .disk-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0891b2, var(--cyan)); }
-        .network-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid #1a2840; }
+        .disk-track { height: 6px; overflow: hidden; border-radius: 99px; background: var(--ss-line-strong); }
+        .disk-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--ss-accent), var(--cyan)); }
+        .network-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--ss-line); }
         .network-item:last-child { border-bottom: 0; }
-        .network-label { display: flex; align-items: center; gap: 6px; color: #c3d1e4; font-size: 12px; }
+        .network-label { display: flex; align-items: center; gap: 6px; color: var(--ss-muted); font-size: 12px; }
         .network-label .ico { font-size: 16px; }
         .network-value { margin-top: 2px; font-size: 22px; font-weight: 700; letter-spacing: -.4px; }
         .network-spark { flex: 0 0 52%; min-width: 0; }
@@ -186,15 +186,15 @@
         .server-list { display: grid; gap: 11px; }
         .server-card {
             display: block; padding: 16px; border: 1px solid var(--border); border-radius: 12px;
-            background: #0a1322; color: inherit; text-decoration: none; transition: border-color .15s, background .15s;
+            background: var(--ss-surface-2); color: inherit; text-decoration: none; transition: border-color .15s, background .15s;
         }
-        .server-card:hover { border-color: #23618a; background: #0f1d31; }
+        .server-card:hover { border-color: var(--ss-subtle); background: var(--ss-surface-2); }
         .server-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
         .server-name { margin: 0; font-size: 14px; }
         .server-host { margin-top: 3px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
         .badge {
             display: inline-flex; align-items: center; gap: 7px; padding: 5px 9px;
-            border: 1px solid #2c4058; border-radius: 99px; background: #152237;
+            border: 1px solid var(--ss-line-strong); border-radius: 99px; background: var(--ss-surface-2);
             font-size: 10px; font-weight: 700; white-space: nowrap;
         }
         .badge::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
@@ -205,31 +205,31 @@
         .server-meta { display: flex; flex-wrap: wrap; gap: 8px 17px; margin-top: 12px; color: var(--muted); font-size: 10px; }
         .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 16px; }
         .metric-label { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 7px; font-size: 11px; }
-        .track { height: 6px; overflow: hidden; border-radius: 99px; background: #26364b; }
-        .fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0891b2, var(--cyan)); }
-        .empty { padding: 40px 18px; border: 1px dashed #304158; border-radius: 12px; text-align: center; }
+        .track { height: 6px; overflow: hidden; border-radius: 99px; background: var(--ss-line-strong); }
+        .fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--ss-accent), var(--cyan)); }
+        .empty { padding: 40px 18px; border: 1px dashed var(--ss-line-strong); border-radius: 12px; text-align: center; }
         .empty-icon {
             display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 12px;
-            border: 1px solid var(--border); border-radius: 13px; background: #17263a; color: var(--cyan); font-size: 22px;
+            border: 1px solid var(--border); border-radius: 13px; background: var(--ss-surface-2); color: var(--cyan); font-size: 22px;
         }
         .empty h3 { margin: 0; font-size: 15px; }
         .empty p { max-width: 380px; margin: 8px auto 16px; color: var(--muted); font-size: 12px; }
         .table-wrap { width: 100%; overflow-x: auto; }
         .measurements { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 12px; }
-        .measurements th { padding: 10px 14px; border-bottom: 1px solid #2a3a54; color: var(--muted); font-weight: 500; text-align: right; }
-        .measurements td { padding: 11px 14px; border-bottom: 1px solid #172338; text-align: right; font-variant-numeric: tabular-nums; }
+        .measurements th { padding: 10px 14px; border-bottom: 1px solid var(--ss-line); color: var(--muted); font-weight: 500; text-align: right; }
+        .measurements td { padding: 11px 14px; border-bottom: 1px solid var(--ss-line); text-align: right; font-variant-numeric: tabular-nums; }
         .measurements th:first-child, .measurements td:first-child { text-align: left; }
         .measurements tbody tr:last-child td { border-bottom: 0; }
         .registration-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px; margin: 18px 0; }
-        .field { display: flex; flex-direction: column; gap: 7px; color: #cbd5e1; font-size: 11px; }
+        .field { display: flex; flex-direction: column; gap: 7px; color: var(--ss-muted); font-size: 11px; }
         .field input, .token-input {
             width: 100%; min-width: 0; padding: 11px 12px;
-            border: 1px solid #30435b; border-radius: 8px; outline: none; background: #080f1c; color: var(--text);
+            border: 1px solid var(--ss-line-strong); border-radius: 8px; outline: none; background: var(--ss-surface-2); color: var(--text);
         }
-        .field input:focus, .token-input:focus { border-color: #0891b2; box-shadow: 0 0 0 3px #0891b222; }
+        .field input:focus, .token-input:focus { border-color: var(--ss-accent); box-shadow: 0 0 0 3px var(--ss-accent-soft); }
         .full-width { grid-column: 1 / -1; }
-        .message { margin-top: 12px; color: #fca5a5; white-space: pre-line; }
-        .token-area { margin-top: 17px; padding: 16px; border: 1px solid #854d0e; border-radius: 10px; background: #29200d; }
+        .message { margin-top: 12px; color: var(--ss-bad); white-space: pre-line; }
+        .token-area { margin-top: 17px; padding: 16px; border: 1px solid color-mix(in srgb, var(--ss-warn) 35%, var(--ss-line)); border-radius: 10px; background: color-mix(in srgb, var(--ss-warn) 8%, var(--ss-surface)); }
         .token-row { display: flex; gap: 8px; margin-top: 12px; }
         .token-row .token-input { flex: 1; }
         @media (max-width: 1280px) {
@@ -314,7 +314,7 @@
                     <span class="trend {{ $cpuTrend['up'] ? 'bad' : 'good' }}">{{ $cpuTrend['up'] ? '↗' : '↘' }} {{ $cpuTrend['pct'] }}%</span>
                 @endif
             </div>
-            {!! $spark($chartData['cpu']->all(), '#38bdf8', 'cpu') !!}
+            {!! $spark($chartData['cpu']->all(), 'var(--ss-accent)', 'cpu') !!}
         </article>
 
         <article class="stat tone-purple">
@@ -331,7 +331,7 @@
                     <span class="trend {{ $ramTrend['up'] ? 'bad' : 'good' }}">{{ $ramTrend['up'] ? '↗' : '↘' }} {{ $ramTrend['pct'] }}%</span>
                 @endif
             </div>
-            {!! $spark($chartData['memory']->all(), '#a78bfa', 'ram') !!}
+            {!! $spark($chartData['memory']->all(), 'var(--ss-subtle)', 'ram') !!}
         </article>
 
         <article class="stat tone-green">
@@ -348,7 +348,7 @@
                     <span class="trend {{ $loadTrend['up'] ? 'bad' : 'good' }}">{{ $loadTrend['up'] ? '↗' : '↘' }} {{ $loadTrend['pct'] }}%</span>
                 @endif
             </div>
-            {!! $spark($chartData['load1']->all(), '#4ade80', 'load') !!}
+            {!! $spark($chartData['load1']->all(), 'var(--ss-ok)', 'load') !!}
         </article>
 
         <article class="stat tone-yellow">
@@ -417,9 +417,9 @@
                 </div>
             </div>
             <div class="legend">
-                <span><i style="background:#38bdf8"></i>1 minuut</span>
-                <span><i style="background:#a78bfa"></i>5 minuten</span>
-                <span><i style="background:#4ade80"></i>15 minuten</span>
+                <span><i style="background:var(--ss-accent)"></i>1 minuut</span>
+                <span><i style="background:var(--ss-subtle)"></i>5 minuten</span>
+                <span><i style="background:var(--ss-ok)"></i>15 minuten</span>
             </div>
 
             @if(count($chartData['load1']) > 0)
@@ -477,7 +477,7 @@
                             <strong>{{ $primaryDisk['available_bytes'] > 0 ? number_format($primaryDisk['available_bytes'] / 1073741824, 1, ',', '.') . ' GiB' : '—' }}</strong>
                         </div>
                         <div>
-                            <span><i style="background:#64748b"></i>Totaal</span>
+                            <span><i style="background:var(--ss-subtle)"></i>Totaal</span>
                             <strong>{{ $primaryDisk['total_bytes'] > 0 ? number_format($primaryDisk['total_bytes'] / 1073741824, 1, ',', '.') . ' GiB' : '—' }}</strong>
                         </div>
                     </div>
@@ -507,22 +507,22 @@
 
             <div class="network-item">
                 <div>
-                    <div class="network-label cyan"><svg class="ico"><use href="#i-down"/></svg> <span style="color:#c3d1e4">Download</span></div>
+                    <div class="network-label cyan"><svg class="ico"><use href="#i-down"/></svg> <span style="color:var(--ss-muted)">Download</span></div>
                     <div class="network-value">
                         {{ $downloadRate !== null ? number_format($downloadRate / 1048576, 2, ',', '.') . ' MB/s' : '—' }}
                     </div>
                 </div>
-                <div class="network-spark">{!! $spark($networkSeries['rx'] ?? [], '#38bdf8', 'rx') !!}</div>
+                <div class="network-spark">{!! $spark($networkSeries['rx'] ?? [], 'var(--ss-accent)', 'rx') !!}</div>
             </div>
 
             <div class="network-item">
                 <div>
-                    <div class="network-label purple"><svg class="ico"><use href="#i-up"/></svg> <span style="color:#c3d1e4">Upload</span></div>
+                    <div class="network-label purple"><svg class="ico"><use href="#i-up"/></svg> <span style="color:var(--ss-muted)">Upload</span></div>
                     <div class="network-value">
                         {{ $uploadRate !== null ? number_format($uploadRate / 1048576, 2, ',', '.') . ' MB/s' : '—' }}
                     </div>
                 </div>
-                <div class="network-spark">{!! $spark($networkSeries['tx'] ?? [], '#a78bfa', 'tx') !!}</div>
+                <div class="network-spark">{!! $spark($networkSeries['tx'] ?? [], 'var(--ss-subtle)', 'tx') !!}</div>
             </div>
 
             <div class="network-item">

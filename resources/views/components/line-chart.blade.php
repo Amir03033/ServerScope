@@ -1,4 +1,4 @@
-@props(['points', 'unit' => '', 'height' => 160, 'color' => '#38bdf8', 'label' => 'Grafiek'])
+@props(['points', 'unit' => '', 'height' => 160, 'color' => 'var(--ss-accent)', 'label' => 'Grafiek'])
 
 @php
     // $points: list of ['label' => string, 'value' => ?float, 'flag' => bool]
@@ -30,16 +30,16 @@
 @endphp
 
 @if ($values === [])
-    <div class="empty-state" style="padding:28px"><p style="margin:0">Nog geen meetgegevens in deze periode.</p></div>
+    <div class="empty-state" style="padding:28px"><p style="margin:0">{{ __('components.line_chart.no_data') }}</p></div>
 @else
     <svg viewBox="0 0 {{ $w }} {{ $h }}" role="img" aria-label="{{ $label }}" style="width:100%;height:auto;display:block">
         @foreach ($ticks as $tick)
-            <line x1="{{ $pad['l'] }}" x2="{{ $w - $pad['r'] }}" y1="{{ round($y($tick), 1) }}" y2="{{ round($y($tick), 1) }}" stroke="rgba(148,163,184,.12)"/>
-            <text x="{{ $pad['l'] - 6 }}" y="{{ round($y($tick), 1) + 3 }}" text-anchor="end" font-size="10" fill="#8397b1">{{ number_format($tick, 0, ',', '.') }}{{ $unit }}</text>
+            <line x1="{{ $pad['l'] }}" x2="{{ $w - $pad['r'] }}" y1="{{ round($y($tick), 1) }}" y2="{{ round($y($tick), 1) }}" stroke="var(--ss-line)"/>
+            <text x="{{ $pad['l'] - 6 }}" y="{{ round($y($tick), 1) + 3 }}" text-anchor="end" font-size="10" fill="var(--ss-muted)">{{ \App\Support\Format::number($tick) }}{{ $unit }}</text>
         @endforeach
         @foreach ($points as $i => $p)
             @if (! empty($p['flag']))
-                <rect x="{{ round($x($i) - 2, 1) }}" y="{{ $pad['t'] }}" width="4" height="{{ $plotH }}" fill="rgba(251,113,133,.35)"><title>{{ $p['label'] }}: mislukte controles</title></rect>
+                <rect x="{{ round($x($i) - 2, 1) }}" y="{{ $pad['t'] }}" width="4" height="{{ $plotH }}" fill="color-mix(in srgb, var(--ss-bad) 28%, transparent)"><title>{{ $p['label'] }}: {{ __('components.line_chart.failed_checks') }}</title></rect>
             @endif
         @endforeach
         @foreach ($segments as $segment)
@@ -52,7 +52,7 @@
         @endforeach
         @foreach ([0, intdiv($count - 1, 2), $count - 1] as $i)
             @isset($points[$i])
-                <text x="{{ round($x($i), 1) }}" y="{{ $h - 6 }}" text-anchor="{{ $i === 0 ? 'start' : ($i === $count - 1 ? 'end' : 'middle') }}" font-size="10" fill="#8397b1">{{ $points[$i]['label'] }}</text>
+                <text x="{{ round($x($i), 1) }}" y="{{ $h - 6 }}" text-anchor="{{ $i === 0 ? 'start' : ($i === $count - 1 ? 'end' : 'middle') }}" font-size="10" fill="var(--ss-muted)">{{ $points[$i]['label'] }}</text>
             @endisset
         @endforeach
     </svg>

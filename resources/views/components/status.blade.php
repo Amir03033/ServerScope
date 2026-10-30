@@ -11,18 +11,7 @@
         default => 's-muted',
     };
 
-    $label ??= [
-        'online' => 'Online', 'offline' => 'Offline', 'pending' => 'In afwachting', 'maintenance' => 'Onderhoud',
-        'healthy' => 'Gezond', 'up' => 'Bereikbaar', 'down' => 'Onbereikbaar', 'warning' => 'Waarschuwing',
-        'critical' => 'Kritiek', 'unknown' => 'Onbekend', 'paused' => 'Gepauzeerd',
-        'open' => 'Open', 'acknowledged' => 'Bevestigd', 'investigating' => 'In onderzoek',
-        'resolved' => 'Opgelost', 'closed' => 'Gesloten', 'info' => 'Info',
-        'valid' => 'Geldig', 'invalid' => 'Ongeldig', 'expired' => 'Verlopen', 'expiring' => 'Verloopt binnenkort',
-        'operational' => 'Operationeel', 'degraded' => 'Verminderde prestaties',
-        'partial_outage' => 'Gedeeltelijke storing', 'major_outage' => 'Grote storing',
-        'sent' => 'Verzonden', 'failed' => 'Mislukt', 'queued' => 'In wachtrij', 'error' => 'Fout',
-        'scheduled' => 'Gepland', 'enabled' => 'Ingeschakeld', 'disabled' => 'Uitgeschakeld',
-    ][$status] ?? ucfirst(str_replace('_', ' ', (string) $status));
+    $label ??= \App\Support\StatusLabel::for($status);
 @endphp
 
 <span {{ $attributes->class(['pill-status', $color]) }}>{{ $label }}</span>

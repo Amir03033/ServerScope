@@ -1,21 +1,32 @@
 import Chart from 'chart.js/auto';
 
-const chartColors = {
-    cyan: '#38bdf8',
-    purple: '#a78bfa',
-    green: '#4ade80',
-    grid: 'rgba(148, 163, 184, 0.10)',
-    border: 'rgba(148, 163, 184, 0.16)',
-    text: '#8397b1',
-    white: '#f8fafc',
-    tooltip: '#0b1220',
-};
+import { t, numberLocale } from './i18n';
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+// Colours come from the design tokens, so the charts follow the theme.
+function token(name, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    return value || fallback;
+}
+
+function palette() {
+    return {
+        series: [token('--ss-accent', '#2f5fd0'), token('--ss-muted', '#52525b'), token('--ss-subtle', '#63636b')],
+        grid: token('--ss-line', '#e4e4e7'),
+        border: token('--ss-line-strong', '#d4d4d8'),
+        text: token('--ss-muted', '#52525b'),
+        surface: token('--ss-surface', '#ffffff'),
+        fg: token('--ss-text', '#18181b'),
+    };
+}
+
+let chartColors = palette();
 
 Chart.defaults.font.family =
     'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
-Chart.defaults.color = chartColors.text;
-Chart.defaults.animation.duration = 650;
 Chart.defaults.animation.easing = 'easeOutQuart';
 
 function parseDate(value) {
@@ -33,10 +44,10 @@ function formatTimestamp(value) {
     const date = parseDate(value);
 
     if (!date) {
-        return 'Onbekend';
+        return t('chart.unknown');
     }
 
-    return date.toLocaleString('nl-NL', {
+    return date.toLocaleString(numberLocale(), {
         day: '2-digit',
         month: 'short',
         hour: '2-digit',
@@ -52,7 +63,7 @@ function formatTick(value, includeDay) {
         return '';
     }
 
-    const time = date.toLocaleTimeString('nl-NL', {
+    const time = date.toLocaleTimeString(numberLocale(), {
         hour: '2-digit',
         minute: '2-digit',
     });
@@ -61,7 +72,7 @@ function formatTick(value, includeDay) {
         return time;
     }
 
-    const day = date.toLocaleDateString('nl-NL', {
+    const day = date.toLocaleDateString(numberLocale(), {
         day: 'numeric',
         month: 'short',
     });
@@ -71,10 +82,10 @@ function formatTick(value, includeDay) {
 
 function formatNumber(value, decimals = 1) {
     if (value === null || value === undefined || !Number.isFinite(Number(value))) {
-        return 'Geen data';
+        return t('chart.no_data');
     }
 
-    return Number(value).toLocaleString('nl-NL', {
+    return Number(value).toLocaleString(numberLocale(), {
         maximumFractionDigits: decimals,
         minimumFractionDigits: decimals,
     });
@@ -103,7 +114,7 @@ function createGradient(context, color) {
         chartArea.bottom,
     );
 
-    gradient.addColorStop(0, hexToRgba(color, 0.38));
+    gradient.addColorStop(0, hexToRgba(color, 0.22));
     gradient.addColorStop(1, hexToRgba(color, 0));
 
     return gradient;
@@ -129,7 +140,7 @@ function createLineChart(elementId, datasets, options = {}) {
     }
 
     const chartDatasets = datasets.map((dataset) => {
-        const color = dataset.color ?? chartColors.cyan;
+        const color = dataset.color ?? chartColors.series[0];
 
         return {
             label: dataset.label,
@@ -140,7 +151,7 @@ function createLineChart(elementId, datasets, options = {}) {
             pointRadius: 0,
             pointHoverRadius: 5,
             pointHitRadius: 12,
-            pointHoverBackgroundColor: chartColors.white,
+            pointHoverBackgroundColor: chartColors.surface,
             pointHoverBorderColor: color,
             pointHoverBorderWidth: 3,
             tension: 0.35,
@@ -170,7 +181,7 @@ function createLineChart(elementId, datasets, options = {}) {
             },
 
             animation: {
-                duration: 650,
+                duration: reducedMotion.matches ? 0 : 650,
             },
 
             layout: {
@@ -190,9 +201,9 @@ function createLineChart(elementId, datasets, options = {}) {
 
                 tooltip: {
                     enabled: true,
-                    backgroundColor: chartColors.tooltip,
-                    titleColor: chartColors.white,
-                    bodyColor: '#cbd5e1',
+                    backgroundColor: chartColors.surface,
+                    titleColor: chartColors.fg,
+                    bodyColor: chartColors.text,
                     borderColor: chartColors.border,
                     borderWidth: 1,
                     padding: 12,
@@ -327,9 +338,9 @@ function initializeDashboardCharts() {
         'cpu-chart',
         [
             {
-                label: 'CPU-gebruik',
+                label: t('chart.cpu'),
                 data: alignedData(data.cpu),
-                color: chartColors.cyan,
+                color: chartColors.series[0],
             },
         ],
         {
@@ -344,9 +355,9 @@ function initializeDashboardCharts() {
         'memory-chart',
         [
             {
-                label: 'RAM-gebruik',
+                label: t('chart.ram'),
                 data: alignedData(data.memory),
-                color: chartColors.purple,
+                color: chartColors.series[0],
             },
         ],
         {
@@ -361,21 +372,21 @@ function initializeDashboardCharts() {
         'load-chart',
         [
             {
-                label: '1 minuut',
+                label: t('chart.load_1'),
                 data: alignedData(data.load1),
-                color: chartColors.cyan,
+                color: chartColors.series[0],
                 fill: false,
             },
             {
-                label: '5 minuten',
+                label: t('chart.load_5'),
                 data: alignedData(data.load5),
-                color: chartColors.purple,
+                color: chartColors.series[1],
                 fill: false,
             },
             {
-                label: '15 minuten',
+                label: t('chart.load_15'),
                 data: alignedData(data.load15),
-                color: chartColors.green,
+                color: chartColors.series[2],
                 fill: false,
             },
         ],
@@ -387,10 +398,20 @@ function initializeDashboardCharts() {
     );
 }
 
+function render() {
+    chartColors = palette();
+    Chart.defaults.color = chartColors.text;
+    initializeDashboardCharts();
+}
+
+// Redraw when the theme changes (switch or system setting).
+new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeDashboardCharts, {
+    document.addEventListener('DOMContentLoaded', render, {
         once: true,
     });
 } else {
-    initializeDashboardCharts();
+    render();
 }
