@@ -1,6 +1,6 @@
 # Revamp ServerScope-app — stap A: onderzoek en plan
 
-Status: **plan goedgekeurd (30-10); aanpassing voor tweetaligheid (§12) wacht op akkoord**. Er is nog geen applicatiecode gewijzigd.
+Status: **plan en tweetaligheid goedgekeurd (30-10); PR 1 in uitvoering**. Er is nog geen applicatiecode gewijzigd.
 Branch: `claude/serverscope-design-overhaul-a4kfxq`. Niets gaat naar `main`.
 Referentie: de vernieuwde info-site (`ServerScope-Info`, `resources/css/app.css`, componenten in `resources/views/components`).
 
@@ -292,7 +292,7 @@ in de PR-beschrijving (alleen goedgekeurde wijzigingen, zoals lege toestanden).
 | 5 | Lege toestanden en navigatiegroepen | akkoord |
 | 6 | Staging | `staging.serverscope.nl` (SQLite); de stappen staan in elke PR (§13) |
 | 7 | Laravel Boost | overslaan |
-| 8 | Tweetalig: Engels standaard, Nederlands als keuze | toegevoegd, zie §12. **De punten in §12.6 wachten op akkoord.** |
+| 8 | Tweetalig: Engels standaard, Nederlands als keuze | toegevoegd, zie §12; alle zes punten van §12.6 goedgekeurd, met de aanvullingen in §12.7 |
 
 ## 12. Tweetaligheid: Engels standaard, Nederlands als keuze
 
@@ -422,6 +422,25 @@ consequent. Vaste termen: *incident*, *alert*, *alert rule*, *status page*, *age
    `EN | NL`-wissel (cookie) als op de inlogpagina. Een alternatief is de browsertaal
    (`Accept-Language`) als eerste keuze. **Voorkeur?** Mijn advies: de browsertaal, omdat bezoekers
    van een statuspagina geen account hebben.
+
+### 12.7 Aanvullingen van de eigenaar (30-10, verplicht)
+
+- **`POST /locale`**: alleen `en` en `nl`. Terug naar de vorige pagina, maar **alleen binnen de eigen
+  site** (geen open redirect; anders naar het dashboard of de inlogpagina). CSRF blijft aan. Voor
+  gasten wordt de taal in de **sessie** opgeslagen, voor ingelogde gebruikers ook in `users.locale`.
+  De route staat expliciet in de lijst met publieke routes van `RouteTenancyTest`.
+- **Opgeslagen Nederlandse teksten**: voor deze revamp niet bouwen. Dit staat als blokkade vóór
+  externe, Engelstalige klanten in `docs/AUDIT.md` §8.
+- **Cache**: elke cache met getoonde tekst krijgt de taal in de sleutel, ook de cache van de
+  openbare statuspagina (`status-page:{id}:{updated_at}`), `dashboard:trends` en de samenvatting
+  van de systeemstatus. Er komt een test: dezelfde statuspagina eerst in `nl` en daarna in `en`
+  levert twee verschillende talen op.
+- **`ReleaseScriptsTest`**: faalt met "AGENT_VERSION niet gevonden in collector.py" als de versie
+  ontbreekt.
+- Omdat die cachetest een vertaalde statuspagina nodig heeft, worden de teksten van de **openbare
+  statuspagina** al in PR 1 vertaalbaar. De restyling volgt in PR 6. Om dezelfde reden (Engels is
+  de standaard, en de inlogpagina is het eerste wat je ziet) gaan ook de **gastpagina's** (inloggen,
+  registreren, wachtwoord, tweestapsverificatie) en de gastlayout al naar PR 1.
 
 ## 13. Op staging zetten (dit staat in elke PR, ingevuld)
 

@@ -62,7 +62,7 @@ class ReleaseScriptsTest extends TestCase
         $this->git('commit', '-qm', 'agent');
         $this->git('remote', 'add', 'origin', $root.'/origin.git');
         $this->git('push', '-q', 'origin', 'main');
-        preg_match('/^AGENT_VERSION = "(\d+\.\d+\.\d+)"$/m', (string) file_get_contents($this->repo.'/agent/serverscope_agent/collector.py'), $match);
+        $this->assertSame(1, preg_match('/^AGENT_VERSION = "(\d+\.\d+\.\d+)"$/m', (string) file_get_contents($this->repo.'/agent/serverscope_agent/collector.py'), $match), 'AGENT_VERSION niet gevonden in collector.py');
         $this->version = $match[1];
         $this->git('tag', 'agent-v'.$this->version);
 
