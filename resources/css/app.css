@@ -1,14 +1,11 @@
 /*
  * ServerScope app. Same design tokens and components as the info site
  * (ServerScope-Info/resources/css/app.css), plus the application shell.
- *
- * Tailwind's preflight is left out until every screen is rebuilt (the
- * older screens still rely on browser defaults; public/css/serverscope.css
- * maps their classes onto these tokens). It comes back when that file is
- * removed.
+ * Every screen is built on these components; Tailwind's preflight is on.
  */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @source "../views/**/*.blade.php";
@@ -150,7 +147,7 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Base (a small subset of preflight; see the note at the top)         */
+/* Base (on top of Tailwind's preflight)                               */
 /* ------------------------------------------------------------------ */
 
 @layer base {
@@ -196,6 +193,9 @@
         flex: 0 0 auto;
     }
 
+    /* The icon sprite takes no space. */
+    .ss-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
     .sr-only {
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
@@ -213,6 +213,24 @@
     }
 
     [hidden] { display: none !important; }
+
+    /* Links inside running text stay recognisable without colour alone. */
+    a:not([class]), a.text-accent { text-decoration: underline; text-decoration-thickness: from-font; text-underline-offset: 2px; }
+    a.text-accent:hover { text-decoration-thickness: 2px; }
+
+    /* Inline code and lists inside messages (preflight resets both). */
+    :not(pre) > code {
+        padding: .0625rem .3125rem;
+        border: 1px solid var(--ss-line);
+        border-radius: 5px;
+        background: var(--ss-code-bg);
+        color: var(--ss-code-text);
+        font-size: .875em;
+        overflow-wrap: anywhere;
+    }
+    .ss-chip > code, code.ss-chip { padding: 0; border: 0; background: none; color: inherit; }
+    .ss-alert ul { margin: .25rem 0 0; padding-left: 1.125rem; list-style: disc; }
+    details > summary { cursor: pointer; }
 }
 
 /* ------------------------------------------------------------------ */
@@ -435,7 +453,7 @@
     }
 
     /* Tables: quiet header, row hover, numbers aligned. */
-    .ss-table-wrap { width: 100%; overflow-x: auto; }
+    .ss-table-wrap { position: relative; width: 100%; overflow-x: auto; }
 
     .ss-table {
         width: 100%;
@@ -1047,6 +1065,125 @@
         .ss-table-cards .num { text-align: right; }
     }
 
+    /* Segmented filters that scroll sideways on small screens. */
+    .ss-tabs-scroll { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
+    .ss-tabs-scroll .ss-segmented > * { display: inline-flex; align-items: center; gap: .375rem; white-space: nowrap; }
+
+    .ss-count {
+        min-width: 1.25rem;
+        padding: 0 .3rem;
+        border-radius: 6px;
+        background: var(--ss-surface-2);
+        color: var(--ss-muted);
+        font-size: .6875rem;
+        line-height: 1.125rem;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .ss-segmented > [aria-current="page"] .ss-count,
+    .ss-segmented > [aria-pressed="true"] .ss-count { background: color-mix(in srgb, var(--ss-bg) 25%, transparent); color: inherit; }
+
+    /* Sticky in-page navigation (anchors; app.js marks the current section). */
+    .ss-section-nav {
+        position: sticky;
+        top: 3.75rem;
+        z-index: 30;
+        display: flex;
+        gap: .25rem;
+        margin: 1.5rem -1rem 1.5rem;
+        padding: .5rem 1rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+        border-bottom: 1px solid var(--ss-line);
+        background: color-mix(in srgb, var(--ss-bg) 88%, transparent);
+        backdrop-filter: blur(12px);
+    }
+
+    .ss-section-nav::-webkit-scrollbar { display: none; }
+
+    @media (min-width: 640px) {
+        .ss-section-nav { margin-inline: -1.5rem; padding-inline: 1.5rem; }
+    }
+
+    @media (min-width: 1280px) {
+        .ss-section-nav { margin-inline: -2rem; padding-inline: 2rem; }
+    }
+
+    .ss-section-nav > a {
+        flex: none;
+        padding: .375rem .75rem;
+        border-radius: 8px;
+        color: var(--ss-muted);
+        font-size: .8125rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background-color .2s ease, color .2s ease;
+    }
+
+    .ss-section-nav > a:hover { color: var(--ss-text); background: var(--ss-surface-2); }
+    .ss-section-nav > a[aria-current="true"] { color: var(--ss-accent); background: var(--ss-accent-soft); }
+
+    /* Anchors land below the top bar and the sticky section navigation. */
+    .ss-content [id] { scroll-margin-top: 2.5rem; }
+
+    /* Panel for actions that are hard to undo. */
+    .ss-panel-danger { border-color: color-mix(in srgb, var(--ss-bad) 30%, var(--ss-line)); }
+
+    /* Diagnosis panel: a coloured edge only for a status. */
+    .ss-diagnosis { border-left: 3px solid var(--ss-line-strong); }
+    .ss-diagnosis.is-ok { border-left-color: var(--ss-ok); }
+    .ss-diagnosis.is-warn { border-left-color: var(--ss-warn); }
+    .ss-diagnosis.is-bad { border-left-color: var(--ss-bad); }
+    .ss-diagnosis.is-info { border-left-color: var(--ss-accent); }
+
+    /* Numbered steps. */
+    .ss-steps { margin: 0; padding: 0; list-style: none; counter-reset: ss-step; display: grid; gap: 1.25rem; }
+
+    .ss-steps > li {
+        position: relative;
+        padding-left: 2.5rem;
+        counter-increment: ss-step;
+    }
+
+    .ss-steps > li::before {
+        content: counter(ss-step);
+        position: absolute;
+        left: 0;
+        top: -.125rem;
+        display: grid;
+        place-items: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 999px;
+        background: var(--ss-accent-soft);
+        color: var(--ss-accent);
+        font-size: .8125rem;
+        font-weight: 700;
+    }
+
+    .ss-step-title { font-size: .875rem; font-weight: 600; }
+
+    .ss-enroll-status {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .625rem;
+        padding: .75rem 1rem;
+        border: 1px solid var(--ss-line);
+        border-radius: 10px;
+        background: var(--ss-surface-2);
+        font-size: .875rem;
+    }
+
+    @media (max-width: 639px) {
+        .ss-table-cards td.is-actions { display: block; padding-top: .5rem; }
+        .ss-table-cards td.is-actions::before { content: none; }
+        .ss-table-cards td.is-actions > div,
+        .ss-table-cards td.is-actions > form { justify-content: flex-start; }
+    }
+
     /* Collapsible section (native <details>). */
     .ss-details > summary {
         display: flex;
@@ -1060,6 +1197,189 @@
     .ss-details > summary::-webkit-details-marker { display: none; }
     .ss-details > summary .ss-chevron { transition: transform .2s ease; color: var(--ss-muted); }
     .ss-details[open] > summary .ss-chevron { transform: rotate(180deg); }
+
+    /* Vertical timeline; the dot carries the colour only for a status. */
+    .ss-timeline { margin: 0; padding: 0 0 0 1.125rem; list-style: none; border-left: 2px solid var(--ss-line); }
+    .ss-timeline > li { --c: var(--ss-line-strong); position: relative; padding: 0 0 1.125rem .75rem; min-width: 0; }
+    .ss-timeline > li:last-child { padding-bottom: 0; }
+    .ss-timeline > li::before {
+        content: "";
+        position: absolute;
+        left: -1.5rem;
+        top: .3125rem;
+        width: .625rem;
+        height: .625rem;
+        border-radius: 999px;
+        background: var(--c);
+        box-shadow: 0 0 0 3px var(--ss-surface);
+    }
+    .ss-timeline > li.is-ok { --c: var(--ss-ok); }
+    .ss-timeline > li.is-warn { --c: var(--ss-warn); }
+    .ss-timeline > li.is-bad { --c: var(--ss-bad); }
+    .ss-timeline > li.is-info { --c: var(--ss-accent); }
+    .ss-timeline-when { color: var(--ss-muted); font-size: .75rem; }
+    .ss-timeline-what { margin-top: .125rem; font-size: .875rem; overflow-wrap: anywhere; }
+    .ss-timeline-body { margin-top: .375rem; color: var(--ss-muted); font-size: .8125rem; overflow-wrap: anywhere; }
+
+    /* Added and removed lines (DNS, page content). */
+    .ss-diff { display: grid; gap: .125rem; margin-top: .375rem; padding: .5rem .625rem; border: 1px solid var(--ss-line); border-radius: 8px; background: var(--ss-surface-2); font-family: var(--font-mono); font-size: .75rem; overflow-wrap: anywhere; }
+    .ss-diff-add { color: var(--ss-ok); }
+    .ss-diff-del { color: var(--ss-bad); }
+
+    /* Compact list in a side panel. */
+    .ss-list { margin: 0; padding: 0; list-style: none; font-size: .8125rem; }
+    .ss-list > li { display: flex; align-items: flex-start; gap: .5rem; min-width: 0; padding: .625rem 0; border-bottom: 1px solid var(--ss-line); }
+    .ss-list > li:last-child { border-bottom: 0; }
+    .ss-list-sub { color: var(--ss-muted); font-size: .75rem; }
+
+    /* SVG line chart (x-line-chart). */
+    .ss-linechart { display: block; width: 100%; height: auto; }
+
+    /* Sortable column heading. */
+    .ss-sort { color: inherit; text-decoration: none; }
+    .ss-sort:hover { color: var(--ss-text); }
+    .ss-sort[aria-sort] { color: var(--ss-text); }
+
+    /* Status bar: the steps of a lifecycle, the current one highlighted. */
+    .ss-progress { display: flex; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; counter-reset: ss-progress; }
+    .ss-progress > li {
+        position: relative;
+        display: flex;
+        flex: 0 1 auto;
+        align-items: center;
+        gap: .5rem;
+        min-width: 0;
+        padding: .375rem .75rem .375rem 0;
+        color: var(--ss-subtle);
+        font-size: .8125rem;
+        font-weight: 600;
+        white-space: nowrap;
+        counter-increment: ss-progress;
+    }
+    .ss-progress > li::before {
+        content: counter(ss-progress);
+        display: grid;
+        place-items: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        flex: 0 0 1.5rem;
+        border: 1px solid var(--ss-line-strong);
+        border-radius: 999px;
+        background: var(--ss-surface);
+        font-size: .6875rem;
+    }
+    .ss-progress > li + li { padding-left: .875rem; border-left: 0; }
+    .ss-progress > li:not(:last-child)::after { content: ""; width: 1rem; height: 1px; background: var(--ss-line-strong); }
+    .ss-progress > li.is-done { color: var(--ss-muted); }
+    .ss-progress > li.is-done::before { content: "✓"; border-color: var(--ss-ok); color: var(--ss-ok); }
+    .ss-progress > li[aria-current="step"] { color: var(--ss-text); }
+    .ss-progress > li[aria-current="step"]::before { border-color: var(--ss-accent); background: var(--ss-accent); color: var(--ss-on-accent); }
+
+    /* Public status page. The customer's accent arrives as --sp-* (set by app.js);
+       it is used as text only when readable, otherwise the neutral accent. */
+    .ss-public { --sp-text: var(--sp-accent-light, var(--ss-accent)); }
+    @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) .ss-public { --sp-text: var(--sp-accent-dark, var(--ss-accent)); }
+    }
+    :root[data-theme="dark"] .ss-public { --sp-text: var(--sp-accent-dark, var(--ss-accent)); }
+    .ss-public-head { padding-left: .875rem; border-left: 4px solid var(--sp-brand, var(--ss-accent)); }
+    .ss-public-banner {
+        --c: var(--ss-muted);
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        margin: 1.625rem 0;
+        padding: 1.125rem 1.25rem;
+        border: 1px solid color-mix(in srgb, var(--c) 40%, var(--ss-line));
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--c) 9%, var(--ss-surface));
+        font-size: 1.125rem;
+        font-weight: 650;
+    }
+    .ss-public-banner .ss-dot { width: .75rem; height: .75rem; background: var(--c); }
+    .ss-public-banner.is-ok { --c: var(--ss-ok); }
+    .ss-public-banner.is-warn { --c: var(--ss-warn); }
+    .ss-public-banner.is-bad { --c: var(--ss-bad); }
+    .ss-public-banner.is-info { --c: var(--ss-accent); }
+    /* 90 days on a phone: thinner cells so the strip never overflows. */
+    .ss-public .ss-strip { gap: 1px; }
+    .ss-public .ss-strip > i { min-width: 1px; border-radius: 2px; }
+    .ss-public-h2 { margin: 2rem 0 .75rem; font-size: 1.0625rem; font-weight: 600; }
+    .ss-public-row { padding: 1rem 0; border-bottom: 1px solid var(--ss-line); }
+    .ss-public-row:last-child { border-bottom: 0; }
+    .ss-public a, .ss-public-link { color: var(--sp-text); text-decoration: underline; text-underline-offset: 2px; }
+    .ss-public-locale { display: inline-flex; gap: .25rem; }
+    .ss-public-locale button {
+        padding: .1875rem .5625rem;
+        border: 1px solid var(--ss-line-strong);
+        border-radius: 7px;
+        background: transparent;
+        color: var(--ss-muted);
+        font-size: .75rem;
+    }
+    .ss-public-locale button[aria-pressed="true"] { border-color: var(--sp-brand, var(--ss-accent)); background: var(--sp-brand, var(--ss-accent)); color: var(--sp-on-brand, var(--ss-on-accent)); }
+
+    /* Page header actions and empty-state actions. */
+    .actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: .5rem; }
+    @media (min-width: 640px) { .actions { justify-content: flex-end; } }
+    .actions form { margin: 0; }
+
+    /* Search results (the class names are part of SearchJsonTest). */
+    .ov-row {
+        display: flex;
+        align-items: center;
+        gap: .625rem;
+        min-width: 0;
+        padding: .5625rem .5rem;
+        margin: 0 -.5rem;
+        border-radius: 8px;
+        color: inherit;
+        font-size: .875rem;
+        text-decoration: none;
+        transition: background-color .15s ease;
+    }
+    .ov-row + .ov-row { border-top: 1px solid var(--ss-line); }
+    .ov-row:hover { background: var(--ss-surface-2); }
+    .ov-main { display: grid; flex: 1; min-width: 0; }
+    .ov-main strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ov-sub { color: var(--ss-muted); font-size: .75rem; overflow-wrap: anywhere; }
+    .ss-mark { padding: 0 .0625rem; border-radius: 3px; background: var(--ss-accent-soft); color: inherit; }
+
+    /* Pagination (x-pagination). */
+    .pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-top: 1.125rem; color: var(--ss-muted); font-size: .8125rem; }
+    .pagination-links { display: flex; gap: .5rem; }
+    .pagination-links a, .pagination-links span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.25rem;
+        padding: 0 .75rem;
+        border: 1px solid var(--ss-line-strong);
+        border-radius: 8px;
+        background: var(--ss-surface);
+        text-decoration: none;
+        transition: border-color .2s ease, color .2s ease;
+    }
+    .pagination-links a:hover { border-color: var(--ss-subtle); color: var(--ss-text); }
+    .pagination-links span { color: var(--ss-subtle); cursor: not-allowed; }
+
+    /* Pausable automatic refresh (x-auto-refresh). */
+    .ss-auto-refresh { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; color: var(--ss-muted); font-size: .75rem; }
+    .ss-auto-refresh.is-paused [data-auto-refresh-dot] { background: var(--ss-line-strong); }
+
+    /* Bulk action bar: sticks to the top while rows are selected. */
+    .ss-bulkbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: .75rem;
+        margin-bottom: 1rem;
+        padding: .75rem;
+        border: 1px solid var(--ss-line);
+        border-radius: 10px;
+        background: var(--ss-surface-2);
+    }
+    .ss-bulkbar.is-active { position: sticky; top: 4.25rem; z-index: 5; border-color: color-mix(in srgb, var(--ss-accent) 40%, var(--ss-line)); box-shadow: var(--ss-shadow-lift); }
 }
 
 /* ------------------------------------------------------------------ */
@@ -1084,6 +1404,8 @@
 }
 
 @media print {
-    .ss-sidebar, .ss-topbar, .ss-noprint { display: none !important; }
+    .ss-sidebar, .ss-topbar, .ss-noprint, .ss-auto-refresh { display: none !important; }
     body { background: #fff; color: #000; }
+    .ss-panel, .ss-stat { box-shadow: none; break-inside: avoid; }
+    .ss-print main { max-width: none; padding: 0; }
 }

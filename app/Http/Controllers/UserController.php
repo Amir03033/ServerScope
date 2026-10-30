@@ -66,7 +66,7 @@ class UserController extends Controller
         Password::sendResetLink(['email' => $user->email]);
         Audit::log('user.invited', "Gebruiker {$user->email} uitgenodigd".($role === 'admin' ? ' als beheerder' : ''), $user);
 
-        return back()->with('success', "Uitnodiging verstuurd naar {$user->email}. De gebruiker stelt zelf een wachtwoord in via de link (60 minuten geldig).");
+        return back()->with('success', __('admin.users.flash.invited', ['email' => $user->email]));
     }
 
     /** Team invitation of an existing account (only when enabled). */
@@ -75,14 +75,14 @@ class UserController extends Controller
         $request->validate(['is_admin' => ['boolean']]);
 
         if ($user->belongsToTeam(Tenant::id())) {
-            return back()->withErrors(['email' => 'Deze gebruiker is al lid van dit team.']);
+            return back()->withErrors(['email' => __('admin.users.flash.already_member')]);
         }
 
         $role = $request->boolean('is_admin') ? 'admin' : 'member';
         $user->teams()->attach(Tenant::id(), ['role' => $role]);
         Audit::log('user.added_to_team', "Bestaand account {$user->email} toegevoegd aan het team", $user);
 
-        return back()->with('success', "{$user->email} is toegevoegd aan dit team.");
+        return back()->with('success', __('admin.users.flash.added', ['email' => $user->email]));
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -93,19 +93,19 @@ class UserController extends Controller
         $makeAdmin = $request->boolean('is_admin');
 
         if (! $makeAdmin && $user->is($request->user())) {
-            return back()->with('error', 'Je kunt je eigen beheerdersrechten niet intrekken.');
+            return back()->with('error', __('admin.users.flash.own_admin'));
         }
 
         if ($role === 'owner' && $request->user()->roleIn(Tenant::id()) !== 'owner') {
-            return back()->with('error', 'Alleen een eigenaar kan de rol van een eigenaar wijzigen.');
+            return back()->with('error', __('admin.users.flash.owner_only'));
         }
 
         if (! $makeAdmin && in_array($role, ['owner', 'admin'], true) && $this->isLastAdmin($user)) {
-            return back()->with('error', 'Er moet minstens één beheerder overblijven.');
+            return back()->with('error', __('admin.users.flash.last_admin'));
         }
 
         if (! $makeAdmin && $role === 'owner' && $this->isLastOwner($user)) {
-            return back()->with('error', 'Een team heeft altijd een eigenaar.');
+            return back()->with('error', __('admin.users.flash.needs_owner'));
         }
 
         $newRole = $makeAdmin ? ($role === 'owner' ? 'owner' : 'admin') : 'member';
@@ -113,7 +113,7 @@ class UserController extends Controller
         $user->syncAdminMirror();
         Audit::log('user.role_changed', "{$user->email} is nu ".($makeAdmin ? 'beheerder' : 'gebruiker'), $user);
 
-        return back()->with('success', 'Rol bijgewerkt.');
+        return back()->with('success', __('admin.users.flash.role_updated'));
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
@@ -122,15 +122,15 @@ class UserController extends Controller
         $role = $this->roleOrFail($user);
 
         if ($user->is($request->user())) {
-            return back()->with('error', 'Je kunt je eigen account hier niet verwijderen.');
+            return back()->with('error', __('admin.users.flash.own_account'));
         }
 
         if (in_array($role, ['owner', 'admin'], true) && $this->isLastAdmin($user)) {
-            return back()->with('error', 'De laatste beheerder kan niet worden verwijderd.');
+            return back()->with('error', __('admin.users.flash.last_admin_delete'));
         }
 
         if ($role === 'owner' && ($request->user()->roleIn(Tenant::id()) !== 'owner' || $this->isLastOwner($user))) {
-            return back()->with('error', 'Een eigenaar kan alleen door een andere eigenaar worden verwijderd.');
+            return back()->with('error', __('admin.users.flash.owner_delete'));
         }
 
         $email = $user->email;
@@ -145,13 +145,13 @@ class UserController extends Controller
 
             Audit::log('user.removed_from_team', "Gebruiker {$email} uit het team verwijderd");
 
-            return back()->with('success', "{$email} is uit dit team verwijderd.");
+            return back()->with('success', __('admin.users.flash.removed_from_team', ['email' => $email]));
         }
 
         $user->delete();
         Audit::log('user.deleted', "Gebruiker {$email} verwijderd");
 
-        return back()->with('success', "Gebruiker {$email} verwijderd. Incidenten en auditregels blijven bewaard.");
+        return back()->with('success', __('admin.users.flash.deleted', ['email' => $email]));
     }
 
     /** Members of the current team with their role. */

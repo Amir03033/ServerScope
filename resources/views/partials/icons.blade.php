@@ -1,5 +1,5 @@
 {{-- Shared SVG icon sprite. Use: <svg class="ico"><use href="#i-name"/></svg> --}}
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<svg class="ss-sprite" width="0" height="0" aria-hidden="true" focusable="false">
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></symbol>
     <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
     <symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20v-7M12 20V4M19 20V9"/></symbol>

@@ -3,7 +3,7 @@
  * progressive enhancement: without JavaScript every page and form works.
  * Texts come from the page (resources/js/i18n.js).
  */
-import { t } from './i18n';
+import { numberLocale, t } from './i18n';
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
@@ -189,7 +189,8 @@ function askConfirmation(form, submitter) {
 
     const button = confirmDialog.querySelector('[data-confirm-button]');
     const label = (submitter?.textContent || '').trim();
-    const destructive = (form.querySelector('input[name="_method"]')?.value || '').toUpperCase() === 'DELETE';
+    const destructive = (form.querySelector('input[name="_method"]')?.value || '').toUpperCase() === 'DELETE'
+        || form.dataset.confirmDanger === 'yes';
 
     button.dataset.defaultLabel ??= button.textContent;
     confirmDialog.querySelector('[data-confirm-text]').textContent = form.dataset.confirm;
@@ -252,6 +253,250 @@ window.addEventListener('pageshow', (event) => {
         button.classList.remove('is-loading');
     });
 });
+
+/* ------------------------------------------------------------------ */
+/* Bulk selection (websites.pages): select all, a live count, a sticky  */
+/* bar while rows are selected, and a confirmation before deleting.     */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('form[data-bulk-form]').forEach((form) => {
+    const all = form.querySelector('[data-select-all]');
+    const rows = () => [...form.querySelectorAll('[data-row-select]')];
+    const counter = form.querySelector('[data-selected-count]');
+    const bar = form.querySelector('[data-bulk-bar]');
+    const action = form.querySelector('select[name="action"]');
+
+    const update = () => {
+        const selected = rows().filter((row) => row.checked).length;
+        if (counter) counter.textContent = (form.dataset.selectedText || ':count').replace(':count', String(selected));
+        bar?.classList.toggle('is-active', selected > 0);
+        if (all) {
+            all.checked = selected > 0 && selected === rows().length;
+            all.indeterminate = selected > 0 && selected < rows().length;
+        }
+    };
+
+    const syncConfirm = () => {
+        if (action?.value === 'delete') {
+            form.dataset.confirm = form.dataset.deleteConfirm || '';
+            form.dataset.confirmDanger = 'yes';
+        } else {
+            delete form.dataset.confirm;
+            delete form.dataset.confirmDanger;
+        }
+    };
+
+    all?.addEventListener('change', () => {
+        rows().forEach((row) => { row.checked = all.checked; });
+        update();
+    });
+    form.addEventListener('change', update);
+    action?.addEventListener('change', syncConfirm);
+    syncConfirm();
+    update();
+});
+
+/* ------------------------------------------------------------------ */
+/* Automatic refresh (x-auto-refresh): pausable, and off by default     */
+/* with prefers-reduced-motion. The choice is kept for this tab.        */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-auto-refresh]').forEach((box) => {
+    const seconds = Math.max(5, Number(box.dataset.autoRefresh) || 30);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const key = `ss-auto-refresh:${window.location.pathname}`;
+    const text = box.querySelector('[data-auto-refresh-text]');
+    const toggle = box.querySelector('[data-auto-refresh-toggle]');
+    let timer = null;
+    let stored = null;
+
+    try { stored = window.sessionStorage.getItem(key); } catch { /* storage unavailable */ }
+
+    let paused = stored === null ? reduced : stored === 'paused';
+
+    const render = () => {
+        box.classList.toggle('is-paused', paused);
+        text.textContent = paused ? (reduced && stored === null ? box.dataset.textReduced : box.dataset.textPaused) : box.dataset.textActive;
+        toggle.textContent = paused ? box.dataset.labelResume : box.dataset.labelPause;
+        toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
+    };
+
+    const schedule = () => {
+        window.clearTimeout(timer);
+        if (paused) return;
+        timer = window.setTimeout(() => {
+            // A hidden tab waits until it is visible again.
+            if (document.hidden) {
+                document.addEventListener('visibilitychange', () => window.location.reload(), { once: true });
+            } else {
+                window.location.reload();
+            }
+        }, seconds * 1000);
+    };
+
+    toggle.addEventListener('click', () => {
+        paused = !paused;
+        stored = paused ? 'paused' : 'running';
+        try { window.sessionStorage.setItem(key, stored); } catch { /* storage unavailable */ }
+        render();
+        schedule();
+    });
+
+    box.hidden = false;
+    render();
+    schedule();
+});
+
+/* ------------------------------------------------------------------ */
+/* Alert rule form: a live sentence that reads the rule back.          */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('form[data-rule-preview]').forEach((form) => {
+    const out = form.querySelector('[data-preview-text]');
+    let units = {};
+    let operators = {};
+    try {
+        units = JSON.parse(form.dataset.units || '{}');
+        operators = JSON.parse(form.dataset.operators || '{}');
+    } catch { /* keep the server-rendered sentence */ }
+
+    const value = (name) => form.querySelector(`[name="${name}"]`);
+    const number = (raw) => {
+        const parsed = Number(raw);
+        if (raw === '' || Number.isNaN(parsed)) return '…';
+        return new Intl.NumberFormat(numberLocale(), { maximumFractionDigits: 2 }).format(parsed);
+    };
+
+    const render = () => {
+        const metric = value('metric');
+        const threshold = number(value('threshold').value);
+        const text = metric.value === form.dataset.offlineMetric
+            ? form.dataset.templateOffline.replace(':threshold', threshold)
+            : form.dataset.template
+                .replace(':metric', metric.selectedOptions[0]?.textContent.trim() || metric.value)
+                .replace(':operator', operators[value('operator').value] || value('operator').value)
+                .replace(':threshold', threshold + (units[metric.value] || ''))
+                .replace(':minutes', value('duration_minutes').value || '…');
+        out.textContent = text;
+    };
+
+    ['metric', 'threshold', 'operator', 'duration_minutes'].forEach((name) => {
+        value(name)?.addEventListener('input', render);
+        value(name)?.addEventListener('change', render);
+    });
+});
+
+/* ------------------------------------------------------------------ */
+/* Public status page: the customer's accent colour, checked for        */
+/* contrast on the server (data-accent-*); CSSOM, so no inline style.   */
+/* ------------------------------------------------------------------ */
+
+if (document.body.dataset.accent) {
+    const { accent, onAccent, accentLight, accentDark } = document.body.dataset;
+    const style = document.body.style;
+    style.setProperty('--sp-brand', accent);
+    if (onAccent) style.setProperty('--sp-on-brand', onAccent);
+    if (accentLight) style.setProperty('--sp-accent-light', accentLight);
+    if (accentDark) style.setProperty('--sp-accent-dark', accentDark);
+}
+
+/* ------------------------------------------------------------------ */
+/* Status page form: add and remove component rows.                     */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-component-rows]').forEach((rows) => {
+    const form = rows.closest('form');
+
+    rows.addEventListener('click', (event) => {
+        const remove = event.target.closest('[data-component-remove]');
+        if (remove) remove.closest('[data-component-row]')?.remove();
+    });
+
+    // "Empty rows are ignored": leave rows without monitor and name out of the request.
+    form?.addEventListener('submit', () => {
+        rows.querySelectorAll('[data-component-row]').forEach((row) => {
+            const filled = [...row.querySelectorAll('select, input')].some((el) => el.value.trim() !== '');
+            row.querySelectorAll('[name]').forEach((el) => { el.disabled = !filled; });
+        });
+    }, true);
+
+    form?.querySelector('[data-component-add]')?.addEventListener('click', () => {
+        const source = rows.querySelector('[data-component-row]');
+        if (!source) return;
+
+        const row = source.cloneNode(true);
+        const n = Date.now();
+        row.querySelectorAll('[name]').forEach((el) => {
+            el.name = el.name.replace(/components\[\d+\]/, `components[${n}]`);
+            el.value = '';
+            el.removeAttribute('aria-invalid');
+            el.removeAttribute('aria-describedby');
+        });
+        row.querySelectorAll('[id]').forEach((el) => { el.id = el.id.replace(/component-\d+-/, `component-${n}-`); });
+        row.querySelectorAll('label[for]').forEach((el) => { el.htmlFor = el.htmlFor.replace(/component-\d+-/, `component-${n}-`); });
+        row.querySelectorAll('.ss-error').forEach((el) => el.remove());
+        rows.appendChild(row);
+        row.querySelector('select, input')?.focus();
+    });
+});
+
+/* Show the custom date range only for the "custom" period (reports). */
+document.querySelectorAll('select[data-custom-toggle]').forEach((select) => {
+    const target = document.getElementById(select.dataset.customToggle);
+    select.addEventListener('change', () => { if (target) target.hidden = select.value !== 'custom'; });
+});
+
+/* Print button (reports.print). */
+document.querySelectorAll('[data-print]').forEach((button) => button.addEventListener('click', () => window.print()));
+
+/* Search results (/search): mark the search term in names and subtitles. */
+document.querySelectorAll('[data-highlight]').forEach((root) => {
+    const needle = root.dataset.highlight.trim().toLocaleLowerCase();
+    if (needle.length < 2) return;
+
+    root.querySelectorAll('.ov-main strong, .ov-main .ov-sub').forEach((el) => {
+        [...el.childNodes].forEach((node) => {
+            if (node.nodeType !== Node.TEXT_NODE) return;
+            const text = node.textContent;
+            const lower = text.toLocaleLowerCase();
+            let index = lower.indexOf(needle);
+            if (index === -1) return;
+
+            const fragment = document.createDocumentFragment();
+            let start = 0;
+            while (index !== -1) {
+                fragment.append(text.slice(start, index));
+                const mark = document.createElement('mark');
+                mark.className = 'ss-mark';
+                mark.textContent = text.slice(index, index + needle.length);
+                fragment.append(mark);
+                start = index + needle.length;
+                index = lower.indexOf(needle, start);
+            }
+            fragment.append(text.slice(start));
+            node.replaceWith(fragment);
+        });
+    });
+});
+
+/* Tables that scroll sideways can be scrolled with the keyboard too. */
+function markScrollableTables() {
+    document.querySelectorAll('.ss-table-wrap').forEach((wrap) => {
+        const scrolls = wrap.scrollWidth > wrap.clientWidth + 1;
+        if (scrolls && !wrap.hasAttribute('tabindex')) {
+            wrap.setAttribute('tabindex', '0');
+            wrap.setAttribute('role', 'region');
+            const heading = wrap.closest('section')?.querySelector('h2, h3');
+            wrap.setAttribute('aria-label', heading?.textContent.trim() || document.title);
+            wrap.dataset.scrollMarked = '';
+        } else if (!scrolls && wrap.hasAttribute('data-scroll-marked')) {
+            ['tabindex', 'role', 'aria-label', 'data-scroll-marked'].forEach((name) => wrap.removeAttribute(name));
+        }
+    });
+}
+
+markScrollableTables();
+window.addEventListener('resize', markScrollableTables, { passive: true });
 
 /* ------------------------------------------------------------------ */
 /* Secrets: show/hide and copy (x-secret-token).                        */
@@ -461,3 +706,87 @@ if (searchDialog && typeof searchDialog.showModal === 'function') {
         if (event.target === searchDialog) searchDialog.close();
     });
 }
+
+/* ------------------------------------------------------------------ */
+/* In-page section navigation: mark the section in view.               */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-section-nav]').forEach((nav) => {
+    const links = [...nav.querySelectorAll('a[href^="#"]')];
+    const targets = links.map((link) => document.getElementById(link.hash.slice(1))).filter(Boolean);
+    let ticking = false;
+
+    if (targets.length === 0) return;
+
+    // The current section is the last one whose top has passed the bar;
+    // at the bottom of the page it is the last section.
+    const mark = () => {
+        ticking = false;
+        const line = nav.getBoundingClientRect().bottom + 24;
+        const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+        let current = atBottom ? targets[targets.length - 1] : null;
+
+        if (!current) {
+            targets.forEach((target) => {
+                if (target.getBoundingClientRect().top <= line) current = target;
+            });
+        }
+
+        links.forEach((link) => {
+            const active = current !== null && link.hash === `#${current.id}`;
+
+            if (active) {
+                link.setAttribute('aria-current', 'true');
+                // Keep the active link in view inside the bar only (never scroll the page).
+                nav.scrollTo({ left: Math.max(0, link.offsetLeft - (nav.clientWidth - link.offsetWidth) / 2) });
+            } else {
+                link.removeAttribute('aria-current');
+            }
+        });
+    };
+
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(mark);
+        }
+    }, { passive: true });
+    window.addEventListener('hashchange', () => setTimeout(mark, 50));
+    mark();
+});
+
+/* ------------------------------------------------------------------ */
+/* Live status of an enrolment token ("Add server").                   */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-enroll-status]').forEach((box) => {
+    const text = box.querySelector('[data-text]');
+    const link = box.querySelector('[data-link]');
+    const dot = box.querySelector('[data-dot]');
+    const labels = JSON.parse(box.dataset.labels || '{}');
+
+    const poll = async () => {
+        try {
+            const response = await fetch(box.dataset.statusUrl, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            if (!response.ok) throw new Error(String(response.status));
+
+            const data = await response.json();
+            text.textContent = labels[data.state] || data.state;
+            dot.className = `ss-dot ${data.state === 'connected' ? 'ss-dot-ok' : (['expired', 'revoked'].includes(data.state) ? 'ss-dot-bad' : 'ss-dot-warn ss-live-dot')}`;
+
+            if (data.server_url) {
+                link.href = data.server_url;
+                link.textContent = (labels.go_named || ':name').replace(':name', data.server_name);
+                link.hidden = false;
+            }
+
+            if (['connected', 'expired', 'revoked'].includes(data.state)) return;
+        } catch {
+            text.textContent = labels.error || '';
+        }
+
+        setTimeout(poll, 3000);
+    };
+
+    poll();
+});

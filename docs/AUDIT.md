@@ -125,6 +125,20 @@ Remaining, by priority:
 4. Pages overflowed horizontally on phones.
 5. `AlertDetectionServiceTest` failed intermittently around second boundaries.
 
+### Fixed during the design revamp (October 2026)
+6. Alert rules could not be switched off through the form: an unchecked box
+   sent nothing and the controller requires `is_enabled` ("is enabled is
+   verplicht"). The form now sends a hidden `0` (view only).
+7. Creating a status page with the default empty component row failed
+   ("components.0.subject is verplicht") although the form says empty rows
+   are ignored. `app.js` now leaves fully empty rows out of the request; the
+   controller is unchanged, so without JavaScript the old behaviour remains.
+8. The service table on the server page ran over the edge of its panel; a
+   screen-reader label in a table heading could widen the page on phones.
+9. Contrast: the group headings in the sidebar (3.85:1), the customer accent
+   colour on the public status page and several 10–11 px texts were below
+   WCAG AA. All screens pass axe-core (WCAG 2.1 A/AA) in light and dark.
+
 ### Architecture
 - Monitoring code lives in `app/Monitoring` (DNS client, IP policy, target
   guard, safe HTTP client, TLS inspector) and `app/Services/{Domains,
@@ -134,9 +148,12 @@ Remaining, by priority:
 - No new Composer dependencies were added (DNS client and TOTP are
   implemented in-house and tested) because `composer.lock` cannot be safely
   re-resolved without PHP 8.4.
-- The older pages (dashboard, server detail, alerts, alert rules) keep their
-  page-specific CSS inside the shared layout; new pages use the shared
-  component classes.
+- Every screen is built on the design tokens and components in
+  `resources/css/app.css` (Tailwind 4 with preflight, same tokens as the info
+  site). There are no page `<style>` blocks, inline styles, inline scripts or
+  inline event handlers left in the views; behaviour lives in
+  `resources/js/app.js` (and `charts.js` for Chart.js). The transition
+  stylesheet `public/css/serverscope.css` was removed in the revamp.
 
 ### Security
 - Outbound requests: only public unicast IPs, allowed ports, http/https,
@@ -144,8 +161,12 @@ Remaining, by priority:
   response size capped, per-IP rate limit, environment proxies bypassed.
 - Secrets: agent/API tokens hashed; 2FA and webhook secrets encrypted with
   `APP_KEY`; tokens/secrets shown once; audit log redacts secrets.
-- Remaining: medium Livewire advisory in `composer.lock` (unused package);
-  CSP allows inline scripts/styles (views rely on them).
+- Remaining: medium Livewire advisory in `composer.lock` (unused package).
+- CSP still allows `'unsafe-inline'` for scripts and styles. Since the revamp
+  the views no longer need it (everything is external or set through the
+  CSSOM), so it can be removed from `SecurityHeaders`. That is a middleware
+  change and needs the owner's approval; test the charts and the public
+  status page (accent colour via CSSOM) with the stricter header first.
 
 ### Deployment risks
 - PHP ≥ 8.4.1 required by the lock file (see DEPLOYMENT.md §1).
@@ -633,3 +654,26 @@ agent and the updater stay out of scope. Plan and decisions:
    the reader (screen, e-mail, Discord, webhook). Existing rows need a
    fallback (show the stored text). Deliberately **not built** in the revamp
    (owner decision, 30 October 2026).
+
+### Status after the revamp (30 October 2026)
+
+- **Every screen** of the web app is translated (`lang/en`, `lang/nl`):
+  servers, domains and website pages, incidents, alerts, alert rules,
+  dependencies, reports and the print version, status pages (management and
+  public), users, webhooks, audit log, system health, agent releases,
+  notifications, search, profile, API tokens and the guest pages. The Dutch
+  texts are unchanged; `LabelsTest` keeps the Dutch labels equal to the model
+  constants and `TranslationKeysTest` fails on a missing key.
+- **Messages** go out in the language of the recipient: e-mail and in-app per
+  user (`User` implements `HasLocalePreference`), Discord and the readable
+  text of webhook test deliveries in the language of whoever created the
+  endpoint (otherwise the app default, `en` in production). The JSON keys of
+  webhooks are unchanged and the incident payload (the API resource) is the
+  same in every language.
+- **Still Dutch, on purpose**: texts stored in the database (the blocker
+  above, including audit descriptions and suppression reasons in the
+  delivery log), `install.sh` and the agent, API error messages, the
+  exceptions of `IncidentManager` (shown as a flash message on an invalid
+  transition) and the column headings of the CSV exports (an export format
+  that other tools may read).
+

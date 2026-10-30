@@ -40,7 +40,7 @@ class ApiTokenController extends Controller
 
         Audit::log('api_token.created', "API-token '{$token->name}' aangemaakt", $request->user(), ['token_id' => $token->id, 'abilities' => $token->abilities]);
 
-        return redirect()->route('api-tokens.index')->with('success', 'API-token aangemaakt.')->with('api_token', $plain);
+        return redirect()->route('api-tokens.index')->with('success', __('api_tokens.flash.created'))->with('api_token', $plain);
     }
 
     public function destroy(Request $request, ApiToken $apiToken): RedirectResponse
@@ -50,6 +50,6 @@ class ApiTokenController extends Controller
         $apiToken->forceFill(['revoked_at' => now()])->save();
         Audit::log('api_token.revoked', "API-token '{$apiToken->name}' ingetrokken", $request->user(), ['token_id' => $apiToken->id]);
 
-        return back()->with('success', 'API-token ingetrokken.');
+        return back()->with('success', __('api_tokens.flash.revoked'));
     }
 }

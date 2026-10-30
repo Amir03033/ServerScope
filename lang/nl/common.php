@@ -14,6 +14,7 @@ return [
     'close' => 'Sluiten',
     'previous' => 'Vorige',
     'next' => 'Volgende',
+    'no_team_access' => 'Je hebt geen toegang (meer) tot dit team. Log opnieuw in of neem contact op met je beheerder.',
     'pagination' => [
         'label' => 'Paginering',
         'results' => 'Resultaten :from–:to van :total',
@@ -26,5 +27,13 @@ return [
         'load_1' => '1 minuut',
         'load_5' => '5 minuten',
         'load_15' => '15 minuten',
+    ],
+    'auto_refresh' => [
+        'active' => 'Ververst automatisch elke :seconds s',
+        'paused' => 'Automatisch verversen gepauzeerd',
+        'reduced' => 'Automatisch verversen staat uit (minder beweging)',
+        'pause' => 'Pauzeren',
+        'resume' => 'Hervatten',
+        'refresh' => 'Nu verversen',
     ],
 ];

@@ -60,6 +60,18 @@ class Time
         return self::localized($value, ['nl' => 'd-m-Y H:i', 'en' => 'j M Y, H:i']);
     }
 
+    /** Date and time with the timezone, for e-mails. */
+    public static function dateTimeZone(?CarbonInterface $value): string
+    {
+        return self::localized($value, ['nl' => 'd-m-Y H:i T', 'en' => 'j M Y, H:i T']);
+    }
+
+    /** Date and time with seconds, for check logs. */
+    public static function dateTimeSeconds(?CarbonInterface $value): string
+    {
+        return self::localized($value, ['nl' => 'd-m-Y H:i:s', 'en' => 'j M Y, H:i:s']);
+    }
+
     /** @param  array<string, string>  $formats */
     private static function localized(?CarbonInterface $value, array $formats): string
     {

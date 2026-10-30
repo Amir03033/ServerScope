@@ -1,307 +1,117 @@
 @php
+    use App\Models\AlertRule;
+    use App\Support\Format;
+    use App\Support\Label;
+    use App\Support\Severity;
+
     $isEditing = $rule->exists;
+    $field = fn (string $name) => $errors->has($name) ? 'aria-invalid=true aria-describedby='.$name.'-error' : '';
+    $operatorSymbols = ['>=' => '≥', '>' => '>', '<=' => '≤', '<' => '<'];
 
-    $metricLabels = \App\Models\AlertRule::METRIC_LABELS;
-
-    $operatorLabels = [
-        '>=' => 'Groter dan of gelijk aan (≥)',
-        '>' => 'Groter dan (>)',
-        '<=' => 'Kleiner dan of gelijk aan (≤)',
-        '<' => 'Kleiner dan (<)',
-    ];
+    // Server-rendered preview sentence; app.js keeps it up to date while typing.
+    $metric = old('metric', $rule->metric ?: 'cpu_percent');
+    $threshold = old('threshold', $rule->threshold ?? 85);
+    $minutes = old('duration_minutes', $rule->duration_minutes ?? 1);
+    $operator = old('operator', $rule->operator ?: '>=');
+    $preview = $metric === AlertRule::METRIC_AGENT_OFFLINE
+        ? __('alert_rules.form.preview_offline', ['threshold' => Format::number($threshold, fmod((float) $threshold, 1) ? 2 : 0)])
+        : __('alert_rules.form.preview', ['metric' => Label::of('alert_metric', $metric, AlertRule::METRIC_LABELS), 'operator' => $operatorSymbols[$operator] ?? $operator, 'threshold' => Format::number($threshold, fmod((float) $threshold, 1) ? 2 : 0).AlertRule::metricUnit($metric), 'minutes' => $minutes]);
 @endphp
 
-<style>
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 20px;
-    }
-
-    .field {
-        display: grid;
-        gap: 7px;
-        min-width: 0;
-        align-content: start;
-    }
-
-    .field-full { grid-column: 1 / -1; }
-
-    .field > label {
-        color: var(--ss-muted);
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .field input[type="text"],
-    .field input[type="number"],
-    .field select {
-        width: 100%;
-        min-height: 44px;
-        padding: 10px 12px;
-        border: 1px solid var(--ss-line-strong);
-        border-radius: 10px;
-        outline: none;
-        background: var(--ss-surface-2);
-        color: var(--ss-text);
-        font: inherit;
-        transition: border-color .15s, box-shadow .15s;
-    }
-
-    .field select {
-        appearance: none;
-        -webkit-appearance: none;
-        padding-right: 36px;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238397b1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 12px center;
-        background-size: 16px;
-    }
-
-    .field input:focus,
-    .field select:focus {
-        border-color: var(--ss-accent);
-        box-shadow: 0 0 0 3px var(--ss-accent-soft);
-    }
-
-    .field-help { color: var(--ss-muted); font-size: 11px; }
-    .field-error { color: var(--ss-bad); font-size: 12px; }
-
-    .checkbox-field {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 15px;
-        border: 1px solid var(--ss-line);
-        border-radius: 12px;
-        background: var(--ss-surface-2);
-    }
-
-    .checkbox-field input {
-        width: 18px;
-        height: 18px;
-        margin-top: 2px;
-        accent-color: var(--ss-accent);
-    }
-
-    .checkbox-field label {
-        display: grid;
-        gap: 4px;
-        cursor: pointer;
-        font-size: 13px;
-    }
-
-    .form-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 24px;
-        padding-top: 20px;
-        border-top: 1px solid var(--ss-line);
-    }
-
-    @media (max-width: 600px) {
-        .form-grid { grid-template-columns: 1fr; }
-        .field-full { grid-column: auto; }
-    }
-</style>
-
-<form
-    method="POST"
-    action="{{ $isEditing
-        ? route('alert-rules.update', $rule)
-        : route('alert-rules.store') }}"
->
+<form method="POST" action="{{ $isEditing ? route('alert-rules.update', $rule) : route('alert-rules.store') }}"
+      data-rule-preview
+      data-template="{{ __('alert_rules.form.preview') }}"
+      data-template-offline="{{ __('alert_rules.form.preview_offline') }}"
+      data-offline-metric="{{ AlertRule::METRIC_AGENT_OFFLINE }}"
+      data-units="{{ json_encode(collect(AlertRule::METRIC_LABELS)->mapWithKeys(fn ($l, $m) => [$m => AlertRule::metricUnit($m)])) }}"
+      data-operators="{{ json_encode($operatorSymbols) }}">
     @csrf
-
     @if ($isEditing)
         @method('PUT')
     @endif
 
-    <div class="form-grid">
-        <div class="field field-full">
-            <label for="name">Naam van de alertregel</label>
+    <p class="ss-alert ss-alert-info mt-0" role="status" aria-live="polite">
+        <svg class="ico"><use href="#i-bell"/></svg>
+        <span><span class="sr-only">{{ __('alert_rules.form.preview_label') }}: </span><span data-preview-text>{{ $preview }}</span></span>
+    </p>
 
-            <input
-                id="name"
-                name="name"
-                type="text"
-                maxlength="100"
-                required
-                value="{{ old('name', $rule->name) }}"
-                placeholder="Bijv. Hoog CPU-gebruik"
-                autocomplete="off"
-            >
-
-            <span class="field-help">
-                Kies een duidelijke naam waarmee je de melding herkent.
-            </span>
-
-            @error('name')
-            <span class="field-error">{{ $message }}</span>
-            @enderror
+    <div class="mt-5 grid gap-5 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+            <label class="ss-label" for="name">{{ __('alert_rules.form.name') }}</label>
+            <input id="name" class="ss-input mt-1.5" name="name" type="text" maxlength="100" required value="{{ old('name', $rule->name) }}" placeholder="{{ __('alert_rules.form.name_placeholder') }}" autocomplete="off" {{ $field('name') }}>
+            <p class="ss-help">{{ __('alert_rules.form.name_help') }}</p>
+            @error('name')<p id="name-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
 
-        <div class="field">
-            <label for="metric">Metric</label>
-
-            <select id="metric" name="metric" required>
-                @foreach ($metricLabels as $value => $label)
-                    <option
-                        value="{{ $value }}"
-                        @selected(old('metric', $rule->metric ?: 'cpu_percent') === $value)
-                    >
-                        {{ $label }}
-                    </option>
+        <div>
+            <label class="ss-label" for="metric">{{ __('alert_rules.form.metric') }}</label>
+            <select id="metric" class="ss-input mt-1.5" name="metric" required {{ $field('metric') }}>
+                @foreach (AlertRule::METRIC_LABELS as $value => $label)
+                    <option value="{{ $value }}" @selected($metric === $value)>{{ Label::of('alert_metric', $value, AlertRule::METRIC_LABELS) }}</option>
                 @endforeach
             </select>
-
-            <span class="field-help">
-                Welke systeemwaarde moet worden gecontroleerd?
-            </span>
-
-            @error('metric')
-            <span class="field-error">{{ $message }}</span>
-            @enderror
+            <p class="ss-help">{{ __('alert_rules.form.metric_help') }}</p>
+            @error('metric')<p id="metric-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
 
-        <div class="field">
-            <label for="threshold">Drempelwaarde</label>
-
-            <input
-                id="threshold"
-                name="threshold"
-                type="number"
-                min="0"
-                max="1440"
-                step="0.01"
-                required
-                value="{{ old('threshold', $rule->threshold ?? 85) }}"
-            >
-
-            <span class="field-help">
-                CPU, RAM en schijf: een percentage tussen 0 en 100.
-                Agent offline: het aantal minuten zonder heartbeat (2–1440);
-                voorwaarde en duur worden dan genegeerd.
-            </span>
-
-            @error('threshold')
-            <span class="field-error">{{ $message }}</span>
-            @enderror
+        <div>
+            <label class="ss-label" for="threshold">{{ __('alert_rules.form.threshold') }}</label>
+            <input id="threshold" class="ss-input mt-1.5" name="threshold" type="number" min="0" max="1440" step="0.01" required value="{{ $threshold }}" {{ $field('threshold') }}>
+            <p class="ss-help">{{ __('alert_rules.form.threshold_help') }}</p>
+            @error('threshold')<p id="threshold-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
 
-        <div class="field">
-            <label for="operator">Voorwaarde</label>
-
-            <select id="operator" name="operator" required>
-                @foreach ($operatorLabels as $value => $label)
-                    <option
-                        value="{{ $value }}"
-                        @selected(old('operator', $rule->operator ?: '>=') === $value)
-                    >
-                        {{ $label }}
-                    </option>
+        <div>
+            <label class="ss-label" for="operator">{{ __('alert_rules.form.operator') }}</label>
+            <select id="operator" class="ss-input mt-1.5" name="operator" required {{ $field('operator') }}>
+                @foreach (array_keys($operatorSymbols) as $value)
+                    <option value="{{ $value }}" @selected($operator === $value)>{{ __('alert_rules.form.operators.'.$value) }}</option>
                 @endforeach
             </select>
-
-            @error('operator')
-            <span class="field-error">{{ $message }}</span>
-            @enderror
+            @error('operator')<p id="operator-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
 
-        <div class="field">
-            <label for="severity">Ernst van het incident</label>
-
-            <select id="severity" name="severity" required>
-                @foreach (\App\Support\Severity::options() as $value => $label)
-                    <option value="{{ $value }}" @selected(old('severity', $rule->severity ?? ($rule->metric === 'agent_offline' ? 'critical' : 'warning')) === $value)>{{ $label }}</option>
+        <div>
+            <label class="ss-label" for="severity">{{ __('alert_rules.form.severity') }}</label>
+            <select id="severity" class="ss-input mt-1.5" name="severity" required {{ $field('severity') }}>
+                @foreach (Severity::options() as $value => $label)
+                    <option value="{{ $value }}" @selected(old('severity', $rule->severity ?? ($rule->metric === 'agent_offline' ? 'critical' : 'warning')) === $value)>{{ Label::of('severity', $value, Severity::LABELS) }}</option>
                 @endforeach
             </select>
-
-            <span class="field-help">Bepaalt de ernst van incidenten die deze regel opent.</span>
-
-            @error('severity')
-            <span class="field-error">{{ $message }}</span>
-            @enderror
+            <p class="ss-help">{{ __('alert_rules.form.severity_help') }}</p>
+            @error('severity')<p id="severity-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
 
-        <div class="field">
-            <label for="duration_minutes">Vereiste duur (minuten)</label>
-
-            <input
-                id="duration_minutes"
-                name="duration_minutes"
-                type="number"
-                min="1"
-                max="1440"
-                step="1"
-                required
-                value="{{ old('duration_minutes', $rule->duration_minutes ?? 1) }}"
-            >
-
-            <span class="field-help">
-                De voorwaarde moet gedurende deze periode worden waargenomen.
-            </span>
-
-            @error('duration_minutes')
-            <span class="field-error">{{ $message }}</span>
-            @enderror
+        <div>
+            <label class="ss-label" for="duration_minutes">{{ __('alert_rules.form.duration') }}</label>
+            <input id="duration_minutes" class="ss-input mt-1.5" name="duration_minutes" type="number" min="1" max="1440" step="1" required value="{{ $minutes }}" {{ $field('duration_minutes') }}>
+            <p class="ss-help">{{ __('alert_rules.form.duration_help') }}</p>
+            @error('duration_minutes')<p id="duration_minutes-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
 
-        <div class="field">
-            <label for="recovery_samples">Herstelbevestiging (metingen)</label>
-
-            <input
-                id="recovery_samples"
-                name="recovery_samples"
-                type="number"
-                min="1"
-                max="30"
-                step="1"
-                value="{{ old('recovery_samples', $rule->recovery_samples ?? 1) }}"
-            >
-
-            <span class="field-help">
-                Aantal opeenvolgende goede metingen voordat de alert als hersteld geldt (1 = direct).
-                Voorkomt herstelmeldingen bij een kortstondige dip.
-            </span>
-
-            @error('recovery_samples')
-            <span class="field-error">{{ $message }}</span>
-            @enderror
+        <div>
+            <label class="ss-label" for="recovery_samples">{{ __('alert_rules.form.recovery') }}</label>
+            <input id="recovery_samples" class="ss-input mt-1.5" name="recovery_samples" type="number" min="1" max="30" step="1" value="{{ old('recovery_samples', $rule->recovery_samples ?? 1) }}" {{ $field('recovery_samples') }}>
+            <p class="ss-help">{{ __('alert_rules.form.recovery_help') }}</p>
+            @error('recovery_samples')<p id="recovery_samples-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
 
-        <div class="field field-full">
-            <div class="checkbox-field">
-                <input
-                    id="is_enabled"
-                    name="is_enabled"
-                    type="checkbox"
-                    value="1"
-                    @checked((bool) old('is_enabled', $rule->exists ? $rule->is_enabled : true))
-                >
-
-                <label for="is_enabled">
-                    <strong>Alertregel inschakelen</strong>
-                    <span class="field-help">
-                        Ingeschakelde regels worden door de alertdetectie geëvalueerd.
-                    </span>
-                </label>
-            </div>
-
-            @error('is_enabled')
-            <span class="field-error">{{ $message }}</span>
-            @enderror
+        <div class="sm:col-span-2">
+            {{-- Unchecked sends 0: the controller requires the field (it could not be switched off before). --}}
+            <input type="hidden" name="is_enabled" value="0">
+            <label class="ss-check items-start" for="is_enabled">
+                <input id="is_enabled" class="mt-0.5" name="is_enabled" type="checkbox" value="1" @checked((bool) old('is_enabled', $rule->exists ? $rule->is_enabled : true))>
+                <span>
+                    <strong>{{ __('alert_rules.form.enabled') }}</strong>
+                    <span class="ss-help block !mt-0.5">{{ __('alert_rules.form.enabled_help') }}</span>
+                </span>
+            </label>
+            @error('is_enabled')<p class="ss-error">{{ $message }}</p>@enderror
         </div>
     </div>
 
-    <div class="form-actions">
-        <button type="submit" class="button button-primary">
-            {{ $isEditing ? 'Wijzigingen opslaan' : 'Alertregel aanmaken' }}
-        </button>
-
-        <a href="{{ route('alert-rules.index') }}" class="button">
-            Annuleren
-        </a>
+    <div class="mt-6 flex flex-wrap gap-2 border-t border-line pt-5">
+        <button type="submit" class="ss-btn ss-btn-primary">{{ $isEditing ? __('alert_rules.form.save') : __('alert_rules.form.submit') }}</button>
+        <a href="{{ route('alert-rules.index') }}" class="ss-btn ss-btn-ghost">{{ __('alert_rules.form.cancel') }}</a>
     </div>
 </form>

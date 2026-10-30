@@ -88,7 +88,7 @@ class DomainController extends Controller
 
         return redirect()
             ->route('domains.show', $domain)
-            ->with('success', 'Domein toegevoegd. De eerste controles zijn ingepland.');
+            ->with('success', __('domains.flash.created'));
     }
 
     public function show(Request $request, Domain $domain, UptimeCalculator $uptime): View
@@ -167,7 +167,7 @@ class DomainController extends Controller
             $this->dispatchAll($domain);
         }
 
-        return redirect()->route('domains.show', $domain)->with('success', 'Domeininstellingen opgeslagen.');
+        return redirect()->route('domains.show', $domain)->with('success', __('domains.flash.saved'));
     }
 
     public function pause(Domain $domain): RedirectResponse
@@ -177,7 +177,7 @@ class DomainController extends Controller
         $domain->forceFill(['is_active' => false, 'paused_at' => now()])->save();
         Audit::log('domain.paused', "Monitoring gepauzeerd voor {$domain->name}", $domain);
 
-        return back()->with('success', 'Monitoring gepauzeerd. Er worden geen controles uitgevoerd tot je hervat.');
+        return back()->with('success', __('domains.flash.paused'));
     }
 
     public function resume(Domain $domain): RedirectResponse
@@ -188,7 +188,7 @@ class DomainController extends Controller
         Audit::log('domain.resumed', "Monitoring hervat voor {$domain->name}", $domain);
         $this->dispatchAll($domain);
 
-        return back()->with('success', 'Monitoring hervat.');
+        return back()->with('success', __('domains.flash.resumed'));
     }
 
     public function checkNow(Domain $domain): RedirectResponse
@@ -198,13 +198,13 @@ class DomainController extends Controller
         $key = 'domain-check-now:'.$domain->id;
 
         if (RateLimiter::tooManyAttempts($key, 1)) {
-            return back()->with('error', 'Wacht '.RateLimiter::availableIn($key).' seconden voordat je opnieuw controleert.');
+            return back()->with('error', __('domains.flash.wait', ['seconds' => RateLimiter::availableIn($key)]));
         }
 
         RateLimiter::hit($key, 60);
         $this->dispatchAll($domain, includeExpiry: false);
 
-        return back()->with('success', 'Controles ingepland. Ververs de pagina over enkele seconden.');
+        return back()->with('success', __('domains.flash.checks_queued'));
     }
 
     public function destroy(Domain $domain): RedirectResponse
@@ -214,7 +214,7 @@ class DomainController extends Controller
         $domain->delete();
         Audit::log('domain.deleted', "Domein {$domain->name} verwijderd (herstelbaar)", $domain);
 
-        return redirect()->route('domains.index')->with('success', "Domein {$domain->name} is verwijderd. De geschiedenis blijft bewaard en het domein kan worden hersteld.");
+        return redirect()->route('domains.index')->with('success', __('domains.flash.deleted', ['name' => $domain->name]));
     }
 
     public function restore(Domain $domain): RedirectResponse
@@ -225,7 +225,7 @@ class DomainController extends Controller
         Audit::log('domain.restored', "Domein {$domain->name} hersteld", $domain);
         $this->dispatchAll($domain);
 
-        return redirect()->route('domains.show', $domain)->with('success', 'Domein hersteld.');
+        return redirect()->route('domains.show', $domain)->with('success', __('domains.flash.restored'));
     }
 
     public function forceDestroy(Request $request, Domain $domain): RedirectResponse
@@ -234,7 +234,7 @@ class DomainController extends Controller
         abort_unless($domain->trashed(), 404);
 
         $request->validate(['confirm_name' => ['required', Rule::in([$domain->name, $domain->displayName()])]], [
-            'confirm_name.in' => 'Typ de exacte domeinnaam om permanent verwijderen te bevestigen.',
+            'confirm_name.in' => __('domains.validation.confirm_name'),
         ]);
 
         $name = $domain->name;
@@ -242,7 +242,7 @@ class DomainController extends Controller
         $domain->forceDelete();
         Audit::log('domain.force_deleted', "Domein {$name} permanent verwijderd inclusief controlegeschiedenis");
 
-        return redirect()->route('domains.index', ['status' => 'deleted'])->with('success', "Domein {$name} is permanent verwijderd.");
+        return redirect()->route('domains.index', ['status' => 'deleted'])->with('success', __('domains.flash.force_deleted', ['name' => $name]));
     }
 
     private function dispatchAll(Domain $domain, bool $includeExpiry = true): void

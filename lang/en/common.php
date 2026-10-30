@@ -14,6 +14,7 @@ return [
     'close' => 'Close',
     'previous' => 'Previous',
     'next' => 'Next',
+    'no_team_access' => 'You no longer have access to this team. Sign in again or contact your administrator.',
     'pagination' => [
         'label' => 'Pagination',
         'results' => 'Results :from–:to of :total',
@@ -26,5 +27,13 @@ return [
         'load_1' => '1 minute',
         'load_5' => '5 minutes',
         'load_15' => '15 minutes',
+    ],
+    'auto_refresh' => [
+        'active' => 'Refreshes automatically every :seconds s',
+        'paused' => 'Automatic refresh paused',
+        'reduced' => 'Automatic refresh is off (reduced motion)',
+        'pause' => 'Pause',
+        'resume' => 'Resume',
+        'refresh' => 'Refresh now',
     ],
 ];

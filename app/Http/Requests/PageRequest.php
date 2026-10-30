@@ -122,7 +122,7 @@ class PageRequest extends FormRequest
                     $normalized = UrlNormalizer::normalize($input, str_starts_with($input, '/') ? $base : null, keepQuery: true);
 
                     if ($normalized === null) {
-                        $validator->errors()->add($field, "Ongeldige URL: {$input} (alleen http en https, zonder inloggegevens).");
+                        $validator->errors()->add($field, __('websites.validation.invalid_url', ['url' => $input]));
 
                         continue;
                     }
@@ -152,7 +152,7 @@ class PageRequest extends FormRequest
                         ->whereKeyNot($this->route('page')->id)->exists();
 
                     if ($exists) {
-                        $validator->errors()->add('url', 'Deze pagina wordt al gemonitord.');
+                        $validator->errors()->add('url', __('websites.validation.already_monitored'));
                     }
                 }
 
@@ -162,7 +162,7 @@ class PageRequest extends FormRequest
 
                 foreach ([$this->input('content_selector'), ...(array) $this->input('content_exclusions')] as $selector) {
                     if (is_string($selector) && $selector !== '' && ! ContentFingerprint::isValidSelector($selector)) {
-                        $validator->errors()->add('content_selector', "Selector \"{$selector}\" wordt niet ondersteund (gebruik tag, #id, .class, tag.class of [attribuut=waarde]).");
+                        $validator->errors()->add('content_selector', __('websites.validation.selector', ['selector' => $selector]));
                     }
                 }
             },
@@ -171,23 +171,7 @@ class PageRequest extends FormRequest
 
     public function attributes(): array
     {
-        return [
-            'urls' => 'URL\'s',
-            'url' => 'URL',
-            'check_interval_minutes' => 'controle-interval',
-            'timeout_seconds' => 'time-out',
-            'failure_threshold' => 'faaldrempel',
-            'recovery_threshold' => 'hersteldrempel',
-            'expected_status_codes' => 'verwachte statuscodes',
-            'max_response_ms' => 'maximale responstijd',
-            'expected_final_url' => 'verwachte eind-URL',
-            'header_assertions' => 'headercontroles',
-            'header_assertions.*.name' => 'headernaam',
-            'monitored_headers' => 'gevolgde headers',
-            'monitored_headers.*' => 'gevolgde header',
-            'alert_severity' => 'ernst',
-            'sla_target' => 'beschikbaarheidsdoel',
-        ];
+        return __('websites.attributes');
     }
 
     /** Settings for the model (without the URL). */

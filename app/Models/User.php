@@ -3,9 +3,11 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\Locale;
 use App\Support\Severity;
 use App\Tenancy\Tenancy;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,7 +18,7 @@ use Illuminate\Notifications\Notifiable;
 
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
-class User extends Authenticatable
+class User extends Authenticatable implements HasLocalePreference
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -166,5 +168,11 @@ class User extends Authenticatable
             $this->notify_email && config('serverscope.alert_mail_enabled') ? 'mail' : null,
             $this->notify_in_app ? 'database' : null,
         ]));
+    }
+
+    /** Notifications (e-mail and in-app) are sent in the user's own language. */
+    public function preferredLocale(): string
+    {
+        return Locale::normalize($this->locale);
     }
 }

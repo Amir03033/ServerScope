@@ -1,12 +1,18 @@
 @php
     use App\Models\Domain;
+    use App\Support\Format;
+    use App\Support\Label;
     use App\Support\Time;
+    use Illuminate\Support\Str;
 
     $status = $domain->trashed() ? 'closed' : $domain->displayStatus();
     $sslDays = $domain->sslDaysRemaining();
     $expDays = $domain->expiry_status === 'verified' ? $domain->expiryDaysRemaining() : null;
-    $pct = fn (?float $v, int $d = 2) => $v === null ? '—' : number_format($v, $d, ',', '.').'%';
-    $ms = fn (?float $v) => $v === null ? '—' : number_format($v, 0, ',', '.').' ms';
+    $pct = fn (?float $v, int $d = 2) => Format::percent($v, $d);
+    $ms = fn (?float $v) => $v === null ? '—' : Format::number($v).' ms';
+    $dayCount = fn (?int $d) => $d === null ? '—' : ($d < 0 ? __('domains.expired_cap') : __('domains.days', ['days' => $d]));
+    $sslLabel = fn (?string $code) => Lang::has('domains.show.ssl.'.$code) ? __('domains.show.ssl.'.$code) : $code;
+    $expiryLabel = fn (?string $code) => Lang::has('domains.show.expiry.'.$code) ? __('domains.show.expiry.'.$code) : $code;
 
     $chartPoints = array_map(fn ($p) => [
         'label' => Time::format(\Carbon\Carbon::parse($p['at']), 'H:i'),
@@ -14,226 +20,286 @@
         'flag' => $p['failures'] > 0,
     ], $series);
 
-    $expiryLabels = [
-        'verified' => 'Geverifieerd via RDAP',
-        'unavailable' => 'Niet beschikbaar',
-        'unsupported' => 'Niet ondersteund',
-        'not_found' => 'Niet gevonden',
-        'rate_limited' => 'Tijdelijk beperkt',
-        'error' => 'Opvragen mislukt',
-        'unknown' => 'Nog niet opgevraagd',
-    ];
-
-    $sslLabels = [
-        'valid' => 'Geldig', 'expiring' => 'Verloopt binnenkort', 'expired' => 'Verlopen',
-        'not_yet_valid' => 'Nog niet geldig', 'hostname_mismatch' => 'Hostname komt niet overeen',
-        'untrusted' => 'Keten niet vertrouwd', 'self_signed' => 'Zelfondertekend',
-        'handshake_failed' => 'Handshake mislukt', 'connection_failed' => 'Geen verbinding', 'unknown' => 'Nog niet gecontroleerd',
-    ];
-
     $sslTone = match (true) {
         in_array($domain->ssl_status, Domain::SSL_INVALID_STATES, true) => 'critical',
         $domain->ssl_status === 'expiring' => 'warning',
         $domain->ssl_status === 'valid' => 'valid',
         default => 'unknown',
     };
+    $statTone = ['warning' => 'is-warn', 'critical' => 'is-bad', 'healthy' => 'is-ok'][$status] ?? null;
+    $expiryWarn = $expDays !== null && $expDays <= max($domain->expiryWarningDays());
+    $lastCheck = $domain->http_last_checked_at ?? $domain->dns_last_checked_at;
+
+    $sections = ['availability', 'certificate', 'dns', 'incidents', 'checks', 'history'];
 @endphp
 
 <x-layouts.app :title="$domain->displayName()">
     <x-slot:breadcrumb>
-        <span>›</span> <a href="{{ route('domains.index') }}">Domeinen</a> <span>›</span> {{ $domain->displayName() }}
+        <span>›</span> <a href="{{ route('domains.index') }}">{{ __('domains.title') }}</a> <span>›</span> {{ $domain->displayName() }}
     </x-slot:breadcrumb>
     <x-slot:subtitle>
-        <a href="{{ $domain->url() }}" target="_blank" rel="noopener noreferrer nofollow" class="break">{{ $domain->url() }}</a>
-        @if ($domain->displayName() !== $domain->name) · <span class="mono">{{ $domain->name }}</span> @endif
+        <a href="{{ $domain->url() }}" target="_blank" rel="noopener noreferrer nofollow" class="text-accent [overflow-wrap:anywhere]">{{ $domain->url() }}</a>
+        @if ($domain->displayName() !== $domain->name) · <span class="font-mono text-xs">{{ $domain->name }}</span> @endif
     </x-slot:subtitle>
 
     <x-slot:actions>
-        <a href="{{ route('domains.index') }}" class="button"><svg class="ico"><use href="#i-arrow-left"/></svg> Overzicht</a>
+        <a href="{{ route('domains.index') }}" class="ss-btn ss-btn-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('domains.overview') }}</a>
         @can('admin')
             @unless ($domain->trashed())
                 @if ($domain->is_active)
-                    <form method="POST" action="{{ route('domains.check', $domain) }}" class="inline-form">
+                    <form method="POST" action="{{ route('domains.check', $domain) }}">
                         @csrf
-                        <button class="button" type="submit"><svg class="ico"><use href="#i-refresh"/></svg> Nu controleren</button>
+                        <button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-refresh"/></svg> {{ __('domains.show.check_now') }}</button>
                     </form>
-                    <form method="POST" action="{{ route('domains.pause', $domain) }}" class="inline-form">
+                    <form method="POST" action="{{ route('domains.pause', $domain) }}">
                         @csrf
-                        <button class="button" type="submit"><svg class="ico"><use href="#i-pause"/></svg> Pauzeren</button>
+                        <button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-pause"/></svg> {{ __('domains.show.pause') }}</button>
                     </form>
                 @else
-                    <form method="POST" action="{{ route('domains.resume', $domain) }}" class="inline-form">
+                    <form method="POST" action="{{ route('domains.resume', $domain) }}">
                         @csrf
-                        <button class="button button-primary" type="submit"><svg class="ico"><use href="#i-play"/></svg> Hervatten</button>
+                        <button class="ss-btn ss-btn-primary" type="submit"><svg class="ico"><use href="#i-play"/></svg> {{ __('domains.show.resume') }}</button>
                     </form>
                 @endif
-                <a href="{{ route('domains.edit', $domain) }}" class="button"><svg class="ico"><use href="#i-edit"/></svg> Bewerken</a>
+                <a href="{{ route('domains.edit', $domain) }}" class="ss-btn ss-btn-secondary"><svg class="ico"><use href="#i-edit"/></svg> {{ __('domains.edit_button') }}</a>
             @endunless
         @endcan
     </x-slot:actions>
 
     @include('websites._tabs')
 
-    @if ($domain->trashed())
-        <div class="flash warning" role="status">
-            <svg class="ico"><use href="#i-trash"/></svg>
-            <div>
-                <strong>Dit domein is verwijderd op {{ Time::format($domain->deleted_at) }}.</strong> Er worden geen controles meer uitgevoerd.
-                @can('admin')
-                    <div class="actions" style="justify-content:flex-start;margin-top:10px">
-                        <form method="POST" action="{{ route('domains.restore', $domain) }}" class="inline-form">@csrf<button class="button button-sm" type="submit">Herstellen</button></form>
-                        <form method="POST" action="{{ route('domains.force-destroy', $domain) }}" class="inline-form" data-confirm="Domein en alle controlegeschiedenis permanent verwijderen?">
-                            @csrf @method('DELETE')
-                            <input name="confirm_name" class="input" style="width:auto;min-height:32px" placeholder="Typ '{{ $domain->name }}'" required aria-label="Bevestig domeinnaam">
-                            <button class="button button-sm button-danger" type="submit">Permanent verwijderen</button>
-                        </form>
+    <div class="grid gap-4">
+        @if ($domain->trashed())
+            <div class="ss-alert ss-alert-warning" role="status">
+                <svg class="ico"><use href="#i-trash"/></svg>
+                <div>
+                    <strong>{{ __('domains.show.deleted_on', ['date' => Time::dateTime($domain->deleted_at)]) }}</strong> {{ __('domains.show.deleted_text') }}
+                    @can('admin')
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                            <form method="POST" action="{{ route('domains.restore', $domain) }}">@csrf<button class="ss-btn ss-btn-secondary ss-btn-sm" type="submit">{{ __('domains.show.restore') }}</button></form>
+                            <form method="POST" action="{{ route('domains.force-destroy', $domain) }}" class="flex flex-wrap items-center gap-2" data-confirm="{{ __('domains.show.force_delete_confirm') }}">
+                                @csrf @method('DELETE')
+                                <input name="confirm_name" class="ss-input !w-auto !py-1.5 !text-sm" placeholder="{{ __('domains.show.confirm_name_placeholder', ['name' => $domain->name]) }}" required aria-label="{{ __('domains.show.confirm_name_label') }}">
+                                <button class="ss-btn ss-btn-danger ss-btn-sm" type="submit">{{ __('domains.show.force_delete') }}</button>
+                            </form>
+                        </div>
+                    @endcan
+                </div>
+            </div>
+        @elseif (! $domain->is_active)
+            <div class="ss-alert ss-alert-info" role="status"><svg class="ico"><use href="#i-pause"/></svg><div>{{ __('domains.show.paused_since', ['date' => Time::dateTime($domain->paused_at)]) }}</div></div>
+        @elseif ($domain->isInMaintenance())
+            <div class="ss-alert ss-alert-info" role="status"><svg class="ico"><use href="#i-wrench"/></svg><div><strong>{{ __('domains.show.maintenance') }}</strong> {{ $domain->maintenance_ends_at ? __('domains.show.maintenance_until', ['date' => Time::dateTime($domain->maintenance_ends_at)]) : __('domains.show.maintenance_open') }}. {{ __('domains.show.maintenance_text') }} {{ $domain->maintenance_reason }}</div></div>
+        @endif
+
+        <section class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5" aria-label="{{ __('domains.show.stats_label') }}">
+            <article @class(['ss-stat col-span-2 lg:col-span-1', $statTone])>
+                <span class="ss-stat-icon"><svg class="ico"><use href="#i-pulse"/></svg></span>
+                <div class="min-w-0">
+                    <div class="ss-stat-label">{{ __('domains.show.status') }}</div>
+                    <div class="mt-1"><x-status :status="$status" :label="$domain->trashed() ? __('domains.deleted') : Label::of('domain_status', $status, Domain::STATUS_LABELS)" /></div>
+                    <div class="ss-stat-caption" title="{{ Time::format($lastCheck, 'd-m-Y H:i:s') }}">{{ __('domains.show.last_check', ['time' => Time::relative($lastCheck)]) }}</div>
+                </div>
+            </article>
+            <article class="ss-stat">
+                <span class="ss-stat-icon"><svg class="ico"><use href="#i-check"/></svg></span>
+                <div class="min-w-0">
+                    <div class="ss-stat-label">{{ __('domains.show.uptime_30d') }}</div>
+                    <div class="ss-stat-value">{{ $pct($stats['30d']['uptime']) }}</div>
+                    <div class="ss-stat-caption">{{ __('domains.show.coverage', ['coverage' => $pct($stats['30d']['coverage'], 1), 'checks' => $stats['30d']['checks']]) }}</div>
+                </div>
+            </article>
+            <article class="ss-stat">
+                <span class="ss-stat-icon"><svg class="ico"><use href="#i-clock"/></svg></span>
+                <div class="min-w-0">
+                    <div class="ss-stat-label">{{ __('domains.show.response_24h') }}</div>
+                    <div class="ss-stat-value">{{ $ms($stats['24h']['avg_ms']) }}</div>
+                    <div class="ss-stat-caption">{{ __('domains.show.response_caption', ['last' => $ms($domain->http_last_response_ms), 'max' => $ms($stats['24h']['max_ms'])]) }}</div>
+                </div>
+            </article>
+            <article @class(['ss-stat', 'is-bad' => $sslTone === 'critical', 'is-warn' => $sslTone === 'warning'])>
+                <span class="ss-stat-icon"><svg class="ico"><use href="#i-lock"/></svg></span>
+                <div class="min-w-0">
+                    <div class="ss-stat-label">{{ __('domains.show.certificate') }}</div>
+                    <div class="ss-stat-value">{{ $dayCount($sslDays) }}</div>
+                    <div class="ss-stat-caption">{{ $domain->ssl_enabled ? $sslLabel($domain->ssl_status) : __('domains.show.not_checked') }}</div>
+                </div>
+            </article>
+            <article @class(['ss-stat', 'is-bad' => $expDays !== null && $expDays < 0, 'is-warn' => $expDays !== null && $expDays >= 0 && $expiryWarn])>
+                <span class="ss-stat-icon"><svg class="ico"><use href="#i-calendar"/></svg></span>
+                <div class="min-w-0">
+                    <div class="ss-stat-label">{{ __('domains.show.registration') }}</div>
+                    <div class="ss-stat-value">{{ $dayCount($expDays) }}</div>
+                    <div class="ss-stat-caption">{{ $domain->expiry_enabled ? $expiryLabel($domain->expiry_status) : __('domains.show.not_checked') }}</div>
+                </div>
+            </article>
+        </section>
+    </div>
+
+    {{-- Section navigation: anchors, so it works without JavaScript; app.js marks the current section. --}}
+    <nav class="ss-section-nav" aria-label="{{ __('domains.show.sections_label') }}" data-section-nav>
+        @foreach ($sections as $id)
+            <a href="#{{ $id }}">{{ __('domains.show.sections.'.$id) }}</a>
+        @endforeach
+    </nav>
+
+    <div class="grid gap-10">
+        {{-- Availability --}}
+        <section class="ss-section ss-panel" id="availability" aria-labelledby="availability-title">
+            <div class="ss-panel-head">
+                <div>
+                    <h2 id="availability-title" class="ss-panel-title">{{ __('domains.show.http_title') }}</h2>
+                    <p class="ss-panel-sub">{{ __('domains.show.http_text') }}</p>
+                </div>
+                @if ($domain->http_enabled)<x-status :status="$domain->http_status" />@else<span class="ss-chip">{{ __('domains.off') }}</span>@endif
+            </div>
+            <div class="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+                <div class="min-w-0">
+                    <x-line-chart :points="$chartPoints" unit=" ms" :label="__('domains.show.chart_label')" />
+
+                    <h3 class="mt-5 mb-2 text-xs font-semibold text-muted">{{ __('domains.show.daily_title') }}</h3>
+                    <div class="ss-strip" role="img" aria-label="{{ __('domains.show.daily_label') }}">
+                        @foreach ($daily as $day)
+                            <i @class(['up' => $day['uptime'] === 100.0, 'partial' => $day['uptime'] !== null && $day['uptime'] < 100 && $day['uptime'] >= 95, 'down' => $day['uptime'] !== null && $day['uptime'] < 95])
+                               title="{{ $day['date'] }}: {{ $day['uptime'] === null ? __('domains.show.day_none') : __('domains.show.day_value', ['uptime' => Format::percent($day['uptime'], 2), 'checks' => $day['checks']]) }}"></i>
+                        @endforeach
                     </div>
-                @endcan
-            </div>
-        </div>
-    @elseif (! $domain->is_active)
-        <div class="flash info" role="status"><svg class="ico"><use href="#i-pause"/></svg><div>Monitoring is gepauzeerd sinds {{ Time::format($domain->paused_at) }}. Er worden geen controles uitgevoerd.</div></div>
-    @elseif ($domain->isInMaintenance())
-        <div class="flash info" role="status"><svg class="ico"><use href="#i-wrench"/></svg><div><strong>Onderhoud</strong> {{ $domain->maintenance_ends_at ? 'tot '.Time::format($domain->maintenance_ends_at) : 'zonder eindtijd' }}. Controles lopen door, maar er worden geen incidenten aangemaakt. {{ $domain->maintenance_reason }}</div></div>
-    @endif
+                    <p class="mt-1.5 mb-0 text-xs text-muted">{{ __('domains.show.daily_legend') }}</p>
+                </div>
 
-    <section class="kpis">
-        <div class="kpi tone-{{ ['healthy' => 'green', 'warning' => 'yellow', 'critical' => 'red', 'paused' => 'purple', 'maintenance' => 'purple'][$status] ?? 'muted' }}">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-pulse"/></svg></span>
-            <div>
-                <div class="kpi-label">Status</div>
-                <div class="kpi-value" style="font-size:20px">{{ $domain->trashed() ? 'Verwijderd' : (Domain::STATUS_LABELS[$status] ?? $status) }}</div>
-                <div class="kpi-caption">Laatste controle {{ Time::relative($domain->http_last_checked_at ?? $domain->dns_last_checked_at) }}</div>
+                <dl class="ss-dl">
+                    <dt>{{ __('domains.show.uptime_24h_7d') }}</dt><dd>{{ $pct($stats['24h']['uptime']) }} / {{ $pct($stats['7d']['uptime']) }}</dd>
+                    <dt>{{ __('domains.show.downtime') }}</dt><dd>{{ $stats['30d']['downtime_minutes'] === null ? '—' : __('domains.show.minutes', ['count' => $stats['30d']['downtime_minutes']]) }}</dd>
+                    <dt>{{ __('domains.show.last_status_code') }}</dt><dd>{{ $domain->http_last_status_code ?? '—' }}</dd>
+                    <dt>{{ __('domains.show.consecutive_failures') }}</dt><dd>{{ __('domains.show.threshold', ['count' => $domain->http_consecutive_failures, 'threshold' => $domain->failure_threshold]) }}</dd>
+                    <dt>{{ __('domains.show.last_error') }}</dt><dd>{{ $domain->http_last_error ?? '—' }}</dd>
+                    <dt>{{ __('domains.show.interval_timeout') }}</dt><dd>{{ __('domains.show.interval_value', ['minutes' => $domain->check_interval_minutes, 'seconds' => $domain->timeout_seconds]) }}</dd>
+                    <dt>{{ __('domains.show.expected') }}</dt><dd>{{ __('domains.show.expected_status', ['codes' => $domain->expected_status_codes ?: '200-399']) }}@if ($domain->expected_content){{ __('domains.show.expected_content', ['content' => $domain->expected_content]) }}@endif</dd>
+                </dl>
             </div>
-        </div>
-        <div class="kpi tone-cyan">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-check"/></svg></span>
-            <div>
-                <div class="kpi-label">Uptime 30 dagen</div>
-                <div class="kpi-value">{{ $pct($stats['30d']['uptime']) }}</div>
-                <div class="kpi-caption">Dekking {{ $pct($stats['30d']['coverage'], 1) }} · {{ $stats['30d']['checks'] }} controles</div>
-            </div>
-        </div>
-        <div class="kpi tone-purple">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-clock"/></svg></span>
-            <div>
-                <div class="kpi-label">Responstijd (24 uur)</div>
-                <div class="kpi-value">{{ $ms($stats['24h']['avg_ms']) }}</div>
-                <div class="kpi-caption">Laatste {{ $ms($domain->http_last_response_ms) }} · max {{ $ms($stats['24h']['max_ms']) }}</div>
-            </div>
-        </div>
-        <div class="kpi tone-{{ $sslTone === 'critical' ? 'red' : ($sslTone === 'warning' ? 'yellow' : 'green') }}">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-lock"/></svg></span>
-            <div>
-                <div class="kpi-label">Certificaat</div>
-                <div class="kpi-value">{{ $sslDays === null ? '—' : ($sslDays < 0 ? 'Verlopen' : $sslDays.' d') }}</div>
-                <div class="kpi-caption">{{ $domain->ssl_enabled ? ($sslLabels[$domain->ssl_status] ?? $domain->ssl_status) : 'Niet gecontroleerd' }}</div>
-            </div>
-        </div>
-        <div class="kpi tone-{{ $expDays !== null && $expDays < 0 ? 'red' : ($expDays !== null && $expDays <= max($domain->expiryWarningDays()) ? 'yellow' : 'cyan') }}">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-calendar"/></svg></span>
-            <div>
-                <div class="kpi-label">Registratie</div>
-                <div class="kpi-value">{{ $expDays === null ? '—' : ($expDays < 0 ? 'Verlopen' : $expDays.' d') }}</div>
-                <div class="kpi-caption">{{ $domain->expiry_enabled ? ($expiryLabels[$domain->expiry_status] ?? $domain->expiry_status) : 'Niet gecontroleerd' }}</div>
-            </div>
-        </div>
-    </section>
-
-    <div class="grid-2">
-        <section class="panel">
-            <div class="section-heading">
-                <div><h2>HTTP-beschikbaarheid</h2><p>Gemiddelde responstijd per half uur, afgelopen 24 uur. Rode banden: mislukte controles.</p></div>
-                @if ($domain->http_enabled)<x-status :status="$domain->http_status" />@else<span class="chip">Uit</span>@endif
-            </div>
-            <x-line-chart :points="$chartPoints" unit=" ms" label="Responstijd afgelopen 24 uur" />
-
-            <h3 class="small muted" style="margin:16px 0 6px;font-weight:600">Uptime per dag (30 dagen)</h3>
-            <div class="strip" role="img" aria-label="Uptime per dag over 30 dagen">
-                @foreach ($daily as $day)
-                    <i @class(['up' => $day['uptime'] === 100.0, 'partial' => $day['uptime'] !== null && $day['uptime'] < 100 && $day['uptime'] >= 95, 'down' => $day['uptime'] !== null && $day['uptime'] < 95])
-                       title="{{ $day['date'] }}: {{ $day['uptime'] === null ? 'geen metingen' : number_format($day['uptime'], 2, ',', '.').'% ('.$day['checks'].' controles)' }}"></i>
-                @endforeach
-            </div>
-            <p class="small muted" style="margin:6px 0 0">Grijs = geen metingen (telt niet als beschikbaar).</p>
-
-            <dl class="dl" style="margin-top:14px">
-                <dt>Uptime 24 uur / 7 dagen</dt><dd>{{ $pct($stats['24h']['uptime']) }} / {{ $pct($stats['7d']['uptime']) }}</dd>
-                <dt>Waargenomen downtime (30 d)</dt><dd>{{ $stats['30d']['downtime_minutes'] === null ? '—' : $stats['30d']['downtime_minutes'].' min' }}</dd>
-                <dt>Laatste statuscode</dt><dd>{{ $domain->http_last_status_code ?? '—' }}</dd>
-                <dt>Opeenvolgende fouten</dt><dd>{{ $domain->http_consecutive_failures }} (drempel {{ $domain->failure_threshold }})</dd>
-                <dt>Laatste fout</dt><dd>{{ $domain->http_last_error ?? '—' }}</dd>
-                <dt>Interval / time-out</dt><dd>elke {{ $domain->check_interval_minutes }} min / {{ $domain->timeout_seconds }} s</dd>
-                <dt>Verwacht</dt><dd>status {{ $domain->expected_status_codes ?: '200-399' }}@if ($domain->expected_content), inhoud “{{ $domain->expected_content }}”@endif</dd>
-            </dl>
         </section>
 
-        <div class="stack">
-            <section class="panel">
-                <div class="section-heading">
-                    <div><h2>SSL/TLS-certificaat</h2><p>Laatst gecontroleerd {{ Time::relative($domain->ssl_last_checked_at) }}.</p></div>
-                    @if ($domain->ssl_enabled)<x-status :status="$sslTone" :label="$sslLabels[$domain->ssl_status] ?? $domain->ssl_status" />@else<span class="chip">Uit</span>@endif
+        {{-- Certificate and registration --}}
+        <div class="ss-section grid gap-4 lg:grid-cols-2" id="certificate">
+            <section class="ss-panel" aria-labelledby="ssl-title">
+                <div class="ss-panel-head">
+                    <div><h2 id="ssl-title" class="ss-panel-title">{{ __('domains.show.ssl_title') }}</h2><p class="ss-panel-sub">{{ __('domains.show.ssl_text', ['time' => Time::relative($domain->ssl_last_checked_at)]) }}</p></div>
+                    @if ($domain->ssl_enabled)<x-status :status="$sslTone" :label="$sslLabel($domain->ssl_status)" />@else<span class="ss-chip">{{ __('domains.off') }}</span>@endif
                 </div>
-                @if ($domain->ssl_message)<p class="small {{ $sslTone === 'critical' ? 'red' : 'muted' }}" style="margin:-6px 0 10px">{{ $domain->ssl_message }}</p>@endif
-                <dl class="dl">
-                    <dt>Onderwerp</dt><dd>{{ $domain->ssl_subject ?? '—' }}</dd>
-                    <dt>Uitgever</dt><dd>{{ $domain->ssl_issuer ?? '—' }}</dd>
-                    <dt>Geldig</dt><dd>{{ $domain->ssl_valid_from ? Time::format($domain->ssl_valid_from, 'd-m-Y').' t/m '.Time::format($domain->ssl_valid_to, 'd-m-Y H:i') : '—' }}</dd>
-                    @php $sslDetails = $latestSsl?->details ?? []; @endphp
-                    <dt>SAN</dt><dd>{{ implode(', ', array_slice($sslDetails['san'] ?? [], 0, 10)) ?: '—' }}</dd>
-                    <dt>Protocol / cipher</dt><dd>{{ ($sslDetails['protocol'] ?? '—').' / '.($sslDetails['cipher'] ?? '—') }}</dd>
-                    <dt>SHA-256</dt><dd class="mono" style="font-size:10px">{{ $domain->ssl_fingerprint ?? '—' }}</dd>
-                    <dt>Waarschuwingen</dt><dd>{{ implode(', ', $domain->sslWarningDays()) }} dagen vooraf</dd>
+                @if ($domain->ssl_message)<p @class(['mt-0 mb-3 text-sm', 'ss-text-bad' => $sslTone === 'critical', 'text-muted' => $sslTone !== 'critical'])>{{ $domain->ssl_message }}</p>@endif
+                @php $sslDetails = $latestSsl?->details ?? []; @endphp
+                <dl class="ss-dl">
+                    <dt>{{ __('domains.show.subject') }}</dt><dd>{{ $domain->ssl_subject ?? '—' }}</dd>
+                    <dt>{{ __('domains.show.issuer') }}</dt><dd>{{ $domain->ssl_issuer ?? '—' }}</dd>
+                    <dt>{{ __('domains.show.valid') }}</dt><dd>{{ $domain->ssl_valid_from ? __('domains.show.valid_range', ['from' => Time::date($domain->ssl_valid_from), 'to' => Time::dateTime($domain->ssl_valid_to)]) : '—' }}</dd>
+                    <dt>{{ __('domains.show.san') }}</dt><dd>{{ implode(', ', array_slice($sslDetails['san'] ?? [], 0, 10)) ?: '—' }}</dd>
+                    <dt>{{ __('domains.show.protocol') }}</dt><dd>{{ ($sslDetails['protocol'] ?? '—').' / '.($sslDetails['cipher'] ?? '—') }}</dd>
+                    <dt>{{ __('domains.show.fingerprint') }}</dt><dd class="font-mono text-[11px]">{{ $domain->ssl_fingerprint ?? '—' }}</dd>
+                    <dt>{{ __('domains.show.warnings') }}</dt><dd>{{ __('domains.show.warnings_value', ['days' => implode(', ', $domain->sslWarningDays())]) }}</dd>
                 </dl>
             </section>
 
-            <section class="panel">
-                <div class="section-heading">
-                    <div><h2>Domeinregistratie</h2><p>Bron en tijdstip van de laatste opvraging staan hieronder.</p></div>
+            <section class="ss-panel" aria-labelledby="expiry-title">
+                <div class="ss-panel-head">
+                    <div><h2 id="expiry-title" class="ss-panel-title">{{ __('domains.show.expiry_title') }}</h2><p class="ss-panel-sub">{{ __('domains.show.expiry_text') }}</p></div>
                     @if ($domain->expiry_enabled)
-                        <x-status :status="$domain->expiry_status === 'verified' ? ($expDays < 0 ? 'expired' : ($expDays <= max($domain->expiryWarningDays()) ? 'expiring' : 'valid')) : 'unknown'" :label="$expiryLabels[$domain->expiry_status] ?? $domain->expiry_status" />
-                    @else<span class="chip">Uit</span>@endif
+                        <x-status :status="$domain->expiry_status === 'verified' ? ($expDays < 0 ? 'expired' : ($expiryWarn ? 'expiring' : 'valid')) : 'unknown'" :label="$expiryLabel($domain->expiry_status)" />
+                    @else<span class="ss-chip">{{ __('domains.off') }}</span>@endif
                 </div>
                 @if ($domain->expiry_status !== 'verified' && $domain->expiry_message)
-                    <p class="small muted" style="margin:-6px 0 10px">{{ $domain->expiry_message }}</p>
+                    <p class="mt-0 mb-3 text-sm text-muted">{{ $domain->expiry_message }}</p>
                 @endif
-                <dl class="dl">
-                    <dt>Vervaldatum</dt><dd>{{ $domain->registration_expires_at ? Time::format($domain->registration_expires_at, 'd-m-Y') : 'Onbekend — er wordt geen datum geschat' }}</dd>
-                    <dt>Geregistreerd</dt><dd>{{ $domain->registered_at ? Time::format($domain->registered_at, 'd-m-Y') : '—' }}</dd>
-                    <dt>Registrar</dt><dd>{{ $domain->registrar ?? '—' }}</dd>
-                    <dt>Geregistreerd domein</dt><dd>{{ $domain->registrable_domain ?? '—' }}</dd>
-                    <dt>Bron</dt><dd class="break">{{ $domain->expiry_source ?? '—' }}</dd>
-                    <dt>Opgevraagd</dt><dd>{{ $domain->expiry_checked_at ? Time::format($domain->expiry_checked_at) : 'Nog niet' }}@if ($domain->expiry_next_check_at) · volgende {{ Time::format($domain->expiry_next_check_at) }}@endif</dd>
+                <dl class="ss-dl">
+                    <dt>{{ __('domains.show.expires') }}</dt><dd>{{ $domain->registration_expires_at ? Time::date($domain->registration_expires_at) : __('domains.show.expires_unknown') }}</dd>
+                    <dt>{{ __('domains.show.registered') }}</dt><dd>{{ $domain->registered_at ? Time::date($domain->registered_at) : '—' }}</dd>
+                    <dt>{{ __('domains.show.registrar') }}</dt><dd>{{ $domain->registrar ?? '—' }}</dd>
+                    <dt>{{ __('domains.show.registrable_domain') }}</dt><dd>{{ $domain->registrable_domain ?? '—' }}</dd>
+                    <dt>{{ __('domains.show.source') }}</dt><dd>{{ $domain->expiry_source ?? '—' }}</dd>
+                    <dt>{{ __('domains.show.queried') }}</dt><dd>{{ $domain->expiry_checked_at ? Time::dateTime($domain->expiry_checked_at) : __('domains.show.queried_never') }}@if ($domain->expiry_next_check_at){{ __('domains.show.queried_next', ['date' => Time::dateTime($domain->expiry_next_check_at)]) }}@endif</dd>
                 </dl>
             </section>
         </div>
-    </div>
 
-    <div class="grid-2" style="margin-top:14px">
-        <section class="panel">
-            <div class="section-heading">
-                <div><h2>DNS-records</h2><p>Laatste resultaat {{ Time::relative($domain->dns_last_checked_at) }}@if ($domain->dns_last_changed_at) · laatst gewijzigd {{ Time::format($domain->dns_last_changed_at) }}@endif.</p></div>
-                @if ($domain->dns_enabled)<x-status :status="['ok' => 'healthy', 'failed' => 'critical'][$domain->dns_status] ?? 'unknown'" :label="['ok' => 'Resolutie OK', 'failed' => 'Resolutie mislukt'][$domain->dns_status] ?? 'Onbekend'" />@else<span class="chip">Uit</span>@endif
+        {{-- DNS --}}
+        <div class="ss-section grid gap-4 lg:grid-cols-2" id="dns">
+            <section class="ss-panel" aria-labelledby="dns-title">
+                <div class="ss-panel-head">
+                    <div><h2 id="dns-title" class="ss-panel-title">{{ __('domains.show.dns_title') }}</h2><p class="ss-panel-sub">{{ __('domains.show.dns_text', ['time' => Time::relative($domain->dns_last_checked_at)]) }}@if ($domain->dns_last_changed_at){{ __('domains.show.dns_changed', ['date' => Time::dateTime($domain->dns_last_changed_at)]) }}@endif.</p></div>
+                    @if ($domain->dns_enabled)<x-status :status="['ok' => 'healthy', 'failed' => 'critical'][$domain->dns_status] ?? 'unknown'" :label="['ok' => __('domains.show.dns_ok'), 'failed' => __('domains.show.dns_failed')][$domain->dns_status] ?? __('domains.show.dns_unknown')" />@else<span class="ss-chip">{{ __('domains.off') }}</span>@endif
+                </div>
+                @if ($domain->dns_message)<p @class(['mt-0 mb-3 text-sm', 'ss-text-bad' => $domain->dns_status === 'failed', 'text-muted' => $domain->dns_status !== 'failed'])>{{ $domain->dns_message }}</p>@endif
+                @if (collect($dnsRecords)->filter()->isEmpty())
+                    <x-empty-state icon="i-dns" :title="__('domains.show.dns_empty_title')">{{ __('domains.show.dns_empty_text') }}</x-empty-state>
+                @else
+                    <div class="ss-table-wrap">
+                        <table class="ss-table ss-table-cards">
+                            <thead><tr><th scope="col">{{ __('domains.show.col_type') }}</th><th scope="col">{{ __('domains.show.col_values') }}</th><th scope="col">{{ __('domains.show.col_since') }}</th></tr></thead>
+                            <tbody>
+                                @foreach ($dnsRecords as $recordType => $snapshot)
+                                    <tr>
+                                        <td class="is-primary"><span class="ss-chip">{{ $recordType }}</span></td>
+                                        <td data-label="{{ __('domains.show.col_values') }}" class="font-mono text-xs [overflow-wrap:anywhere]">
+                                            <span>
+                                                @forelse ($snapshot?->records ?? [] as $value)
+                                                    <span class="block">{{ Str::limit($value, 180) }}</span>
+                                                @empty
+                                                    <span class="text-muted">—</span>
+                                                @endforelse
+                                            </span>
+                                        </td>
+                                        <td data-label="{{ __('domains.show.col_since') }}" class="whitespace-nowrap text-xs text-muted">{{ $snapshot ? Time::date($snapshot->first_seen_at) : '' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </section>
+
+            <section class="ss-panel" aria-labelledby="dns-changes-title">
+                <div class="ss-panel-head"><div><h2 id="dns-changes-title" class="ss-panel-title">{{ __('domains.show.dns_changes_title') }}</h2><p class="ss-panel-sub">{{ __('domains.show.dns_changes_text') }}</p></div></div>
+                @if ($dnsChanges->isEmpty())
+                    <x-empty-state icon="i-history" :title="__('domains.show.dns_changes_empty_title')">{{ __('domains.show.dns_changes_empty_text') }}</x-empty-state>
+                @else
+                    <ul class="ss-timeline">
+                        @foreach ($dnsChanges as $change)
+                            <li @class(['is-warn' => in_array($change->record_type, ['NS', 'A', 'AAAA', 'MX'], true), 'is-info' => ! in_array($change->record_type, ['NS', 'A', 'AAAA', 'MX'], true)])>
+                                <div class="ss-timeline-when">{{ Time::dateTime($change->detected_at) }}</div>
+                                <div class="ss-timeline-what"><span class="ss-chip">{{ $change->record_type }}</span> @if ($change->record_type === 'NS')<strong class="ss-text-warn">{{ __('domains.show.nameservers_changed') }}</strong>@endif</div>
+                                <div class="ss-diff">
+                                    @foreach ($change->added as $value)<div class="ss-diff-add">+ {{ Str::limit($value, 160) }}</div>@endforeach
+                                    @foreach ($change->removed as $value)<div class="ss-diff-del">− {{ Str::limit($value, 160) }}</div>@endforeach
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </section>
+        </div>
+
+        {{-- Incidents --}}
+        <section class="ss-section ss-panel" id="incidents" aria-labelledby="incidents-title">
+            <div class="ss-panel-head">
+                <div><h2 id="incidents-title" class="ss-panel-title">{{ __('domains.show.incidents_title') }}</h2><p class="ss-panel-sub">{{ __('domains.show.incidents_text') }}</p></div>
+                @if (Route::has('incidents.index'))<a class="ss-btn ss-btn-secondary ss-btn-sm" href="{{ route('incidents.index', ['domain' => $domain->id]) }}">{{ __('domains.show.all_incidents') }}</a>@endif
             </div>
-            @if ($domain->dns_message)<p class="small {{ $domain->dns_status === 'failed' ? 'red' : 'muted' }}" style="margin:-6px 0 10px">{{ $domain->dns_message }}</p>@endif
-            @if (collect($dnsRecords)->filter()->isEmpty())
-                <x-empty-state icon="i-dns" title="Nog geen DNS-gegevens">De eerste DNS-controle is nog niet uitgevoerd.</x-empty-state>
+            @if ($incidents->isEmpty())
+                <x-empty-state icon="i-check" :title="__('domains.show.incidents_empty_title')">{{ __('domains.show.incidents_empty_text') }}</x-empty-state>
             @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead><tr><th>Type</th><th>Waarden</th><th>Sinds</th></tr></thead>
+                <div class="ss-table-wrap">
+                    <table class="ss-table ss-table-cards">
+                        <thead><tr><th scope="col">{{ __('domains.show.col_incident') }}</th><th scope="col">{{ __('domains.show.col_severity') }}</th><th scope="col">{{ __('domains.show.col_status') }}</th><th scope="col">{{ __('domains.show.col_opened') }}</th><th scope="col">{{ __('domains.show.col_duration') }}</th></tr></thead>
                         <tbody>
-                            @foreach ($dnsRecords as $recordType => $snapshot)
+                            @foreach ($incidents as $incident)
                                 <tr>
-                                    <td><span class="chip">{{ $recordType }}</span></td>
-                                    <td class="mono break">
-                                        @forelse ($snapshot?->records ?? [] as $value)
-                                            <div>{{ \Illuminate\Support\Str::limit($value, 180) }}</div>
-                                        @empty
-                                            <span class="muted">—</span>
-                                        @endforelse
+                                    <td class="is-primary">
+                                        @if (Route::has('incidents.show'))<a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>@else{{ $incident->title }}@endif
+                                        <span class="block text-xs text-muted">{{ Label::of('incident_source', $incident->source, \App\Models\Incident::SOURCE_LABELS) }}</span>
                                     </td>
-                                    <td class="nowrap small muted">{{ $snapshot ? Time::format($snapshot->first_seen_at, 'd-m-Y') : '' }}</td>
+                                    <td data-label="{{ __('domains.show.col_severity') }}"><x-severity :severity="$incident->severity" /></td>
+                                    <td data-label="{{ __('domains.show.col_status') }}"><x-status :status="$incident->status" /></td>
+                                    <td data-label="{{ __('domains.show.col_opened') }}" class="whitespace-nowrap">{{ Time::dateTime($incident->opened_at) }}</td>
+                                    <td data-label="{{ __('domains.show.col_duration') }}" class="whitespace-nowrap">{{ $incident->resolved_at ? \Carbon\CarbonInterval::seconds($incident->timeToResolve())->cascade()->locale(app()->getLocale())->forHumans(['short' => true, 'parts' => 2]) : __('domains.show.ongoing') }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -242,120 +308,76 @@
             @endif
         </section>
 
-        <section class="panel">
-            <div class="section-heading"><div><h2>DNS-wijzigingen</h2><p>Gedetecteerde wijzigingen ten opzichte van de vorige controle.</p></div></div>
-            @if ($dnsChanges->isEmpty())
-                <x-empty-state icon="i-history" title="Geen wijzigingen">Er zijn nog geen DNS-wijzigingen gedetecteerd. De eerste controle geldt als basislijn.</x-empty-state>
-            @else
-                <ul class="timeline">
-                    @foreach ($dnsChanges as $change)
-                        <li style="--c: {{ in_array($change->record_type, ['NS', 'A', 'AAAA', 'MX'], true) ? 'var(--yellow)' : 'var(--cyan)' }}">
-                            <div class="when">{{ Time::format($change->detected_at) }}</div>
-                            <div class="what"><span class="chip">{{ $change->record_type }}</span> @if ($change->record_type === 'NS')<strong class="yellow">Nameservers gewijzigd</strong>@endif</div>
-                            <div class="mono small break" style="margin-top:4px">
-                                @foreach ($change->added as $value)<div class="green">+ {{ \Illuminate\Support\Str::limit($value, 160) }}</div>@endforeach
-                                @foreach ($change->removed as $value)<div class="red">− {{ \Illuminate\Support\Str::limit($value, 160) }}</div>@endforeach
-                            </div>
-                        </li>
+        {{-- Check history --}}
+        <section class="ss-section ss-panel" id="checks" aria-labelledby="checks-title">
+            <div class="ss-panel-head">
+                <div><h2 id="checks-title" class="ss-panel-title">{{ __('domains.show.checks_title') }}</h2><p class="ss-panel-sub">{{ __('domains.show.checks_text') }}</p></div>
+            </div>
+            <nav class="ss-tabs-scroll mb-4" aria-label="{{ __('domains.show.checks_filter_label') }}">
+                <div class="ss-segmented">
+                    @foreach ([null => 'all', 'http' => 'http', 'ssl' => 'ssl', 'dns' => 'dns', 'expiry' => 'expiry'] as $key => $label)
+                        <a href="{{ route('domains.show', ['domain' => $domain, 'type' => $key]) }}#checks" @if ($type === $key) aria-current="page" @endif>{{ __('domains.show.check_types.'.$label) }}</a>
                     @endforeach
-                </ul>
-            @endif
-        </section>
-    </div>
-
-    <section class="panel" style="margin-top:14px">
-        <div class="section-heading">
-            <div><h2>Incidenten</h2><p>De laatste incidenten voor dit domein.</p></div>
-            @if (Route::has('incidents.index'))<a class="button button-sm" href="{{ route('incidents.index', ['domain' => $domain->id]) }}">Alle incidenten</a>@endif
-        </div>
-        @if ($incidents->isEmpty())
-            <x-empty-state icon="i-check" title="Geen incidenten">Er zijn nog geen incidenten voor dit domein geregistreerd.</x-empty-state>
-        @else
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead><tr><th>Incident</th><th>Ernst</th><th>Status</th><th>Geopend</th><th>Duur</th></tr></thead>
-                    <tbody>
-                        @foreach ($incidents as $incident)
-                            <tr>
-                                <td>
-                                    @if (Route::has('incidents.show'))<a class="row-link" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>@else{{ $incident->title }}@endif
-                                    <span class="cell-sub">{{ $incident->sourceLabel() }}</span>
-                                </td>
-                                <td><x-severity :severity="$incident->severity" /></td>
-                                <td><x-status :status="$incident->status" /></td>
-                                <td class="nowrap">{{ Time::format($incident->opened_at) }}</td>
-                                <td class="nowrap">{{ $incident->resolved_at ? \Carbon\CarbonInterval::seconds($incident->timeToResolve())->cascade()->locale('nl')->forHumans(['short' => true, 'parts' => 2]) : 'loopt' }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-    </section>
-
-    <section class="panel" style="margin-top:14px" id="checks">
-        <div class="section-heading">
-            <div><h2>Controlegeschiedenis</h2><p>Alle uitgevoerde controles, nieuwste eerst.</p></div>
-        </div>
-        <nav class="filters" aria-label="Filter op type">
-            @foreach ([null => 'Alle', 'http' => 'HTTP', 'ssl' => 'SSL', 'dns' => 'DNS', 'expiry' => 'Registratie'] as $key => $label)
-                <a href="{{ route('domains.show', ['domain' => $domain, 'type' => $key]) }}#checks" @class(['filter', 'active' => $type === $key])>{{ $label }}</a>
-            @endforeach
-        </nav>
-        @if ($checks->isEmpty())
-            <x-empty-state icon="i-clock" title="Nog geen controles">Controles verschijnen hier zodra de scheduler en queue-worker draaien.</x-empty-state>
-        @else
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead><tr><th>Tijdstip</th><th>Type</th><th>Resultaat</th><th class="num">Tijd</th><th>Code</th><th>Melding</th></tr></thead>
-                    <tbody>
-                        @foreach ($checks as $check)
-                            <tr>
-                                <td class="nowrap">{{ Time::format($check->checked_at, 'd-m-Y H:i:s') }}</td>
-                                <td><span class="chip">{{ strtoupper($check->type) }}</span></td>
-                                <td><x-status :status="$check->success ? 'up' : 'down'" :label="str_replace('_', ' ', $check->result)" /></td>
-                                <td class="num">{{ $ms($check->response_time_ms) }}</td>
-                                <td>{{ $check->http_status_code ?? '' }}</td>
-                                <td class="small break">{{ $check->message ?? '' }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-            <x-pagination :paginator="$checks" />
-        @endif
-    </section>
-
-    <div class="grid-2" style="margin-top:14px">
-        <section class="panel">
-            <div class="section-heading"><div><h2>Certificaatgeschiedenis</h2><p>Elk afzonderlijk certificaat dat is waargenomen.</p></div></div>
-            @if ($certificates->isEmpty())
-                <x-empty-state icon="i-lock" title="Nog geen certificaten vastgelegd">{{ $domain->ssl_enabled ? 'Verschijnt na de eerste TLS-controle.' : 'TLS-controle staat uit.' }}</x-empty-state>
+                </div>
+            </nav>
+            @if ($checks->isEmpty())
+                <x-empty-state icon="i-clock" :title="__('domains.show.checks_empty_title')">{{ __('domains.show.checks_empty_text') }}</x-empty-state>
             @else
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead><tr><th>Uitgever</th><th>Geldig</th><th>Waargenomen</th></tr></thead>
+                <div class="ss-table-wrap">
+                    <table class="ss-table ss-table-cards">
+                        <thead><tr><th scope="col">{{ __('domains.show.col_time') }}</th><th scope="col">{{ __('domains.show.col_type') }}</th><th scope="col">{{ __('domains.show.col_result') }}</th><th scope="col" class="num">{{ __('domains.show.col_duration_ms') }}</th><th scope="col">{{ __('domains.show.col_code') }}</th><th scope="col">{{ __('domains.show.col_message') }}</th></tr></thead>
                         <tbody>
-                            @foreach ($certificates as $certificate)
+                            @foreach ($checks as $check)
                                 <tr>
-                                    <td class="small">{{ $certificate->issuer ?? '—' }}<span class="cell-sub mono">{{ substr($certificate->fingerprint, 0, 23) }}…</span></td>
-                                    <td class="nowrap small">{{ Time::format($certificate->valid_from, 'd-m-Y') }} – {{ Time::format($certificate->valid_to, 'd-m-Y') }}</td>
-                                    <td class="nowrap small">{{ Time::format($certificate->first_seen_at) }}<span class="cell-sub">t/m {{ Time::format($certificate->last_seen_at) }}</span></td>
+                                    <td class="is-primary whitespace-nowrap">{{ Time::dateTimeSeconds($check->checked_at) }}</td>
+                                    <td data-label="{{ __('domains.show.col_type') }}"><span class="ss-chip">{{ strtoupper($check->type) }}</span></td>
+                                    <td data-label="{{ __('domains.show.col_result') }}"><x-status :status="$check->success ? 'up' : 'down'" :label="str_replace('_', ' ', $check->result)" /></td>
+                                    <td data-label="{{ __('domains.show.col_duration_ms') }}" class="num">{{ $ms($check->response_time_ms) }}</td>
+                                    <td data-label="{{ __('domains.show.col_code') }}">{{ $check->http_status_code ?? '' }}</td>
+                                    <td data-label="{{ __('domains.show.col_message') }}" class="text-xs [overflow-wrap:anywhere]">{{ $check->message ?? '' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
+                <x-pagination :paginator="$checks" />
             @endif
         </section>
 
-        <x-dependencies :resource="$domain" />
-    </div>
+        {{-- History: certificates, dependencies and anomalies --}}
+        <div class="ss-section grid gap-4" id="history">
+            <div class="grid gap-4 lg:grid-cols-2">
+                <section class="ss-panel" aria-labelledby="certificates-title">
+                    <div class="ss-panel-head"><div><h2 id="certificates-title" class="ss-panel-title">{{ __('domains.show.certificates_title') }}</h2><p class="ss-panel-sub">{{ __('domains.show.certificates_text') }}</p></div></div>
+                    @if ($certificates->isEmpty())
+                        <x-empty-state icon="i-lock" :title="__('domains.show.certificates_empty_title')">{{ $domain->ssl_enabled ? __('domains.show.certificates_empty_ssl') : __('domains.show.certificates_empty_off') }}</x-empty-state>
+                    @else
+                        <div class="ss-table-wrap">
+                            <table class="ss-table ss-table-cards">
+                                <thead><tr><th scope="col">{{ __('domains.show.col_issuer') }}</th><th scope="col">{{ __('domains.show.col_valid') }}</th><th scope="col">{{ __('domains.show.col_seen') }}</th></tr></thead>
+                                <tbody>
+                                    @foreach ($certificates as $certificate)
+                                        <tr>
+                                            <td class="is-primary text-sm">{{ $certificate->issuer ?? '—' }}<span class="block font-mono text-xs text-muted">{{ substr($certificate->fingerprint, 0, 23) }}…</span></td>
+                                            <td data-label="{{ __('domains.show.col_valid') }}" class="whitespace-nowrap text-sm">{{ Time::date($certificate->valid_from) }} – {{ Time::date($certificate->valid_to) }}</td>
+                                            <td data-label="{{ __('domains.show.col_seen') }}" class="whitespace-nowrap text-sm"><span>{{ Time::dateTime($certificate->first_seen_at) }}<span class="block text-xs text-muted">{{ __('domains.show.seen_until', ['date' => Time::dateTime($certificate->last_seen_at)]) }}</span></span></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </section>
 
-    @if ($predictions->isNotEmpty())
-        <section class="panel" style="margin-top:14px">
-            <div class="section-heading"><div><h2>Afwijkingen</h2><p>Responstijd en foutpercentage vergeleken met de eigen historie van 7 dagen.</p></div></div>
-            @include('servers._predictions', ['predictions' => $predictions])
-        </section>
-    @endif
+                <x-dependencies :resource="$domain" />
+            </div>
+
+            @if ($predictions->isNotEmpty())
+                <section class="ss-panel" aria-labelledby="anomalies-title">
+                    <div class="ss-panel-head"><div><h2 id="anomalies-title" class="ss-panel-title">{{ __('domains.show.anomalies_title') }}</h2><p class="ss-panel-sub">{{ __('domains.show.anomalies_text') }}</p></div></div>
+                    @include('servers._predictions', ['predictions' => $predictions])
+                </section>
+            @endif
+        </div>
+    </div>
 </x-layouts.app>

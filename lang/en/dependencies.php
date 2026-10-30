@@ -1,0 +1,46 @@
+<?php
+
+// Dependencies between monitored resources.
+return [
+    'title' => 'Dependencies',
+    'subtitle' => 'Which resources depend on each other, for example server → Nginx → website → MySQL. Confirmed dependencies are used to group related incidents.',
+    'add_title' => 'Add dependency',
+    'add_text' => 'Read as: :resource only works when :dependency works. Pages belong to their website automatically and services to their server.',
+    'resource_word' => 'resource',
+    'dependency_word' => 'dependency',
+    'no_resources_title' => 'No resources yet',
+    'no_resources_text' => 'Add servers or domains first.',
+    'resource' => 'Resource *',
+    'depends_on' => 'Depends on *',
+    'choose' => 'Choose…',
+    'label' => 'Description',
+    'label_placeholder' => 'e.g. runs on, uses database',
+    'notes' => 'Notes',
+    'submit' => 'Save',
+    'confirmed_title' => 'Confirmed dependencies',
+    'empty_title' => 'No dependencies yet',
+    'empty_text' => 'Without dependencies, incidents of different resources are never grouped, not even when they happen at the same time. The detail page of a domain or server shows suggested relations (for example via the IP address).',
+    'col_resource' => 'Resource',
+    'col_depends_on' => 'Depends on',
+    'col_label' => 'Description',
+    'col_created' => 'Recorded',
+    'col_actions' => 'Actions',
+    'delete_confirm' => 'Delete dependency?',
+    'delete' => 'Delete',
+    'suggest_upstream' => ':domain points in DNS to :ip, the IP address of :server.',
+    'suggest_downstream' => ':domain points in DNS to :ip, the IP address of this server.',
+    'validation' => [
+        'self' => 'A resource cannot depend on itself.',
+        'unknown' => 'Unknown resource.',
+        'cycle' => 'This dependency would create a cycle.',
+    ],
+    'attributes' => [
+        'dependent' => 'dependent resource',
+        'dependency' => 'dependency',
+    ],
+    'flash' => [
+        'exists' => 'This dependency already exists.',
+        'created' => 'Dependency recorded. Incidents of :dependent can now be grouped under outages of :dependency.',
+        'deleted' => 'Dependency deleted.',
+    ],
+];

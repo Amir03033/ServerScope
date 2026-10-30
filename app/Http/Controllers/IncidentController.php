@@ -16,6 +16,7 @@ use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -135,7 +136,7 @@ class IncidentController extends Controller
 
         Audit::log('incident.created', "Handmatig incident aangemaakt: {$incident->title}", $incident);
 
-        return redirect()->route('incidents.show', $incident)->with('success', 'Incident aangemaakt.');
+        return redirect()->route('incidents.show', $incident)->with('success', __('incidents.flash.created'));
     }
 
     public function show(Incident $incident): View
@@ -185,7 +186,7 @@ class IncidentController extends Controller
             // A manual resolution records what the cause and fix were.
             'notes' => ['nullable', 'required_if:status,resolved', 'string', 'min:3', 'max:5000'],
         ], [
-            'notes.required_if' => 'Beschrijf kort de oorzaak en de oplossing.',
+            'notes.required_if' => __('incidents.flash.notes_required'),
         ]);
 
         if (in_array($validated['status'], ['closed', 'open'], true)) {
@@ -198,9 +199,9 @@ class IncidentController extends Controller
             return back()->with('error', $exception->getMessage());
         }
 
-        $labels = ['acknowledged' => 'bevestigd', 'investigating' => 'in onderzoek', 'resolved' => 'opgelost', 'closed' => 'gesloten', 'open' => 'heropend'];
+        $label = Lang::has('incidents.flash.transitions.'.$validated['status']) ? __('incidents.flash.transitions.'.$validated['status']) : $validated['status'];
 
-        return back()->with('success', 'Incident '.($labels[$validated['status']] ?? $validated['status']).'.');
+        return back()->with('success', __('incidents.flash.transitioned', ['status' => $label]));
     }
 
     public function assign(Request $request, Incident $incident): RedirectResponse
@@ -210,7 +211,7 @@ class IncidentController extends Controller
         $assignee = isset($validated['assigned_to']) ? User::query()->find($validated['assigned_to']) : null;
         $this->incidents->assign($incident, $assignee, $request->user());
 
-        return back()->with('success', $assignee ? "Toegewezen aan {$assignee->name}." : 'Toewijzing verwijderd.');
+        return back()->with('success', $assignee ? __('incidents.flash.assigned', ['name' => $assignee->name]) : __('incidents.flash.unassigned'));
     }
 
     public function severity(Request $request, Incident $incident): RedirectResponse
@@ -220,7 +221,7 @@ class IncidentController extends Controller
         $validated = $request->validate(['severity' => ['required', Rule::in(Incident::SEVERITIES)]]);
         $this->incidents->changeSeverity($incident, $validated['severity'], $request->user());
 
-        return back()->with('success', 'Ernst bijgewerkt.');
+        return back()->with('success', __('incidents.flash.severity'));
     }
 
     /** Undo an automatic grouping (admin). */
@@ -229,13 +230,13 @@ class IncidentController extends Controller
         Gate::authorize('admin');
 
         if ($incident->parent_id === null) {
-            return back()->with('error', 'Dit incident is niet gegroepeerd.');
+            return back()->with('error', __('incidents.flash.not_grouped'));
         }
 
         $correlation->detach($incident, $request->user());
         Audit::log('incident.detached', "Incident #{$incident->id} losgekoppeld van zijn hoofdincident", $incident);
 
-        return back()->with('success', 'Incident losgekoppeld. Meldingen volgen weer dit incident zelf.');
+        return back()->with('success', __('incidents.flash.detached'));
     }
 
     public function comment(Request $request, Incident $incident): RedirectResponse
@@ -243,6 +244,6 @@ class IncidentController extends Controller
         $validated = $request->validate(['message' => ['required', 'string', 'max:5000']]);
         $this->incidents->comment($incident, $request->user(), $validated['message']);
 
-        return back()->with('success', 'Notitie toegevoegd.');
+        return back()->with('success', __('incidents.flash.commented'));
     }
 }

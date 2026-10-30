@@ -43,6 +43,38 @@ final class Locale
         return null;
     }
 
+    /**
+     * Run a callback in a language (and restore the previous one). Used for
+     * messages that are built outside a request: queued jobs, logs.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    public static function using(?string $locale, callable $callback): mixed
+    {
+        $previous = app()->getLocale();
+        app()->setLocale(self::isSupported($locale) ? $locale : $previous);
+
+        try {
+            return $callback();
+        } finally {
+            app()->setLocale($previous);
+        }
+    }
+
+    /**
+     * Language of a webhook or Discord endpoint: that of the user who created
+     * it, otherwise the application default. Endpoints have no reader of their own.
+     */
+    public static function forEndpoint(\App\Models\WebhookEndpoint $endpoint): string
+    {
+        $locale = $endpoint->created_by ? \App\Models\User::query()->whereKey($endpoint->created_by)->value('locale') : null;
+
+        return self::isSupported($locale) ? $locale : (string) config('app.locale', self::DEFAULT);
+    }
+
     /** Cache keys with displayed text carry the language. */
     public static function cacheKey(string $key): string
     {

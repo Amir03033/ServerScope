@@ -88,6 +88,6 @@ class IncidentMetrics
             return $seconds.' s';
         }
 
-        return CarbonInterval::seconds($seconds)->cascade()->locale('nl')->forHumans(['short' => true, 'parts' => 2]);
+        return CarbonInterval::seconds($seconds)->cascade()->locale(app()->getLocale())->forHumans(['short' => true, 'parts' => 2]);
     }
 }

@@ -10,4 +10,17 @@ return [
         'no_data' => 'Nog geen meetgegevens in deze periode.',
         'failed_checks' => 'mislukte controles',
     ],
+    'dependencies' => [
+        'title' => 'Afhankelijkheden',
+        'text' => 'Bevestigde relaties worden gebruikt om incidenten te groeperen; voorgestelde relaties niet.',
+        'manage' => 'Beheren',
+        'depends_on' => 'Hangt af van',
+        'none_confirmed' => 'Geen bevestigde afhankelijkheden',
+        'affected' => 'Mogelijk getroffen bij storing',
+        'nothing_known' => 'Niets bekend',
+        'pages' => ':count gemonitorde pagina|:count gemonitorde pagina\'s',
+        'total' => 'In totaal :count resources, inclusief indirecte afhankelijkheden.',
+        'suggested' => 'Voorgestelde relaties (niet bevestigd)',
+        'confirm' => 'Bevestigen',
+    ],
 ];

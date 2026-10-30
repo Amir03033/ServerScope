@@ -7,6 +7,7 @@ use App\Models\WebhookEndpoint;
 use App\Monitoring\Net\HttpResult;
 use App\Monitoring\Net\SafeHttpClient;
 use App\Services\Notifications\DiscordMessage;
+use App\Support\Locale;
 use App\Support\Audit;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -112,7 +113,9 @@ class DeliverWebhook implements ShouldQueue
      */
     private function postToDiscord(SafeHttpClient $http, WebhookEndpoint $endpoint, WebhookDelivery $delivery): HttpResult
     {
-        $body = json_encode(DiscordMessage::fromPayload($delivery->payload), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        // In the language of whoever set the endpoint up (the channel has no reader of its own).
+        $message = Locale::using(Locale::forEndpoint($endpoint), fn () => DiscordMessage::fromPayload($delivery->payload));
+        $body = json_encode($message, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         return $http->post($endpoint->deliveryUrl(), $body, [
             'Content-Type' => 'application/json',

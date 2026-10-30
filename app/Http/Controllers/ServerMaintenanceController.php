@@ -34,7 +34,7 @@ class ServerMaintenanceController extends Controller
             'reason' => $server->maintenance_reason,
         ]);
 
-        return back()->with('success', 'Onderhoudsmodus ingeschakeld. Er worden geen nieuwe downtime-alerts aangemaakt tot '.Time::format($server->maintenance_ends_at).'.');
+        return back()->with('success', __('servers.flash.maintenance_started', ['date' => Time::dateTime($server->maintenance_ends_at)]));
     }
 
     /**
@@ -52,6 +52,6 @@ class ServerMaintenanceController extends Controller
 
         Audit::log('server.maintenance_ended', "Onderhoud beëindigd voor {$server->name}", $server);
 
-        return back()->with('success', 'Onderhoudsmodus beëindigd. Monitoring en alerts zijn weer volledig actief.');
+        return back()->with('success', __('servers.flash.maintenance_ended'));
     }
 }

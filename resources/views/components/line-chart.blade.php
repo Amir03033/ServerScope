@@ -30,9 +30,9 @@
 @endphp
 
 @if ($values === [])
-    <div class="empty-state" style="padding:28px"><p style="margin:0">{{ __('components.line_chart.no_data') }}</p></div>
+    <div class="ss-empty !py-7"><p class="ss-empty-text !m-0">{{ __('components.line_chart.no_data') }}</p></div>
 @else
-    <svg viewBox="0 0 {{ $w }} {{ $h }}" role="img" aria-label="{{ $label }}" style="width:100%;height:auto;display:block">
+    <svg viewBox="0 0 {{ $w }} {{ $h }}" role="img" aria-label="{{ $label }}" class="ss-linechart">
         @foreach ($ticks as $tick)
             <line x1="{{ $pad['l'] }}" x2="{{ $w - $pad['r'] }}" y1="{{ round($y($tick), 1) }}" y2="{{ round($y($tick), 1) }}" stroke="var(--ss-line)"/>
             <text x="{{ $pad['l'] - 6 }}" y="{{ round($y($tick), 1) + 3 }}" text-anchor="end" font-size="10" fill="var(--ss-muted)">{{ \App\Support\Format::number($tick) }}{{ $unit }}</text>

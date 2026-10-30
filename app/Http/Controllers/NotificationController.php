@@ -49,6 +49,6 @@ class NotificationController extends Controller
     {
         $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
-        return back()->with('success', 'Alle meldingen zijn als gelezen gemarkeerd.');
+        return back()->with('success', __('notifications.flash.all_read'));
     }
 }

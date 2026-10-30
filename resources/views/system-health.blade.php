@@ -1,20 +1,23 @@
-<x-layouts.app title="Systeemstatus">
-    <x-slot:subtitle>De gezondheid van ServerScope zelf: zonder scheduler en queue-worker worden er geen controles uitgevoerd en geen meldingen verstuurd.</x-slot:subtitle>
+<x-layouts.app :title="__('system_health.title')">
+    <x-slot:subtitle>{{ __('system_health.subtitle') }}</x-slot:subtitle>
 
-    <section class="panel">
-        <div class="section-heading">
-            <div><h2>Overzicht</h2><p>Wordt elke minuut opnieuw beoordeeld. Zie ook de <a href="{{ config('serverscope.docs_url') ?: '#' }}" target="_blank" rel="noopener">documentatie</a> en docs/DEPLOYMENT.md.</p></div>
-            <x-status :status="$report['status']" :label="['healthy' => 'In orde', 'warning' => 'Aandacht nodig', 'critical' => 'Verstoord'][$report['status']]" />
+    <section class="ss-panel" aria-labelledby="health-title">
+        <div class="ss-panel-head">
+            <div>
+                <h2 id="health-title" class="ss-panel-title">{{ __('system_health.overview') }}</h2>
+                <p class="ss-panel-sub">{!! __('system_health.overview_text', ['docs' => '<a class="text-accent" href="'.e(config('serverscope.docs_url') ?: '#').'" target="_blank" rel="noopener">'.e(__('system_health.docs')).'</a>']) !!}</p>
+            </div>
+            <x-status :status="$report['status']" :label="__('system_health.overall.'.$report['status'])" />
         </div>
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead><tr><th>Onderdeel</th><th>Status</th><th>Toelichting</th></tr></thead>
+        <div class="ss-table-wrap">
+            <table class="ss-table ss-table-cards">
+                <thead><tr><th scope="col">{{ __('system_health.col_part') }}</th><th scope="col">{{ __('system_health.col_status') }}</th><th scope="col">{{ __('system_health.col_detail') }}</th></tr></thead>
                 <tbody>
                     @foreach ($report['checks'] as $check)
                         <tr>
-                            <td><strong>{{ $check['label'] }}</strong></td>
-                            <td><x-status :status="$check['status']" :label="['healthy' => 'In orde', 'warning' => 'Aandacht', 'critical' => 'Probleem'][$check['status']]" /></td>
-                            <td class="small">{{ $check['detail'] }}</td>
+                            <td class="is-primary"><strong>{{ $check['label'] }}</strong></td>
+                            <td data-label="{{ __('system_health.col_status') }}"><x-status :status="$check['status']" :label="__('system_health.check_status.'.$check['status'])" /></td>
+                            <td data-label="{{ __('system_health.col_detail') }}" class="text-sm">{{ $check['detail'] }}</td>
                         </tr>
                     @endforeach
                 </tbody>

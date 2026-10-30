@@ -22,45 +22,45 @@
     };
 @endphp
 
-<section {{ $attributes->class('panel') }}>
-    <div class="section-heading">
-        <div><h2>Afhankelijkheden</h2><p>Bevestigde relaties worden gebruikt om incidenten te groeperen; voorgestelde relaties niet.</p></div>
-        @if (Route::has('dependencies.index'))<a class="button button-sm" href="{{ route('dependencies.index', ['dependent' => ResourceCatalog::key($resource)]) }}">Beheren</a>@endif
+<section {{ $attributes->class('ss-panel') }}>
+    <div class="ss-panel-head">
+        <div><h2 class="ss-panel-title">{{ __('components.dependencies.title') }}</h2><p class="ss-panel-sub">{{ __('components.dependencies.text') }}</p></div>
+        @if (Route::has('dependencies.index'))<a class="ss-btn ss-btn-secondary ss-btn-sm" href="{{ route('dependencies.index', ['dependent' => ResourceCatalog::key($resource)]) }}">{{ __('components.dependencies.manage') }}</a>@endif
     </div>
 
-    <dl class="dl">
-        <dt>Hangt af van</dt>
+    <dl class="ss-dl">
+        <dt>{{ __('components.dependencies.depends_on') }}</dt>
         <dd>
             @forelse ($upstream as $edge)
-                <div>{!! $link($edge['type'], $edge['id']) !!} <span class="muted small">{{ ResourceCatalog::typeLabel($edge['type']) }}{{ $edge['label'] ? ' · '.$edge['label'] : '' }}</span></div>
+                <div>{!! $link($edge['type'], $edge['id']) !!} <span class="text-xs text-muted">{{ \App\Support\Label::of('resource_type', $edge['type'], ResourceCatalog::TYPES) }}{{ $edge['label'] ? ' · '.$edge['label'] : '' }}</span></div>
             @empty
-                <span class="muted">Geen bevestigde afhankelijkheden</span>
+                <span class="text-muted">{{ __('components.dependencies.none_confirmed') }}</span>
             @endforelse
         </dd>
-        <dt>Mogelijk getroffen bij storing</dt>
+        <dt>{{ __('components.dependencies.affected') }}</dt>
         <dd>
             @if ($direct->isEmpty() && $pageCount === 0)
-                <span class="muted">Niets bekend</span>
+                <span class="text-muted">{{ __('components.dependencies.nothing_known') }}</span>
             @else
                 @foreach ($direct as $edge)
-                    <div>{!! $link($edge['type'], $edge['id']) !!} <span class="muted small">{{ ResourceCatalog::typeLabel($edge['type']) }}{{ $edge['label'] ? ' · '.$edge['label'] : '' }}</span></div>
+                    <div>{!! $link($edge['type'], $edge['id']) !!} <span class="text-xs text-muted">{{ \App\Support\Label::of('resource_type', $edge['type'], ResourceCatalog::TYPES) }}{{ $edge['label'] ? ' · '.$edge['label'] : '' }}</span></div>
                 @endforeach
-                @if ($pageCount > 0)<div>{{ $pageCount }} gemonitorde {{ $pageCount === 1 ? 'pagina' : "pagina's" }}</div>@endif
+                @if ($pageCount > 0)<div>{{ trans_choice('components.dependencies.pages', $pageCount, ['count' => $pageCount]) }}</div>@endif
                 @if (count($downstreamAll) > $direct->count() + $pageCount)
-                    <div class="muted small">In totaal {{ count($downstreamAll) }} resources, inclusief indirecte afhankelijkheden.</div>
+                    <div class="text-xs text-muted">{{ __('components.dependencies.total', ['count' => count($downstreamAll)]) }}</div>
                 @endif
             @endif
         </dd>
     </dl>
 
     @if ($inferred !== [])
-        <div style="margin-top:12px">
-            <strong class="small">Voorgestelde relaties (niet bevestigd)</strong>
+        <div class="mt-3">
+            <strong class="text-sm">{{ __('components.dependencies.suggested') }}</strong>
             @foreach ($inferred as $suggestion)
-                <div class="small" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
+                <div class="mt-1.5 flex flex-wrap items-center gap-2 text-sm">
                     <span>{!! $link($suggestion['type'], $suggestion['id']) !!} — {{ $suggestion['reason'] }}</span>
                     @if ($isAdmin)
-                        <form method="POST" action="{{ route('dependencies.store') }}" class="inline-form">
+                        <form method="POST" action="{{ route('dependencies.store') }}">
                             @csrf
                             @if ($suggestion['direction'] === 'upstream')
                                 <input type="hidden" name="dependent" value="{{ ResourceCatalog::key($resource) }}">
@@ -70,7 +70,7 @@
                                 <input type="hidden" name="dependency" value="{{ ResourceCatalog::key($resource) }}">
                             @endif
                             <input type="hidden" name="label" value="draait op">
-                            <button class="button button-sm" type="submit">Bevestigen</button>
+                            <button class="ss-btn ss-btn-secondary ss-btn-sm" type="submit">{{ __('components.dependencies.confirm') }}</button>
                         </form>
                     @endif
                 </div>

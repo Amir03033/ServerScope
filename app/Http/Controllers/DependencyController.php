@@ -43,10 +43,10 @@ class DependencyController extends Controller
             'label' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ], [
-            'dependency.different' => 'Een resource kan niet van zichzelf afhangen.',
+            'dependency.different' => __('dependencies.validation.self'),
         ], [
-            'dependent' => 'afhankelijke resource',
-            'dependency' => 'afhankelijkheid',
+            'dependent' => __('dependencies.attributes.dependent'),
+            'dependency' => __('dependencies.attributes.dependency'),
         ]);
 
         // Both ends must belong to the current team.
@@ -54,13 +54,13 @@ class DependencyController extends Controller
         $dependency = ResourceCatalog::fromKey($validated['dependency'], Tenant::id());
 
         if ($dependent === null || $dependency === null) {
-            throw ValidationException::withMessages(['dependent' => 'Onbekende resource.']);
+            throw ValidationException::withMessages(['dependent' => __('dependencies.validation.unknown')]);
         }
 
         $types = [$dependent->getMorphClass(), (int) $dependent->getKey(), $dependency->getMorphClass(), (int) $dependency->getKey()];
 
         if ($graph->wouldCreateCycle(...$types, teamId: Tenant::id())) {
-            throw ValidationException::withMessages(['dependency' => 'Deze afhankelijkheid zou een kringverwijzing maken.']);
+            throw ValidationException::withMessages(['dependency' => __('dependencies.validation.cycle')]);
         }
 
         $row = ResourceDependency::query()->firstOrCreate(
@@ -69,12 +69,12 @@ class DependencyController extends Controller
         );
 
         if (! $row->wasRecentlyCreated) {
-            return back()->with('error', 'Deze afhankelijkheid bestaat al.');
+            return back()->with('error', __('dependencies.flash.exists'));
         }
 
         Audit::log('dependency.created', ResourceCatalog::name($dependent).' hangt af van '.ResourceCatalog::name($dependency), $row);
 
-        return back()->with('success', 'Afhankelijkheid vastgelegd. Incidenten van '.ResourceCatalog::name($dependent).' kunnen nu worden gegroepeerd onder storingen van '.ResourceCatalog::name($dependency).'.');
+        return back()->with('success', __('dependencies.flash.created', ['dependent' => ResourceCatalog::name($dependent), 'dependency' => ResourceCatalog::name($dependency)]));
     }
 
     public function destroy(ResourceDependency $dependency): RedirectResponse
@@ -85,6 +85,6 @@ class DependencyController extends Controller
         $dependency->delete();
         Audit::log('dependency.deleted', "Afhankelijkheid verwijderd: {$description}");
 
-        return back()->with('success', 'Afhankelijkheid verwijderd.');
+        return back()->with('success', __('dependencies.flash.deleted'));
     }
 }

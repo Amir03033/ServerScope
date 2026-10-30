@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Incident;
 use App\Services\Notifications\NotificationDispatcher;
+use App\Support\Label;
 use App\Support\Time;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -51,51 +52,52 @@ class IncidentNotification extends Notification implements ShouldQueue
     public function subjectLine(): string
     {
         $prefix = match ($this->kind) {
-            self::OPENED => $this->incident->severity === 'critical' ? 'Kritiek incident' : 'Incident',
-            self::REOPENED => 'Heropend',
-            self::RESOLVED => 'Opgelost',
-            self::ESCALATED => 'Escalatie',
-            self::SEVERITY_INCREASED => 'Ernst verhoogd',
-            self::UNACKNOWLEDGED => 'Niet bevestigd',
-            default => 'Incident',
+            self::OPENED => $this->incident->severity === 'critical' ? __('messages.incident.prefix.opened_critical') : __('messages.incident.prefix.opened'),
+            self::REOPENED => __('messages.incident.prefix.reopened'),
+            self::RESOLVED => __('messages.incident.prefix.resolved'),
+            self::ESCALATED => __('messages.incident.prefix.escalated'),
+            self::SEVERITY_INCREASED => __('messages.incident.prefix.severity_increased'),
+            self::UNACKNOWLEDGED => __('messages.incident.prefix.unacknowledged'),
+            default => __('messages.incident.prefix.opened'),
         };
 
-        return "[ServerScope] {$prefix}: {$this->incident->title}";
+        return __('messages.incident.subject', ['prefix' => $prefix, 'title' => $this->incident->title]);
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         $incident = $this->incident;
-        $severity = \App\Support\Severity::label($incident->severity);
+        $severity = Label::of('severity', $incident->severity, \App\Support\Severity::LABELS);
+        $source = Label::of('incident_source', $incident->source, Incident::SOURCE_LABELS);
 
         $message = (new MailMessage)
             ->subject($this->subjectLine())
             ->greeting(match ($this->kind) {
-                self::RESOLVED => 'Het incident is opgelost',
-                self::REOPENED => 'Het incident is opnieuw opgetreden',
-                self::ESCALATED => 'Een incident vraagt aandacht',
-                self::SEVERITY_INCREASED => 'De ernst van een incident is verhoogd',
-                self::UNACKNOWLEDGED => 'Dit incident is nog niet bevestigd',
-                default => 'Er is een nieuw incident',
+                self::RESOLVED => __('messages.incident.greeting.resolved'),
+                self::REOPENED => __('messages.incident.greeting.reopened'),
+                self::ESCALATED => __('messages.incident.greeting.escalated'),
+                self::SEVERITY_INCREASED => __('messages.incident.greeting.severity_increased'),
+                self::UNACKNOWLEDGED => __('messages.incident.greeting.unacknowledged'),
+                default => __('messages.incident.greeting.opened'),
             })
             ->line($incident->title)
-            ->line("Ernst: {$severity} · Bron: {$incident->sourceLabel()} · Betreft: {$incident->subjectName()}");
+            ->line(__('messages.incident.facts', ['severity' => $severity, 'source' => $source, 'subject' => $incident->subjectName()]));
 
         if ($incident->description) {
             $message->line($incident->description);
         }
 
-        $message->line('Geopend: '.Time::format($incident->opened_at, 'd-m-Y H:i T'));
+        $message->line(__('messages.incident.opened_at', ['date' => Time::dateTimeZone($incident->opened_at)]));
 
         if ($this->kind === self::RESOLVED && $incident->resolved_at) {
-            $message->line('Opgelost: '.Time::format($incident->resolved_at, 'd-m-Y H:i T'));
+            $message->line(__('messages.incident.resolved_at', ['date' => Time::dateTimeZone($incident->resolved_at)]));
         }
 
         if ($this->kind !== self::RESOLVED && $incident->severity === 'critical') {
             $message->error();
         }
 
-        return $message->action('Incident bekijken', route('incidents.show', $incident));
+        return $message->action(__('messages.incident.action'), route('incidents.show', $incident));
     }
 
     public function failed(\Throwable $exception): void

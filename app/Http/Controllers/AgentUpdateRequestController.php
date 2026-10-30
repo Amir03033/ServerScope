@@ -31,8 +31,8 @@ class AgentUpdateRequestController extends Controller
         $request = $updates->request($server, $release, request()->user(), 'manual');
 
         return back()->with('success', $request->wasRecentlyCreated
-            ? "Update naar {$release->version} aangevraagd. Het updateprogramma op de server haalt hem binnen enkele minuten op."
-            : "Er loopt al een update naar {$request->target_version} voor deze server.");
+            ? __('servers.updates.flash.requested', ['version' => $release->version])
+            : __('servers.updates.flash.already_running', ['version' => $request->target_version]));
     }
 
     public function storeAll(AgentUpdates $updates): RedirectResponse
@@ -51,8 +51,8 @@ class AgentUpdateRequestController extends Controller
         }
 
         return back()->with('success', $count === 0
-            ? 'Er zijn geen servers die nu bijgewerkt kunnen worden.'
-            : "Update naar {$release->version} aangevraagd voor {$count} server(s).");
+            ? __('servers.updates.flash.none_eligible')
+            : __('servers.updates.flash.requested_many', ['version' => $release->version, 'count' => $count]));
     }
 
     public function autoUpdate(Request $request, Server $server): RedirectResponse
@@ -65,7 +65,7 @@ class AgentUpdateRequestController extends Controller
         Audit::log($enabled ? 'agent_update.auto_enabled' : 'agent_update.auto_disabled', ($enabled ? 'Automatisch bijwerken ingeschakeld' : 'Automatisch bijwerken uitgeschakeld')." voor {$server->name}", $server);
 
         return back()->with('success', $enabled
-            ? 'Automatisch bijwerken staat aan: nieuwe ondertekende releases worden op deze server geïnstalleerd.'
-            : 'Automatisch bijwerken staat uit.');
+            ? __('servers.updates.flash.auto_on')
+            : __('servers.updates.flash.auto_off'));
     }
 }

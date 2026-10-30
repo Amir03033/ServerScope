@@ -1,59 +1,64 @@
-<x-layouts.app title="Profiel">
-    <x-slot:subtitle>Je account, wachtwoord en meldingsvoorkeuren.</x-slot:subtitle>
+@php
+    $field = fn (string $name, string $bag = 'default') => $errors->getBag($bag)->has($name) ? 'aria-invalid=true aria-describedby='.$name.'-error' : '';
+@endphp
 
-    <div class="grid-2">
-        <div class="stack">
-            <section class="panel">
-                <div class="section-heading"><div><h2>Account</h2></div></div>
+<x-layouts.app :title="__('profile.title')">
+    <x-slot:subtitle>{{ __('profile.subtitle') }}</x-slot:subtitle>
+
+    <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+        <div class="grid min-w-0 gap-4">
+            <section class="ss-panel" aria-labelledby="account-title">
+                <h2 id="account-title" class="ss-panel-title mb-4">{{ __('profile.account') }}</h2>
                 <form method="POST" action="{{ route('profile.update') }}">
                     @csrf @method('PUT')
-                    <div class="form-cols">
-                        <div @class(['form-field', 'has-error' => $errors->has('name')])>
-                            <label for="name">Naam</label>
-                            <input id="name" name="name" type="text" required maxlength="255" value="{{ old('name', $user->name) }}" autocomplete="name">
-                            @error('name')<span class="form-error">{{ $message }}</span>@enderror
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="ss-label" for="name">{{ __('profile.name') }}</label>
+                            <input id="name" class="ss-input mt-1.5" name="name" type="text" required maxlength="255" value="{{ old('name', $user->name) }}" autocomplete="name" {{ $field('name') }}>
+                            @error('name')<p id="name-error" class="ss-error">{{ $message }}</p>@enderror
                         </div>
-                        <div @class(['form-field', 'has-error' => $errors->has('email')])>
-                            <label for="email">E-mailadres</label>
-                            <input id="email" name="email" type="email" required maxlength="255" value="{{ old('email', $user->email) }}" autocomplete="email">
-                            @error('email')<span class="form-error">{{ $message }}</span>@enderror
+                        <div>
+                            <label class="ss-label" for="email">{{ __('profile.email') }}</label>
+                            <input id="email" class="ss-input mt-1.5" name="email" type="email" required maxlength="255" value="{{ old('email', $user->email) }}" autocomplete="email" {{ $field('email') }}>
+                            @error('email')<p id="email-error" class="ss-error">{{ $message }}</p>@enderror
                         </div>
-                        <div @class(['form-field', 'has-error' => $errors->has('locale')])>
-                            <label for="locale">{{ __('profile.locale.label') }}</label>
-                            <select id="locale" name="locale">
+                        <div>
+                            <label class="ss-label" for="locale">{{ __('profile.locale.label') }}</label>
+                            <select id="locale" class="ss-input mt-1.5" name="locale" {{ $field('locale') }}>
                                 @foreach (\App\Support\Locale::SUPPORTED as $code)
                                     <option value="{{ $code }}" lang="{{ $code }}" @selected(old('locale', $user->locale ?? \App\Support\Locale::DEFAULT) === $code)>{{ __('locale.names.'.$code) }}</option>
                                 @endforeach
                             </select>
-                            <span class="form-help">{{ __('profile.locale.help') }}</span>
-                            @error('locale')<span class="form-error">{{ $message }}</span>@enderror
+                            <p class="ss-help">{{ __('profile.locale.help') }}</p>
+                            @error('locale')<p id="locale-error" class="ss-error">{{ $message }}</p>@enderror
                         </div>
                     </div>
-                    <div class="form-footer"><button class="button button-primary" type="submit">Opslaan</button></div>
+                    <div class="mt-5"><button class="ss-btn ss-btn-primary" type="submit">{{ __('profile.save') }}</button></div>
                 </form>
             </section>
 
-            <section class="panel">
-                <div class="section-heading"><div><h2>Wachtwoord wijzigen</h2><p>Minimaal 12 tekens met hoofdletters, kleine letters en cijfers. Andere sessies worden afgemeld.</p></div></div>
+            <section class="ss-panel" aria-labelledby="password-title">
+                <h2 id="password-title" class="ss-panel-title">{{ __('profile.password_title') }}</h2>
+                <p class="ss-panel-sub mb-4">{{ __('profile.password_text') }}</p>
                 <form method="POST" action="{{ route('profile.password') }}">
                     @csrf @method('PUT')
-                    <div class="form-cols">
-                        <div @class(['form-field full', 'has-error' => $errors->password->has('current_password')])>
-                            <label for="current_password">Huidig wachtwoord</label>
-                            <input id="current_password" name="current_password" type="password" required autocomplete="current-password">
-                            @error('current_password', 'password')<span class="form-error">{{ $message }}</span>@enderror
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="sm:col-span-2">
+                            <label class="ss-label" for="current_password">{{ __('profile.current_password') }}</label>
+                            <input id="current_password" class="ss-input mt-1.5" name="current_password" type="password" required autocomplete="current-password" {{ $field('current_password', 'password') }}>
+                            @error('current_password', 'password')<p id="current_password-error" class="ss-error">{{ $message }}</p>@enderror
                         </div>
-                        <div @class(['form-field', 'has-error' => $errors->password->has('password')])>
-                            <label for="password">Nieuw wachtwoord</label>
-                            <input id="password" name="password" type="password" required autocomplete="new-password">
-                            @error('password', 'password')<span class="form-error">{{ $message }}</span>@enderror
+                        <div>
+                            <label class="ss-label" for="password">{{ __('profile.new_password') }}</label>
+                            <input id="password" class="ss-input mt-1.5" name="password" type="password" required autocomplete="new-password" {{ $field('password', 'password') }}>
+                            @error('password', 'password')<p id="password-error" class="ss-error">{{ $message }}</p>@enderror
                         </div>
-                        <div class="form-field">
-                            <label for="password_confirmation">Herhaal nieuw wachtwoord</label>
-                            <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password">
+                        <div>
+                            <label class="ss-label" for="password_confirmation">{{ __('profile.confirm_password') }}</label>
+                            <input id="password_confirmation" class="ss-input mt-1.5" name="password_confirmation" type="password" required autocomplete="new-password">
                         </div>
                     </div>
-                    <div class="form-footer"><button class="button" type="submit">Wachtwoord wijzigen</button></div>
+                    <div class="mt-5"><button class="ss-btn ss-btn-secondary" type="submit">{{ __('profile.change_password') }}</button></div>
                 </form>
             </section>
 
@@ -62,43 +67,42 @@
             @endif
 
             @if (Route::has('api-tokens.index'))
-                <section class="panel">
-                    <div class="section-heading"><div><h2>API-tokens</h2><p>Persoonlijke tokens voor de ServerScope API.</p></div><a class="button button-sm" href="{{ route('api-tokens.index') }}">Beheren</a></div>
+                <section class="ss-panel" aria-labelledby="api-title">
+                    <div class="ss-panel-head !mb-0"><div><h2 id="api-title" class="ss-panel-title">{{ __('profile.api_title') }}</h2><p class="ss-panel-sub">{{ __('profile.api_text') }}</p></div><a class="ss-btn ss-btn-secondary ss-btn-sm" href="{{ route('api-tokens.index') }}"><svg class="ico"><use href="#i-key"/></svg> {{ __('profile.manage') }}</a></div>
                 </section>
             @endif
         </div>
 
-        <section class="panel">
-            <div class="section-heading"><div><h2>Meldingen</h2><p>Je ontvangt alleen meldingen bij het openen, escaleren, heropenen en oplossen van incidenten — nooit voor elke mislukte controle.</p></div></div>
+        <section class="ss-panel" aria-labelledby="notifications-title">
+            <h2 id="notifications-title" class="ss-panel-title">{{ __('profile.notifications_title') }}</h2>
+            <p class="ss-panel-sub mb-4">{{ __('profile.notifications_text') }}</p>
             <form method="POST" action="{{ route('profile.notifications') }}">
                 @csrf @method('PUT')
-                <div class="stack">
-                    @foreach ([
-                        'notify_email' => ['E-mail', 'Meldingen per e-mail aan '.$user->email.(config('serverscope.alert_mail_enabled') ? '' : ' (e-mail is uitgeschakeld door de beheerder)')],
-                        'notify_in_app' => ['In de app', 'Meldingen onder “Meldingen” in de zijbalk.'],
-                        'notify_resolved' => ['Herstelmeldingen', 'Ook een melding wanneer een incident is opgelost.'],
-                        'notify_dns_changes' => ['DNS- en inhoudswijzigingen', 'Melding bij gewijzigde A-, AAAA-, CNAME-, MX-, NS- of CAA-records en bij significante inhoudswijzigingen van pagina\'s waarvoor dat is ingeschakeld.'],
-                    ] as $key => [$label, $help])
-                        <label class="check">
+                <div class="grid gap-4">
+                    @foreach (['notify_email', 'notify_in_app', 'notify_resolved', 'notify_dns_changes'] as $key)
+                        <label class="ss-check items-start">
                             <input type="hidden" name="{{ $key }}" value="0">
-                            <input type="checkbox" name="{{ $key }}" value="1" @checked(old($key, $user->{$key}))>
-                            <span><strong>{{ $label }}</strong><span class="form-help" style="display:block">{{ $help }}</span></span>
+                            <input class="mt-0.5" type="checkbox" name="{{ $key }}" value="1" @checked(old($key, $user->{$key}))>
+                            <span>
+                                <strong>{{ __('profile.notify.'.$key) }}</strong>
+                                <span class="ss-help block !mt-0.5">{{ $key === 'notify_email' ? __('profile.notify.notify_email_help', ['email' => $user->email]).(config('serverscope.alert_mail_enabled') ? '' : __('profile.notify.mail_disabled')) : __('profile.notify.'.$key.'_help') }}</span>
+                            </span>
                         </label>
                     @endforeach
-                    <div class="form-field">
-                        <label for="notify_min_severity">Minimale ernst</label>
-                        <select id="notify_min_severity" name="notify_min_severity">
-                            @foreach (['info' => 'Alles (laag en hoger)', 'warning' => 'Gemiddeld en hoger', 'high' => 'Hoog en kritiek', 'critical' => 'Alleen kritiek'] as $v => $l)
-                                <option value="{{ $v }}" @selected(old('notify_min_severity', $user->notify_min_severity) === $v)>{{ $l }}</option>
+                    <div>
+                        <label class="ss-label" for="notify_min_severity">{{ __('profile.min_severity') }}</label>
+                        <select id="notify_min_severity" class="ss-input mt-1.5" name="notify_min_severity">
+                            @foreach (['info', 'warning', 'high', 'critical'] as $v)
+                                <option value="{{ $v }}" @selected(old('notify_min_severity', $user->notify_min_severity) === $v)>{{ __('profile.min_severities.'.$v) }}</option>
                             @endforeach
                         </select>
                     </div>
                 </div>
-                <div class="form-footer"><button class="button button-primary" type="submit">Voorkeuren opslaan</button></div>
+                <div class="mt-5"><button class="ss-btn ss-btn-primary" type="submit">{{ __('profile.save_preferences') }}</button></div>
             </form>
-            <form method="POST" action="{{ route('profile.notifications.test') }}" style="margin-top:12px">
+            <form method="POST" action="{{ route('profile.notifications.test') }}" class="mt-3">
                 @csrf
-                <button class="button button-sm" type="submit"><svg class="ico"><use href="#i-bell"/></svg> Testmelding versturen</button>
+                <button class="ss-btn ss-btn-ghost ss-btn-sm" type="submit"><svg class="ico"><use href="#i-bell"/></svg> {{ __('profile.send_test') }}</button>
             </form>
         </section>
     </div>

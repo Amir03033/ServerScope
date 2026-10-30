@@ -1,38 +1,46 @@
-@php use App\Support\Time; @endphp
+@php
+    use App\Models\Domain;
+    use App\Support\Label;
+    use App\Support\Time;
 
-<x-layouts.app title="Zoeken">
-    <x-slot:subtitle>Servers, domeinen en incidenten.</x-slot:subtitle>
+@endphp
 
-    <section class="panel">
-        <form method="GET" action="{{ route('search') }}" class="toolbar" role="search">
-            <div class="form-field grow"><label for="search-q">Zoekterm</label><input id="search-q" type="search" name="q" value="{{ $q }}" autofocus placeholder="Naam, hostname, IP, domein of #incidentnummer"></div>
-            <button class="button button-primary" type="submit"><svg class="ico"><use href="#i-search"/></svg> Zoeken</button>
+<x-layouts.app :title="__('search.title')">
+    <x-slot:subtitle>{{ __('search.subtitle') }}</x-slot:subtitle>
+
+    <section class="ss-panel">
+        <form method="GET" action="{{ route('search') }}" class="mb-5 flex flex-wrap items-end gap-3" role="search">
+            <div class="min-w-0 flex-1">
+                <label class="ss-label" for="search-q">{{ __('search.term') }}</label>
+                <input id="search-q" class="ss-input mt-1.5" type="search" name="q" value="{{ $q }}" autofocus placeholder="{{ __('search.placeholder') }}">
+            </div>
+            <button class="ss-btn ss-btn-primary" type="submit"><svg class="ico"><use href="#i-search"/></svg> {{ __('search.submit') }}</button>
         </form>
 
         @if (mb_strlen($q) < 2)
-            <x-empty-state icon="i-search" title="Waar ben je naar op zoek?">Typ minimaal twee tekens.</x-empty-state>
+            <x-empty-state icon="i-search" :title="__('search.short_title')">{{ __('search.short_text') }}</x-empty-state>
         @elseif (collect($results)->every->isEmpty())
-            <x-empty-state icon="i-search" title="Niets gevonden">Geen servers, domeinen of incidenten gevonden voor “{{ $q }}”.</x-empty-state>
+            <x-empty-state icon="i-search" :title="__('search.none_title')">{{ __('search.none_text', ['q' => $q]) }}</x-empty-state>
         @else
-            <div class="grid-3">
-                <div>
-                    <h2 class="small muted" style="margin:0 0 8px">Servers ({{ $results['servers']->count() }})</h2>
+            <div class="grid gap-6 lg:grid-cols-3" data-highlight="{{ $q }}">
+                <section aria-labelledby="results-servers">
+                    <h2 id="results-servers" class="mt-0 mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{{ __('search.servers', ['count' => $results['servers']->count()]) }}</h2>
                     @foreach ($results['servers'] as $server)
-                        <a class="ov-row" href="{{ route('servers.show', $server) }}"><x-status :status="$server->displayStatus()" /><span class="ov-main"><strong>{{ $server->name }}</strong><span class="cell-sub">{{ $server->hostname }}</span></span></a>
+                        <a class="ov-row" href="{{ route('servers.show', $server) }}"><x-status :status="$server->displayStatus()" /><span class="ov-main"><strong>{{ $server->name }}</strong><span class="ov-sub">{{ $server->hostname }}</span></span></a>
                     @endforeach
-                </div>
-                <div>
-                    <h2 class="small muted" style="margin:0 0 8px">Domeinen ({{ $results['domains']->count() }})</h2>
+                </section>
+                <section aria-labelledby="results-domains">
+                    <h2 id="results-domains" class="mt-0 mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{{ __('search.domains', ['count' => $results['domains']->count()]) }}</h2>
                     @foreach ($results['domains'] as $domain)
-                        <a class="ov-row" href="{{ route('domains.show', $domain) }}"><x-status :status="$domain->displayStatus()" :label="\App\Models\Domain::STATUS_LABELS[$domain->displayStatus()] ?? null" /><span class="ov-main"><strong>{{ $domain->displayName() }}</strong><span class="cell-sub">{{ $domain->url() }}</span></span></a>
+                        <a class="ov-row" href="{{ route('domains.show', $domain) }}"><x-status :status="$domain->displayStatus()" :label="Label::of('domain_status', $domain->displayStatus(), Domain::STATUS_LABELS)" /><span class="ov-main"><strong>{{ $domain->displayName() }}</strong><span class="ov-sub">{{ $domain->url() }}</span></span></a>
                     @endforeach
-                </div>
-                <div>
-                    <h2 class="small muted" style="margin:0 0 8px">Incidenten ({{ $results['incidents']->count() }})</h2>
+                </section>
+                <section aria-labelledby="results-incidents">
+                    <h2 id="results-incidents" class="mt-0 mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{{ __('search.incidents', ['count' => $results['incidents']->count()]) }}</h2>
                     @foreach ($results['incidents'] as $incident)
-                        <a class="ov-row" href="{{ route('incidents.show', $incident) }}"><x-status :status="$incident->status" /><span class="ov-main"><strong>#{{ $incident->id }} {{ $incident->title }}</strong><span class="cell-sub">{{ Time::format($incident->opened_at) }}</span></span></a>
+                        <a class="ov-row" href="{{ route('incidents.show', $incident) }}"><x-status :status="$incident->status" /><span class="ov-main"><strong>#{{ $incident->id }} {{ $incident->title }}</strong><span class="ov-sub">{{ Time::dateTime($incident->opened_at) }}</span></span></a>
                     @endforeach
-                </div>
+                </section>
             </div>
         @endif
     </section>

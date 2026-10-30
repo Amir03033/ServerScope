@@ -105,7 +105,7 @@ class ReportController extends Controller
         };
 
         if ($from->diffInDays($to) > 366) {
-            abort(422, 'De rapportageperiode mag maximaal een jaar zijn.');
+            abort(422, __('reports.max_period'));
         }
 
         return [$from, $to, $target];

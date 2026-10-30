@@ -36,14 +36,14 @@ class PageChangeNotification extends Notification implements ShouldQueue
 
     public function subjectLine(): string
     {
-        return "[ServerScope] Inhoud gewijzigd: {$this->page->url}";
+        return __('messages.page.subject', ['url' => $this->page->url]);
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         $message = (new MailMessage)
             ->subject($this->subjectLine())
-            ->greeting('De inhoud van een pagina is gewijzigd')
+            ->greeting(__('messages.page.greeting'))
             ->line($this->page->url)
             ->line((string) $this->change->summary);
 
@@ -56,8 +56,8 @@ class PageChangeNotification extends Notification implements ShouldQueue
         }
 
         return $message
-            ->line('Is dit een verwachte wijziging? Bevestig hem dan op de paginadetails.')
-            ->action('Pagina bekijken', route('pages.show', $this->page));
+            ->line(__('messages.page.check'))
+            ->action(__('messages.page.action'), route('pages.show', $this->page));
     }
 
     public function failed(Throwable $exception): void
@@ -70,7 +70,7 @@ class PageChangeNotification extends Notification implements ShouldQueue
         return [
             'kind' => 'page_changed',
             'page_id' => $this->page->id,
-            'message' => 'Inhoud gewijzigd: '.$this->page->url,
+            'message' => __('messages.page.in_app', ['url' => $this->page->url]),
             'url' => route('pages.show', $this->page, false),
             'severity' => 'info',
         ];

@@ -15,13 +15,15 @@ class LayoutTest extends TestCase
         $user = User::factory()->create();
 
         foreach (['/dashboard', '/alerts'] as $path) {
-            $this->actingAs($user)
+            $response = $this->actingAs($user)
                 ->get($path)
                 ->assertOk()
-                ->assertSee('css/serverscope.css', false)
                 ->assertSee('Hoofdnavigatie')
                 ->assertSee('Ingelogd als '.$user->email)
                 ->assertSee('Uitloggen');
+
+            // The shared stylesheet is the Vite build (approved change; css/serverscope.css is gone).
+            $this->assertMatchesRegularExpression('#build/assets/app-[A-Za-z0-9_-]+\.css#', $response->getContent());
         }
     }
 

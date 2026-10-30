@@ -96,7 +96,7 @@ class ServerController extends Controller
 
         return redirect()
             ->route('servers.show', $result['server'])
-            ->with('success', 'Server geregistreerd. Installeer de agent met het onderstaande token.')
+            ->with('success', __('servers.flash.registered'))
             ->with('agent_token', $result['token']);
     }
 
@@ -130,7 +130,7 @@ class ServerController extends Controller
 
         return redirect()
             ->route('servers.show', $server)
-            ->with('success', 'Servergegevens opgeslagen.');
+            ->with('success', __('servers.flash.saved'));
     }
 
     /**
@@ -150,7 +150,7 @@ class ServerController extends Controller
 
         return redirect()
             ->route('servers.index')
-            ->with('success', "Server {$server->name} is verwijderd. De agent kan geen metingen meer versturen; de geschiedenis blijft bewaard.");
+            ->with('success', __('servers.flash.deleted', ['name' => $server->name]));
     }
 
     public function restore(Server $server): RedirectResponse
@@ -163,7 +163,7 @@ class ServerController extends Controller
 
         return redirect()
             ->route('servers.show', $server)
-            ->with('success', 'Server hersteld. Alle eerdere agentcredentials zijn ingetrokken; genereer een nieuw token.');
+            ->with('success', __('servers.flash.restored'));
     }
 
     /**
@@ -178,7 +178,7 @@ class ServerController extends Controller
         $request->validate([
             'confirm_name' => ['required', 'string', Rule::in([$server->name])],
         ], [
-            'confirm_name.in' => 'Typ de exacte servernaam om permanent verwijderen te bevestigen.',
+            'confirm_name.in' => __('servers.flash.confirm_name'),
         ]);
 
         $name = $server->name;
@@ -190,6 +190,6 @@ class ServerController extends Controller
 
         return redirect()
             ->route('servers.index', ['status' => 'deleted'])
-            ->with('success', "Server {$name} en alle bijbehorende gegevens zijn permanent verwijderd.");
+            ->with('success', __('servers.flash.force_deleted', ['name' => $name]));
     }
 }

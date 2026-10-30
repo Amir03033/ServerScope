@@ -1,51 +1,48 @@
 @php
+    use App\Support\Label;
     use App\Support\Time;
 
     $u = $agentUpdate;
-    $updaterLabels = [
-        'active' => ['enabled', 'Updateprogramma actief'],
-        'disabled' => ['paused', 'Updates lokaal uitgeschakeld'],
-        'stale' => ['warning', 'Updateprogramma geen contact'],
-        'missing' => ['unknown', 'Updateprogramma niet gevonden'],
-    ];
-    [$updaterStatus, $updaterLabel] = $updaterLabels[$u['updater']];
+    $updaterStatus = ['active' => 'enabled', 'disabled' => 'paused', 'stale' => 'warning', 'missing' => 'unknown'][$u['updater']];
+    $updaterLabel = __('servers.updates.updater.'.$u['updater']);
     $requestStatus = [
         'pending' => 'queued', 'in_progress' => 'investigating', 'succeeded' => 'valid',
         'rolled_back' => 'failed', 'rejected' => 'invalid', 'failed' => 'failed', 'expired' => 'expired',
     ];
+    $code = fn (string $command) => '<code>'.e($command).'</code>';
 @endphp
 
-<section class="panel" id="agent-updates">
-    <div class="section-heading">
+<section class="ss-panel" id="agent-updates" aria-labelledby="agent-updates-title">
+    <div class="ss-panel-head">
         <div>
-            <h2>Agentupdates</h2>
-            <p>Alleen releases die zijn ondertekend met de releasesleutel van ServerScope worden geïnstalleerd; de server controleert de handtekening zelf. Mislukt een update, dan zet het updateprogramma de vorige versie terug.</p>
+            <h2 id="agent-updates-title" class="ss-panel-title">{{ __('servers.updates.title') }}</h2>
+            <p class="ss-panel-sub max-w-3xl">{{ __('servers.updates.text') }}</p>
         </div>
         <x-status :status="$updaterStatus" :label="$updaterLabel" />
     </div>
 
-    <dl class="dl" style="margin-top:10px">
-        <dt>Geïnstalleerde versie</dt><dd>{{ $u['installed'] ?? 'onbekend' }}</dd>
-        <dt>Nieuwste versie</dt><dd>{{ $u['latest']?->version ?? 'nog geen release beschikbaar' }}</dd>
-        <dt>Updateprogramma</dt>
+    <dl class="ss-dl">
+        <dt>{{ __('servers.updates.installed') }}</dt><dd class="font-mono text-xs">{{ $u['installed'] ?? __('servers.unknown') }}</dd>
+        <dt>{{ __('servers.updates.latest') }}</dt><dd class="font-mono text-xs">{{ $u['latest']?->version ?? __('servers.updates.no_release') }}</dd>
+        <dt>{{ __('servers.updates.updater_label') }}</dt>
         <dd>
             @switch($u['updater'])
-                @case('active') Actief (versie {{ $server->updater_version }}), laatste controle {{ Time::relative($server->updater_last_seen_at) }}. @break
-                @case('disabled') Updates zijn op de server zelf uitgeschakeld (lokaal uitgeschakeld); ServerScope kan dat niet overrulen. Weer aanzetten op de server: <code>sudo bash serverscope-install.sh --enable-updates</code> @break
-                @case('stale') Geen contact sinds {{ Time::relative($server->updater_last_seen_at) }}. Controleer op de server: <code>systemctl status serverscope-updater.timer</code> @break
-                @default Niet gevonden. Servers met agent 0.2.0 of een handmatige installatie hebben nog geen updateprogramma: draai install.sh opnieuw op de server (<code>sudo bash serverscope-install.sh</code>, het commando staat onder Servers → Server toevoegen). Er wordt geen nieuwe server aangemaakt.
+                @case('active') {{ __('servers.updates.updater_active', ['version' => $server->updater_version, 'time' => Time::relative($server->updater_last_seen_at)]) }} @break
+                @case('disabled') {!! __('servers.updates.updater_disabled', ['command' => $code('sudo bash serverscope-install.sh --enable-updates')]) !!} @break
+                @case('stale') {!! __('servers.updates.updater_stale', ['time' => e(Time::relative($server->updater_last_seen_at)), 'command' => $code('systemctl status serverscope-updater.timer')]) !!} @break
+                @default {!! __('servers.updates.updater_missing', ['command' => $code('sudo bash serverscope-install.sh')]) !!}
             @endswitch
         </dd>
-        <dt>Automatisch bijwerken</dt><dd>{{ $server->auto_update_enabled ? 'Aan' : 'Uit' }}</dd>
+        <dt>{{ __('servers.updates.auto') }}</dt><dd>{{ $server->auto_update_enabled ? __('servers.updates.on') : __('servers.updates.off') }}</dd>
         @if ($u['request'])
-            <dt>Laatste update</dt>
+            <dt>{{ __('servers.updates.last_update') }}</dt>
             <dd>
-                <x-status :status="$requestStatus[$u['request']->status] ?? 'unknown'" :label="$u['request']->statusLabel()" />
-                {{ $u['request']->from_version ?? '?' }} → {{ $u['request']->target_version }}
-                @if ($u['request']->reasonLabel()) ({{ $u['request']->reasonLabel() }}) @endif
-                <span class="cell-sub">
-                    {{ $u['request']->source === 'auto' ? 'Automatisch' : 'Aangevraagd door '.($u['request']->requester?->name ?? 'onbekend') }},
-                    {{ Time::relative($u['request']->created_at) }}@if ($u['request']->finished_at), afgerond {{ Time::relative($u['request']->finished_at) }}@endif
+                <x-status :status="$requestStatus[$u['request']->status] ?? 'unknown'" :label="Label::of('update_status', $u['request']->status, \App\Models\AgentUpdateRequest::STATUS_LABELS)" />
+                <span class="font-mono text-xs">{{ $u['request']->from_version ?? '?' }} → {{ $u['request']->target_version }}</span>
+                @if ($u['request']->reason) ({{ Label::of('update_reason', $u['request']->reason, \App\Models\AgentUpdateRequest::REASONS + \App\Models\AgentUpdateRequest::SERVER_REASONS) }}) @endif
+                <span class="block text-xs text-muted">
+                    {{ $u['request']->source === 'auto' ? __('servers.updates.automatic') : __('servers.updates.requested_by', ['name' => $u['request']->requester?->name ?? __('servers.unknown')]) }},
+                    {{ Time::relative($u['request']->created_at) }}@if ($u['request']->finished_at), {{ __('servers.updates.finished', ['time' => Time::relative($u['request']->finished_at)]) }}@endif
                 </span>
             </dd>
         @endif
@@ -53,21 +50,21 @@
 
     @can('admin')
         @unless ($server->trashed())
-            <div class="row-actions">
+            <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
                 @if ($u['blocker'] === null && ! $u['request']?->isOpen())
-                    <form method="POST" action="{{ route('servers.agent-update', $server) }}" data-confirm="De agent op {{ $server->name }} bijwerken naar {{ $u['latest']->version }}? De agent herstart even.">
+                    <form method="POST" action="{{ route('servers.agent-update', $server) }}" data-confirm="{{ __('servers.updates.update_confirm', ['name' => $server->name, 'version' => $u['latest']->version]) }}">
                         @csrf
-                        <button class="button button-primary" type="submit">Bijwerken naar {{ $u['latest']->version }}</button>
+                        <button class="ss-btn ss-btn-primary" type="submit"><svg class="ico"><use href="#i-refresh"/></svg> {{ __('servers.updates.update_to', ['version' => $u['latest']->version]) }}</button>
                     </form>
                 @elseif ($u['blocker'] && $u['latest'] && $u['latest']->isNewerThan($u['installed']))
-                    <span class="small muted">{{ $u['blocker'] }}</span>
+                    <span class="text-sm text-muted">{{ $u['blocker'] }}</span>
                 @endif
 
-                <form method="POST" action="{{ route('servers.auto-update', $server) }}">
+                <form method="POST" action="{{ route('servers.auto-update', $server) }}" class="ml-auto">
                     @csrf
                     @method('PUT')
                     <input type="hidden" name="enabled" value="{{ $server->auto_update_enabled ? '0' : '1' }}">
-                    <button class="button" type="submit">{{ $server->auto_update_enabled ? 'Automatisch bijwerken uitzetten' : 'Automatisch bijwerken aanzetten' }}</button>
+                    <button class="ss-btn ss-btn-secondary" type="submit">{{ $server->auto_update_enabled ? __('servers.updates.auto_off') : __('servers.updates.auto_on') }}</button>
                 </form>
             </div>
         @endunless

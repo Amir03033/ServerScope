@@ -1,0 +1,46 @@
+<?php
+
+// Dependencies between monitored resources.
+return [
+    'title' => 'Afhankelijkheden',
+    'subtitle' => 'Welke resources van elkaar afhangen, bijvoorbeeld server → Nginx → website → MySQL. Bevestigde afhankelijkheden worden gebruikt om gerelateerde incidenten te groeperen.',
+    'add_title' => 'Afhankelijkheid toevoegen',
+    'add_text' => 'Lees als: :resource werkt alleen als :dependency werkt. Pagina\'s horen automatisch bij hun website en services bij hun server.',
+    'resource_word' => 'resource',
+    'dependency_word' => 'afhankelijkheid',
+    'no_resources_title' => 'Nog geen resources',
+    'no_resources_text' => 'Voeg eerst servers of domeinen toe.',
+    'resource' => 'Resource *',
+    'depends_on' => 'Hangt af van *',
+    'choose' => 'Kies…',
+    'label' => 'Omschrijving',
+    'label_placeholder' => 'bijv. draait op, gebruikt database',
+    'notes' => 'Notities',
+    'submit' => 'Vastleggen',
+    'confirmed_title' => 'Bevestigde afhankelijkheden',
+    'empty_title' => 'Nog geen afhankelijkheden',
+    'empty_text' => 'Zonder afhankelijkheden worden incidenten van verschillende resources nooit gegroepeerd, ook niet als ze tegelijk optreden. Op de detailpagina van een domein of server zie je voorgestelde relaties (bijv. via het IP-adres).',
+    'col_resource' => 'Resource',
+    'col_depends_on' => 'Hangt af van',
+    'col_label' => 'Omschrijving',
+    'col_created' => 'Vastgelegd',
+    'col_actions' => 'Acties',
+    'delete_confirm' => 'Afhankelijkheid verwijderen?',
+    'delete' => 'Verwijderen',
+    'suggest_upstream' => ':domain verwijst in DNS naar :ip, het IP-adres van :server.',
+    'suggest_downstream' => ':domain verwijst in DNS naar :ip, het IP-adres van deze server.',
+    'validation' => [
+        'self' => 'Een resource kan niet van zichzelf afhangen.',
+        'unknown' => 'Onbekende resource.',
+        'cycle' => 'Deze afhankelijkheid zou een kringverwijzing maken.',
+    ],
+    'attributes' => [
+        'dependent' => 'afhankelijke resource',
+        'dependency' => 'afhankelijkheid',
+    ],
+    'flash' => [
+        'exists' => 'Deze afhankelijkheid bestaat al.',
+        'created' => 'Afhankelijkheid vastgelegd. Incidenten van :dependent kunnen nu worden gegroepeerd onder storingen van :dependency.',
+        'deleted' => 'Afhankelijkheid verwijderd.',
+    ],
+];

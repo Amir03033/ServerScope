@@ -1,109 +1,149 @@
 @php
+    use App\Models\AlertRule;
+    use App\Models\Incident;
+    use App\Models\IncidentEvent;
+    use App\Models\MonitoredPage;
+    use App\Services\Dependencies\ResourceCatalog;
     use App\Services\Incidents\IncidentMetrics;
+    use App\Support\Format;
+    use App\Support\Label;
+    use App\Support\Severity;
+    use App\Support\StatusLabel;
     use App\Support\Time;
 
     $subject = $incident->subject;
     $isAdmin = auth()->user()->can('admin');
-    $eventColor = fn (string $type) => match ($type) {
-        'opened', 'reopened', 'escalated', 'severity_changed' => 'var(--red)',
-        'recovered', 'resolved', 'resource_recovered' => 'var(--green)',
-        'correlated', 'child_added', 'detached', 'resource_affected' => 'var(--purple)',
-        'acknowledged', 'investigating' => 'var(--yellow)',
-        'comment' => 'var(--cyan)',
-        default => 'var(--muted)',
+    $eventTone = fn (string $type) => match ($type) {
+        'opened', 'reopened', 'escalated', 'severity_changed' => 'is-bad',
+        'recovered', 'resolved', 'resource_recovered' => 'is-ok',
+        'acknowledged', 'investigating' => 'is-warn',
+        'correlated', 'child_added', 'detached', 'resource_affected', 'comment' => 'is-info',
+        default => null,
     };
+    $typeLabel = fn (?string $type) => Label::of('resource_type', $type, ResourceCatalog::TYPES);
+    $impactFailure = fn (?string $type) => Lang::has('incidents.show.impact_failure.'.$type)
+        ? __('incidents.show.impact_failure.'.$type)
+        : (array_key_exists($type, MonitoredPage::FAILURE_LABELS) ? Label::of('page_failure', $type, MonitoredPage::FAILURE_LABELS) : str_replace('_', ' ', $type));
+
+    // Status bar: the lifecycle in order, the current step highlighted.
+    $steps = Incident::STATUSES;
+    $current = array_search($incident->status, $steps, true);
+    $actions = array_filter(['acknowledged', 'investigating'], fn ($target) => $incident->canTransitionTo($target));
 @endphp
 
-<x-layouts.app :title="'Incident #'.$incident->id">
-    <x-slot:breadcrumb><span>›</span> <a href="{{ route('incidents.index') }}">Incidenten</a> <span>›</span> #{{ $incident->id }}</x-slot:breadcrumb>
+<x-layouts.app :title="__('incidents.show.title', ['id' => $incident->id])">
+    <x-slot:breadcrumb><span>›</span> <a href="{{ route('incidents.index') }}">{{ __('incidents.title') }}</a> <span>›</span> #{{ $incident->id }}</x-slot:breadcrumb>
     <x-slot:pageTitle>{{ $incident->title }}</x-slot:pageTitle>
-    <x-slot:subtitle>{{ $incident->sourceLabel() }} · geopend {{ Time::format($incident->opened_at, 'd-m-Y H:i:s') }}</x-slot:subtitle>
+    <x-slot:subtitle>{{ __('incidents.show.subtitle', ['source' => Label::of('incident_source', $incident->source, Incident::SOURCE_LABELS), 'date' => Time::dateTimeSeconds($incident->opened_at)]) }}</x-slot:subtitle>
     <x-slot:actions>
-        <a href="{{ route('incidents.index') }}" class="button"><svg class="ico"><use href="#i-arrow-left"/></svg> Overzicht</a>
-        @foreach (['acknowledged' => ['Bevestigen', 'button-warning'], 'investigating' => ['Onderzoek starten', ''], 'resolved' => ['Oplossen', 'button-primary']] as $target => [$label, $class])
-            @if ($incident->canTransitionTo($target) && $target !== 'resolved')
-                <form method="POST" action="{{ route('incidents.transition', $incident) }}" class="inline-form">
-                    @csrf
-                    <input type="hidden" name="status" value="{{ $target }}">
-                    <button type="submit" class="button {{ $class }}">{{ $label }}</button>
-                </form>
-            @endif
-        @endforeach
-        @if ($isAdmin && $incident->canTransitionTo('open'))
-            <form method="POST" action="{{ route('incidents.transition', $incident) }}" class="inline-form">
-                @csrf <input type="hidden" name="status" value="open">
-                <button type="submit" class="button">Heropenen</button>
-            </form>
-        @endif
+        <a href="{{ route('incidents.index') }}" class="ss-btn ss-btn-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('incidents.overview') }}</a>
     </x-slot:actions>
 
-    <div class="grid-2 split">
-        <div class="stack">
-            <section class="panel">
-                <div class="section-heading">
-                    <div><h2>Samenvatting</h2></div>
-                    <div class="actions"><x-severity :severity="$incident->severity" /><x-status :status="$incident->status" /></div>
+    {{-- Status bar with the actions that are possible now (directly under it on mobile). --}}
+    <section class="ss-panel mb-4 grid gap-4">
+        <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+            <x-severity :severity="$incident->severity" />
+            <ol class="ss-progress min-w-0" aria-label="{{ __('incidents.show.progress_label') }}">
+                @foreach ($steps as $index => $step)
+                    <li @class(['is-done' => $current !== false && $index < $current]) @if ($index === $current) aria-current="step" @endif>{{ StatusLabel::for($step) }}</li>
+                @endforeach
+            </ol>
+        </div>
+        @if ($actions !== [] || $incident->canTransitionTo('resolved') || ($isAdmin && $incident->canTransitionTo('open')))
+        <div class="flex flex-wrap gap-2 border-t border-line pt-4">
+            @foreach ($actions as $target)
+                <form method="POST" action="{{ route('incidents.transition', $incident) }}">
+                    @csrf
+                    <input type="hidden" name="status" value="{{ $target }}">
+                    <button type="submit" @class(['ss-btn', 'ss-btn-primary' => $loop->first, 'ss-btn-secondary' => ! $loop->first])>{{ __('incidents.show.actions.'.$target) }}</button>
+                </form>
+            @endforeach
+            @if ($incident->canTransitionTo('resolved'))
+                <a href="#resolve" @class(['ss-btn', 'ss-btn-primary' => $actions === [], 'ss-btn-secondary' => $actions !== []])><svg class="ico"><use href="#i-check"/></svg> {{ __('incidents.show.resolve_title') }}</a>
+            @endif
+            @if ($isAdmin && $incident->canTransitionTo('open'))
+                <form method="POST" action="{{ route('incidents.transition', $incident) }}">
+                    @csrf <input type="hidden" name="status" value="open">
+                    <button type="submit" class="ss-btn ss-btn-secondary">{{ __('incidents.show.actions.reopen') }}</button>
+                </form>
+            @endif
+        </div>
+        @endif
+    </section>
+
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        <div class="grid min-w-0 gap-4">
+            <section class="ss-panel" aria-labelledby="summary-title">
+                <div class="ss-panel-head">
+                    <div><h2 id="summary-title" class="ss-panel-title">{{ __('incidents.show.summary') }}</h2></div>
+                    <x-status :status="$incident->status" />
                 </div>
                 @if ($incident->description)
-                    <p style="margin:0 0 12px;white-space:pre-line">{{ $incident->description }}</p>
+                    <p class="mt-0 mb-3 whitespace-pre-line">{{ $incident->description }}</p>
                 @endif
-                <dl class="dl">
-                    <dt>Betreft</dt>
+                <dl class="ss-dl">
+                    <dt>{{ __('incidents.show.subject') }}</dt>
                     <dd>
                         @if ($subject)
-                            @php $subjectUrl = \App\Services\Dependencies\ResourceCatalog::url($subject); @endphp
-                            @if ($subjectUrl)<a href="{{ $subjectUrl }}">{{ \App\Services\Dependencies\ResourceCatalog::name($subject) }}</a>@else{{ \App\Services\Dependencies\ResourceCatalog::name($subject) }}@endif
-                            <span class="muted">({{ mb_strtolower(\App\Services\Dependencies\ResourceCatalog::typeLabel($incident->subject_type)) }})</span>
+                            @php $subjectUrl = ResourceCatalog::url($subject); @endphp
+                            @if ($subjectUrl)<a class="text-accent" href="{{ $subjectUrl }}">{{ ResourceCatalog::name($subject) }}</a>@else{{ ResourceCatalog::name($subject) }}@endif
+                            <span class="text-muted">({{ mb_strtolower($typeLabel($incident->subject_type)) }})</span>
                         @else
                             —
                         @endif
                     </dd>
                     @if ($incident->started_at && $incident->started_at->lt($incident->opened_at))
-                        <dt>Probleem begonnen</dt><dd>{{ Time::format($incident->started_at, 'd-m-Y H:i:s') }} <span class="muted">(eerste mislukte controle of meting)</span></dd>
+                        <dt>{{ __('incidents.show.started') }}</dt><dd>{{ Time::dateTimeSeconds($incident->started_at) }} <span class="text-muted">{{ __('incidents.show.started_hint') }}</span></dd>
                     @endif
-                    <dt>Gedetecteerd</dt><dd>{{ Time::format($incident->opened_at, 'd-m-Y H:i:s') }}@if ($incident->timeToDetect() !== null) <span class="muted">(detectietijd {{ IncidentMetrics::humanDuration($incident->timeToDetect()) }})</span>@endif</dd>
-                    <dt>Laatst waargenomen</dt><dd>{{ Time::format($incident->last_occurrence_at, 'd-m-Y H:i:s') }} ({{ $incident->occurrence_count }}× in totaal)</dd>
-                    <dt>Bevestigd</dt><dd>{{ $incident->acknowledged_at ? Time::format($incident->acknowledged_at, 'd-m-Y H:i:s').' door '.($incident->acknowledger?->name ?? 'onbekend').' (na '.IncidentMetrics::humanDuration($incident->timeToAcknowledge()).')' : '—' }}</dd>
-                    <dt>Opgelost</dt><dd>{{ $incident->resolved_at ? Time::format($incident->resolved_at, 'd-m-Y H:i:s').' — '.($incident->resolver?->name ?? 'automatisch hersteld').' (na '.IncidentMetrics::humanDuration($incident->timeToResolve()).')' : '—' }}</dd>
-                    @if ($incident->closed_at)<dt>Gesloten</dt><dd>{{ Time::format($incident->closed_at, 'd-m-Y H:i:s') }}</dd>@endif
-                    @if ($incident->reopened_count)<dt>Heropend</dt><dd>{{ $incident->reopened_count }}×</dd>@endif
-                    <dt>Herhaling</dt><dd>{{ $recurrence['last_30d'] }}× in 30 dagen · {{ $recurrence['total'] }}× in totaal voor dit probleem</dd>
-                    @if ($incident->resolution_notes)<dt>Oplossing</dt><dd style="white-space:pre-line">{{ $incident->resolution_notes }}</dd>@endif
-                    <dt>Fingerprint</dt><dd class="mono small">{{ $incident->fingerprint }}</dd>
+                    <dt>{{ __('incidents.show.detected') }}</dt><dd>{{ Time::dateTimeSeconds($incident->opened_at) }}@if ($incident->timeToDetect() !== null) <span class="text-muted">{{ __('incidents.show.detect_time', ['duration' => IncidentMetrics::humanDuration($incident->timeToDetect())]) }}</span>@endif</dd>
+                    <dt>{{ __('incidents.show.last_seen') }}</dt><dd>{{ __('incidents.show.last_seen_value', ['date' => Time::dateTimeSeconds($incident->last_occurrence_at), 'count' => $incident->occurrence_count]) }}</dd>
+                    <dt>{{ __('incidents.show.acknowledged') }}</dt><dd>{{ $incident->acknowledged_at ? __('incidents.show.acknowledged_value', ['date' => Time::dateTimeSeconds($incident->acknowledged_at), 'name' => $incident->acknowledger?->name ?? __('incidents.unknown'), 'duration' => IncidentMetrics::humanDuration($incident->timeToAcknowledge())]) : '—' }}</dd>
+                    <dt>{{ __('incidents.show.resolved') }}</dt><dd>{{ $incident->resolved_at ? __('incidents.show.resolved_value', ['date' => Time::dateTimeSeconds($incident->resolved_at), 'name' => $incident->resolver?->name ?? __('incidents.show.auto_recovered'), 'duration' => IncidentMetrics::humanDuration($incident->timeToResolve())]) : '—' }}</dd>
+                    @if ($incident->closed_at)<dt>{{ __('incidents.show.closed') }}</dt><dd>{{ Time::dateTimeSeconds($incident->closed_at) }}</dd>@endif
+                    @if ($incident->reopened_count)<dt>{{ __('incidents.show.reopened') }}</dt><dd>{{ $incident->reopened_count }}×</dd>@endif
+                    <dt>{{ __('incidents.show.recurrence') }}</dt><dd>{{ __('incidents.show.recurrence_value', ['last30' => $recurrence['last_30d'], 'total' => $recurrence['total']]) }}</dd>
+                    @if ($incident->resolution_notes)<dt>{{ __('incidents.show.resolution') }}</dt><dd class="whitespace-pre-line">{{ $incident->resolution_notes }}</dd>@endif
+                    <dt>{{ __('incidents.show.fingerprint') }}</dt><dd class="font-mono text-xs">{{ $incident->fingerprint }}</dd>
                 </dl>
             </section>
 
             @if ($incident->parent)
-                <section class="panel">
-                    <div class="section-heading">
-                        <div><h2>Gegroepeerd</h2><p>Dit incident valt onder <a href="{{ route('incidents.show', $incident->parent) }}">incident #{{ $incident->parent->id }}: {{ $incident->parent->title }}</a> (<x-status :status="$incident->parent->status" />). Zolang dat incident actief is, gaan meldingen via dat incident.</p></div>
+                <section class="ss-panel" aria-labelledby="grouped-title">
+                    <div class="ss-panel-head">
+                        <div>
+                            <h2 id="grouped-title" class="ss-panel-title">{{ __('incidents.show.grouped_title') }}</h2>
+                            <p class="ss-panel-sub">{!! __('incidents.show.grouped_text', [
+                                'link' => '<a class="text-accent" href="'.e(route('incidents.show', $incident->parent)).'">'.e(__('incidents.show.grouped_link', ['id' => $incident->parent->id, 'title' => $incident->parent->title])).'</a>',
+                                'status' => e(StatusLabel::for($incident->parent->status)),
+                            ]) !!}</p>
+                        </div>
                         @if ($isAdmin)
-                            <form method="POST" action="{{ route('incidents.detach', $incident) }}" class="inline-form" data-confirm="Groepering opheffen? Dit incident krijgt dan weer eigen meldingen.">
+                            <form method="POST" action="{{ route('incidents.detach', $incident) }}" data-confirm="{{ __('incidents.show.detach_confirm') }}">
                                 @csrf
-                                <button class="button button-sm" type="submit">Loskoppelen</button>
+                                <button class="ss-btn ss-btn-secondary ss-btn-sm" type="submit">{{ __('incidents.show.detach') }}</button>
                             </form>
                         @endif
                     </div>
                     @if ($incident->correlation['reason'] ?? null)
-                        <p class="small" style="margin:0"><strong>Reden:</strong> {{ $incident->correlation['reason'] }}</p>
+                        <p class="m-0 text-sm"><strong>{{ __('incidents.show.reason') }}</strong> {{ $incident->correlation['reason'] }}</p>
                     @endif
-                    <p class="muted small" style="margin:8px 0 0">Groepering op basis van een bevestigde afhankelijkheid of dezelfde resource; het is geen bewijs dat de oorzaak vaststaat.</p>
+                    <p class="mt-2 mb-0 text-xs text-muted">{{ __('incidents.show.grouped_note') }}</p>
                 </section>
             @endif
 
             @if ($incident->children->isNotEmpty())
-                <section class="panel">
-                    <div class="section-heading"><div><h2>Gerelateerde incidenten ({{ $incident->children->count() }})</h2><p>Gegroepeerd onder dit incident op basis van bevestigde afhankelijkheden. Ze herstellen elk op basis van hun eigen controles.</p></div></div>
-                    <div class="table-wrap">
-                        <table class="data-table">
-                            <thead><tr><th>Incident</th><th>Betreft</th><th>Status</th><th>Geopend</th></tr></thead>
+                <section class="ss-panel" aria-labelledby="children-title">
+                    <div class="ss-panel-head"><div><h2 id="children-title" class="ss-panel-title">{{ __('incidents.show.children_title', ['count' => $incident->children->count()]) }}</h2><p class="ss-panel-sub">{{ __('incidents.show.children_text') }}</p></div></div>
+                    <div class="ss-table-wrap">
+                        <table class="ss-table ss-table-cards">
+                            <thead><tr><th scope="col">{{ __('incidents.show.col_incident') }}</th><th scope="col">{{ __('incidents.show.col_subject') }}</th><th scope="col">{{ __('incidents.show.col_status') }}</th><th scope="col">{{ __('incidents.show.col_opened') }}</th></tr></thead>
                             <tbody>
                                 @foreach ($incident->children as $child)
                                     <tr>
-                                        <td><a class="row-link" href="{{ route('incidents.show', $child) }}">#{{ $child->id }} {{ $child->title }}</a><span class="cell-sub">{{ $child->correlation['reason'] ?? '' }}</span></td>
-                                        <td>{{ $child->subjectName() }}</td>
-                                        <td><x-status :status="$child->status" /></td>
-                                        <td class="nowrap">{{ Time::format($child->opened_at) }}</td>
+                                        <td class="is-primary"><a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('incidents.show', $child) }}">#{{ $child->id }} {{ $child->title }}</a><span class="block text-xs text-muted">{{ $child->correlation['reason'] ?? '' }}</span></td>
+                                        <td data-label="{{ __('incidents.show.col_subject') }}">{{ $child->subjectName() }}</td>
+                                        <td data-label="{{ __('incidents.show.col_status') }}"><x-status :status="$child->status" /></td>
+                                        <td data-label="{{ __('incidents.show.col_opened') }}" class="whitespace-nowrap">{{ Time::dateTime($child->opened_at) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -114,24 +154,24 @@
 
             @if ($incident->impacts->isNotEmpty())
                 @php $failingImpacts = $incident->impacts->where('status', 'failing')->count(); @endphp
-                <section class="panel">
-                    <div class="section-heading"><div><h2>Getroffen resources</h2><p>{{ $failingImpacts }} van {{ $incident->impacts->count() }} nog niet hersteld. Details per resource blijven bewaard.</p></div></div>
-                    <div class="table-wrap">
-                        <table class="data-table">
-                            <thead><tr><th>Resource</th><th>Rol</th><th>Fouttype</th><th>Status</th><th>Eerst mislukt</th><th>Hersteld</th></tr></thead>
+                <section class="ss-panel" aria-labelledby="impacts-title">
+                    <div class="ss-panel-head"><div><h2 id="impacts-title" class="ss-panel-title">{{ __('incidents.show.impacts_title') }}</h2><p class="ss-panel-sub">{{ __('incidents.show.impacts_text', ['failing' => $failingImpacts, 'total' => $incident->impacts->count()]) }}</p></div></div>
+                    <div class="ss-table-wrap">
+                        <table class="ss-table ss-table-cards">
+                            <thead><tr><th scope="col">{{ __('incidents.show.col_resource') }}</th><th scope="col">{{ __('incidents.show.col_role') }}</th><th scope="col">{{ __('incidents.show.col_failure') }}</th><th scope="col">{{ __('incidents.show.col_status') }}</th><th scope="col">{{ __('incidents.show.col_first_failed') }}</th><th scope="col">{{ __('incidents.show.col_recovered') }}</th></tr></thead>
                             <tbody>
                                 @foreach ($incident->impacts->sortByDesc(fn ($i) => $i->status === 'failing') as $impact)
-                                    @php $impactUrl = \App\Services\Dependencies\ResourceCatalog::url($impact->resource); @endphp
+                                    @php $impactUrl = ResourceCatalog::url($impact->resource); @endphp
                                     <tr>
-                                        <td>
-                                            @if ($impactUrl)<a class="row-link" href="{{ $impactUrl }}">{{ \App\Services\Dependencies\ResourceCatalog::name($impact->resource) }}</a>@else{{ \App\Services\Dependencies\ResourceCatalog::name($impact->resource) }}@endif
-                                            <span class="cell-sub">{{ \App\Services\Dependencies\ResourceCatalog::typeLabel($impact->resource_type) }}@if ($impact->message) · {{ $impact->message }}@endif</span>
+                                        <td class="is-primary">
+                                            @if ($impactUrl)<a class="font-semibold text-fg no-underline hover:text-accent" href="{{ $impactUrl }}">{{ ResourceCatalog::name($impact->resource) }}</a>@else{{ ResourceCatalog::name($impact->resource) }}@endif
+                                            <span class="block text-xs text-muted">{{ $typeLabel($impact->resource_type) }}@if ($impact->message) · {{ $impact->message }}@endif</span>
                                         </td>
-                                        <td>{{ $impact->role === 'cause' ? 'Oorzaak' : 'Getroffen' }}</td>
-                                        <td>{{ $impact->failure_type ? (['availability' => 'Beschikbaarheid', 'server_error' => 'Serverfout (5xx)', ...\App\Models\MonitoredPage::FAILURE_LABELS][$impact->failure_type] ?? str_replace('_', ' ', $impact->failure_type)) : '—' }}</td>
-                                        <td><x-status :status="$impact->status === 'failing' ? 'down' : 'up'" :label="$impact->status === 'failing' ? 'Faalt' : 'Hersteld'" /></td>
-                                        <td class="nowrap">{{ Time::format($impact->first_failed_at) }}</td>
-                                        <td class="nowrap">{{ Time::format($impact->recovered_at) }}</td>
+                                        <td data-label="{{ __('incidents.show.col_role') }}">{{ $impact->role === 'cause' ? __('incidents.show.role_cause') : __('incidents.show.role_affected') }}</td>
+                                        <td data-label="{{ __('incidents.show.col_failure') }}">{{ $impact->failure_type ? $impactFailure($impact->failure_type) : '—' }}</td>
+                                        <td data-label="{{ __('incidents.show.col_status') }}"><x-status :status="$impact->status === 'failing' ? 'down' : 'up'" :label="$impact->status === 'failing' ? __('incidents.show.impact_failing') : __('incidents.show.impact_recovered')" /></td>
+                                        <td data-label="{{ __('incidents.show.col_first_failed') }}" class="whitespace-nowrap">{{ Time::dateTime($impact->first_failed_at) }}</td>
+                                        <td data-label="{{ __('incidents.show.col_recovered') }}" class="whitespace-nowrap">{{ Time::dateTime($impact->recovered_at) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -140,41 +180,39 @@
                 </section>
             @endif
 
-            <section class="panel">
-                <div class="section-heading"><div><h2>Tijdlijn</h2><p>Alle gebeurtenissen en notities, oudste eerst.</p></div></div>
-                <ul class="timeline">
+            <section class="ss-panel" id="timeline" aria-labelledby="timeline-title">
+                <div class="ss-panel-head"><div><h2 id="timeline-title" class="ss-panel-title">{{ __('incidents.show.timeline_title') }}</h2><p class="ss-panel-sub">{{ __('incidents.show.timeline_text') }}</p></div></div>
+                <ul class="ss-timeline">
                     @foreach ($incident->events as $event)
-                        <li style="--c: {{ $eventColor($event->type) }}">
-                            <div class="when">{{ Time::format($event->created_at, 'd-m-Y H:i:s') }} · {{ $event->user?->name ?? 'Systeem' }}</div>
-                            <div class="what"><strong>{{ $event->label() }}</strong></div>
-                            @if ($event->message)<div class="body">{{ $event->message }}</div>@endif
+                        <li @class([$eventTone($event->type)])>
+                            <div class="ss-timeline-when"><time datetime="{{ $event->created_at?->toIso8601String() }}">{{ Time::dateTimeSeconds($event->created_at) }}</time> · {{ $event->user?->name ?? __('incidents.system') }}</div>
+                            <div class="ss-timeline-what"><strong>{{ Label::of('incident_event', $event->type, IncidentEvent::TYPE_LABELS) }}</strong></div>
+                            @if ($event->message)<div class="ss-timeline-body whitespace-pre-line text-fg">{{ $event->message }}</div>@endif
                         </li>
                     @endforeach
                 </ul>
 
-                <form method="POST" action="{{ route('incidents.comment', $incident) }}" style="margin-top:18px">
+                <form method="POST" action="{{ route('incidents.comment', $incident) }}" class="mt-6 border-t border-line pt-5">
                     @csrf
-                    <div class="form-field">
-                        <label for="message">Notitie of onderzoeksbevinding</label>
-                        <textarea id="message" name="message" maxlength="5000" required placeholder="Wat heb je gevonden of gedaan?">{{ old('message') }}</textarea>
-                    </div>
-                    <div class="form-footer" style="margin-top:12px;padding-top:12px"><button class="button" type="submit"><svg class="ico"><use href="#i-message"/></svg> Notitie toevoegen</button></div>
+                    <label class="ss-label" for="message">{{ __('incidents.show.note_label') }}</label>
+                    <textarea id="message" class="ss-input mt-1.5 min-h-24" name="message" maxlength="5000" required placeholder="{{ __('incidents.show.note_placeholder') }}">{{ old('message') }}</textarea>
+                    <div class="mt-3"><button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-message"/></svg> {{ __('incidents.show.note_submit') }}</button></div>
                 </form>
             </section>
 
             @if ($checks->isNotEmpty())
-                <section class="panel">
-                    <div class="section-heading"><div><h2>Mislukte controles</h2><p>Gerelateerde monitoringgebeurtenissen rond dit incident.</p></div></div>
-                    <div class="table-wrap">
-                        <table class="data-table">
-                            <thead><tr><th>Tijdstip</th><th>Type</th><th>Resultaat</th><th>Melding</th></tr></thead>
+                <section class="ss-panel" aria-labelledby="checks-title">
+                    <div class="ss-panel-head"><div><h2 id="checks-title" class="ss-panel-title">{{ __('incidents.show.checks_title') }}</h2><p class="ss-panel-sub">{{ __('incidents.show.checks_text') }}</p></div></div>
+                    <div class="ss-table-wrap">
+                        <table class="ss-table ss-table-cards">
+                            <thead><tr><th scope="col">{{ __('incidents.show.col_time') }}</th><th scope="col">{{ __('incidents.show.col_type') }}</th><th scope="col">{{ __('incidents.show.col_result') }}</th><th scope="col">{{ __('incidents.show.col_message') }}</th></tr></thead>
                             <tbody>
                                 @foreach ($checks as $check)
                                     <tr>
-                                        <td class="nowrap">{{ Time::format($check->checked_at, 'd-m-Y H:i:s') }}</td>
-                                        <td><span class="chip">{{ strtoupper($check->type) }}</span></td>
-                                        <td>{{ str_replace('_', ' ', $check->result) }}@if ($check->http_status_code) ({{ $check->http_status_code }})@endif</td>
-                                        <td class="small break">{{ $check->message }}</td>
+                                        <td class="is-primary whitespace-nowrap">{{ Time::dateTimeSeconds($check->checked_at) }}</td>
+                                        <td data-label="{{ __('incidents.show.col_type') }}"><span class="ss-chip">{{ strtoupper($check->type) }}</span></td>
+                                        <td data-label="{{ __('incidents.show.col_result') }}">{{ str_replace('_', ' ', $check->result) }}@if ($check->http_status_code) ({{ $check->http_status_code }})@endif</td>
+                                        <td data-label="{{ __('incidents.show.col_message') }}" class="text-xs [overflow-wrap:anywhere]">{{ $check->message }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -184,19 +222,19 @@
             @endif
 
             @if ($incident->alerts->isNotEmpty())
-                <section class="panel">
-                    <div class="section-heading"><div><h2>Gekoppelde alerts</h2></div></div>
-                    <div class="table-wrap">
-                        <table class="data-table">
-                            <thead><tr><th>Server</th><th>Metric</th><th class="num">Waarde</th><th>Status</th><th>Geactiveerd</th></tr></thead>
+                <section class="ss-panel" aria-labelledby="alerts-title">
+                    <div class="ss-panel-head"><div><h2 id="alerts-title" class="ss-panel-title">{{ __('incidents.show.alerts_title') }}</h2></div></div>
+                    <div class="ss-table-wrap">
+                        <table class="ss-table ss-table-cards">
+                            <thead><tr><th scope="col">{{ __('incidents.show.col_server') }}</th><th scope="col">{{ __('incidents.show.col_metric') }}</th><th scope="col" class="num">{{ __('incidents.show.col_value') }}</th><th scope="col">{{ __('incidents.show.col_status') }}</th><th scope="col">{{ __('incidents.show.col_triggered') }}</th></tr></thead>
                             <tbody>
                                 @foreach ($incident->alerts as $alert)
                                     <tr>
-                                        <td>{{ $alert->server?->name ?? '—' }}</td>
-                                        <td>{{ \App\Models\AlertRule::metricLabel($alert->metric) }}@if ($alert->dimension) · {{ $alert->dimension }}@endif</td>
-                                        <td class="num">{{ number_format($alert->observed_value, 1, ',', '.') }}{{ \App\Models\AlertRule::metricUnit($alert->metric) }}</td>
-                                        <td>{{ $alert->status }}</td>
-                                        <td class="nowrap">{{ Time::format($alert->triggered_at) }}</td>
+                                        <td class="is-primary">{{ $alert->server?->name ?? '—' }}</td>
+                                        <td data-label="{{ __('incidents.show.col_metric') }}">{{ Label::of('alert_metric', $alert->metric, AlertRule::METRIC_LABELS) }}@if ($alert->dimension) · {{ $alert->dimension }}@endif</td>
+                                        <td data-label="{{ __('incidents.show.col_value') }}" class="num">{{ Format::number($alert->observed_value, 1) }}{{ AlertRule::metricUnit($alert->metric) }}</td>
+                                        <td data-label="{{ __('incidents.show.col_status') }}">{{ $alert->status }}</td>
+                                        <td data-label="{{ __('incidents.show.col_triggered') }}" class="whitespace-nowrap">{{ Time::dateTime($alert->triggered_at) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -206,72 +244,81 @@
             @endif
         </div>
 
-        <div class="stack">
-            <section class="panel">
-                <div class="section-heading"><div><h2>Toewijzing</h2></div></div>
-                <form method="POST" action="{{ route('incidents.assign', $incident) }}" style="display:flex;gap:8px;flex-wrap:wrap">
+        {{-- Fixed column: assignment, resolving, closing, severity and history. --}}
+        <aside class="grid min-w-0 gap-4">
+            <section class="ss-panel" aria-labelledby="assign-title">
+                <h2 id="assign-title" class="ss-panel-title mb-3">{{ __('incidents.show.assign_title') }}</h2>
+                <form method="POST" action="{{ route('incidents.assign', $incident) }}" class="flex flex-wrap gap-2">
                     @csrf
-                    <label class="sr-only" for="assigned_to">Toewijzen aan</label>
-                    <select id="assigned_to" name="assigned_to" class="input" style="flex:1;min-width:160px">
-                        <option value="">Niemand</option>
+                    <label class="sr-only" for="assigned_to">{{ __('incidents.show.assign_to') }}</label>
+                    <select id="assigned_to" name="assigned_to" class="ss-input min-w-40 flex-1">
+                        <option value="">{{ __('incidents.nobody') }}</option>
                         @foreach ($users as $user)
-                            <option value="{{ $user->id }}" @selected($incident->assigned_to === $user->id)>{{ $user->name }}{{ $user->id === auth()->id() ? ' (ik)' : '' }}</option>
+                            <option value="{{ $user->id }}" @selected($incident->assigned_to === $user->id)>{{ $user->name }}{{ $user->id === auth()->id() ? __('incidents.show.me') : '' }}</option>
                         @endforeach
                     </select>
-                    <button class="button" type="submit">Opslaan</button>
+                    <button class="ss-btn ss-btn-secondary" type="submit">{{ __('incidents.show.save') }}</button>
                 </form>
             </section>
 
             @if ($incident->canTransitionTo('resolved'))
-                <section class="panel">
-                    <div class="section-heading"><div><h2>Oplossen</h2><p>Leg vast wat de oorzaak en oplossing was. Treedt het probleem binnen {{ config('serverscope.incidents.reopen_window_minutes') }} minuten opnieuw op, dan wordt dit incident automatisch heropend.</p></div></div>
+                <section class="ss-panel" id="resolve" aria-labelledby="resolve-title">
+                    <h2 id="resolve-title" class="ss-panel-title">{{ __('incidents.show.resolve_title') }}</h2>
+                    <p class="ss-panel-sub mb-3">{{ __('incidents.show.resolve_text', ['minutes' => config('serverscope.incidents.reopen_window_minutes')]) }}</p>
                     <form method="POST" action="{{ route('incidents.transition', $incident) }}">
                         @csrf
                         <input type="hidden" name="status" value="resolved">
-                        <div @class(['form-field', 'has-error' => $errors->has('notes')])><label for="notes">Oorzaak en oplossing *</label><textarea id="notes" name="notes" minlength="3" maxlength="5000" required placeholder="Wat was de oorzaak en wat is er gedaan?">{{ old('notes') }}</textarea>@error('notes')<span class="form-error">{{ $message }}</span>@enderror</div>
-                        <div class="form-footer" style="margin-top:12px;padding-top:12px"><button class="button button-primary" type="submit">Incident oplossen</button></div>
+                        <label class="ss-label" for="notes">{{ __('incidents.show.resolve_notes') }}</label>
+                        <textarea id="notes" class="ss-input mt-1.5 min-h-24" name="notes" minlength="3" maxlength="5000" required placeholder="{{ __('incidents.show.resolve_placeholder') }}" @error('notes') aria-invalid="true" aria-describedby="notes-error" @enderror>{{ old('notes') }}</textarea>
+                        @error('notes')<p id="notes-error" class="ss-error">{{ $message }}</p>@enderror
+                        <div class="mt-3"><button class="ss-btn ss-btn-primary" type="submit">{{ __('incidents.show.resolve_submit') }}</button></div>
                     </form>
                 </section>
             @endif
 
             @if ($isAdmin && $incident->canTransitionTo('closed'))
-                <section class="panel">
-                    <div class="section-heading"><div><h2>Sluiten</h2><p>Een gesloten incident wordt niet meer heropend; een nieuw probleem krijgt een nieuw incident.</p></div></div>
+                <section class="ss-panel" aria-labelledby="close-title">
+                    <h2 id="close-title" class="ss-panel-title">{{ __('incidents.show.close_title') }}</h2>
+                    <p class="ss-panel-sub mb-3">{{ __('incidents.show.close_text') }}</p>
                     <form method="POST" action="{{ route('incidents.transition', $incident) }}">
                         @csrf
                         <input type="hidden" name="status" value="closed">
-                        <div class="form-field"><label for="close-notes">Afsluitende notitie (optioneel)</label><textarea id="close-notes" name="notes" maxlength="5000"></textarea></div>
-                        <div class="form-footer" style="margin-top:12px;padding-top:12px"><button class="button" type="submit">Incident sluiten</button></div>
+                        <label class="ss-label" for="close-notes">{{ __('incidents.show.close_notes') }}</label>
+                        <textarea id="close-notes" class="ss-input mt-1.5 min-h-20" name="notes" maxlength="5000"></textarea>
+                        <div class="mt-3"><button class="ss-btn ss-btn-secondary" type="submit">{{ __('incidents.show.close_submit') }}</button></div>
                     </form>
                 </section>
             @endif
 
             @if ($isAdmin)
-                <section class="panel">
-                    <div class="section-heading"><div><h2>Ernst</h2></div></div>
-                    <form method="POST" action="{{ route('incidents.severity', $incident) }}" style="display:flex;gap:8px">
+                <section class="ss-panel" aria-labelledby="severity-title">
+                    <h2 id="severity-title" class="ss-panel-title mb-3">{{ __('incidents.show.severity_title') }}</h2>
+                    <form method="POST" action="{{ route('incidents.severity', $incident) }}" class="flex gap-2">
                         @csrf
-                        <select name="severity" class="input" aria-label="Ernst" style="flex:1">
-                            @foreach (\App\Support\Severity::options() as $v => $l)<option value="{{ $v }}" @selected($incident->severity === $v)>{{ $l }}</option>@endforeach
+                        <select name="severity" class="ss-input flex-1" aria-label="{{ __('incidents.show.severity_title') }}">
+                            @foreach (Severity::options() as $v => $l)<option value="{{ $v }}" @selected($incident->severity === $v)>{{ Label::of('severity', $v, Severity::LABELS) }}</option>@endforeach
                         </select>
-                        <button class="button" type="submit">Wijzigen</button>
+                        <button class="ss-btn ss-btn-secondary" type="submit">{{ __('incidents.show.severity_change') }}</button>
                     </form>
                 </section>
             @endif
 
             @if ($related->isNotEmpty())
-                <section class="panel">
-                    <div class="section-heading"><div><h2>Eerdere incidenten</h2><p>Voor {{ $incident->subjectName() }}.</p></div></div>
-                    <ul style="margin:0;padding:0;list-style:none" class="small">
+                <section class="ss-panel" aria-labelledby="previous-title">
+                    <h2 id="previous-title" class="ss-panel-title">{{ __('incidents.show.previous_title') }}</h2>
+                    <p class="ss-panel-sub mb-2">{{ __('incidents.show.previous_text', ['subject' => $incident->subjectName()]) }}</p>
+                    <ul class="ss-list">
                         @foreach ($related as $other)
-                            <li style="padding:7px 0;border-bottom:1px solid #1a2840">
-                                <a href="{{ route('incidents.show', $other) }}">{{ $other->title }}</a>
-                                <div class="muted">{{ Time::format($other->opened_at) }} · {{ $other->status }}</div>
+                            <li>
+                                <div class="min-w-0">
+                                    <a class="text-accent" href="{{ route('incidents.show', $other) }}">{{ $other->title }}</a>
+                                    <div class="ss-list-sub">{{ Time::dateTime($other->opened_at) }} · {{ $other->status }}</div>
+                                </div>
                             </li>
                         @endforeach
                     </ul>
                 </section>
             @endif
-        </div>
+        </aside>
     </div>
 </x-layouts.app>
