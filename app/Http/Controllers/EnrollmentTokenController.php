@@ -48,7 +48,7 @@ class EnrollmentTokenController extends Controller
         $max = max(1, (int) config('serverscope.enrollment.max_pending', 10));
 
         if ($enrollment->pendingCount() >= $max) {
-            return redirect()->route('servers.add')->with('error', "Er staan al {$max} koppeltokens open. Gebruik of trek er eerst een in.");
+            return redirect()->route('servers.add')->with('error', __('servers.add.flash.too_many', ['max' => $max]));
         }
 
         [$token, $plain] = $enrollment->create($request->user(), $validated['label'] ?? null);
@@ -64,7 +64,7 @@ class EnrollmentTokenController extends Controller
 
         $enrollment->revoke($enrollmentToken, $request->user());
 
-        return redirect()->route('servers.add')->with('success', "Koppeltoken {$enrollmentToken->prefix}… is ingetrokken.");
+        return redirect()->route('servers.add')->with('success', __('servers.add.flash.revoked', ['prefix' => $enrollmentToken->prefix]));
     }
 
     /** Live status for the "Server toevoegen" page. */

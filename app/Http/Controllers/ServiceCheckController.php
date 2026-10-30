@@ -42,7 +42,7 @@ class ServiceCheckController extends Controller
             Audit::log('service.updated', "Service {$service->name} op {$service->server?->name} bijgewerkt", $service, ['changes' => $changes]);
         }
 
-        return back()->with('success', 'Service bijgewerkt.');
+        return back()->with('success', __('servers.health.flash.updated'));
     }
 
     public function destroy(ServiceCheck $service, IncidentManager $incidents): RedirectResponse
@@ -54,6 +54,6 @@ class ServiceCheckController extends Controller
         $service->delete();
         Audit::log('service.deleted', "Service {$service->name} verwijderd", $service->server);
 
-        return back()->with('success', 'Service verwijderd.');
+        return back()->with('success', __('servers.health.flash.deleted'));
     }
 }

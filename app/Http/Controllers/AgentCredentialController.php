@@ -35,7 +35,7 @@ class AgentCredentialController extends Controller
 
         return redirect()
             ->route('servers.show', $server)
-            ->with('success', 'Nieuwe agentcredential aangemaakt.')
+            ->with('success', __('servers.credentials.flash.created'))
             ->with('agent_token', $issued['token']);
     }
 
@@ -59,7 +59,7 @@ class AgentCredentialController extends Controller
 
         return redirect()
             ->route('servers.show', $server)
-            ->with('success', "Credentials geroteerd: {$result['revoked']} oude credential(s) ingetrokken. Werk de agentconfiguratie bij met het nieuwe token.")
+            ->with('success', __('servers.credentials.flash.rotated', ['count' => $result['revoked']]))
             ->with('agent_token', $result['token']);
     }
 
@@ -76,6 +76,6 @@ class AgentCredentialController extends Controller
 
         return redirect()
             ->route('servers.show', $server)
-            ->with('success', "Credential '{$credential->name}' is ingetrokken.");
+            ->with('success', __('servers.credentials.flash.revoked', ['name' => $credential->name]));
     }
 }

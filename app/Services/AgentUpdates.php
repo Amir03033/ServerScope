@@ -65,11 +65,11 @@ class AgentUpdates
     public function blocker(Server $server, ?AgentRelease $release): ?string
     {
         return match (true) {
-            $release === null => 'Er is geen nieuwere release beschikbaar.',
-            $server->trashed() => 'De server is verwijderd.',
-            ! $release->isNewerThan($server->agent_version) => "Deze server draait al versie {$server->agent_version}.",
-            $this->updaterState($server) === 'missing' => 'Het updateprogramma is niet gevonden op deze server. Draai install.sh opnieuw op de server.',
-            $this->updaterState($server) === 'disabled' => 'Updates zijn op de server zelf uitgeschakeld.',
+            $release === null => __('servers.updates.blocker.no_release'),
+            $server->trashed() => __('servers.updates.blocker.trashed'),
+            ! $release->isNewerThan($server->agent_version) => __('servers.updates.blocker.current', ['version' => $server->agent_version]),
+            $this->updaterState($server) === 'missing' => __('servers.updates.blocker.missing'),
+            $this->updaterState($server) === 'disabled' => __('servers.updates.blocker.disabled'),
             default => null,
         };
     }

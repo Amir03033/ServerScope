@@ -36,11 +36,11 @@ class ServerDiagnosis
         $evidence = [];
 
         if ($status === 'maintenance') {
-            return $this->result('maintenance', 'purple', 'Onderhoud', 'De server staat in onderhoud; er worden geen nieuwe incidenten aangemaakt.', []);
+            return $this->result('maintenance', 'purple', __('servers.diagnosis.maintenance.0'), __('servers.diagnosis.maintenance.1'), []);
         }
 
         if ($status === 'pending') {
-            return $this->result('pending', 'muted', 'Wacht op eerste meting', 'De agent heeft nog geen gegevens gestuurd. Controleer de installatie en het token.', []);
+            return $this->result('pending', 'muted', __('servers.diagnosis.pending.0'), __('servers.diagnosis.pending.1'), []);
         }
 
         if ($status === 'offline') {
@@ -48,29 +48,29 @@ class ServerDiagnosis
             $recent = $websites->filter(fn (Domain $d) => $d->http_enabled && $d->http_last_checked_at?->gt(now()->subMinutes(self::RECENT_CHECK_MINUTES)));
             $up = $recent->filter(fn (Domain $d) => $d->http_status === 'up' && $d->http_consecutive_failures === 0);
             $down = $recent->filter(fn (Domain $d) => $d->http_status === 'down' || $d->http_consecutive_failures > 0);
-            $silent = 'Laatste agentgegevens '.$server->last_seen_at?->locale('nl')->diffForHumans().'.';
+            $silent = __('servers.diagnosis.silent', ['time' => $server->last_seen_at?->locale(app()->getLocale())->diffForHumans()]);
 
             foreach ($up as $domain) {
-                $evidence[] = "{$domain->displayName()} reageert wel (HTTP {$domain->http_last_status_code}).";
+                $evidence[] = __('servers.diagnosis.evidence_up', ['domain' => $domain->displayName(), 'code' => $domain->http_last_status_code]);
             }
 
             foreach ($down as $domain) {
-                $evidence[] = "{$domain->displayName()} faalt ook: ".($domain->http_last_error ?? 'geen antwoord').'.';
+                $evidence[] = __('servers.diagnosis.evidence_down', ['domain' => $domain->displayName(), 'error' => $domain->http_last_error ?? __('servers.diagnosis.no_answer')]);
             }
 
             if ($up->isNotEmpty() && $down->isEmpty()) {
-                return $this->result('agent_unhealthy', 'yellow', 'Monitoringagent reageert niet', "{$silent} Websites op deze server zijn wel bereikbaar, dus de host draait waarschijnlijk nog: controleer de agent (service, token, uitgaande verbinding).", $evidence);
+                return $this->result('agent_unhealthy', 'yellow', __('servers.diagnosis.agent_unhealthy.0'), __('servers.diagnosis.agent_unhealthy.1', ['silent' => $silent]), $evidence);
             }
 
             if ($down->isNotEmpty() && $up->isEmpty()) {
-                return $this->result('host_unreachable', 'red', 'Host waarschijnlijk onbereikbaar', "{$silent} Ook de websites op deze server falen. Dat wijst op een probleem met de host of het netwerk, niet alleen de agent.", $evidence);
+                return $this->result('host_unreachable', 'red', __('servers.diagnosis.host_unreachable.0'), __('servers.diagnosis.host_unreachable.1', ['silent' => $silent]), $evidence);
             }
 
             if ($down->isNotEmpty()) {
-                return $this->result('agent_offline_mixed', 'red', 'Agent offline, websites deels bereikbaar', "{$silent} Sommige websites op deze server reageren nog, andere niet.", $evidence);
+                return $this->result('agent_offline_mixed', 'red', __('servers.diagnosis.agent_offline_mixed.0'), __('servers.diagnosis.agent_offline_mixed.1', ['silent' => $silent]), $evidence);
             }
 
-            return $this->result('agent_offline_unknown', 'red', 'Geen agentgegevens — oorzaak onbekend', "{$silent} Er zijn geen recent gecontroleerde websites aan deze server gekoppeld, dus het is niet vast te stellen of de host of alleen de agent uitgevallen is. Koppel websites via Afhankelijkheden voor een betere diagnose.", []);
+            return $this->result('agent_offline_unknown', 'red', __('servers.diagnosis.agent_offline_unknown.0'), __('servers.diagnosis.agent_offline_unknown.1', ['silent' => $silent]), []);
         }
 
         // Online: look at services and data quality.
@@ -78,19 +78,19 @@ class ServerDiagnosis
 
         if ($failing->isNotEmpty()) {
             foreach ($failing as $service) {
-                $evidence[] = "{$service->name}: ".(ServiceCheck::STATUS_LABELS[$service->status] ?? $service->status).($service->state_detail ? " ({$service->state_detail})" : '');
+                $evidence[] = "{$service->name}: ".\App\Support\Label::of('service_status', $service->status, ServiceCheck::STATUS_LABELS).($service->state_detail ? " ({$service->state_detail})" : '');
             }
 
-            return $this->result('service_failed', 'red', $failing->count() === 1 ? 'Service niet actief' : "{$failing->count()} services niet actief", 'De agent rapporteert normaal, maar een of meer services draaien niet. De host is bereikbaar.', $evidence);
+            return $this->result('service_failed', 'red', $failing->count() === 1 ? __('servers.diagnosis.service_failed_one') : __('servers.diagnosis.service_failed_many', ['count' => $failing->count()]), __('servers.diagnosis.service_failed'), $evidence);
         }
 
         $quality = $this->dataQuality($server);
 
         if ($quality['issues'] !== []) {
-            return $this->result('agent_degraded', 'yellow', 'Onvolledige agentgegevens', 'De agent rapporteert, maar niet alle verwachte gegevens komen binnen.', $quality['issues']);
+            return $this->result('agent_degraded', 'yellow', __('servers.diagnosis.agent_degraded.0'), __('servers.diagnosis.agent_degraded.1'), $quality['issues']);
         }
 
-        return $this->result('healthy', 'green', 'In orde', 'De agent rapporteert volledig en er zijn geen problemen met services gemeld. Dat betekent niet dat alles gecontroleerd is: alleen geconfigureerde metingen worden bewaakt.', []);
+        return $this->result('healthy', 'green', __('servers.diagnosis.healthy.0'), __('servers.diagnosis.healthy.1'), []);
     }
 
     /**
@@ -150,19 +150,19 @@ class ServerDiagnosis
         $issues = [];
 
         if ($coverage !== null && $coverage < 80) {
-            $issues[] = "Slechts {$coverage}% van de verwachte metingen in het afgelopen uur ontvangen.";
+            $issues[] = __('servers.diagnosis.issues.coverage', ['coverage' => $coverage]);
         }
 
         if ($missing !== []) {
-            $issues[] = 'Ontbrekende metingen in de laatste sample: '.implode(', ', $missing).'.';
+            $issues[] = __('servers.diagnosis.issues.missing', ['fields' => implode(', ', $missing)]);
         }
 
         if ($outdated) {
-            $issues[] = "Agentversie {$server->agent_version} is ouder dan de huidige versie {$latestVersion}.";
+            $issues[] = __('servers.diagnosis.issues.outdated', ['version' => $server->agent_version, 'latest' => $latestVersion]);
         }
 
         if ($integrity === 'unknown_build') {
-            $issues[] = 'De agent meldt een controlesom die niet overeenkomt met een bekende build.';
+            $issues[] = __('servers.diagnosis.issues.checksum');
         }
 
         return [

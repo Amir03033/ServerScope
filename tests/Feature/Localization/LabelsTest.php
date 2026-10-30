@@ -23,6 +23,30 @@ class LabelsTest extends TestCase
         $this->assertSame(StatusPagePresenter::STATE_LABELS, $nl('status_page.state'));
     }
 
+    public function test_dutch_model_labels_equal_the_model_constants(): void
+    {
+        foreach ($this->modelLabels() as $group => $constant) {
+            $this->assertSame($constant, trans("labels.{$group}", [], 'nl'), "lang/nl/labels.php {$group}");
+            $this->assertEqualsCanonicalizing(array_keys($constant), array_keys(trans("labels.{$group}", [], 'en')), "lang/en/labels.php {$group}");
+        }
+    }
+
+    /** @return array<string, array<string, string>> */
+    private function modelLabels(): array
+    {
+        return [
+            'server_environment' => \App\Models\Server::ENVIRONMENTS,
+            'server_status' => \App\Models\Server::STATUS_LABELS,
+            'service_kind' => \App\Models\ServiceCheck::KINDS,
+            'service_status' => \App\Models\ServiceCheck::STATUS_LABELS,
+            'update_status' => \App\Models\AgentUpdateRequest::STATUS_LABELS,
+            'update_reason' => \App\Models\AgentUpdateRequest::REASONS + \App\Models\AgentUpdateRequest::SERVER_REASONS,
+            'prediction_metric' => \App\Models\Prediction::METRIC_LABELS,
+            'prediction_confidence' => \App\Models\Prediction::CONFIDENCE_LABELS,
+            'alert_metric' => \App\Models\AlertRule::METRIC_LABELS,
+        ];
+    }
+
     public function test_english_has_a_label_for_every_code(): void
     {
         $this->assertEqualsCanonicalizing(array_keys(Severity::LABELS), array_keys(trans('labels.severity', [], 'en')));

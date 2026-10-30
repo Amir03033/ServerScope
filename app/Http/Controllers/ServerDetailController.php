@@ -24,23 +24,23 @@ class ServerDetailController extends Controller
 
         $rangeOptions = [
             '1h' => [
-                'label' => 'Laatste uur',
+                'label' => __('servers.ranges.1h'),
                 'minutes' => 60,
             ],
             '6h' => [
-                'label' => 'Laatste 6 uur',
+                'label' => __('servers.ranges.6h'),
                 'minutes' => 360,
             ],
             '24h' => [
-                'label' => 'Laatste 24 uur',
+                'label' => __('servers.ranges.24h'),
                 'minutes' => 1440,
             ],
             '7d' => [
-                'label' => 'Laatste 7 dagen',
+                'label' => __('servers.ranges.7d'),
                 'minutes' => 10080,
             ],
             '30d' => [
-                'label' => 'Laatste 30 dagen',
+                'label' => __('servers.ranges.30d'),
                 'minutes' => 43200,
             ],
         ];
@@ -76,7 +76,7 @@ class ServerDetailController extends Controller
                 $used = (int) ($disk['used_bytes'] ?? 0);
 
                 return [
-                    'path' => (string) ($disk['path'] ?? 'Onbekend'),
+                    'path' => (string) ($disk['path'] ?? __('servers.unknown_cap')),
                     'total_bytes' => $total,
                     'used_bytes' => $used,
                     'available_bytes' => (int) ($disk['available_bytes'] ?? 0),
@@ -105,7 +105,7 @@ class ServerDetailController extends Controller
                 $unitIndex++;
             } while ($value >= 1024 && $unitIndex < count($units) - 1);
 
-            return number_format($value, 1, ',', '.') . ' ' . $units[$unitIndex];
+            return \App\Support\Format::number($value, 1) . ' ' . $units[$unitIndex];
         };
 
         $formatUptime = static function (?int $seconds): string {
@@ -118,14 +118,14 @@ class ServerDetailController extends Controller
             $minutes = intdiv($seconds % 3600, 60);
 
             if ($days > 0) {
-                return "{$days}d {$hours}u";
+                return $days.__('servers.units.day').' '.$hours.__('servers.units.hour');
             }
 
             if ($hours > 0) {
-                return "{$hours}u {$minutes}m";
+                return $hours.__('servers.units.hour').' '.$minutes.__('servers.units.minute');
             }
 
-            return "{$minutes}m";
+            return $minutes.__('servers.units.minute');
         };
 
         $chartData = [
