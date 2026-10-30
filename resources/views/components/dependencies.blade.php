@@ -32,7 +32,7 @@
         <dt>{{ __('components.dependencies.depends_on') }}</dt>
         <dd>
             @forelse ($upstream as $edge)
-                <div>{!! $link($edge['type'], $edge['id']) !!} <span class="text-xs text-muted">{{ ResourceCatalog::typeLabel($edge['type']) }}{{ $edge['label'] ? ' · '.$edge['label'] : '' }}</span></div>
+                <div>{!! $link($edge['type'], $edge['id']) !!} <span class="text-xs text-muted">{{ \App\Support\Label::of('resource_type', $edge['type'], ResourceCatalog::TYPES) }}{{ $edge['label'] ? ' · '.$edge['label'] : '' }}</span></div>
             @empty
                 <span class="text-muted">{{ __('components.dependencies.none_confirmed') }}</span>
             @endforelse
@@ -43,7 +43,7 @@
                 <span class="text-muted">{{ __('components.dependencies.nothing_known') }}</span>
             @else
                 @foreach ($direct as $edge)
-                    <div>{!! $link($edge['type'], $edge['id']) !!} <span class="text-xs text-muted">{{ ResourceCatalog::typeLabel($edge['type']) }}{{ $edge['label'] ? ' · '.$edge['label'] : '' }}</span></div>
+                    <div>{!! $link($edge['type'], $edge['id']) !!} <span class="text-xs text-muted">{{ \App\Support\Label::of('resource_type', $edge['type'], ResourceCatalog::TYPES) }}{{ $edge['label'] ? ' · '.$edge['label'] : '' }}</span></div>
                 @endforeach
                 @if ($pageCount > 0)<div>{{ trans_choice('components.dependencies.pages', $pageCount, ['count' => $pageCount]) }}</div>@endif
                 @if (count($downstreamAll) > $direct->count() + $pageCount)

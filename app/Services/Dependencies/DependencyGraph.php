@@ -134,7 +134,7 @@ class DependencyGraph
             if ($ips !== []) {
                 foreach (Server::query()->where('team_id', $resource->team_id)->whereIn('ip_address', $ips)->get(['id', 'name', 'ip_address']) as $server) {
                     if (! $this->hasConfirmedEdge('domain', $resource->id, 'server', $server->id)) {
-                        $suggestions[] = ['type' => 'server', 'id' => $server->id, 'direction' => 'upstream', 'reason' => "{$resource->displayName()} verwijst in DNS naar {$server->ip_address}, het IP-adres van {$server->name}."];
+                        $suggestions[] = ['type' => 'server', 'id' => $server->id, 'direction' => 'upstream', 'reason' => __('dependencies.suggest_upstream', ['domain' => $resource->displayName(), 'ip' => $server->ip_address, 'server' => $server->name])];
                     }
                 }
             }
@@ -151,7 +151,7 @@ class DependencyGraph
             foreach (Domain::query()->where('team_id', $resource->team_id)->whereIn('id', $domainIds)->get() as $domain) {
                 if (in_array($resource->ip_address, $this->domainAddresses($domain), true)
                     && ! $this->hasConfirmedEdge('domain', $domain->id, 'server', $resource->id)) {
-                    $suggestions[] = ['type' => 'domain', 'id' => $domain->id, 'direction' => 'downstream', 'reason' => "{$domain->displayName()} verwijst in DNS naar {$resource->ip_address}, het IP-adres van deze server."];
+                    $suggestions[] = ['type' => 'domain', 'id' => $domain->id, 'direction' => 'downstream', 'reason' => __('dependencies.suggest_downstream', ['domain' => $domain->displayName(), 'ip' => $resource->ip_address])];
                 }
             }
         }
