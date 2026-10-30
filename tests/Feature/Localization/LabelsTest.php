@@ -49,6 +49,8 @@ class LabelsTest extends TestCase
             'page_failure' => \App\Models\MonitoredPage::FAILURE_LABELS,
             'page_status' => \App\Models\MonitoredPage::STATUS_LABELS,
             'incident_source' => \App\Models\Incident::SOURCE_LABELS,
+            'incident_event' => \App\Models\IncidentEvent::TYPE_LABELS,
+            'resource_type' => \App\Services\Dependencies\ResourceCatalog::TYPES,
         ];
     }
 
