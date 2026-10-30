@@ -469,28 +469,45 @@ if (searchDialog && typeof searchDialog.showModal === 'function') {
 document.querySelectorAll('[data-section-nav]').forEach((nav) => {
     const links = [...nav.querySelectorAll('a[href^="#"]')];
     const targets = links.map((link) => document.getElementById(link.hash.slice(1))).filter(Boolean);
+    let ticking = false;
 
-    if (!('IntersectionObserver' in window) || targets.length === 0) return;
+    if (targets.length === 0) return;
 
-    const visible = new Map();
+    // The current section is the last one whose top has passed the bar;
+    // at the bottom of the page it is the last section.
     const mark = () => {
-        const current = targets.find((target) => visible.get(target)) || null;
+        ticking = false;
+        const line = nav.getBoundingClientRect().bottom + 24;
+        const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+        let current = atBottom ? targets[targets.length - 1] : null;
+
+        if (!current) {
+            targets.forEach((target) => {
+                if (target.getBoundingClientRect().top <= line) current = target;
+            });
+        }
+
         links.forEach((link) => {
-            const active = current && link.hash === `#${current.id}`;
-            link.toggleAttribute('aria-current', !!active);
+            const active = current !== null && link.hash === `#${current.id}`;
+
             if (active) {
                 link.setAttribute('aria-current', 'true');
-                link.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                // Keep the active link in view inside the bar only (never scroll the page).
+                nav.scrollTo({ left: Math.max(0, link.offsetLeft - (nav.clientWidth - link.offsetWidth) / 2) });
+            } else {
+                link.removeAttribute('aria-current');
             }
         });
     };
 
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => visible.set(entry.target, entry.isIntersecting));
-        mark();
-    }, { rootMargin: '-130px 0px -55% 0px' });
-
-    targets.forEach((target) => observer.observe(target));
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(mark);
+        }
+    }, { passive: true });
+    window.addEventListener('hashchange', () => setTimeout(mark, 50));
+    mark();
 });
 
 /* ------------------------------------------------------------------ */

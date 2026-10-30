@@ -1107,8 +1107,8 @@
     .ss-section-nav > a:hover { color: var(--ss-text); background: var(--ss-surface-2); }
     .ss-section-nav > a[aria-current="true"] { color: var(--ss-accent); background: var(--ss-accent-soft); }
 
-    .ss-section,
-    [id="overview"] { scroll-margin-top: 7.5rem; }
+    /* Anchors land below the top bar and the sticky section navigation. */
+    .ss-content [id] { scroll-margin-top: 2.5rem; }
 
     /* Panel for actions that are hard to undo. */
     .ss-panel-danger { border-color: color-mix(in srgb, var(--ss-bad) 30%, var(--ss-line)); }
