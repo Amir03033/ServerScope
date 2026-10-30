@@ -1,59 +1,13 @@
-<x-layouts.app :title="'Nieuwe alertregel'">
-    <x-slot:styles>
-        .actions form { margin: 0; }
-        .notice {
-            margin-bottom: 16px; padding: 14px 16px;
-            border: 1px solid color-mix(in srgb, var(--ss-bad) 35%, var(--ss-line)); border-radius: 10px;
-            background: color-mix(in srgb, var(--ss-bad) 8%, var(--ss-surface)); color: var(--red);
-        }
-        .notice ul { margin: 8px 0 0; padding-left: 18px; }
-        .panel {
-            max-width: 850px; padding: 22px;
-            border: 1px solid var(--border); border-radius: var(--radius);
-            background: var(--panel);
-        }
-        .panel-head { display: flex; align-items: center; gap: 13px; margin-bottom: 22px; }
-        .panel-icon {
-            display: grid; place-items: center;
-            width: 44px; height: 44px; flex: 0 0 44px;
-            border: 1px solid color-mix(in srgb, var(--cyan) 45%, transparent);
-            border-radius: 12px;
-            background: color-mix(in srgb, var(--cyan) 14%, var(--ss-surface));
-            color: var(--cyan); font-size: 22px;
-        }
-        .panel-head h2 { margin: 0; font-size: 17px; }
-        .panel-head p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
-        @media (max-width: 850px) {
-    .panel { padding: 16px; }
-}
-    </x-slot:styles>
-
-    <x-slot:breadcrumb>
-        <span>›</span> Alertregels <span>›</span> Nieuw
-    </x-slot:breadcrumb>
-
-    <x-slot:pageTitle>Nieuwe alertregel</x-slot:pageTitle>
-    <x-slot:subtitle>Stel een nieuwe voorwaarde in voor je infrastructuurmonitoring.</x-slot:subtitle>
-
+<x-layouts.app :title="__('alert_rules.create.title')">
+    <x-slot:breadcrumb><span>›</span> <a href="{{ route('alert-rules.index') }}">{{ __('alert_rules.title') }}</a> <span>›</span> {{ __('alert_rules.crumb_new') }}</x-slot:breadcrumb>
+    <x-slot:pageTitle>{{ __('alert_rules.create.title') }}</x-slot:pageTitle>
+    <x-slot:subtitle>{{ __('alert_rules.create.subtitle') }}</x-slot:subtitle>
     <x-slot:actions>
-
-        <a href="{{ route('alert-rules.index') }}" class="button">
-            <svg class="ico"><use href="#i-arrow-left"/></svg> Terug naar regels
-        </a>
+        <a href="{{ route('alert-rules.index') }}" class="ss-btn ss-btn-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('alert_rules.back') }}</a>
     </x-slot:actions>
 
-
-    <section class="panel">
-        <div class="panel-head">
-            <span class="panel-icon"><svg class="ico"><use href="#i-plus"/></svg></span>
-            <div>
-                <h2>Configuratie</h2>
-                <p>Velden met een verplichte invoer moeten worden ingevuld.</p>
-            </div>
-        </div>
-
+    <section class="ss-panel max-w-4xl" aria-labelledby="form-title">
+        <div class="ss-panel-head"><div><h2 id="form-title" class="ss-panel-title">{{ __('alert_rules.config_title') }}</h2><p class="ss-panel-sub">{{ __('alert_rules.create.panel_text') }}</p></div></div>
         @include('alert-rules.form', ['rule' => $rule])
     </section>
-
-    
 </x-layouts.app>

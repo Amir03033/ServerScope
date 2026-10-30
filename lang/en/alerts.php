@@ -1,0 +1,48 @@
+<?php
+
+// Alerts: the list of triggered resource alerts.
+return [
+    'title' => 'Alerts',
+    'subtitle' => 'Review incidents and check the state of your infrastructure.',
+    'dashboard' => 'Dashboard',
+    'stats_label' => 'Alert statistics',
+    'active_count' => 'Active alerts',
+    'resolved_count' => 'Resolved',
+    'total_count' => 'Total recorded',
+    'history_title' => 'Alert history',
+    'history_text' => 'Review current alerts and alerts resolved earlier.',
+    'results' => ':count results',
+    'filter_label' => 'Filter alerts',
+    'tabs' => [
+        'active' => 'Active',
+        'resolved' => 'Resolved',
+        'disabled' => 'Disabled',
+        'all' => 'All',
+    ],
+    'empty' => [
+        'active_title' => 'No active alerts',
+        'active_text' => 'There are no active alerts at the moment. New alerts appear here when a configured rule is triggered.',
+        'resolved_title' => 'No resolved alerts yet',
+        'resolved_text' => 'When an active alert is resolved, it appears here in the history.',
+        'disabled_title' => 'No disabled alerts',
+        'disabled_text' => 'When an alert rule is disabled, its active alerts appear here.',
+        'all_title' => 'No alerts recorded yet',
+        'all_text' => 'There are no alerts to show yet. Check that your alert rules are set up and enabled.',
+    ],
+    'rule_deleted' => 'Alert rule deleted',
+    'server_gone' => 'Server no longer available',
+    'status' => [
+        'active' => 'Active',
+        'disabled' => 'Disabled',
+        'resolved' => 'Resolved',
+    ],
+    'metric' => 'Metric',
+    'mountpoint' => 'Mount point: :mount',
+    'observed' => 'Observed value',
+    'threshold' => 'Threshold',
+    'triggered' => 'Triggered:',
+    'unknown' => 'Unknown',
+    'incident' => 'Incident #:id',
+    'resolved_at' => 'Resolved:',
+    'disabled_at' => 'Disabled:',
+];

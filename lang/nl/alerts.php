@@ -1,0 +1,48 @@
+<?php
+
+// Alerts: the list of triggered resource alerts.
+return [
+    'title' => 'Alerts',
+    'subtitle' => 'Bekijk incidenten en controleer de status van je infrastructuur.',
+    'dashboard' => 'Dashboard',
+    'stats_label' => 'Alertstatistieken',
+    'active_count' => 'Actieve alerts',
+    'resolved_count' => 'Opgelost',
+    'total_count' => 'Totaal geregistreerd',
+    'history_title' => 'Alertgeschiedenis',
+    'history_text' => 'Bekijk huidige meldingen en eerder opgeloste incidenten.',
+    'results' => ':count resultaten',
+    'filter_label' => 'Filter alerts',
+    'tabs' => [
+        'active' => 'Actief',
+        'resolved' => 'Opgelost',
+        'disabled' => 'Uitgeschakeld',
+        'all' => 'Alles',
+    ],
+    'empty' => [
+        'active_title' => 'Geen actieve alerts',
+        'active_text' => 'Er zijn momenteel geen actieve alerts geregistreerd. Nieuwe meldingen verschijnen hier wanneer een ingestelde regel wordt geactiveerd.',
+        'resolved_title' => 'Nog geen opgeloste alerts',
+        'resolved_text' => 'Wanneer een actieve alert wordt opgelost, verschijnt deze hier in de geschiedenis.',
+        'disabled_title' => 'Geen uitgeschakelde alerts',
+        'disabled_text' => 'Wanneer een alertregel wordt uitgeschakeld, verschijnen bijbehorende actieve alerts hier.',
+        'all_title' => 'Nog geen alerts geregistreerd',
+        'all_text' => 'Er zijn nog geen alerts om weer te geven. Controleer of je alertregels zijn ingesteld en ingeschakeld.',
+    ],
+    'rule_deleted' => 'Alertregel verwijderd',
+    'server_gone' => 'Server niet meer beschikbaar',
+    'status' => [
+        'active' => 'Actief',
+        'disabled' => 'Uitgeschakeld',
+        'resolved' => 'Opgelost',
+    ],
+    'metric' => 'Metric',
+    'mountpoint' => 'Mountpoint: :mount',
+    'observed' => 'Waargenomen waarde',
+    'threshold' => 'Drempelwaarde',
+    'triggered' => 'Geactiveerd:',
+    'unknown' => 'Onbekend',
+    'incident' => 'Incident #:id',
+    'resolved_at' => 'Opgelost:',
+    'disabled_at' => 'Uitgeschakeld:',
+];

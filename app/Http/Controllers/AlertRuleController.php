@@ -43,7 +43,7 @@ class AlertRuleController extends Controller
 
         return redirect()
             ->route('alert-rules.index')
-            ->with('success', 'Alertregel aangemaakt.');
+            ->with('success', __('alert_rules.flash.created'));
     }
 
     public function edit(AlertRule $alertRule): View
@@ -92,8 +92,8 @@ class AlertRuleController extends Controller
             ->with(
                 'success',
                 $validated['is_enabled']
-                    ? 'Alertregel bijgewerkt en ingeschakeld.'
-                    : 'Alertregel bijgewerkt. Actieve alerts zijn als uitgeschakeld geregistreerd.',
+                    ? __('alert_rules.flash.updated_enabled')
+                    : __('alert_rules.flash.updated_disabled'),
             );
     }
 
@@ -106,7 +106,7 @@ class AlertRuleController extends Controller
                 ->route('alert-rules.index')
                 ->with(
                     'error',
-                    'Deze alertregel heeft meldingsgeschiedenis en kan daarom niet worden verwijderd. Schakel de regel uit als je deze niet meer wilt gebruiken.',
+                    __('alert_rules.flash.has_history'),
                 );
         }
 
@@ -114,7 +114,7 @@ class AlertRuleController extends Controller
 
         return redirect()
             ->route('alert-rules.index')
-            ->with('success', 'Alertregel verwijderd.');
+            ->with('success', __('alert_rules.flash.deleted'));
     }
 
     private function authorizeAdmin(): void
