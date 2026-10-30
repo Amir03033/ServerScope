@@ -4,7 +4,7 @@
     "name": "i18n"
   },
   "resources/css/app.css": {
-    "file": "assets/app-C51neF4u.css",
+    "file": "assets/app-DZ7bbxCB.css",
     "name": "app",
     "names": [
       "app.css"
@@ -30,7 +30,7 @@
     "src": "resources/fonts/jetbrains-mono-latin-wght.woff2"
   },
   "resources/js/app.js": {
-    "file": "assets/app-D9vaKDvL.js",
+    "file": "assets/app-DmaPoK_7.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
