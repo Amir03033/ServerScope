@@ -1241,16 +1241,15 @@
     .ss-sort[aria-sort] { color: var(--ss-text); }
 
     /* Status bar: the steps of a lifecycle, the current one highlighted. */
-    .ss-progress { display: flex; margin: 0; padding: 0; list-style: none; counter-reset: ss-progress; overflow-x: auto; scrollbar-width: none; }
-    .ss-progress::-webkit-scrollbar { display: none; }
+    .ss-progress { display: flex; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; counter-reset: ss-progress; }
     .ss-progress > li {
         position: relative;
         display: flex;
-        flex: 1 0 auto;
+        flex: 0 1 auto;
         align-items: center;
         gap: .5rem;
         min-width: 0;
-        padding: .5rem .875rem .5rem 0;
+        padding: .375rem .75rem .375rem 0;
         color: var(--ss-subtle);
         font-size: .8125rem;
         font-weight: 600;
@@ -1270,7 +1269,7 @@
         font-size: .6875rem;
     }
     .ss-progress > li + li { padding-left: .875rem; border-left: 0; }
-    .ss-progress > li:not(:last-child)::after { content: ""; flex: 1; min-width: 1rem; height: 1px; background: var(--ss-line-strong); }
+    .ss-progress > li:not(:last-child)::after { content: ""; width: 1rem; height: 1px; background: var(--ss-line-strong); }
     .ss-progress > li.is-done { color: var(--ss-muted); }
     .ss-progress > li.is-done::before { content: "✓"; border-color: var(--ss-ok); color: var(--ss-ok); }
     .ss-progress > li[aria-current="step"] { color: var(--ss-text); }
@@ -1308,7 +1307,7 @@
     .ss-public-h2 { margin: 2rem 0 .75rem; font-size: 1.0625rem; font-weight: 600; }
     .ss-public-row { padding: 1rem 0; border-bottom: 1px solid var(--ss-line); }
     .ss-public-row:last-child { border-bottom: 0; }
-    .ss-public a, .ss-public-link { color: var(--sp-text); }
+    .ss-public a, .ss-public-link { color: var(--sp-text); text-decoration: underline; text-underline-offset: 2px; }
     .ss-public-locale { display: inline-flex; gap: .25rem; }
     .ss-public-locale button {
         padding: .1875rem .5625rem;

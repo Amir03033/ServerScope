@@ -479,6 +479,25 @@ document.querySelectorAll('[data-highlight]').forEach((root) => {
     });
 });
 
+/* Tables that scroll sideways can be scrolled with the keyboard too. */
+function markScrollableTables() {
+    document.querySelectorAll('.ss-table-wrap').forEach((wrap) => {
+        const scrolls = wrap.scrollWidth > wrap.clientWidth + 1;
+        if (scrolls && !wrap.hasAttribute('tabindex')) {
+            wrap.setAttribute('tabindex', '0');
+            wrap.setAttribute('role', 'region');
+            const heading = wrap.closest('section')?.querySelector('h2, h3');
+            wrap.setAttribute('aria-label', heading?.textContent.trim() || document.title);
+            wrap.dataset.scrollMarked = '';
+        } else if (!scrolls && wrap.hasAttribute('data-scroll-marked')) {
+            ['tabindex', 'role', 'aria-label', 'data-scroll-marked'].forEach((name) => wrap.removeAttribute(name));
+        }
+    });
+}
+
+markScrollableTables();
+window.addEventListener('resize', markScrollableTables, { passive: true });
+
 /* ------------------------------------------------------------------ */
 /* Secrets: show/hide and copy (x-secret-token).                        */
 /* ------------------------------------------------------------------ */
