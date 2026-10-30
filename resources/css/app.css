@@ -1047,6 +1047,125 @@
         .ss-table-cards .num { text-align: right; }
     }
 
+    /* Segmented filters that scroll sideways on small screens. */
+    .ss-tabs-scroll { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
+    .ss-tabs-scroll .ss-segmented > * { display: inline-flex; align-items: center; gap: .375rem; white-space: nowrap; }
+
+    .ss-count {
+        min-width: 1.25rem;
+        padding: 0 .3rem;
+        border-radius: 6px;
+        background: var(--ss-surface-2);
+        color: var(--ss-muted);
+        font-size: .6875rem;
+        line-height: 1.125rem;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .ss-segmented > [aria-current="page"] .ss-count,
+    .ss-segmented > [aria-pressed="true"] .ss-count { background: color-mix(in srgb, var(--ss-bg) 25%, transparent); color: inherit; }
+
+    /* Sticky in-page navigation (anchors; app.js marks the current section). */
+    .ss-section-nav {
+        position: sticky;
+        top: 3.75rem;
+        z-index: 30;
+        display: flex;
+        gap: .25rem;
+        margin: 1.5rem -1rem 1.5rem;
+        padding: .5rem 1rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+        border-bottom: 1px solid var(--ss-line);
+        background: color-mix(in srgb, var(--ss-bg) 88%, transparent);
+        backdrop-filter: blur(12px);
+    }
+
+    .ss-section-nav::-webkit-scrollbar { display: none; }
+
+    @media (min-width: 640px) {
+        .ss-section-nav { margin-inline: -1.5rem; padding-inline: 1.5rem; }
+    }
+
+    @media (min-width: 1280px) {
+        .ss-section-nav { margin-inline: -2rem; padding-inline: 2rem; }
+    }
+
+    .ss-section-nav > a {
+        flex: none;
+        padding: .375rem .75rem;
+        border-radius: 8px;
+        color: var(--ss-muted);
+        font-size: .8125rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background-color .2s ease, color .2s ease;
+    }
+
+    .ss-section-nav > a:hover { color: var(--ss-text); background: var(--ss-surface-2); }
+    .ss-section-nav > a[aria-current="true"] { color: var(--ss-accent); background: var(--ss-accent-soft); }
+
+    .ss-section,
+    [id="overview"] { scroll-margin-top: 7.5rem; }
+
+    /* Panel for actions that are hard to undo. */
+    .ss-panel-danger { border-color: color-mix(in srgb, var(--ss-bad) 30%, var(--ss-line)); }
+
+    /* Diagnosis panel: a coloured edge only for a status. */
+    .ss-diagnosis { border-left: 3px solid var(--ss-line-strong); }
+    .ss-diagnosis.is-ok { border-left-color: var(--ss-ok); }
+    .ss-diagnosis.is-warn { border-left-color: var(--ss-warn); }
+    .ss-diagnosis.is-bad { border-left-color: var(--ss-bad); }
+    .ss-diagnosis.is-info { border-left-color: var(--ss-accent); }
+
+    /* Numbered steps. */
+    .ss-steps { margin: 0; padding: 0; list-style: none; counter-reset: ss-step; display: grid; gap: 1.25rem; }
+
+    .ss-steps > li {
+        position: relative;
+        padding-left: 2.5rem;
+        counter-increment: ss-step;
+    }
+
+    .ss-steps > li::before {
+        content: counter(ss-step);
+        position: absolute;
+        left: 0;
+        top: -.125rem;
+        display: grid;
+        place-items: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 999px;
+        background: var(--ss-accent-soft);
+        color: var(--ss-accent);
+        font-size: .8125rem;
+        font-weight: 700;
+    }
+
+    .ss-step-title { font-size: .875rem; font-weight: 600; }
+
+    .ss-enroll-status {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .625rem;
+        padding: .75rem 1rem;
+        border: 1px solid var(--ss-line);
+        border-radius: 10px;
+        background: var(--ss-surface-2);
+        font-size: .875rem;
+    }
+
+    @media (max-width: 639px) {
+        .ss-table-cards td.is-actions { display: block; padding-top: .5rem; }
+        .ss-table-cards td.is-actions::before { content: none; }
+        .ss-table-cards td.is-actions > div,
+        .ss-table-cards td.is-actions > form { justify-content: flex-start; }
+    }
+
     /* Collapsible section (native <details>). */
     .ss-details > summary {
         display: flex;

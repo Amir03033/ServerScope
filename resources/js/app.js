@@ -461,3 +461,70 @@ if (searchDialog && typeof searchDialog.showModal === 'function') {
         if (event.target === searchDialog) searchDialog.close();
     });
 }
+
+/* ------------------------------------------------------------------ */
+/* In-page section navigation: mark the section in view.               */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-section-nav]').forEach((nav) => {
+    const links = [...nav.querySelectorAll('a[href^="#"]')];
+    const targets = links.map((link) => document.getElementById(link.hash.slice(1))).filter(Boolean);
+
+    if (!('IntersectionObserver' in window) || targets.length === 0) return;
+
+    const visible = new Map();
+    const mark = () => {
+        const current = targets.find((target) => visible.get(target)) || null;
+        links.forEach((link) => {
+            const active = current && link.hash === `#${current.id}`;
+            link.toggleAttribute('aria-current', !!active);
+            if (active) {
+                link.setAttribute('aria-current', 'true');
+                link.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            }
+        });
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => visible.set(entry.target, entry.isIntersecting));
+        mark();
+    }, { rootMargin: '-130px 0px -55% 0px' });
+
+    targets.forEach((target) => observer.observe(target));
+});
+
+/* ------------------------------------------------------------------ */
+/* Live status of an enrolment token ("Add server").                   */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-enroll-status]').forEach((box) => {
+    const text = box.querySelector('[data-text]');
+    const link = box.querySelector('[data-link]');
+    const dot = box.querySelector('[data-dot]');
+    const labels = JSON.parse(box.dataset.labels || '{}');
+
+    const poll = async () => {
+        try {
+            const response = await fetch(box.dataset.statusUrl, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            if (!response.ok) throw new Error(String(response.status));
+
+            const data = await response.json();
+            text.textContent = labels[data.state] || data.state;
+            dot.className = `ss-dot ${data.state === 'connected' ? 'ss-dot-ok' : (['expired', 'revoked'].includes(data.state) ? 'ss-dot-bad' : 'ss-dot-warn ss-live-dot')}`;
+
+            if (data.server_url) {
+                link.href = data.server_url;
+                link.textContent = (labels.go_named || ':name').replace(':name', data.server_name);
+                link.hidden = false;
+            }
+
+            if (['connected', 'expired', 'revoked'].includes(data.state)) return;
+        } catch {
+            text.textContent = labels.error || '';
+        }
+
+        setTimeout(poll, 3000);
+    };
+
+    poll();
+});

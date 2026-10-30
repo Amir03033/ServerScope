@@ -1,123 +1,122 @@
 @php
     use App\Models\Server;
+    use App\Support\Label;
     use App\Support\Time;
 
     $isEditing = $server->exists;
+    $field = fn (string $name) => $errors->has($name) ? 'aria-invalid=true aria-describedby='.$name.'-error' : '';
 @endphp
 
-<div class="form-cols">
-    <div @class(['form-field', 'has-error' => $errors->has('name')])>
-        <label for="name">Servernaam *</label>
-        <input id="name" name="name" type="text" maxlength="100" required value="{{ old('name', $server->name) }}" placeholder="Production VPS">
-        @error('name')<span class="form-error">{{ $message }}</span>@enderror
+<div class="grid gap-5 sm:grid-cols-2">
+    <div>
+        <label class="ss-label" for="name">{{ __('servers.form.name') }}</label>
+        <input id="name" class="ss-input mt-1.5" name="name" type="text" maxlength="100" required value="{{ old('name', $server->name) }}" placeholder="{{ __('servers.form.name_placeholder') }}" {{ $field('name') }}>
+        @error('name')<p id="name-error" class="ss-error">{{ $message }}</p>@enderror
     </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('hostname')])>
-        <label for="hostname">Hostname *</label>
-        <input id="hostname" name="hostname" type="text" maxlength="255" required value="{{ old('hostname', $server->hostname) }}" placeholder="server.example.com">
-        <span class="form-help">DNS-naam of IP-adres waarmee je de server herkent.</span>
-        @error('hostname')<span class="form-error">{{ $message }}</span>@enderror
+    <div>
+        <label class="ss-label" for="hostname">{{ __('servers.form.hostname') }}</label>
+        <input id="hostname" class="ss-input mt-1.5" name="hostname" type="text" maxlength="255" required value="{{ old('hostname', $server->hostname) }}" placeholder="{{ __('servers.form.hostname_placeholder') }}" {{ $field('hostname') }}>
+        <p class="ss-help">{{ __('servers.form.hostname_help') }}</p>
+        @error('hostname')<p id="hostname-error" class="ss-error">{{ $message }}</p>@enderror
     </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('ip_address')])>
-        <label for="ip_address">IP-adres</label>
-        <input id="ip_address" name="ip_address" type="text" maxlength="45" value="{{ old('ip_address', $server->ip_address) }}" placeholder="203.0.113.10">
-        @error('ip_address')<span class="form-error">{{ $message }}</span>@enderror
+    <div>
+        <label class="ss-label" for="ip_address">{{ __('servers.form.ip') }}</label>
+        <input id="ip_address" class="ss-input mt-1.5" name="ip_address" type="text" maxlength="45" value="{{ old('ip_address', $server->ip_address) }}" placeholder="{{ __('servers.form.ip_placeholder') }}" {{ $field('ip_address') }}>
+        @error('ip_address')<p id="ip_address-error" class="ss-error">{{ $message }}</p>@enderror
     </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('operating_system')])>
-        <label for="operating_system">Besturingssysteem</label>
-        <input id="operating_system" name="operating_system" type="text" maxlength="100" value="{{ old('operating_system', $server->operating_system) }}" placeholder="Ubuntu 24.04">
-        @error('operating_system')<span class="form-error">{{ $message }}</span>@enderror
+    <div>
+        <label class="ss-label" for="operating_system">{{ __('servers.form.os') }}</label>
+        <input id="operating_system" class="ss-input mt-1.5" name="operating_system" type="text" maxlength="100" value="{{ old('operating_system', $server->operating_system) }}" placeholder="{{ __('servers.form.os_placeholder') }}" {{ $field('operating_system') }}>
+        @error('operating_system')<p id="operating_system-error" class="ss-error">{{ $message }}</p>@enderror
     </div>
 
-    <div @class(['form-field', 'has-error' => $errors->has('environment')])>
-        <label for="environment">Omgeving *</label>
-        <select id="environment" name="environment" required>
+    <div>
+        <label class="ss-label" for="environment">{{ __('servers.form.environment') }}</label>
+        <select id="environment" class="ss-input mt-1.5" name="environment" required {{ $field('environment') }}>
             @foreach (Server::ENVIRONMENTS as $value => $label)
-                <option value="{{ $value }}" @selected(old('environment', $server->environment ?? 'production') === $value)>{{ $label }}</option>
+                <option value="{{ $value }}" @selected(old('environment', $server->environment ?? 'production') === $value)>{{ Label::of('server_environment', $value, Server::ENVIRONMENTS) }}</option>
             @endforeach
         </select>
-        @error('environment')<span class="form-error">{{ $message }}</span>@enderror
+        @error('environment')<p id="environment-error" class="ss-error">{{ $message }}</p>@enderror
     </div>
 
     @unless ($isEditing)
-        <div @class(['form-field', 'has-error' => $errors->has('credential_name')])>
-            <label for="credential_name">Naam agentcredential *</label>
-            <input id="credential_name" name="credential_name" type="text" maxlength="100" required value="{{ old('credential_name', 'Primary agent') }}">
-            <span class="form-help">Na het opslaan wordt het agenttoken eenmalig getoond.</span>
-            @error('credential_name')<span class="form-error">{{ $message }}</span>@enderror
+        <div>
+            <label class="ss-label" for="credential_name">{{ __('servers.form.credential') }}</label>
+            <input id="credential_name" class="ss-input mt-1.5" name="credential_name" type="text" maxlength="100" required value="{{ old('credential_name', 'Primary agent') }}" {{ $field('credential_name') }}>
+            <p class="ss-help">{{ __('servers.form.credential_help') }}</p>
+            @error('credential_name')<p id="credential_name-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
     @endunless
 
-    <div @class(['form-field full', 'has-error' => $errors->has('notes')])>
-        <label for="notes">Notities</label>
-        <textarea id="notes" name="notes" maxlength="2000" placeholder="Bijv. hostingprovider, contactpersoon, rol van de server">{{ old('notes', $server->notes) }}</textarea>
-        @error('notes')<span class="form-error">{{ $message }}</span>@enderror
+    <div class="sm:col-span-2">
+        <label class="ss-label" for="notes">{{ __('servers.form.notes') }}</label>
+        <textarea id="notes" class="ss-input mt-1.5 min-h-24" name="notes" maxlength="2000" placeholder="{{ __('servers.form.notes_placeholder') }}" {{ $field('notes') }}>{{ old('notes', $server->notes) }}</textarea>
+        @error('notes')<p id="notes-error" class="ss-error">{{ $message }}</p>@enderror
     </div>
 
     @if ($isEditing)
-        <div class="form-section">
-            <h3>Meldingen en beschikbaarheidsdoel</h3>
-            <p>Incidenten worden altijd vastgelegd; met meldingen uit worden er geen e-mails, in-app- of chatmeldingen voor deze server verstuurd.</p>
+        <div class="border-t border-line pt-5 sm:col-span-2">
+            <h3 class="m-0 text-sm font-semibold">{{ __('servers.form.notifications_title') }}</h3>
+            <p class="ss-panel-sub">{{ __('servers.form.notifications_text') }}</p>
         </div>
 
-        <div class="form-field">
-            <label class="check">
+        <div class="sm:col-span-2">
+            <label class="ss-check">
                 <input type="hidden" name="notifications_enabled" value="0">
                 <input type="checkbox" name="notifications_enabled" value="1" @checked(old('notifications_enabled', $server->notifications_enabled ?? true))>
-                Meldingen versturen voor deze server
+                {{ __('servers.form.notifications') }}
             </label>
         </div>
 
-        <div @class(['form-field', 'has-error' => $errors->has('sla_target')])>
-            <label for="sla_target">Beschikbaarheidsdoel (%)</label>
-            <input id="sla_target" name="sla_target" type="text" inputmode="decimal" value="{{ old('sla_target', $server->sla_target) }}" placeholder="{{ config('serverscope.reports.default_target') }} (standaard)">
-            @error('sla_target')<span class="form-error">{{ $message }}</span>@enderror
+        <div>
+            <label class="ss-label" for="sla_target">{{ __('servers.form.sla') }}</label>
+            <input id="sla_target" class="ss-input mt-1.5" name="sla_target" type="text" inputmode="decimal" value="{{ old('sla_target', $server->sla_target) }}" placeholder="{{ __('servers.form.sla_placeholder', ['value' => config('serverscope.reports.default_target')]) }}" {{ $field('sla_target') }}>
+            @error('sla_target')<p id="sla_target-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
 
-        <div class="form-field">
-            <label class="check">
-                <input type="hidden" name="predictive_alerts_enabled" value="0">
-                <input type="checkbox" name="predictive_alerts_enabled" value="1" @checked(old('predictive_alerts_enabled', $server->predictive_alerts_enabled ?? true))>
-                Voorspellende meldingen (bijv. schijf vol binnen {{ config('serverscope.predictive.alert_horizon_days') }} dagen)
-            </label>
-        </div>
-
-        <div class="form-field">
-            <label for="anomaly_sensitivity">Gevoeligheid afwijkingsdetectie</label>
-            <select id="anomaly_sensitivity" name="anomaly_sensitivity">
-                @foreach (['off' => 'Uit', 'low' => 'Laag (alleen grote afwijkingen)', 'medium' => 'Gemiddeld', 'high' => 'Hoog'] as $v => $l)
-                    <option value="{{ $v }}" @selected(old('anomaly_sensitivity', $server->anomaly_sensitivity ?? 'medium') === $v)>{{ $l }}</option>
+        <div>
+            <label class="ss-label" for="anomaly_sensitivity">{{ __('servers.form.sensitivity') }}</label>
+            <select id="anomaly_sensitivity" class="ss-input mt-1.5" name="anomaly_sensitivity">
+                @foreach (['off', 'low', 'medium', 'high'] as $v)
+                    <option value="{{ $v }}" @selected(old('anomaly_sensitivity', $server->anomaly_sensitivity ?? 'medium') === $v)>{{ __('servers.form.sensitivities.'.$v) }}</option>
                 @endforeach
             </select>
         </div>
 
-        <div class="form-section">
-            <h3>Onderhoudsvenster</h3>
-            <p>
-                Tijdens onderhoud worden geen nieuwe downtime- of resource-alerts aangemaakt. Laat beide velden leeg om
-                geen onderhoud te plannen. Tijden in {{ Time::zone() }}.
-            </p>
+        <div class="sm:col-span-2">
+            <label class="ss-check">
+                <input type="hidden" name="predictive_alerts_enabled" value="0">
+                <input type="checkbox" name="predictive_alerts_enabled" value="1" @checked(old('predictive_alerts_enabled', $server->predictive_alerts_enabled ?? true))>
+                {{ __('servers.form.predictive', ['days' => config('serverscope.predictive.alert_horizon_days')]) }}
+            </label>
         </div>
 
-        <div @class(['form-field', 'has-error' => $errors->has('maintenance_starts_at')])>
-            <label for="maintenance_starts_at">Start</label>
-            <input id="maintenance_starts_at" name="maintenance_starts_at" type="datetime-local" value="{{ old('maintenance_starts_at', Time::input($server->maintenance_starts_at)) }}">
-            @error('maintenance_starts_at')<span class="form-error">{{ $message }}</span>@enderror
+        <div class="border-t border-line pt-5 sm:col-span-2">
+            <h3 class="m-0 text-sm font-semibold">{{ __('servers.form.maintenance_title') }}</h3>
+            <p class="ss-panel-sub">{{ __('servers.form.maintenance_text', ['zone' => Time::zone()]) }}</p>
         </div>
 
-        <div @class(['form-field', 'has-error' => $errors->has('maintenance_ends_at')])>
-            <label for="maintenance_ends_at">Einde</label>
-            <input id="maintenance_ends_at" name="maintenance_ends_at" type="datetime-local" value="{{ old('maintenance_ends_at', Time::input($server->maintenance_ends_at)) }}">
-            <span class="form-help">Leeg laten voor onderhoud zonder vaste eindtijd.</span>
-            @error('maintenance_ends_at')<span class="form-error">{{ $message }}</span>@enderror
+        <div>
+            <label class="ss-label" for="maintenance_starts_at">{{ __('servers.form.start') }}</label>
+            <input id="maintenance_starts_at" class="ss-input mt-1.5" name="maintenance_starts_at" type="datetime-local" value="{{ old('maintenance_starts_at', Time::input($server->maintenance_starts_at)) }}" {{ $field('maintenance_starts_at') }}>
+            @error('maintenance_starts_at')<p id="maintenance_starts_at-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
 
-        <div @class(['form-field full', 'has-error' => $errors->has('maintenance_reason')])>
-            <label for="maintenance_reason">Reden</label>
-            <input id="maintenance_reason" name="maintenance_reason" type="text" maxlength="255" value="{{ old('maintenance_reason', $server->maintenance_reason) }}" placeholder="Bijv. kernel-update">
-            @error('maintenance_reason')<span class="form-error">{{ $message }}</span>@enderror
+        <div>
+            <label class="ss-label" for="maintenance_ends_at">{{ __('servers.form.end') }}</label>
+            <input id="maintenance_ends_at" class="ss-input mt-1.5" name="maintenance_ends_at" type="datetime-local" value="{{ old('maintenance_ends_at', Time::input($server->maintenance_ends_at)) }}" {{ $field('maintenance_ends_at') }}>
+            <p class="ss-help">{{ __('servers.form.end_help') }}</p>
+            @error('maintenance_ends_at')<p id="maintenance_ends_at-error" class="ss-error">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="sm:col-span-2">
+            <label class="ss-label" for="maintenance_reason">{{ __('servers.form.reason') }}</label>
+            <input id="maintenance_reason" class="ss-input mt-1.5" name="maintenance_reason" type="text" maxlength="255" value="{{ old('maintenance_reason', $server->maintenance_reason) }}" placeholder="{{ __('servers.form.reason_placeholder') }}" {{ $field('maintenance_reason') }}>
+            @error('maintenance_reason')<p id="maintenance_reason-error" class="ss-error">{{ $message }}</p>@enderror
         </div>
     @endif
 </div>

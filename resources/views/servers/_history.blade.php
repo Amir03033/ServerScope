@@ -1,28 +1,30 @@
 @php
     $hasData = fn (array $points) => collect($points)->contains(fn ($p) => $p['value'] !== null);
     $charts = [
-        ['swap', 'Swapgebruik', '%', 'var(--ss-subtle)', 'Aandeel gebruikt swapgeheugen.'],
-        ['rx', 'Netwerk inkomend', ' KiB/s', null, 'Gemiddeld tussen opeenvolgende metingen.'],
-        ['tx', 'Netwerk uitgaand', ' KiB/s', 'var(--ss-subtle)', 'Gemiddeld tussen opeenvolgende metingen.'],
-        ['disk_read', 'Schijf lezen', ' KiB/s', null, 'Alle schijven samen (agent 0.2.0+).'],
-        ['disk_write', 'Schijf schrijven', ' KiB/s', null, 'Alle schijven samen (agent 0.2.0+).'],
-        ['errors', 'Netwerkfouten', '/min', 'var(--ss-bad)', 'Ontvangst- en verzendfouten van alle interfaces (agent 0.2.0+).'],
+        ['swap', '%', 'var(--ss-subtle)'],
+        ['rx', ' KiB/s', null],
+        ['tx', ' KiB/s', 'var(--ss-subtle)'],
+        ['disk_read', ' KiB/s', null],
+        ['disk_write', ' KiB/s', null],
+        ['errors', '/min', 'var(--ss-bad)'],
     ];
 @endphp
 
-<div class="section-heading">
-    <div><h2>Uitgebreide historie</h2><p>Afgeleid uit de metingen in de gekozen periode. Een teller die terugloopt (herstart) geeft een onderbreking, geen piek.</p></div>
-</div>
-<div class="grid-3" style="margin-bottom:14px">
-    @foreach ($charts as [$key, $title, $unit, $color, $help])
-        <section class="panel">
-            <h3 style="margin:0 0 2px;font-size:14px">{{ $title }}</h3>
-            <p class="muted small" style="margin:0 0 8px">{{ $help }}</p>
-            @if ($hasData($history[$key]))
-                <x-line-chart :points="$history[$key]" :unit="$unit" :height="130" :color="$color ?? 'var(--ss-accent)'" :label="$title" />
-            @else
-                <p class="muted small">Geen gegevens in deze periode.</p>
-            @endif
-        </section>
-    @endforeach
+<div>
+    <h3 class="m-0 text-base font-semibold">{{ __('servers.history.title') }}</h3>
+    <p class="ss-panel-sub mb-3">{{ __('servers.history.text') }}</p>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        @foreach ($charts as [$key, $unit, $color])
+            @php [$title, $help] = __('servers.history.charts.'.$key); @endphp
+            <section class="ss-panel !p-4">
+                <h4 class="m-0 text-sm font-semibold">{{ $title }}</h4>
+                <p class="m-0 mb-2 text-xs text-muted">{{ $help }}</p>
+                @if ($hasData($history[$key]))
+                    <x-line-chart :points="$history[$key]" :unit="$unit" :height="130" :color="$color ?? 'var(--ss-accent)'" :label="$title" />
+                @else
+                    <p class="m-0 text-xs text-muted">{{ __('servers.history.no_data') }}</p>
+                @endif
+            </section>
+        @endforeach
+    </div>
 </div>
