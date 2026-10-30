@@ -40,16 +40,17 @@
     </x-slot:actions>
 
     {{-- Status bar with the actions that are possible now (directly under it on mobile). --}}
-    <section class="ss-panel mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex min-w-0 flex-wrap items-center gap-3">
+    <section class="ss-panel mb-4 grid gap-4">
+        <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <x-severity :severity="$incident->severity" />
-            <ol class="ss-progress min-w-0 flex-1" aria-label="{{ __('incidents.show.progress_label') }}">
+            <ol class="ss-progress min-w-0" aria-label="{{ __('incidents.show.progress_label') }}">
                 @foreach ($steps as $index => $step)
                     <li @class(['is-done' => $current !== false && $index < $current]) @if ($index === $current) aria-current="step" @endif>{{ StatusLabel::for($step) }}</li>
                 @endforeach
             </ol>
         </div>
-        <div class="flex flex-wrap gap-2">
+        @if ($actions !== [] || $incident->canTransitionTo('resolved') || ($isAdmin && $incident->canTransitionTo('open')))
+        <div class="flex flex-wrap gap-2 border-t border-line pt-4">
             @foreach ($actions as $target)
                 <form method="POST" action="{{ route('incidents.transition', $incident) }}">
                     @csrf
@@ -67,6 +68,7 @@
                 </form>
             @endif
         </div>
+        @endif
     </section>
 
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
