@@ -237,7 +237,22 @@ class DashboardController extends Controller
                 ->get()
             : collect();
 
+        // Display data for "needs attention": servers that run an older agent
+        // than the latest signed release, and how many of those can be updated
+        // now (same rule as "update all" on the servers page).
+        $latestRelease = \App\Models\AgentRelease::latestAvailable();
+        $updates = app(\App\Services\AgentUpdates::class);
+        $outdated = $latestRelease
+            ? $servers->filter(fn (Server $server) => $server->agent_version !== null && $latestRelease->isNewerThan($server->agent_version))
+            : collect();
+
         return view('dashboard', [
+            'agentUpdates' => [
+                'version' => $latestRelease?->version,
+                'outdated' => $outdated->count(),
+                'ready' => $outdated->filter(fn (Server $server) => $updates->blocker($server, $latestRelease) === null)->count(),
+            ],
+
             'overview' => app(\App\Services\Reports\DashboardOverview::class)->data(),
             'servers' => $servers,
             'serverCount' => $servers->count(),

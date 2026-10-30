@@ -29,7 +29,10 @@
     --radius: 14px;
 }
 
-a { color: inherit; }
+/* In the base layer, so it never beats the components in app.css (.ss-btn-primary on a link). */
+@layer base {
+    a { color: inherit; }
+}
 
 .muted { color: var(--ss-muted); }
 .small { font-size: .75rem; }

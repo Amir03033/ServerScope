@@ -59,8 +59,8 @@ class DashboardTest extends TestCase
             ->assertSee('Production VPS')
             ->assertSee('vps.example.test')
             ->assertSee('Online')
-            ->assertSee('42.5%')
-            ->assertSee('50.0%');
+            ->assertSee('42,5%')
+            ->assertSee('50,0%');
     }
 
     public function test_dashboard_counts_pending_and_offline_servers(): void

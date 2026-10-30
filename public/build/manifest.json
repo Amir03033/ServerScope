@@ -4,7 +4,7 @@
     "name": "i18n"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CzmBv9KB.css",
+    "file": "assets/app-Cn6C7Ega.css",
     "name": "app",
     "names": [
       "app.css"
@@ -30,7 +30,7 @@
     "src": "resources/fonts/jetbrains-mono-latin-wght.woff2"
   },
   "resources/js/app.js": {
-    "file": "assets/app-R59vX9iA.js",
+    "file": "assets/app-DyzUwi0j.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -39,7 +39,7 @@
     ]
   },
   "resources/js/charts.js": {
-    "file": "assets/charts-BE7woEbO.js",
+    "file": "assets/charts-CY_uIX55.js",
     "name": "charts",
     "src": "resources/js/charts.js",
     "isEntry": true,

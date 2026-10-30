@@ -1,4 +1,5 @@
 @php
+    use App\Support\Format;
     use App\Support\Time;
 
     ['servers' => $srv, 'domains' => $dom, 'incidents' => $inc, 'expirations' => $expirations, 'dnsChanges' => $dnsChanges, 'trends' => $trends] = $overview;
@@ -7,89 +8,116 @@
     $critical = $srv['offline'] + $dom['critical'];
 @endphp
 
-<section class="overview" aria-label="Infrastructuuroverzicht">
-    <div class="kpis">
-        <a class="kpi tone-cyan" href="{{ route('servers.index') }}">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-server"/></svg></span>
-            <div><div class="kpi-label">Servers</div><div class="kpi-value">{{ $srv['total'] }}</div>
-                <div class="kpi-caption"><span class="green">{{ $srv['online'] }} online</span> · <span @class(['red' => $srv['offline'] > 0])>{{ $srv['offline'] }} offline</span>@if ($srv['maintenance']) · {{ $srv['maintenance'] }} onderhoud @endif</div></div>
+<section aria-label="{{ __('dashboard.overview.label') }}" class="grid gap-4">
+    {{-- Key figures: grey, colour only where a number points at a problem. --}}
+    <div class="grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <a class="ss-stat" href="{{ route('servers.index') }}">
+            <span class="ss-stat-icon"><svg class="ico"><use href="#i-server"/></svg></span>
+            <span class="min-w-0">
+                <span class="ss-stat-label block">{{ __('dashboard.overview.servers') }}</span>
+                <span class="ss-stat-value block">{{ $srv['total'] }}</span>
+                <span class="ss-stat-caption block"><span class="ss-text-ok">{{ __('dashboard.overview.online', ['count' => $srv['online']]) }}</span> · <span @class(['ss-text-bad' => $srv['offline'] > 0])>{{ __('dashboard.overview.offline', ['count' => $srv['offline']]) }}</span>@if ($srv['maintenance']) · {{ __('dashboard.overview.maintenance', ['count' => $srv['maintenance']]) }}@endif</span>
+            </span>
         </a>
-        <a class="kpi tone-purple" href="{{ route('domains.index') }}">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-globe"/></svg></span>
-            <div><div class="kpi-label">Domeinen</div><div class="kpi-value">{{ $dom['total'] }}</div>
-                <div class="kpi-caption"><span class="green">{{ $dom['healthy'] }} gezond</span> · <span @class(['red' => $dom['critical'] + $dom['warning'] > 0])>{{ $dom['critical'] + $dom['warning'] }} met problemen</span></div></div>
+        <a class="ss-stat" href="{{ route('domains.index') }}">
+            <span class="ss-stat-icon"><svg class="ico"><use href="#i-globe"/></svg></span>
+            <span class="min-w-0">
+                <span class="ss-stat-label block">{{ __('dashboard.overview.domains') }}</span>
+                <span class="ss-stat-value block">{{ $dom['total'] }}</span>
+                <span class="ss-stat-caption block"><span class="ss-text-ok">{{ __('dashboard.overview.healthy', ['count' => $dom['healthy']]) }}</span> · <span @class(['ss-text-bad' => $dom['critical'] + $dom['warning'] > 0])>{{ __('dashboard.overview.with_problems', ['count' => $dom['critical'] + $dom['warning']]) }}</span></span>
+            </span>
         </a>
-        <a class="kpi {{ $inc['critical'] > 0 ? 'tone-red' : ($inc['active'] > 0 ? 'tone-yellow' : 'tone-green') }}" href="{{ route('incidents.index') }}">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-siren"/></svg></span>
-            <div><div class="kpi-label">Actieve incidenten</div><div class="kpi-value">{{ $inc['active'] }}</div>
-                <div class="kpi-caption">{{ $inc['critical'] }} kritiek · {{ $inc['unacknowledged'] }} niet bevestigd</div></div>
+        <a class="ss-stat {{ $inc['critical'] > 0 ? 'is-bad' : ($inc['active'] > 0 ? 'is-warn' : 'is-ok') }}" href="{{ route('incidents.index') }}">
+            <span class="ss-stat-icon"><svg class="ico"><use href="#i-siren"/></svg></span>
+            <span class="min-w-0">
+                <span class="ss-stat-label block">{{ __('dashboard.overview.active_incidents') }}</span>
+                <span class="ss-stat-value block">{{ $inc['active'] }}</span>
+                <span class="ss-stat-caption block">{{ __('dashboard.overview.incidents_caption', ['critical' => $inc['critical'], 'unacknowledged' => $inc['unacknowledged']]) }}</span>
+            </span>
         </a>
-        <div class="kpi tone-green">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-check"/></svg></span>
-            <div><div class="kpi-label">Uptime domeinen (24 uur)</div><div class="kpi-value">{{ $trends['uptime_24h'] !== null ? number_format($trends['uptime_24h'], 2, ',', '.').'%' : '—' }}</div>
-                <div class="kpi-caption">{{ $trends['checks_24h'] }} HTTP-controles</div></div>
+        <div class="ss-stat {{ $trends['uptime_24h'] !== null && $trends['uptime_24h'] < 99 ? 'is-warn' : 'is-ok' }}">
+            <span class="ss-stat-icon"><svg class="ico"><use href="#i-check"/></svg></span>
+            <span class="min-w-0">
+                <span class="ss-stat-label block">{{ __('dashboard.overview.uptime_24h') }}</span>
+                <span class="ss-stat-value block">{{ $trends['uptime_24h'] !== null ? Format::percent($trends['uptime_24h'], 2) : '—' }}</span>
+                <span class="ss-stat-caption block">{{ __('dashboard.overview.http_checks', ['count' => $trends['checks_24h']]) }}</span>
+            </span>
         </div>
-        <div class="kpi tone-muted">
-            <span class="kpi-icon"><svg class="ico"><use href="#i-pulse"/></svg></span>
-            <div><div class="kpi-label">Resources</div><div class="kpi-value" style="font-size:20px"><span class="green">{{ $healthy }}</span> · <span class="yellow">{{ $warnings }}</span> · <span class="red">{{ $critical }}</span></div>
-                <div class="kpi-caption">gezond · waarschuwing · kritiek</div></div>
+        <div class="ss-stat col-span-2 xl:col-span-1">
+            <span class="ss-stat-icon"><svg class="ico"><use href="#i-pulse"/></svg></span>
+            <span class="min-w-0">
+                <span class="ss-stat-label block">{{ __('dashboard.overview.resources') }}</span>
+                <span class="ss-stat-value block"><span class="ss-text-ok">{{ $healthy }}</span> · <span @class(['ss-text-warn' => $warnings > 0])>{{ $warnings }}</span> · <span @class(['ss-text-bad' => $critical > 0])>{{ $critical }}</span></span>
+                <span class="ss-stat-caption block">{{ __('dashboard.overview.resources_caption') }}</span>
+            </span>
         </div>
     </div>
 
-    <div class="grid-3" style="margin-bottom:14px">
-        <section class="panel">
-            <div class="section-heading"><div><h2>Actieve incidenten</h2><p>Kritiek eerst.</p></div><a class="button button-sm" href="{{ route('incidents.index') }}">Alle</a></div>
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <section class="ss-panel">
+            <div class="ss-panel-head">
+                <div><h2 class="ss-panel-title">{{ __('dashboard.overview.active_incidents') }}</h2><p class="ss-panel-sub">{{ __('dashboard.overview.critical_first') }}</p></div>
+                <a class="ss-btn ss-btn-secondary ss-btn-sm" href="{{ route('incidents.index') }}">{{ __('dashboard.overview.all') }}</a>
+            </div>
             @forelse ($inc['list'] as $incident)
-                <a href="{{ route('incidents.show', $incident) }}" class="ov-row">
+                <a href="{{ route('incidents.show', $incident) }}" class="ss-row">
                     <x-severity :severity="$incident->severity" />
-                    <span class="ov-main"><strong>{{ $incident->title }}</strong><span class="cell-sub">{{ $incident->subjectName() }} · {{ Time::relative($incident->opened_at) }} · {{ ['open' => 'open', 'acknowledged' => 'bevestigd', 'investigating' => 'in onderzoek'][$incident->status] ?? $incident->status }}</span></span>
+                    <span class="ss-row-main"><strong>{{ $incident->title }}</strong><span class="ss-row-sub">{{ $incident->subjectName() }} · {{ Time::relative($incident->opened_at) }} · {{ Lang::has('dashboard.overview.incident_status.'.$incident->status) ? __('dashboard.overview.incident_status.'.$incident->status) : $incident->status }}</span></span>
                 </a>
             @empty
-                <x-empty-state icon="i-check" title="Geen actieve incidenten">Alle servers en domeinen functioneren normaal.</x-empty-state>
+                <x-empty-state icon="i-check" :title="__('dashboard.overview.no_incidents')">{{ __('dashboard.overview.no_incidents_text') }}</x-empty-state>
             @endforelse
         </section>
 
-        <section class="panel">
-            <div class="section-heading"><div><h2>Verloopt binnenkort</h2><p>Certificaten en registraties, komende 60 dagen.</p></div></div>
+        <section class="ss-panel" id="expiring">
+            <div class="ss-panel-head">
+                <div><h2 class="ss-panel-title">{{ __('dashboard.overview.expiring') }}</h2><p class="ss-panel-sub">{{ __('dashboard.overview.expiring_text') }}</p></div>
+            </div>
             @forelse ($expirations as $item)
-                <a href="{{ route('domains.show', $item['domain']) }}" class="ov-row">
-                    <span class="chip">{{ $item['type'] === 'ssl' ? 'SSL' : 'Domein' }}</span>
-                    <span class="ov-main"><strong>{{ $item['domain']->displayName() }}</strong><span class="cell-sub">{{ Time::format($item['at'], 'd-m-Y') }}</span></span>
-                    <span @class(['nowrap', 'red' => $item['days'] < 8, 'yellow' => $item['days'] >= 8 && $item['days'] <= 30])>{{ $item['days'] < 0 ? 'verlopen' : $item['days'].' d' }}</span>
+                <a href="{{ route('domains.show', $item['domain']) }}" class="ss-row">
+                    <span class="ss-chip">{{ $item['type'] === 'ssl' ? __('dashboard.overview.ssl') : __('dashboard.overview.registration') }}</span>
+                    <span class="ss-row-main"><strong>{{ $item['domain']->displayName() }}</strong><span class="ss-row-sub">{{ Time::date($item['at']) }}</span></span>
+                    <span @class(['whitespace-nowrap text-sm tabular-nums', 'ss-text-bad font-semibold' => $item['days'] < 8, 'ss-text-warn font-semibold' => $item['days'] >= 8 && $item['days'] <= 30, 'text-muted' => $item['days'] > 30])>{{ $item['days'] < 0 ? __('dashboard.overview.expired') : __('dashboard.overview.days', ['count' => $item['days']]) }}</span>
                 </a>
             @empty
-                <x-empty-state icon="i-calendar" title="Niets verloopt binnenkort">Er verlopen de komende 60 dagen geen gecontroleerde certificaten of registraties.</x-empty-state>
+                <x-empty-state icon="i-calendar" :title="__('dashboard.overview.nothing_expiring')">{{ __('dashboard.overview.nothing_expiring_text') }}</x-empty-state>
             @endforelse
         </section>
 
-        <section class="panel">
-            <div class="section-heading"><div><h2>Recente DNS-wijzigingen</h2><p>Nieuwste eerst.</p></div></div>
+        <section class="ss-panel">
+            <div class="ss-panel-head">
+                <div><h2 class="ss-panel-title">{{ __('dashboard.overview.dns_changes') }}</h2><p class="ss-panel-sub">{{ __('dashboard.overview.newest_first') }}</p></div>
+            </div>
             @forelse ($dnsChanges as $change)
-                <a href="{{ $change->domain ? route('domains.show', $change->domain) : '#' }}" class="ov-row">
-                    <span class="chip">{{ $change->record_type }}</span>
-                    <span class="ov-main"><strong>{{ $change->domain?->displayName() ?? 'Verwijderd domein' }}</strong><span class="cell-sub">+{{ count($change->added) }} / −{{ count($change->removed) }} · {{ Time::relative($change->detected_at) }}</span></span>
+                <a href="{{ $change->domain ? route('domains.show', $change->domain) : '#' }}" class="ss-row">
+                    <span class="ss-chip">{{ $change->record_type }}</span>
+                    <span class="ss-row-main"><strong>{{ $change->domain?->displayName() ?? __('dashboard.overview.deleted_domain') }}</strong><span class="ss-row-sub">+{{ count($change->added) }} / −{{ count($change->removed) }} · {{ Time::relative($change->detected_at) }}</span></span>
                 </a>
             @empty
-                <x-empty-state icon="i-dns" title="Geen DNS-wijzigingen">Gedetecteerde wijzigingen verschijnen hier.</x-empty-state>
+                <x-empty-state icon="i-dns" :title="__('dashboard.overview.no_dns_changes')">{{ __('dashboard.overview.no_dns_changes_text') }}</x-empty-state>
             @endforelse
         </section>
     </div>
 
-    <div class="grid-2" style="margin-bottom:22px">
-        <section class="panel">
-            <div class="section-heading"><div><h2>Responstijd domeinen</h2><p>Gemiddelde per uur over alle domeinen, afgelopen 24 uur.</p></div></div>
-            <x-line-chart :points="$trends['response']" unit=" ms" :height="140" label="Gemiddelde responstijd per uur" />
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <section class="ss-panel">
+            <div class="ss-panel-head">
+                <div><h2 class="ss-panel-title">{{ __('dashboard.overview.response_time') }}</h2><p class="ss-panel-sub">{{ __('dashboard.overview.response_time_text') }}</p></div>
+            </div>
+            <x-line-chart :points="$trends['response']" unit=" ms" :height="140" :label="__('dashboard.overview.response_time_label')" />
         </section>
-        <section class="panel">
-            <div class="section-heading"><div><h2>Uptime per dag</h2><p>Alle domeinen, afgelopen 14 dagen (UTC-dagen). Grijs = geen metingen.</p></div></div>
-            <div class="strip" style="height:60px">
+        <section class="ss-panel">
+            <div class="ss-panel-head">
+                <div><h2 class="ss-panel-title">{{ __('dashboard.overview.uptime_per_day') }}</h2><p class="ss-panel-sub">{{ __('dashboard.overview.uptime_per_day_text') }}</p></div>
+            </div>
+            <div class="ss-strip">
                 @foreach ($trends['daily'] as $day)
                     <i @class(['up' => $day['uptime'] === 100.0, 'partial' => $day['uptime'] !== null && $day['uptime'] < 100 && $day['uptime'] >= 95, 'down' => $day['uptime'] !== null && $day['uptime'] < 95])
-                       title="{{ $day['date'] }}: {{ $day['uptime'] === null ? 'geen metingen' : number_format($day['uptime'], 2, ',', '.').'% van '.$day['checks'].' controles' }}"></i>
+                       title="{{ $day['uptime'] === null ? __('dashboard.overview.day_no_data', ['date' => $day['date']]) : __('dashboard.overview.day_uptime', ['date' => $day['date'], 'percent' => Format::percent($day['uptime'], 2), 'checks' => $day['checks']]) }}"></i>
                 @endforeach
             </div>
-            <div class="small muted" style="display:flex;justify-content:space-between;margin-top:6px"><span>{{ \Carbon\Carbon::parse($trends['daily'][0]['date'])->format('d-m') }}</span><span>vandaag</span></div>
-            <p class="small muted" style="margin:12px 0 0">Problemen nu: {{ $dom['http_problems'] }} onbereikbaar · {{ $dom['ssl_problems'] }} certificaat · {{ $dom['dns_problems'] }} DNS.</p>
+            <div class="mt-1.5 flex justify-between text-xs text-muted"><span>{{ \Carbon\Carbon::parse($trends['daily'][0]['date'])->format('d-m') }}</span><span>{{ __('dashboard.overview.today') }}</span></div>
+            <p class="m-0 mt-3 text-xs text-muted">{{ __('dashboard.overview.problems_now', ['http' => $dom['http_problems'], 'ssl' => $dom['ssl_problems'], 'dns' => $dom['dns_problems']]) }}</p>
         </section>
     </div>
 </section>
