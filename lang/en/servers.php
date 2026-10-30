@@ -321,6 +321,8 @@ return [
     'add' => [
         'subtitle' => 'Connect a Linux server with one command, or register it manually.',
         'linux_title' => 'Linux (Ubuntu 22.04+ or Debian 12+, amd64 or arm64)',
+        'url_invalid' => 'APP_URL is not a valid URL. Set APP_URL to the https address of ServerScope.',
+        'url_not_https' => 'APP_URL does not use https. Servers can only be connected over https; set APP_URL to the https address of ServerScope.',
         'disabled_title' => 'Connecting with one command is disabled.',
         'admins_only' => 'Only administrators of this team can connect a server. Ask an administrator to create an enrolment token.',
         'root_warning' => 'This command installs software as root on your server.',

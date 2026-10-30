@@ -97,4 +97,18 @@ class ServerPagesTest extends TestCase
             $this->assertTrue(str_contains($attributes, 'data-label=') || str_contains($attributes, 'is-primary') || str_contains($attributes, 'is-actions'), "Cell without a label: <td{$attributes}>");
         }
     }
+
+    public function test_install_sh_keeps_its_dutch_message_while_the_add_page_follows_the_language(): void
+    {
+        config(['app.url' => 'http://monitor.example.test', 'serverscope.enrollment.allow_insecure_url' => false]);
+        $user = User::factory()->create(['is_admin' => true, 'locale' => 'en']);
+
+        // install.sh is out of scope of the interface translation: unchanged, in Dutch.
+        $this->withHeader('Accept-Language', 'en')->get('/install.sh')->assertStatus(503)
+            ->assertSee('APP_URL gebruikt geen https', false);
+
+        $this->actingAs($user)->get(route('servers.add'))->assertOk()
+            ->assertSee('APP_URL does not use https')
+            ->assertDontSee('APP_URL gebruikt geen https');
+    }
 }

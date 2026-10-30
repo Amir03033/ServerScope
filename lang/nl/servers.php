@@ -321,6 +321,8 @@ return [
     'add' => [
         'subtitle' => 'Koppel een Linux-server met één commando, of registreer hem handmatig.',
         'linux_title' => 'Linux (Ubuntu 22.04+ of Debian 12+, amd64 of arm64)',
+        'url_invalid' => 'APP_URL is geen geldige URL. Stel APP_URL in op het https-adres van ServerScope.',
+        'url_not_https' => 'APP_URL gebruikt geen https. Servers kunnen alleen via https worden gekoppeld; stel APP_URL in op het https-adres van ServerScope.',
         'disabled_title' => 'Koppelen met één commando is uitgeschakeld.',
         'admins_only' => 'Alleen beheerders van dit team kunnen een server koppelen. Vraag een beheerder om een koppeltoken aan te maken.',
         'root_warning' => 'Dit commando installeert software als root op je server.',

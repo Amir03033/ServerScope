@@ -23,7 +23,7 @@ class EnrollmentTokenController extends Controller
 
         return view('servers.add', [
             'isAdmin' => $isAdmin,
-            'urlProblem' => AgentInstall::urlProblem(),
+            'urlProblem' => ($key = AgentInstall::urlProblemKey()) ? __($key) : null,
             'command' => AgentInstall::command(),
             'scriptUrl' => route('agent.install-script'),
             'pending' => $isAdmin ? EnrollmentToken::query()->pending()->with('creator:id,name')->latest('id')->get() : collect(),
@@ -41,7 +41,7 @@ class EnrollmentTokenController extends Controller
 
         $validated = $request->validate(['label' => ['nullable', 'string', 'max:100']]);
 
-        if ($problem = AgentInstall::urlProblem()) {
+        if ($problem = (($key = AgentInstall::urlProblemKey()) ? __($key) : null)) {
             return redirect()->route('servers.add')->with('error', $problem);
         }
 
