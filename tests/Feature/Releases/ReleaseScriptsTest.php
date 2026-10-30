@@ -26,6 +26,9 @@ class ReleaseScriptsTest extends TestCase
 
     private array $env;
 
+    /** The agent version in the copied sources; the scripts build that version. */
+    private string $version;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -59,7 +62,9 @@ class ReleaseScriptsTest extends TestCase
         $this->git('commit', '-qm', 'agent');
         $this->git('remote', 'add', 'origin', $root.'/origin.git');
         $this->git('push', '-q', 'origin', 'main');
-        $this->git('tag', 'agent-v0.3.0');
+        preg_match('/^AGENT_VERSION = "(\d+\.\d+\.\d+)"$/m', (string) file_get_contents($this->repo.'/agent/serverscope_agent/collector.py'), $match);
+        $this->version = $match[1];
+        $this->git('tag', 'agent-v'.$this->version);
 
         $this->assertSame(0, $this->script('keygen.sh', [$this->keys])->getExitCode());
 
@@ -117,7 +122,7 @@ class ReleaseScriptsTest extends TestCase
         $this->assertSame(0, $build->getExitCode(), $build->getErrorOutput());
         $commit = $this->git('rev-parse', 'HEAD');
         $this->assertStringContainsString($commit, $build->getOutput());
-        $bundle = $this->keys.'/serverscope-agent-0.3.0.bundle.tar';
+        $bundle = $this->keys.'/serverscope-agent-'.$this->version.'.bundle.tar';
 
         $verify = $this->script('verify.sh', [$bundle, $this->keys.'/release.pub']);
         $this->assertSame(0, $verify->getExitCode(), $verify->getErrorOutput());
@@ -137,7 +142,7 @@ class ReleaseScriptsTest extends TestCase
         $this->artisan('serverscope:release:import', ['bundle' => $bundle, '--admin' => 'platform@example.test'])->assertSuccessful();
 
         $release = AgentRelease::query()->sole();
-        $this->assertSame(['0.3.0', $commit], [$release->version, $release->commit]);
+        $this->assertSame([$this->version, $commit], [$release->version, $release->commit]);
         $entries = ReleaseArchive::entries(file_get_contents($release->tarballPath()));
         $this->assertContains('updater/serverscope-updater', $entries);
         $this->assertNotContains('serverscope_agent/__pycache__', $entries);
@@ -157,16 +162,16 @@ class ReleaseScriptsTest extends TestCase
         file_put_contents($this->repo.'/agent/requirements.txt', "# changed\n", FILE_APPEND);
         $this->git('commit', '-qam', 'untagged');
         $this->git('push', '-q', 'origin', 'main');
-        $this->assertStringContainsString('heeft niet de tag agent-v0.3.0', $this->build()->getErrorOutput());
+        $this->assertStringContainsString('heeft niet de tag agent-v'.$this->version, $this->build()->getErrorOutput());
 
         // Tagged, but not on origin/main.
-        $this->git('tag', '-f', 'agent-v0.3.0');
+        $this->git('tag', '-f', 'agent-v'.$this->version);
         file_put_contents($this->repo.'/agent/requirements.txt', "# local\n", FILE_APPEND);
         $this->git('commit', '-qam', 'local only');
-        $this->git('tag', '-f', 'agent-v0.3.0');
+        $this->git('tag', '-f', 'agent-v'.$this->version);
         $this->assertStringContainsString('niet gelijk aan origin/main', $this->build()->getErrorOutput());
 
-        $this->assertFileDoesNotExist($this->keys.'/serverscope-agent-0.3.0.bundle.tar');
+        $this->assertFileDoesNotExist($this->keys.'/serverscope-agent-'.$this->version.'.bundle.tar');
     }
 
     public function test_libressl_is_refused_with_a_clear_message(): void
