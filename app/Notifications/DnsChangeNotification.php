@@ -49,18 +49,18 @@ class DnsChangeNotification extends Notification implements ShouldQueue
     {
         $types = implode(', ', array_column($this->summary, 'type'));
 
-        return "[ServerScope] DNS gewijzigd voor {$this->domain->displayName()} ({$types})";
+        return __('messages.dns.subject', ['domain' => $this->domain->displayName(), 'types' => $types]);
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         $message = (new MailMessage)
             ->subject($this->subjectLine())
-            ->greeting('DNS-records zijn gewijzigd')
-            ->line("Voor {$this->domain->displayName()} zijn de volgende wijzigingen gedetecteerd:");
+            ->greeting(__('messages.dns.greeting'))
+            ->line(__('messages.dns.intro', ['domain' => $this->domain->displayName()]));
 
         foreach ($this->summary as $change) {
-            $message->line("{$change['type']}:".(in_array($change['type'], ['NS'], true) ? ' (nameservers)' : ''));
+            $message->line("{$change['type']}:".(in_array($change['type'], ['NS'], true) ? __('messages.dns.nameservers') : ''));
 
             foreach ($change['added'] as $value) {
                 $message->line('+ '.mb_substr($value, 0, 200));
@@ -72,8 +72,8 @@ class DnsChangeNotification extends Notification implements ShouldQueue
         }
 
         return $message
-            ->line('Was deze wijziging niet gepland? Controleer dan direct je DNS-beheer en registrar.')
-            ->action('Domein bekijken', route('domains.show', $this->domain));
+            ->line(__('messages.dns.check'))
+            ->action(__('messages.dns.action'), route('domains.show', $this->domain));
     }
 
     public function failed(Throwable $exception): void
@@ -86,7 +86,7 @@ class DnsChangeNotification extends Notification implements ShouldQueue
         return [
             'kind' => 'dns_changed',
             'domain_id' => $this->domain->id,
-            'message' => 'DNS gewijzigd voor '.$this->domain->displayName().' ('.implode(', ', array_column($this->summary, 'type')).')',
+            'message' => __('messages.dns.in_app', ['domain' => $this->domain->displayName(), 'types' => implode(', ', array_column($this->summary, 'type'))]),
             'url' => route('domains.show', $this->domain, false),
             'severity' => 'info',
         ];

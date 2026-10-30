@@ -54,7 +54,7 @@ class AdminPagesTest extends TestCase
         $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee(['Mark all as read', 'Delivery history'])->assertDontSee('Verzendgeschiedenis');
         $this->actingAs($user)->get(route('webhooks.index'))->assertOk()->assertSee(['Connect Discord', 'Add webhook'])->assertDontSee('Discord koppelen');
         $this->actingAs($user)->get(route('webhooks.show', $webhook))->assertOk()->assertSee(['Test delivery', 'Rotate secret', 'Generic (signed JSON)'])->assertDontSee('Geheim vernieuwen');
-        $this->actingAs($user)->get(route('webhooks.edit', $webhook))->assertOk()->assertSee(['Minimum severity (incidents)', 'High and higher'])->assertDontSee('Hoog en hoger');
+        $this->actingAs($user)->get(route('webhooks.edit', $webhook))->assertOk()->assertSee(['Minimum severity (incidents)', 'High and higher', 'Incident escalated (threshold/severity/not acknowledged)'])->assertDontSee(['Hoog en hoger', 'Incident geëscaleerd']);
         $this->actingAs($user)->get(route('profile.edit'))->assertOk()->assertSee(['Change password', 'Two-factor authentication', 'Save preferences'])->assertDontSee(['Wachtwoord wijzigen', 'Tweestapsverificatie']);
         $this->actingAs($user)->get(route('api-tokens.index'))->assertOk()->assertSee(['New token', 'Write (acknowledge/resolve incidents, notes)'])->assertDontSee('Nieuw token');
         $this->actingAs($user)->get(route('search', ['q' => 'web']))->assertOk()->assertSee(['Search term', 'Servers (1)'])->assertDontSee('Zoekterm');

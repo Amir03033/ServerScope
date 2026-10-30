@@ -24,14 +24,14 @@ class TestNotification extends Notification implements ShouldQueue
 
     public function subjectLine(): string
     {
-        return '[ServerScope] Testmelding';
+        return __('messages.test.subject');
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
             ->subject($this->subjectLine())
-            ->line('Dit is een testmelding. Je ontvangt meldingen van ServerScope op dit adres.');
+            ->line(__('messages.test.line'));
     }
 
     public function failed(Throwable $exception): void
@@ -41,6 +41,6 @@ class TestNotification extends Notification implements ShouldQueue
 
     public function toArray(object $notifiable): array
     {
-        return ['kind' => 'test', 'message' => 'Testmelding: in-app meldingen werken.', 'url' => null, 'severity' => 'info'];
+        return ['kind' => 'test', 'message' => __('messages.test.in_app'), 'url' => null, 'severity' => 'info'];
     }
 }

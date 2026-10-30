@@ -3,10 +3,11 @@
 namespace App\Services\Notifications;
 
 use App\Models\Domain;
-use App\Models\Incident;
 use App\Models\Server;
+use App\Support\Label;
 use App\Support\Time;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Lang;
 use Throwable;
 
 /**
@@ -29,25 +30,6 @@ class DiscordMessage
         'resolved' => 0x30A46C,
     ];
 
-    /** Title per incident source for opened and resolved events. */
-    private const TITLES = [
-        'agent' => ['Server offline', 'Server weer online'],
-        'alert' => ['Monitoring-alert geactiveerd', 'Monitoring-alert opgelost'],
-        'http' => ['Website onbereikbaar', 'Website weer bereikbaar'],
-        'ssl' => ['Probleem met SSL-certificaat', 'SSL-certificaat weer geldig'],
-        'ssl_expiry' => ['SSL-certificaat verloopt binnenkort', 'SSL-certificaat vernieuwd'],
-        'dns' => ['DNS-resolutie mislukt', 'DNS-resolutie hersteld'],
-        'expiry' => ['Domeinregistratie verloopt binnenkort', 'Domeinregistratie in orde'],
-        'manual' => ['Incident aangemaakt', 'Incident opgelost'],
-    ];
-
-    private const STATUS_LABELS = [
-        'open' => 'Open',
-        'acknowledged' => 'Bevestigd',
-        'investigating' => 'In onderzoek',
-        'resolved' => 'Opgelost',
-        'closed' => 'Gesloten',
-    ];
 
     public static function isValidUrl(string $url): bool
     {
@@ -102,13 +84,13 @@ class DiscordMessage
             str_starts_with($event, 'incident.') && isset($data['incident']) => self::incidentEmbed($event, $data['incident']),
             $event === 'dns.changed' && isset($data['domain']) => self::dnsEmbed($data['domain'], $data['changes'] ?? []),
             $event === 'page.changed' && isset($data['page']) => [
-                'title' => 'Pagina-inhoud gewijzigd',
+                'title' => __('messages.discord.page_changed'),
                 'description' => self::clean((string) ($data['page']['url'] ?? ''), 300)."\n".self::clean((string) ($data['change']['summary'] ?? ''), 500),
                 'color' => self::COLORS['info'],
             ],
             default => [
-                'title' => 'Testmelding',
-                'description' => 'De Discord-koppeling met ServerScope werkt. Meldingen voor de geselecteerde gebeurtenissen verschijnen in dit kanaal.',
+                'title' => __('messages.discord.test_title'),
+                'description' => __('messages.discord.test_text'),
                 'color' => self::COLORS['info'],
             ],
         };
@@ -131,14 +113,15 @@ class DiscordMessage
         $source = (string) ($incident['source'] ?? 'manual');
         $severity = (string) ($incident['severity'] ?? 'warning');
         $status = (string) ($incident['status'] ?? 'open');
-        $titles = self::TITLES[$source] ?? self::TITLES['manual'];
+        // Titles per incident source for opened and resolved events.
+        $titles = Lang::has('messages.discord.titles.'.$source) ? __('messages.discord.titles.'.$source) : __('messages.discord.titles.manual');
         $subject = $incident['subject']['name'] ?? null;
         $subject = $subject === '—' ? null : $subject;
 
         $title = match ($event) {
             'incident.resolved' => $titles[1],
-            'incident.reopened' => 'Opnieuw: '.lcfirst($titles[0]),
-            'incident.escalated' => 'Escalatie: '.lcfirst($titles[0]),
+            'incident.reopened' => __('messages.discord.again', ['title' => lcfirst($titles[0])]),
+            'incident.escalated' => __('messages.discord.escalation', ['title' => lcfirst($titles[0])]),
             default => $titles[0],
         };
 
@@ -149,13 +132,13 @@ class DiscordMessage
         }
 
         if ($event === 'incident.resolved' && ! empty($incident['resolution_notes'])) {
-            $description .= "\n\n**Oplossing:** ".self::clean((string) $incident['resolution_notes'], 500);
+            $description .= "\n\n**".__('messages.discord.resolution').'** '.self::clean((string) $incident['resolution_notes'], 500);
         }
 
         $fields = [
-            ['name' => 'Status', 'value' => self::STATUS_LABELS[$status] ?? $status, 'inline' => true],
-            ['name' => 'Ernst', 'value' => \App\Support\Severity::label($severity), 'inline' => true],
-            ['name' => 'Bron', 'value' => Incident::SOURCE_LABELS[$source] ?? $source, 'inline' => true],
+            ['name' => __('messages.discord.field_status'), 'value' => Lang::has('messages.discord.status.'.$status) ? __('messages.discord.status.'.$status) : $status, 'inline' => true],
+            ['name' => __('messages.discord.field_severity'), 'value' => Label::of('severity', $severity, \App\Support\Severity::LABELS), 'inline' => true],
+            ['name' => __('messages.discord.field_source'), 'value' => Label::of('incident_source', $source, [$source => $source]), 'inline' => true],
         ];
 
         if ($subject !== null) {
@@ -163,15 +146,15 @@ class DiscordMessage
         }
 
         if (! empty($incident['opened_at'])) {
-            $fields[] = ['name' => 'Gestart', 'value' => self::discordTime($incident['opened_at']), 'inline' => true];
+            $fields[] = ['name' => __('messages.discord.field_started'), 'value' => self::discordTime($incident['opened_at']), 'inline' => true];
         }
 
         if ($event === 'incident.resolved' && ! empty($incident['resolved_at'])) {
-            $fields[] = ['name' => 'Opgelost', 'value' => self::discordTime($incident['resolved_at']), 'inline' => true];
+            $fields[] = ['name' => __('messages.discord.field_resolved'), 'value' => self::discordTime($incident['resolved_at']), 'inline' => true];
         }
 
         if (($incident['occurrence_count'] ?? 1) > 1) {
-            $fields[] = ['name' => 'Aantal keer', 'value' => (string) $incident['occurrence_count'], 'inline' => true];
+            $fields[] = ['name' => __('messages.discord.field_count'), 'value' => (string) $incident['occurrence_count'], 'inline' => true];
         }
 
         $embed = [
@@ -183,7 +166,7 @@ class DiscordMessage
 
         if (isset($incident['id']) && ($url = self::route('incidents.show', $incident['id'])) !== null) {
             $embed['url'] = $url;
-            $embed['fields'][] = ['name' => 'Incident', 'value' => "[#{$incident['id']} bekijken in ServerScope]({$url})", 'inline' => false];
+            $embed['fields'][] = ['name' => __('messages.discord.field_incident'), 'value' => '['.__('messages.discord.view_incident', ['id' => $incident['id']])."]({$url})", 'inline' => false];
         }
 
         return $embed;
@@ -201,7 +184,7 @@ class DiscordMessage
 
             $fields[] = [
                 'name' => (string) ($change['type'] ?? 'DNS'),
-                'value' => "```diff\n".mb_substr(implode("\n", $lines) ?: '(geen waarden)', 0, 900)."\n```",
+                'value' => "```diff\n".mb_substr(implode("\n", $lines) ?: __('messages.discord.no_values'), 0, 900)."\n```",
                 'inline' => false,
             ];
         }
@@ -209,8 +192,8 @@ class DiscordMessage
         $name = self::clean((string) ($domain['display_name'] ?? $domain['name'] ?? ''), 200);
 
         $embed = [
-            'title' => 'DNS-records gewijzigd',
-            'description' => "Voor **{$name}** zijn DNS-wijzigingen gedetecteerd. Was dit niet gepland? Controleer dan je DNS-beheer en registrar.",
+            'title' => __('messages.discord.dns_title'),
+            'description' => __('messages.discord.dns_text', ['domain' => $name]),
             'color' => self::COLORS['info'],
             'fields' => $fields,
         ];
@@ -224,23 +207,17 @@ class DiscordMessage
 
     private static function eventLabel(string $event): string
     {
-        return match ($event) {
-            'incident.opened' => 'Incident geopend',
-            'incident.reopened' => 'Incident heropend',
-            'incident.resolved' => 'Incident opgelost',
-            'incident.escalated' => 'Incident geëscaleerd',
-            'dns.changed' => 'DNS gewijzigd',
-            'page.changed' => 'Pagina gewijzigd',
-            default => 'Testmelding',
-        };
+        $key = 'messages.discord.events.'.str_replace('.', '_', $event);
+
+        return Lang::has($key) ? __($key) : __('messages.discord.events.test');
     }
 
     private static function subjectLabel(?string $type): string
     {
         return match ($type) {
-            (new Server)->getMorphClass() => 'Server',
-            (new Domain)->getMorphClass() => 'Domein',
-            default => 'Betreft',
+            (new Server)->getMorphClass() => __('messages.discord.field_server'),
+            (new Domain)->getMorphClass() => __('messages.discord.field_domain'),
+            default => __('messages.discord.field_subject'),
         };
     }
 
@@ -263,7 +240,7 @@ class DiscordMessage
         }
 
         // Discord renders <t:…> in the reader's own timezone.
-        return "<t:{$time->getTimestamp()}:f> (".Time::format($time, 'd-m-Y H:i T').')';
+        return "<t:{$time->getTimestamp()}:f> (".Time::dateTimeZone($time).')';
     }
 
     private static function timestamp(?string $iso): string

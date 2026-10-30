@@ -13,6 +13,7 @@ use App\Notifications\DnsChangeNotification;
 use App\Notifications\IncidentNotification;
 use App\Notifications\PageChangeNotification;
 use App\Notifications\TestNotification;
+use App\Support\Locale;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Notifications\Notification as BaseNotification;
 use Illuminate\Support\Facades\Cache;
@@ -196,7 +197,8 @@ class NotificationDispatcher
             'kind' => $kind,
             'channel' => $channel,
             'status' => 'queued',
-            'subject' => method_exists($notification, 'subjectLine') ? mb_substr($notification->subjectLine(), 0, 255) : null,
+            // As the recipient sees it: in their language (the app default without a user).
+            'subject' => method_exists($notification, 'subjectLine') ? mb_substr(Locale::using($user?->preferredLocale(), fn () => $notification->subjectLine()), 0, 255) : null,
         ]);
     }
 

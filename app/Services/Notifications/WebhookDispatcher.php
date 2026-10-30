@@ -11,6 +11,7 @@ use App\Models\MonitoredPage;
 use App\Models\PageChange;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
+use App\Support\Locale;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -42,7 +43,8 @@ class WebhookDispatcher
 
     public function test(WebhookEndpoint $endpoint): WebhookDelivery
     {
-        return $this->queue($endpoint, 'test', ['message' => 'Testlevering vanuit ServerScope.']);
+        // Readable field in the endpoint's language; the JSON keys stay the same.
+        return $this->queue($endpoint, 'test', ['message' => Locale::using(Locale::forEndpoint($endpoint), fn () => __('messages.test.webhook'))]);
     }
 
     public function redeliver(WebhookDelivery $delivery): WebhookDelivery

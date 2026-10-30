@@ -15,10 +15,11 @@ final class Label
     public static function of(string $group, ?string $code, array $fallback = []): string
     {
         $code = (string) $code;
-        $key = "labels.{$group}.{$code}";
+        // The whole group, so codes with a dot (incident.opened) work too.
+        $labels = Lang::has("labels.{$group}") ? __("labels.{$group}") : [];
 
-        if ($code !== '' && Lang::has($key)) {
-            return __($key);
+        if ($code !== '' && is_array($labels) && is_string($labels[$code] ?? null)) {
+            return $labels[$code];
         }
 
         return $fallback[$code] ?? ucfirst(str_replace('_', ' ', $code));
