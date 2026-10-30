@@ -581,7 +581,8 @@ install code: the key must stay offline (`docs/RELEASE_KEYS.md` §4).
   without a terminal found that `[ -r /dev/tty ]` is true without a
   controlling terminal while the device cannot be opened; install.sh now
   really opens it (`has_tty`), for the update question and the token
-  prompt.
+  prompt. After this change `update-test.sh` was run again on all
+  three images: still 52 of 52 each.
 
 ### Not tested / limitations
 1. **Signing on macOS** was not run (no Mac here). The scripts were
