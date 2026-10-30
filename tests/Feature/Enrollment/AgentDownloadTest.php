@@ -54,7 +54,7 @@ class AgentDownloadTest extends TestCase
     {
         $package = app(AgentPackage::class);
 
-        $this->assertSame('0.3.0', $package->version());
+        $this->assertSame('0.3.1', $package->version());
         $entries = $this->entries($package->path());
         sort($entries);
 
