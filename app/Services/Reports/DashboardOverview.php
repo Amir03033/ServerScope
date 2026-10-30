@@ -63,7 +63,7 @@ class DashboardOverview
             'expirations' => $this->expirations(60),
             'dnsChanges' => DnsChange::query()->with('domain:id,name')->latest('detected_at')->limit(8)->get(),
             // Cached per team: the trends contain the team's own checks only.
-            'trends' => Cache::remember('dashboard:trends:'.(\App\Tenancy\Tenant::id() ?? 'all'), 60, fn () => $this->trends()),
+            'trends' => Cache::remember(\App\Support\Locale::cacheKey('dashboard:trends:'.(\App\Tenancy\Tenant::id() ?? 'all')), 60, fn () => $this->trends()),
         ];
     }
 
