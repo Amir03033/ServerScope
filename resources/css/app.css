@@ -453,7 +453,7 @@
     }
 
     /* Tables: quiet header, row hover, numbers aligned. */
-    .ss-table-wrap { width: 100%; overflow-x: auto; }
+    .ss-table-wrap { position: relative; width: 100%; overflow-x: auto; }
 
     .ss-table {
         width: 100%;
