@@ -33,11 +33,11 @@
         .sub { color: #8397b1; font-size: 13px; }
         .bars { display: flex; gap: 2px; height: 30px; margin-top: 10px; }
         .bars i { flex: 1; border-radius: 2px; background: #25364b; }
-        .legend { display: flex; justify-content: space-between; color: #657b95; font-size: 11px; margin-top: 4px; }
+        .legend { display: flex; justify-content: space-between; color: #94a3b8; font-size: 12px; margin-top: 4px; }
         h2 { font-size: 17px; margin: 32px 0 12px; }
         .incident { padding: 14px 0; border-bottom: 1px solid #172338; }
         .incident:last-child { border-bottom: 0; }
-        footer { margin-top: 40px; color: #657b95; font-size: 12px; text-align: center; }
+        footer { margin-top: 40px; color: #94a3b8; font-size: 12px; text-align: center; }
         a { color: var(--accent); }
         .locale { display: inline-flex; gap: 4px; margin-top: 14px; }
         .locale button { padding: 3px 9px; border: 1px solid #1f2e47; border-radius: 7px; background: transparent; color: #8397b1; font: inherit; font-size: 12px; cursor: pointer; }

@@ -28,7 +28,7 @@
     .field-full { grid-column: 1 / -1; }
 
     .field > label {
-        color: #c3d1e4;
+        color: var(--ss-muted);
         font-size: 12px;
         font-weight: 600;
     }
@@ -39,11 +39,11 @@
         width: 100%;
         min-height: 44px;
         padding: 10px 12px;
-        border: 1px solid #2a3c58;
+        border: 1px solid var(--ss-line-strong);
         border-radius: 10px;
         outline: none;
-        background: #080f1c;
-        color: #edf4ff;
+        background: var(--ss-surface-2);
+        color: var(--ss-text);
         font: inherit;
         transition: border-color .15s, box-shadow .15s;
     }
@@ -60,28 +60,28 @@
 
     .field input:focus,
     .field select:focus {
-        border-color: #0891b2;
-        box-shadow: 0 0 0 3px #0891b230;
+        border-color: var(--ss-accent);
+        box-shadow: 0 0 0 3px var(--ss-accent-soft);
     }
 
-    .field-help { color: #8397b1; font-size: 11px; }
-    .field-error { color: #fb7185; font-size: 12px; }
+    .field-help { color: var(--ss-muted); font-size: 11px; }
+    .field-error { color: var(--ss-bad); font-size: 12px; }
 
     .checkbox-field {
         display: flex;
         align-items: flex-start;
         gap: 12px;
         padding: 15px;
-        border: 1px solid #1f2e47;
+        border: 1px solid var(--ss-line);
         border-radius: 12px;
-        background: #0a1322;
+        background: var(--ss-surface-2);
     }
 
     .checkbox-field input {
         width: 18px;
         height: 18px;
         margin-top: 2px;
-        accent-color: #38bdf8;
+        accent-color: var(--ss-accent);
     }
 
     .checkbox-field label {
@@ -97,7 +97,7 @@
         gap: 10px;
         margin-top: 24px;
         padding-top: 20px;
-        border-top: 1px solid #1a2840;
+        border-top: 1px solid var(--ss-line);
     }
 
     @media (max-width: 600px) {

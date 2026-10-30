@@ -1,12 +1,12 @@
 @php
     $hasData = fn (array $points) => collect($points)->contains(fn ($p) => $p['value'] !== null);
     $charts = [
-        ['swap', 'Swapgebruik', '%', '#a78bfa', 'Aandeel gebruikt swapgeheugen.'],
-        ['rx', 'Netwerk inkomend', ' KiB/s', '#22d3ee', 'Gemiddeld tussen opeenvolgende metingen.'],
-        ['tx', 'Netwerk uitgaand', ' KiB/s', '#a78bfa', 'Gemiddeld tussen opeenvolgende metingen.'],
-        ['disk_read', 'Schijf lezen', ' KiB/s', '#34d399', 'Alle schijven samen (agent 0.2.0+).'],
-        ['disk_write', 'Schijf schrijven', ' KiB/s', '#fbbf24', 'Alle schijven samen (agent 0.2.0+).'],
-        ['errors', 'Netwerkfouten', '/min', '#fb7185', 'Ontvangst- en verzendfouten van alle interfaces (agent 0.2.0+).'],
+        ['swap', 'Swapgebruik', '%', 'var(--ss-subtle)', 'Aandeel gebruikt swapgeheugen.'],
+        ['rx', 'Netwerk inkomend', ' KiB/s', null, 'Gemiddeld tussen opeenvolgende metingen.'],
+        ['tx', 'Netwerk uitgaand', ' KiB/s', 'var(--ss-subtle)', 'Gemiddeld tussen opeenvolgende metingen.'],
+        ['disk_read', 'Schijf lezen', ' KiB/s', null, 'Alle schijven samen (agent 0.2.0+).'],
+        ['disk_write', 'Schijf schrijven', ' KiB/s', null, 'Alle schijven samen (agent 0.2.0+).'],
+        ['errors', 'Netwerkfouten', '/min', 'var(--ss-bad)', 'Ontvangst- en verzendfouten van alle interfaces (agent 0.2.0+).'],
     ];
 @endphp
 
@@ -19,7 +19,7 @@
             <h3 style="margin:0 0 2px;font-size:14px">{{ $title }}</h3>
             <p class="muted small" style="margin:0 0 8px">{{ $help }}</p>
             @if ($hasData($history[$key]))
-                <x-line-chart :points="$history[$key]" :unit="$unit" :height="130" :color="$color" :label="$title" />
+                <x-line-chart :points="$history[$key]" :unit="$unit" :height="130" :color="$color ?? 'var(--ss-accent)'" :label="$title" />
             @else
                 <p class="muted small">Geen gegevens in deze periode.</p>
             @endif

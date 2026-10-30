@@ -3,8 +3,8 @@
         .actions form { margin: 0; }
         .notice {
             margin-bottom: 16px; padding: 14px 16px;
-            border: 1px solid #7f1d1d; border-radius: 10px;
-            background: #2a121a; color: var(--red);
+            border: 1px solid color-mix(in srgb, var(--ss-bad) 35%, var(--ss-line)); border-radius: 10px;
+            background: color-mix(in srgb, var(--ss-bad) 8%, var(--ss-surface)); color: var(--red);
         }
         .notice ul { margin: 8px 0 0; padding-left: 18px; }
         .panel {
@@ -18,7 +18,7 @@
             width: 44px; height: 44px; flex: 0 0 44px;
             border: 1px solid color-mix(in srgb, var(--cyan) 45%, transparent);
             border-radius: 12px;
-            background: color-mix(in srgb, var(--cyan) 14%, #0b1424);
+            background: color-mix(in srgb, var(--cyan) 14%, var(--ss-surface));
             color: var(--cyan); font-size: 22px;
         }
         .panel-head h2 { margin: 0; font-size: 17px; overflow-wrap: anywhere; }
