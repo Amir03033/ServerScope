@@ -31,7 +31,9 @@ chmod 644 "${PUB}"
 
 FINGERPRINT="$(key_fingerprint "${PUB}")"
 printf '\nKlaar.\n'
-printf '  privésleutel: %s (versleuteld; maak nu een back-up, zie docs/RELEASE_KEYS.md)\n' "${KEY}"
+# Non-ASCII text goes in an argument, never in the format string: the
+# printf of bash 3.2 (macOS) mangles it there.
+printf '  %s\n' "privésleutel: ${KEY} (versleuteld; maak nu een back-up, zie docs/RELEASE_KEYS.md)"
 printf '  publieke sleutel: %s\n' "${PUB}"
 printf '  sleutel-ID: %s\n' "${FINGERPRINT:0:16}"
 printf '  vingerafdruk (SHA-256): %s\n' "${FINGERPRINT}"

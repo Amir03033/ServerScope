@@ -80,7 +80,8 @@ by the ServerScope maintainer, never on the ServerScope server, in the
 repository or in CI (`docs/RELEASE_KEYS.md`).
 
 **Release key fingerprint (SHA-256 of the public key, DER):**
-`(wordt ingevuld zodra de releasesleutel is aangemaakt)`
+`511215f3eccc6640c9ee8d42443d13501e2f291e03aa566e21e1df5efa0a1488`
+(key ID `511215f3eccc6640`)
 
 Compare it with the line `Releasesleutel: vingerafdruk …` that install.sh
 prints, and on an installed server with:

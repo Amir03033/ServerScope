@@ -20,8 +20,8 @@
   Debian 12. See §6.
 - Signed agent releases and updates from the dashboard (phase 3): branch
   `claude/admiring-darwin-oiqti5`. Baseline 482 of 483 PHPUnit tests (only
-  the known TLS test fails) and 39 agent tests; afterwards 533 of 534 (the
-  483 plus 51 new; still only the known TLS test fails) and 43 agent tests,
+  the known TLS test fails) and 39 agent tests; afterwards 534 of 535 (the
+  483 plus 52 new; still only the known TLS test fails) and 43 agent tests,
   plus container tests on Ubuntu 22.04, Ubuntu 24.04 and Debian 12 and one
   with real systemd. See §7.
 
@@ -525,7 +525,7 @@ agent restarts. With the private key AND the server, an attacker could
 install code: the key must stay offline (`docs/RELEASE_KEYS.md` §4).
 
 ### Tests
-- PHPUnit: 51 new tests (`tests/Unit/Releases`, `tests/Feature/Releases`,
+- PHPUnit: 52 new tests (`tests/Unit/Releases`, `tests/Feature/Releases`,
   `tests/Feature/AgentConfigTest.php`): manifest and signature (valid,
   other key, changed manifest, malformed signature, no trusted key, wrong
   `key_id`, strict parsing, archive contents); import (valid, invalid
@@ -543,7 +543,9 @@ install code: the key must stay offline (`docs/RELEASE_KEYS.md` §4).
   `scripts/release/` end to end with a key made during the test (keygen,
   build, verify, import; refusal of a dirty tree, an untagged commit, a
   commit not equal to origin/main, and LibreSSL); shellcheck of the
-  updater and the release scripts. All pass on SQLite; the migrations also
+  updater and the release scripts; the committed public release key
+  (`511215f3eccc6640`) matches its file name and the fingerprint in
+  `agent/README.md`. All pass on SQLite; the migrations also
   ran up, down and up again on MariaDB 10.11 (not MySQL 8.0).
 - pytest: 4 new tests for the release layout: agent 0.2.0 code finds its
   `.env` through the release link (and does not without it), 0.3.0 finds it

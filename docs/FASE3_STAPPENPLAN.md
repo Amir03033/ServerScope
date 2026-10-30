@@ -47,6 +47,11 @@ Afspraken in dit stappenplan:
 
 ## 2. De publieke sleutel aan de repository geven
 
+**Gedaan** voor sleutel `511215f3eccc6640`
+(vingerafdruk `511215f3eccc6640c9ee8d42443d13501e2f291e03aa566e21e1df5efa0a1488`):
+`resources/agent/release-keys/511215f3eccc6640.pub` en `agent/README.md`.
+Hieronder staat hoe het werkt, voor een volgende sleutel.
+
 `release.pub` is openbaar; je mag hem gewoon delen. Twee manieren:
 
 - **Zelf:** het script heeft het commando getoond, bijvoorbeeld:
