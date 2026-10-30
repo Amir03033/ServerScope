@@ -170,6 +170,11 @@ document.querySelectorAll('[data-team-switch]').forEach((form) => {
     });
 });
 
+/* Filters that apply on change (data-auto-submit); a <noscript> button covers no-JS. */
+document.querySelectorAll('form[data-auto-submit]').forEach((form) => {
+    form.querySelectorAll('select').forEach((select) => select.addEventListener('change', () => form.requestSubmit?.() ?? form.submit()));
+});
+
 /* ------------------------------------------------------------------ */
 /* Confirmation for destructive actions (data-confirm, same text as     */
 /* before) and a loading state on submit so forms cannot be sent twice. */

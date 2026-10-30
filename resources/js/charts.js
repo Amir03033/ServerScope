@@ -304,7 +304,18 @@ function createLineChart(elementId, datasets, options = {}) {
 }
 
 function initializeDashboardCharts() {
-    const data = window.serverScopeChartData;
+    // Data from <script type="application/json" id="chart-data">, or the
+    // older global that screens not yet rebuilt still set.
+    let data = window.serverScopeChartData;
+    const source = document.getElementById('chart-data');
+
+    if (source) {
+        try {
+            data = JSON.parse(source.textContent);
+        } catch {
+            data = null;
+        }
+    }
 
     if (!data || !Array.isArray(data.labels)) {
         return;
