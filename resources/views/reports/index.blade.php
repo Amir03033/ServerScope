@@ -1,41 +1,37 @@
 @php
-    use App\Services\Incidents\IncidentMetrics;
     use App\Support\Time;
 
-    $pct = fn (?float $v, int $d = 3) => $v === null ? '—' : number_format($v, $d, ',', '.').'%';
     $period = $input['period'] ?? '30d';
 @endphp
 
-<x-layouts.app title="Rapporten">
-    <x-slot:subtitle>Berekende beschikbaarheid uit monitoringgegevens — geen contractuele SLA-vaststelling.</x-slot:subtitle>
+<x-layouts.app :title="__('reports.title')">
+    <x-slot:subtitle>{{ __('reports.subtitle') }}</x-slot:subtitle>
     <x-slot:actions>
-        <a class="button" href="{{ route('reports.print', $input) }}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-file"/></svg> Afdrukken / PDF</a>
-        <a class="button" href="{{ route('reports.export', [...$input, 'kind' => 'incidents']) }}"><svg class="ico"><use href="#i-file"/></svg> Incidenten (CSV)</a>
-        <a class="button" href="{{ route('reports.export', $input) }}"><svg class="ico"><use href="#i-file"/></svg> Beschikbaarheid (CSV)</a>
+        <a class="ss-btn ss-btn-secondary" href="{{ route('reports.print', $input) }}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-file"/></svg> {{ __('reports.print') }}</a>
+        <a class="ss-btn ss-btn-ghost" href="{{ route('reports.export', [...$input, 'kind' => 'incidents']) }}"><svg class="ico"><use href="#i-file"/></svg> {{ __('reports.export_incidents') }}</a>
+        <a class="ss-btn ss-btn-ghost" href="{{ route('reports.export', $input) }}"><svg class="ico"><use href="#i-file"/></svg> {{ __('reports.export_availability') }}</a>
     </x-slot:actions>
 
-    <section class="panel" style="margin-bottom:14px">
-        <form method="GET" action="{{ route('reports.index') }}" class="toolbar" style="margin:0">
-            <div class="form-field"><label for="period">Periode</label>
-                <select id="period" name="period" onchange="document.getElementById('custom-range').hidden = this.value !== 'custom'">
-                    @foreach (['7d' => 'Laatste 7 dagen', '30d' => 'Laatste 30 dagen', '90d' => 'Laatste 90 dagen', 'month' => 'Deze maand', 'custom' => 'Aangepast'] as $v => $l)
-                        <option value="{{ $v }}" @selected($period === $v)>{{ $l }}</option>
+    <section class="ss-panel mb-4">
+        <form method="GET" action="{{ route('reports.index') }}" class="flex flex-wrap items-end gap-3">
+            <div>
+                <label class="ss-label" for="period">{{ __('reports.period') }}</label>
+                <select id="period" class="ss-input mt-1.5" name="period" data-custom-toggle="custom-range">
+                    @foreach (['7d', '30d', '90d', 'month', 'custom'] as $v)
+                        <option value="{{ $v }}" @selected($period === $v)>{{ __('reports.periods.'.$v) }}</option>
                     @endforeach
                 </select>
             </div>
-            <span id="custom-range" style="display:contents" @if ($period !== 'custom') hidden @endif>
-                <div class="form-field"><label for="from">Van</label><input id="from" name="from" type="datetime-local" value="{{ $input['from'] ?? '' }}"></div>
-                <div class="form-field"><label for="to">Tot</label><input id="to" name="to" type="datetime-local" value="{{ $input['to'] ?? '' }}"></div>
-            </span>
-            <div class="form-field"><label for="target">Doel (%)</label><input id="target" name="target" type="number" step="0.01" min="90" max="100" value="{{ $report['target'] }}"></div>
-            <button class="button button-primary" type="submit">Toon rapport</button>
+            <div id="custom-range" class="contents" @if ($period !== 'custom') hidden @endif>
+                <div><label class="ss-label" for="from">{{ __('reports.from') }}</label><input id="from" class="ss-input mt-1.5" name="from" type="datetime-local" value="{{ $input['from'] ?? '' }}"></div>
+                <div><label class="ss-label" for="to">{{ __('reports.to') }}</label><input id="to" class="ss-input mt-1.5" name="to" type="datetime-local" value="{{ $input['to'] ?? '' }}"></div>
+            </div>
+            <div><label class="ss-label" for="target">{{ __('reports.target') }}</label><input id="target" class="ss-input mt-1.5 !w-28" name="target" type="number" step="0.01" min="90" max="100" value="{{ $report['target'] }}"></div>
+            <button class="ss-btn ss-btn-primary" type="submit">{{ __('reports.show') }}</button>
         </form>
-        <p class="small muted" style="margin:10px 0 0">
-            {{ Time::format($report['from']) }} t/m {{ Time::format($report['to']) }} ({{ Time::zone() }}).
-            Uptime telt alleen uitgevoerde controles; ontbrekende metingen verlagen de <em>dekking</em> en tellen nooit als beschikbaar.
-            Serverdowntime = duur van agent-offline-incidenten; tijdens gepland onderhoud worden geen incidenten aangemaakt.
-            Controles van domeinen en pagina's tijdens onderhoud tellen gewoon mee (er wordt niets stilzwijgend uitgesloten).
-            Een eigen beschikbaarheidsdoel van een resource gaat vóór het doel hierboven.
+        <p class="mt-3 mb-0 text-xs text-muted">
+            {{ __('reports.range', ['from' => Time::dateTime($report['from']), 'to' => Time::dateTime($report['to']), 'zone' => Time::zone()]) }}
+            {!! __('reports.method', ['coverage' => '<em>'.e(__('reports.coverage_word')).'</em>']) !!}
         </p>
     </section>
 
