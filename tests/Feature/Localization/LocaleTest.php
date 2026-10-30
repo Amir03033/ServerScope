@@ -192,6 +192,20 @@ class LocaleTest extends TestCase
         $this->assertTrue(\Illuminate\Support\Facades\Cache::has($base.':en'));
     }
 
+    public function test_dashboard_and_system_health_caches_are_per_language(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+
+        foreach (['nl', 'en'] as $locale) {
+            app()->setLocale($locale);
+            app(\App\Services\Reports\DashboardOverview::class)->data();
+            app(\App\Services\SystemHealth::class)->summary();
+
+            $this->assertTrue(\Illuminate\Support\Facades\Cache::has("dashboard:trends:all:{$locale}"));
+            $this->assertTrue(\Illuminate\Support\Facades\Cache::has("serverscope:system-health:summary:platform:{$locale}"));
+        }
+    }
+
     public function test_a_visitors_choice_beats_the_browser_on_status_pages(): void
     {
         $page = $this->statusPage();
