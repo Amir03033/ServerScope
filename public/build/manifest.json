@@ -1,17 +1,50 @@
 {
+  "_i18n-Bs6GXkQz.js": {
+    "file": "assets/i18n-Bs6GXkQz.js",
+    "name": "i18n"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-65NN5wRZ.css",
+    "file": "assets/app-CzmBv9KB.css",
     "name": "app",
     "names": [
       "app.css"
     ],
     "src": "resources/css/app.css",
-    "isEntry": true
+    "isEntry": true,
+    "assets": [
+      "assets/inter-latin-wght-Dx4kXJAl.woff2",
+      "assets/inter-latin-ext-wght-DO1Apj_S.woff2",
+      "assets/jetbrains-mono-latin-wght-B9CIFXIH.woff2"
+    ]
+  },
+  "resources/fonts/inter-latin-ext-wght.woff2": {
+    "file": "assets/inter-latin-ext-wght-DO1Apj_S.woff2",
+    "src": "resources/fonts/inter-latin-ext-wght.woff2"
+  },
+  "resources/fonts/inter-latin-wght.woff2": {
+    "file": "assets/inter-latin-wght-Dx4kXJAl.woff2",
+    "src": "resources/fonts/inter-latin-wght.woff2"
+  },
+  "resources/fonts/jetbrains-mono-latin-wght.woff2": {
+    "file": "assets/jetbrains-mono-latin-wght-B9CIFXIH.woff2",
+    "src": "resources/fonts/jetbrains-mono-latin-wght.woff2"
   },
   "resources/js/app.js": {
-    "file": "assets/app-BzED1Mm-.js",
+    "file": "assets/app-R59vX9iA.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_i18n-Bs6GXkQz.js"
+    ]
+  },
+  "resources/js/charts.js": {
+    "file": "assets/charts-BE7woEbO.js",
+    "name": "charts",
+    "src": "resources/js/charts.js",
+    "isEntry": true,
+    "imports": [
+      "_i18n-Bs6GXkQz.js"
+    ]
   }
 }

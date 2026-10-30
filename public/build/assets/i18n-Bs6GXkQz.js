@@ -1,0 +1,1 @@
+var e=null;function t(){if(e===null)try{e=JSON.parse(document.getElementById(`ss-i18n`)?.textContent||`{}`)}catch{e={}}return e}function n(e,n={}){let r=t()[e]??e;for(let[e,t]of Object.entries(n))r=r.replaceAll(`:${e}`,String(t));return r}function r(){return document.documentElement.lang===`nl`?`nl-NL`:`en-GB`}export{n,r as t};
