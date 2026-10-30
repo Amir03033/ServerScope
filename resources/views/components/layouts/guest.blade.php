@@ -1,70 +1,48 @@
 @props(['title'])
+@php $locale = app()->getLocale(); @endphp
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="{{ $locale }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="dark">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0a0a0b" media="(prefers-color-scheme: dark)">
     <title>{{ $title }} — ServerScope</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: grid;
-            place-items: center;
-            padding: 24px;
-            background: #080d18;
-            color: #e5e7eb;
-            font: 15px system-ui, sans-serif;
-        }
-        .panel {
-            width: 100%;
-            max-width: 420px;
-            padding: 36px;
-            border: 1px solid #263246;
-            border-radius: 18px;
-            background: #101827;
-        }
-        .brand { color: #67e8f9; font-weight: 750; letter-spacing: .5px; }
-        h1 { margin: 28px 0 8px; font-size: 28px; }
-        .muted { color: #94a3b8; line-height: 1.6; }
-        label { display: block; margin: 20px 0 8px; font-size: 13px; }
-        input {
-            width: 100%;
-            padding: 12px 14px;
-            color: #f8fafc;
-            background: #0b1220;
-            border: 1px solid #334155;
-            border-radius: 9px;
-            font: inherit;
-        }
-        input:focus { outline: 2px solid #22d3ee; outline-offset: 2px; }
-        button {
-            width: 100%;
-            margin-top: 24px;
-            padding: 13px;
-            border: 0;
-            border-radius: 9px;
-            background: #22d3ee;
-            color: #08202a;
-            font: inherit;
-            font-weight: 700;
-            cursor: pointer;
-        }
-        .error { color: #fca5a5; margin-top: 14px; }
-        .footer { margin-top: 26px; font-size: 12px; color: #64748b; }
-        .status { color: #86efac; margin-top: 14px; }
-        .links { margin-top: 16px; font-size: 13px; }
-        .links a { color: #67e8f9; }
-        .secondary { background: transparent; color: #94a3b8; border: 1px solid #334155; }
-    </style>
+    <script src="{{ asset('js/theme-init.js') }}?v={{ @filemtime(public_path('js/theme-init.js')) }}"></script>
+    @include('partials.vite-assets')
 </head>
 <body>
-<main class="panel">
-    <div class="brand">SERVERSCOPE / MONITORING</div>
-    {{ $slot }}
-    <div class="footer">ServerScope · Secure server monitoring</div>
-</main>
+@include('partials.icons')
+
+<div class="flex min-h-screen flex-col">
+    <header class="flex items-center justify-between gap-3 px-4 py-4 sm:px-6">
+        <span class="flex items-center gap-2 text-fg">
+            <svg class="ico h-6 w-6 text-accent [stroke-width:2]"><use href="#i-pulse"/></svg>
+            <span class="text-[15px] font-semibold tracking-tight">ServerScope</span>
+        </span>
+        <div class="flex items-center gap-1.5">
+            <x-locale-switch />
+            <button type="button" class="ss-icon-btn" data-theme-toggle hidden
+                    aria-label="{{ __('nav.theme.label') }}: {{ __('nav.theme.system') }}"
+                    data-label-prefix="{{ __('nav.theme.label') }}"
+                    data-labels='@json(['system' => __('nav.theme.system'), 'light' => __('nav.theme.light'), 'dark' => __('nav.theme.dark')])'>
+                <svg class="ico" data-theme-icon="system"><use href="#i-monitor"/></svg>
+                <svg class="ico" data-theme-icon="light" hidden><use href="#i-sun"/></svg>
+                <svg class="ico" data-theme-icon="dark" hidden><use href="#i-moon"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main id="main" class="flex flex-1 items-start justify-center px-4 pb-16 pt-6 sm:items-center sm:pt-0">
+        <div class="ss-card ss-rise w-full max-w-[26rem] p-6 sm:p-8">
+            {{ $slot }}
+        </div>
+    </main>
+
+    <footer class="px-4 pb-6 text-center text-xs text-muted">{{ __('auth.footer') }}</footer>
+</div>
+
+@include('partials.i18n')
 </body>
 </html>

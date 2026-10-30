@@ -26,7 +26,7 @@
         <div class="section-heading">
             <div><h2>Incidentfrequentie</h2><p>Nieuw geopende incidenten per dag, afgelopen 30 dagen. MTTD = gemiddelde tijd van eerste mislukte controle tot incident; MTTA = gemiddelde tijd tot eerste bevestiging; MTTR = gemiddelde tijd tot oplossing (incidenten geopend in de periode).</p></div>
         </div>
-        <x-line-chart :points="$points" :height="120" color="#fb7185" label="Incidenten per dag" />
+        <x-line-chart :points="$points" :height="120" label="Incidenten per dag" />
     </section>
 
     <section class="panel">

@@ -56,7 +56,7 @@ class SystemHealth
     /** Cheap summary for the sidebar (cached for a minute, per team). */
     public function summary(?int $teamId = null): string
     {
-        return Cache::remember('serverscope:system-health:summary:'.($teamId ?? 'platform'), 60, fn () => $this->report($teamId)['status']);
+        return Cache::remember(\App\Support\Locale::cacheKey('serverscope:system-health:summary:'.($teamId ?? 'platform')), 60, fn () => $this->report($teamId)['status']);
     }
 
     private function scheduler(): array

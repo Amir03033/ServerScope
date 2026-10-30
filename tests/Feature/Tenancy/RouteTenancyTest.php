@@ -35,6 +35,9 @@ class RouteTenancyTest extends TestCase
         'GET|HEAD two-factor-challenge',
         'POST two-factor-challenge',
         'POST two-factor-challenge/cancel',
+        // Language switch: stores en/nl in the session (and for a signed-in
+        // user in users.locale); reads and shows no team data.
+        'POST locale',
         // Public status pages render as the page's own team.
         'GET|HEAD status/{slug}.json',
         'GET|HEAD status/{slug}',

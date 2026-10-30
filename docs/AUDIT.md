@@ -610,3 +610,26 @@ install code: the key must stay offline (`docs/RELEASE_KEYS.md` §4).
    on both sides); see `docs/RELEASE_KEYS.md` §6.
 9. A compromised server can **withhold** updates and can cause at most one
    agent restart per published release.
+
+## 8. Bilingual app (design revamp)
+
+English is the default language of the web app, Dutch is a choice per user
+(`users.locale`, profile and quick switch) or per visitor (session, and the
+browser language on public status pages). API messages, `install.sh`, the
+agent and the updater stay out of scope. Plan and decisions:
+[REVAMP_PLAN.md](REVAMP_PLAN.md) §12.
+
+### Blocker before external (English-speaking) customers
+
+1. **Texts stored in Dutch.** Services store finished Dutch sentences in the
+   database: incident titles and descriptions (`Signal`), incident timeline
+   events, check messages (`ssl_message`, `dns_message`, HTTP errors), page
+   change summaries, prediction reasons and audit log descriptions. These are
+   shown as stored, so an English user sees them in Dutch, for existing and
+   for new records. **Fix before onboarding customers who do not read Dutch:**
+   store a translation key plus parameters (for example
+   `{"key": "incidents.signal.no_heartbeat", "params": {"server": "mail-01",
+   "minutes": 45}}`) and translate only when showing it, in the language of
+   the reader (screen, e-mail, Discord, webhook). Existing rows need a
+   fallback (show the stored text). Deliberately **not built** in the revamp
+   (owner decision, 30 October 2026).

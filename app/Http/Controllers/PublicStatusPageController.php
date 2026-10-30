@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\StatusPage;
 use App\Services\Reports\StatusPagePresenter;
+use App\Support\Locale;
 use App\Tenancy\TeamScope;
 use App\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -58,6 +59,6 @@ class PublicStatusPageController extends Controller
     {
         // Rendered as the page's own team, so only that team's resources
         // and incidents can appear.
-        return Cache::remember("status-page:{$page->id}:{$page->updated_at?->timestamp}", 30, fn () => Tenant::run($page->team_id, fn () => $presenter->present($page)));
+        return Cache::remember(Locale::cacheKey("status-page:{$page->id}:{$page->updated_at?->timestamp}"), 30, fn () => Tenant::run($page->team_id, fn () => $presenter->present($page)));
     }
 }

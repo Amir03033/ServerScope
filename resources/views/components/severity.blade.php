@@ -9,4 +9,4 @@
     };
 @endphp
 
-<span {{ $attributes->class(['pill-status', $color]) }}>{{ \App\Support\Severity::label($severity) }}</span>
+<span {{ $attributes->class(['pill-status', $color]) }}>{{ Lang::has('labels.severity.'.$severity) ? __('labels.severity.'.$severity) : \App\Support\Severity::label($severity) }}</span>

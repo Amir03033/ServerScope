@@ -1,396 +1,458 @@
-import Chart from 'chart.js/auto';
+/*
+ * ServerScope app shell. Plain JavaScript, no dependencies. Everything is
+ * progressive enhancement: without JavaScript every page and form works.
+ * Texts come from the page (resources/js/i18n.js).
+ */
+import { t } from './i18n';
 
-const chartColors = {
-    cyan: '#38bdf8',
-    purple: '#a78bfa',
-    green: '#4ade80',
-    grid: 'rgba(148, 163, 184, 0.10)',
-    border: 'rgba(148, 163, 184, 0.16)',
-    text: '#8397b1',
-    white: '#f8fafc',
-    tooltip: '#0b1220',
-};
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
-Chart.defaults.font.family =
-    'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+/* ------------------------------------------------------------------ */
+/* Theme: system (default), light or dark. Stored only in this browser. */
+/* ------------------------------------------------------------------ */
 
-Chart.defaults.color = chartColors.text;
-Chart.defaults.animation.duration = 650;
-Chart.defaults.animation.easing = 'easeOutQuart';
+const themeButton = document.querySelector('[data-theme-toggle]');
 
-function parseDate(value) {
-    if (!value) {
-        return null;
+function storedTheme() {
+    try {
+        return localStorage.getItem('ss-theme') || 'system';
+    } catch {
+        return 'system';
     }
-
-    const date = new Date(value);
-
-    return Number.isNaN(date.getTime()) ? null : date;
 }
 
-// Volledige datum + tijd, voor de tooltip.
-function formatTimestamp(value) {
-    const date = parseDate(value);
-
-    if (!date) {
-        return 'Onbekend';
+function applyTheme(theme) {
+    if (theme === 'light' || theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', theme);
+    } else {
+        document.documentElement.removeAttribute('data-theme');
     }
 
-    return date.toLocaleString('nl-NL', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
+    if (themeButton) {
+        const labels = JSON.parse(themeButton.dataset.labels || '{}');
+        themeButton.setAttribute('aria-label', `${themeButton.dataset.labelPrefix}: ${labels[theme] || theme}`);
+        themeButton.title = themeButton.getAttribute('aria-label');
+        themeButton.querySelectorAll('[data-theme-icon]').forEach((icon) => {
+            icon.toggleAttribute('hidden', icon.dataset.themeIcon !== theme);
+        });
+    }
+}
+
+if (themeButton) {
+    themeButton.hidden = false;
+    applyTheme(storedTheme());
+
+    themeButton.addEventListener('click', () => {
+        const order = ['system', 'light', 'dark'];
+        const next = order[(order.indexOf(storedTheme()) + 1) % order.length];
+
+        try {
+            if (next === 'system') {
+                localStorage.removeItem('ss-theme');
+            } else {
+                localStorage.setItem('ss-theme', next);
+            }
+        } catch {
+            // Storage blocked: the switch still works for this page.
+        }
+
+        applyTheme(next);
     });
 }
 
-// Korte tijdlabels voor de x-as: alleen "14:00", of "12 okt 14:00" bij meer dan 36 uur.
-function formatTick(value, includeDay) {
-    const date = parseDate(value);
+/* ------------------------------------------------------------------ */
+/* Mobile navigation: the sidebar slides in. Without JS it opens via    */
+/* the #sidebar anchor (CSS :target).                                   */
+/* ------------------------------------------------------------------ */
 
-    if (!date) {
-        return '';
-    }
+const sidebar = document.querySelector('[data-sidebar]');
+const sidebarOpeners = document.querySelectorAll('[data-sidebar-open]');
+let sidebarReturnFocus = null;
 
-    const time = date.toLocaleTimeString('nl-NL', {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-
-    if (!includeDay) {
-        return time;
-    }
-
-    const day = date.toLocaleDateString('nl-NL', {
-        day: 'numeric',
-        month: 'short',
-    });
-
-    return `${day} ${time}`;
+function focusables(root) {
+    return [...root.querySelectorAll('a[href], button:not([disabled]), select, input, [tabindex]:not([tabindex="-1"])')]
+        .filter((el) => el.offsetParent !== null);
 }
 
-function formatNumber(value, decimals = 1) {
-    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
-        return 'Geen data';
-    }
+function openSidebar() {
+    sidebarReturnFocus = document.activeElement;
+    sidebar.setAttribute('data-open', '');
+    sidebarOpeners.forEach((el) => el.setAttribute('aria-expanded', 'true'));
+    document.body.style.overflow = 'hidden';
+    // Hidden elements cannot take focus: wait until the menu is visible.
+    const target = sidebar.querySelector('[aria-current="page"]') || focusables(sidebar)[0];
+    let tries = 0;
+    const focusWhenVisible = () => {
+        target?.focus();
 
-    return Number(value).toLocaleString('nl-NL', {
-        maximumFractionDigits: decimals,
-        minimumFractionDigits: decimals,
-    });
+        if (target && document.activeElement !== target && tries++ < 30 && sidebar.hasAttribute('data-open')) {
+            setTimeout(focusWhenVisible, 16);
+        }
+    };
+    focusWhenVisible();
 }
 
-function hexToRgba(hex, alpha) {
-    const value = hex.replace('#', '');
-    const r = parseInt(value.slice(0, 2), 16);
-    const g = parseInt(value.slice(2, 4), 16);
-    const b = parseInt(value.slice(4, 6), 16);
+function closeSidebar() {
+    if (!sidebar?.hasAttribute('data-open')) return;
 
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    sidebar.removeAttribute('data-open');
+    sidebarOpeners.forEach((el) => el.setAttribute('aria-expanded', 'false'));
+    document.body.style.overflow = '';
+    sidebarReturnFocus?.focus();
 }
 
-function createGradient(context, color) {
-    const { ctx, chartArea } = context.chart;
+if (sidebar) {
+    sidebarOpeners.forEach((el) => el.addEventListener('click', (event) => {
+        event.preventDefault();
+        openSidebar();
+    }));
 
-    if (!chartArea) {
-        return hexToRgba(color, 0.2);
-    }
+    document.querySelectorAll('[data-sidebar-close]').forEach((el) => el.addEventListener('click', (event) => {
+        event.preventDefault();
+        closeSidebar();
+    }));
 
-    const gradient = ctx.createLinearGradient(
-        0,
-        chartArea.top,
-        0,
-        chartArea.bottom,
-    );
+    document.addEventListener('keydown', (event) => {
+        if (!sidebar.hasAttribute('data-open')) return;
 
-    gradient.addColorStop(0, hexToRgba(color, 0.38));
-    gradient.addColorStop(1, hexToRgba(color, 0));
+        if (event.key === 'Escape') {
+            closeSidebar();
+        } else if (event.key === 'Tab') {
+            // Keep focus inside the open menu.
+            const items = focusables(sidebar);
+            const first = items[0];
+            const last = items[items.length - 1];
 
-    return gradient;
-}
-
-function createLineChart(elementId, datasets, options = {}) {
-    const canvas = document.getElementById(elementId);
-
-    if (!canvas) {
-        return null;
-    }
-
-    const labels = options.labels ?? [];
-
-    if (!labels.length) {
-        return null;
-    }
-
-    const existingChart = Chart.getChart(canvas);
-
-    if (existingChart) {
-        existingChart.destroy();
-    }
-
-    const chartDatasets = datasets.map((dataset) => {
-        const color = dataset.color ?? chartColors.cyan;
-
-        return {
-            label: dataset.label,
-            data: dataset.data ?? [],
-            borderColor: color,
-            backgroundColor: (context) => createGradient(context, color),
-            borderWidth: 2,
-            pointRadius: 0,
-            pointHoverRadius: 5,
-            pointHitRadius: 12,
-            pointHoverBackgroundColor: chartColors.white,
-            pointHoverBorderColor: color,
-            pointHoverBorderWidth: 3,
-            tension: 0.35,
-            fill: dataset.fill ?? true,
-            spanGaps: false,
-            borderCapStyle: 'round',
-            borderJoinStyle: 'round',
-        };
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
     });
 
-    return new Chart(canvas, {
-        type: 'line',
-
-        data: {
-            labels,
-            datasets: chartDatasets,
-        },
-
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            resizeDelay: 100,
-
-            interaction: {
-                intersect: false,
-                mode: 'index',
-            },
-
-            animation: {
-                duration: 650,
-            },
-
-            layout: {
-                padding: {
-                    top: 4,
-                    right: 6,
-                    bottom: 0,
-                    left: 0,
-                },
-            },
-
-            plugins: {
-                // De legenda staat als HTML boven de load-grafiek.
-                legend: {
-                    display: false,
-                },
-
-                tooltip: {
-                    enabled: true,
-                    backgroundColor: chartColors.tooltip,
-                    titleColor: chartColors.white,
-                    bodyColor: '#cbd5e1',
-                    borderColor: chartColors.border,
-                    borderWidth: 1,
-                    padding: 12,
-                    cornerRadius: 10,
-                    displayColors: true,
-                    usePointStyle: true,
-
-                    callbacks: {
-                        title(items) {
-                            const index = items[0]?.dataIndex;
-
-                            return formatTimestamp(options.rawLabels?.[index]);
-                        },
-
-                        label(context) {
-                            const value = context.parsed.y;
-
-                            if (value === null || !Number.isFinite(value)) {
-                                return `${context.dataset.label}: Geen data`;
-                            }
-
-                            const formatted = formatNumber(
-                                value,
-                                options.decimals ?? 1,
-                            );
-
-                            return `${context.dataset.label}: ${formatted}${options.percent ? '%' : ''}`;
-                        },
-                    },
-                },
-            },
-
-            scales: {
-                x: {
-                    type: 'category',
-
-                    grid: {
-                        display: true,
-                        color: chartColors.grid,
-                        drawTicks: false,
-                    },
-
-                    border: {
-                        color: chartColors.border,
-                    },
-
-                    ticks: {
-                        color: chartColors.text,
-                        maxTicksLimit: 7,
-                        maxRotation: 0,
-                        autoSkip: true,
-                        padding: 10,
-                        font: {
-                            size: 10,
-                        },
-                    },
-                },
-
-                y: {
-                    beginAtZero: true,
-                    min: 0,
-
-                    ...(options.yMax !== undefined
-                        ? { max: options.yMax }
-                        : {}),
-
-                    grid: {
-                        color: chartColors.grid,
-                        drawTicks: false,
-                        lineWidth: 1,
-                    },
-
-                    border: {
-                        display: false,
-                    },
-
-                    ticks: {
-                        color: chartColors.text,
-                        maxTicksLimit: options.percent ? 5 : 6,
-                        stepSize: options.percent ? 25 : undefined,
-                        padding: 10,
-                        font: {
-                            size: 10,
-                        },
-
-                        callback(value) {
-                            return options.percent
-                                ? `${value}%`
-                                : value;
-                        },
-                    },
-                },
-            },
-
-            ...(options.extraOptions ?? {}),
-        },
+    window.matchMedia('(min-width: 1024px)').addEventListener('change', (event) => {
+        if (event.matches) closeSidebar();
     });
 }
 
-function initializeDashboardCharts() {
-    const data = window.serverScopeChartData;
+/* Menus (<details>): close on Escape and on a click outside. */
+document.querySelectorAll('[data-menu]').forEach((menu) => {
+    menu.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && menu.open) {
+            menu.open = false;
+            menu.querySelector('summary')?.focus();
+        }
+    });
+});
 
-    if (!data || !Array.isArray(data.labels)) {
+document.addEventListener('click', (event) => {
+    document.querySelectorAll('[data-menu][open]').forEach((menu) => {
+        if (!menu.contains(event.target)) menu.open = false;
+    });
+});
+
+/* The right shortcut for this platform. */
+document.querySelectorAll('[data-shortcut-label]').forEach((label) => {
+    label.textContent = isMac ? '⌘ K' : 'Ctrl K';
+});
+
+/* ------------------------------------------------------------------ */
+/* Team switch: submit on change (replaces the inline onchange).        */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-team-switch]').forEach((form) => {
+    form.querySelector('select')?.addEventListener('change', (event) => {
+        form.action = form.action.replace(/\/teams\/\d+\//, `/teams/${event.target.value}/`);
+        form.submit();
+    });
+});
+
+/* ------------------------------------------------------------------ */
+/* Confirmation for destructive actions (data-confirm, same text as     */
+/* before) and a loading state on submit so forms cannot be sent twice. */
+/* ------------------------------------------------------------------ */
+
+const confirmDialog = document.querySelector('[data-confirm-dialog]');
+
+function askConfirmation(form, submitter) {
+    if (!confirmDialog || typeof confirmDialog.showModal !== 'function') {
+        return Promise.resolve(window.confirm(form.dataset.confirm));
+    }
+
+    const button = confirmDialog.querySelector('[data-confirm-button]');
+    const label = (submitter?.textContent || '').trim();
+    const destructive = (form.querySelector('input[name="_method"]')?.value || '').toUpperCase() === 'DELETE';
+
+    button.dataset.defaultLabel ??= button.textContent;
+    confirmDialog.querySelector('[data-confirm-text]').textContent = form.dataset.confirm;
+    button.textContent = label || button.dataset.defaultLabel;
+    button.classList.toggle('ss-btn-danger', destructive);
+    button.classList.toggle('ss-btn-primary', !destructive);
+
+    return new Promise((resolve) => {
+        confirmDialog.returnValue = '';
+        confirmDialog.addEventListener('close', () => resolve(confirmDialog.returnValue === 'confirm'), { once: true });
+        confirmDialog.showModal();
+    });
+}
+
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+
+    if (event.defaultPrevented || form.method === 'dialog') {
         return;
     }
 
-    const rawLabels = data.labels;
+    if (form.dataset.confirm && form.dataset.confirmed !== 'yes') {
+        event.preventDefault();
+        const submitter = event.submitter;
 
-    // Bij een periode langer dan 36 uur ook de dag in het label zetten.
-    const first = parseDate(rawLabels[0]);
-    const last = parseDate(rawLabels[rawLabels.length - 1]);
-    const spanHours = first && last
-        ? (last.getTime() - first.getTime()) / 3600000
-        : 0;
+        askConfirmation(form, submitter).then((confirmed) => {
+            if (!confirmed) return;
 
-    const labels = rawLabels.map((value) => formatTick(value, spanHours > 36));
-
-    const alignedData = (values) =>
-        rawLabels.map((_, index) => {
-            const value = values?.[index];
-
-            if (value === null || value === undefined || value === '') {
-                return null;
+            form.dataset.confirmed = 'yes';
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit(submitter && submitter.form === form ? submitter : undefined);
+            } else {
+                form.submit();
             }
-
-            const number = Number(value);
-
-            return Number.isFinite(number) ? number : null;
         });
 
-    createLineChart(
-        'cpu-chart',
-        [
-            {
-                label: 'CPU-gebruik',
-                data: alignedData(data.cpu),
-                color: chartColors.cyan,
-            },
-        ],
-        {
-            labels,
-            rawLabels,
-            percent: true,
-            yMax: 100,
-        },
-    );
+        return;
+    }
 
-    createLineChart(
-        'memory-chart',
-        [
-            {
-                label: 'RAM-gebruik',
-                data: alignedData(data.memory),
-                color: chartColors.purple,
-            },
-        ],
-        {
-            labels,
-            rawLabels,
-            percent: true,
-            yMax: 100,
-        },
-    );
+    delete form.dataset.confirmed;
 
-    createLineChart(
-        'load-chart',
-        [
-            {
-                label: '1 minuut',
-                data: alignedData(data.load1),
-                color: chartColors.cyan,
-                fill: false,
-            },
-            {
-                label: '5 minuten',
-                data: alignedData(data.load5),
-                color: chartColors.purple,
-                fill: false,
-            },
-            {
-                label: '15 minuten',
-                data: alignedData(data.load15),
-                color: chartColors.green,
-                fill: false,
-            },
-        ],
-        {
-            labels,
-            rawLabels,
-            decimals: 2,
-        },
-    );
-}
+    if (form.method.toLowerCase() === 'get' || form.hasAttribute('data-no-loading')) {
+        return;
+    }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeDashboardCharts, {
-        once: true,
+    setTimeout(() => {
+        form.querySelectorAll('button[type="submit"], button:not([type])').forEach((button) => {
+            button.disabled = true;
+            button.classList.add('is-loading');
+        });
+    }, 0);
+});
+
+/* Pages restored from the back/forward cache: re-enable buttons. */
+window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+
+    document.querySelectorAll('button.is-loading').forEach((button) => {
+        button.disabled = false;
+        button.classList.remove('is-loading');
     });
-} else {
-    initializeDashboardCharts();
+});
+
+/* ------------------------------------------------------------------ */
+/* Secrets: show/hide and copy (x-secret-token).                        */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-secret-toggle]').forEach((button) => {
+    const input = document.getElementById(button.dataset.secretToggle);
+
+    button.addEventListener('click', () => {
+        input.type = input.type === 'password' ? 'text' : 'password';
+        button.textContent = input.type === 'password' ? t('show') : t('hide');
+    });
+});
+
+document.querySelectorAll('[data-copy-from]').forEach((button) => {
+    const input = document.getElementById(button.dataset.copyFrom);
+
+    button.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(input.value ?? input.textContent);
+            button.textContent = t('copied');
+            button.classList.add('is-done');
+            setTimeout(() => {
+                button.textContent = t('copy');
+                button.classList.remove('is-done');
+            }, 1800);
+        } catch {
+            // No clipboard access: show and select the value instead.
+            if ('type' in input) input.type = 'text';
+            input.select?.();
+        }
+    });
+});
+
+/* ------------------------------------------------------------------ */
+/* Quick search (Ctrl/⌘ K) on the JSON answer of /search.               */
+/* ------------------------------------------------------------------ */
+
+const searchDialog = document.querySelector('[data-search-dialog]');
+
+if (searchDialog && typeof searchDialog.showModal === 'function') {
+    const input = searchDialog.querySelector('input[name="q"]');
+    const list = searchDialog.querySelector('[data-search-results]');
+    const status = searchDialog.querySelector('[data-search-status]');
+    const types = (() => {
+        try {
+            return JSON.parse(document.getElementById('ss-i18n')?.textContent || '{}')['search.types'] || {};
+        } catch {
+            return {};
+        }
+    })();
+    let active = -1;
+    let timer = null;
+    let controller = null;
+
+    const items = () => [...list.querySelectorAll('[role="option"]')];
+
+    function select(index) {
+        const options = items();
+        active = options.length ? (index + options.length) % options.length : -1;
+        options.forEach((option, i) => option.setAttribute('aria-selected', i === active ? 'true' : 'false'));
+        input.setAttribute('aria-activedescendant', active >= 0 ? options[active].id : '');
+        options[active]?.scrollIntoView({ block: 'nearest' });
+    }
+
+    function showStatus(text) {
+        status.textContent = text;
+        status.hidden = !text;
+    }
+
+    function highlight(text, q) {
+        const span = document.createElement('span');
+        const index = text.toLowerCase().indexOf(q.toLowerCase());
+
+        if (index < 0 || !q) {
+            span.textContent = text;
+            return span;
+        }
+
+        const mark = document.createElement('mark');
+        mark.textContent = text.slice(index, index + q.length);
+        span.append(text.slice(0, index), mark, text.slice(index + q.length));
+
+        return span;
+    }
+
+    function render(q, results) {
+        list.replaceChildren();
+        active = -1;
+
+        results.forEach((result, i) => {
+            const li = document.createElement('li');
+            li.id = `quick-search-${i}`;
+            li.setAttribute('role', 'option');
+            li.setAttribute('aria-selected', 'false');
+            li.className = 'ss-result flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-fg';
+            li.dataset.url = result.url;
+
+            const type = document.createElement('span');
+            type.className = 'ss-badge shrink-0';
+            type.textContent = types[result.type] || result.type;
+
+            const text = document.createElement('span');
+            text.className = 'min-w-0 flex-1';
+            const title = highlight(result.title, q);
+            title.className = 'block truncate text-sm font-medium';
+            const sub = document.createElement('span');
+            sub.className = 'block truncate text-xs text-muted';
+            sub.textContent = result.subtitle;
+            text.append(title, sub);
+
+            const state = document.createElement('span');
+            state.className = 'shrink-0 text-xs text-muted';
+            state.textContent = result.status_label;
+
+            li.append(type, text, state);
+            li.addEventListener('mousemove', () => select(i));
+            li.addEventListener('click', () => {
+                window.location.href = result.url;
+            });
+            list.append(li);
+        });
+
+        input.setAttribute('aria-expanded', results.length ? 'true' : 'false');
+        showStatus(results.length ? '' : t('search.no_results', { q }));
+
+        if (results.length) select(0);
+    }
+
+    async function run() {
+        const q = input.value.trim();
+
+        if (q.length < 2) {
+            list.replaceChildren();
+            input.setAttribute('aria-expanded', 'false');
+            showStatus('');
+            return;
+        }
+
+        controller?.abort();
+        controller = new AbortController();
+        showStatus(list.children.length ? '' : t('search.loading'));
+
+        try {
+            const url = new URL(searchDialog.dataset.searchUrl, window.location.origin);
+            url.searchParams.set('q', q);
+            const response = await fetch(url, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+                signal: controller.signal,
+            });
+
+            if (!response.ok) throw new Error(String(response.status));
+
+            const data = await response.json();
+            if (input.value.trim() === q) render(q, data.results || []);
+        } catch (error) {
+            if (error.name !== 'AbortError') showStatus('');
+        }
+    }
+
+    function open() {
+        if (searchDialog.open) return;
+        searchDialog.showModal();
+        input.select();
+    }
+
+    document.querySelectorAll('[data-search-open]').forEach((trigger) => {
+        trigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            open();
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            searchDialog.open ? searchDialog.close() : open();
+        }
+    });
+
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(run, 150);
+    });
+
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            // A search field would first clear itself; close straight away.
+            event.preventDefault();
+            searchDialog.close();
+        } else if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            select(active + 1);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            select(active - 1);
+        } else if (event.key === 'Enter' && active >= 0) {
+            // Open the chosen result; without a choice the form goes to /search.
+            event.preventDefault();
+            window.location.href = items()[active].dataset.url;
+        }
+    });
+
+    // Close when clicking the backdrop.
+    searchDialog.addEventListener('click', (event) => {
+        if (event.target === searchDialog) searchDialog.close();
+    });
 }

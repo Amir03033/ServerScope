@@ -2,28 +2,20 @@
     use App\Services\Reports\StatusPagePresenter;
 
     $colors = ['operational' => '#22c55e', 'degraded' => '#fbbf24', 'partial_outage' => '#fb923c', 'major_outage' => '#fb7185', 'maintenance' => '#a78bfa', 'unknown' => '#64748b'];
-    $headline = [
-        'operational' => 'Alle systemen werken normaal',
-        'degraded' => 'Sommige systemen werken trager',
-        'partial_outage' => 'Gedeeltelijke storing',
-        'major_outage' => 'Er is een storing',
-        'maintenance' => 'Gepland onderhoud',
-        'unknown' => 'Status onbekend',
-    ][$status['overall']];
-    $statusLabels = ['detected' => 'Gedetecteerd', 'identified' => 'Onderzocht', 'investigating' => 'In onderzoek', 'resolved' => 'Opgelost'];
+    $headline = __('status_page.headline.'.$status['overall']);
     $active = collect($status['incidents'])->where('status', '!=', 'resolved');
     $resolved = collect($status['incidents'])->where('status', 'resolved');
-    $fmt = fn (?string $iso) => $iso ? \App\Support\Time::format(\Carbon\Carbon::parse($iso), 'd-m-Y H:i') : '';
+    $fmt = fn (?string $iso) => $iso ? \App\Support\Time::dateTime(\Carbon\Carbon::parse($iso)) : '';
 @endphp
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
     <meta name="robots" content="noindex">
     <meta http-equiv="refresh" content="60">
-    <title>{{ $status['name'] }} — Status</title>
+    <title>{{ $status['name'] }} — {{ __('status_page.title_suffix') }}</title>
     <style>
         :root { --accent: {{ $status['accent'] }}; }
         * { box-sizing: border-box; }
@@ -41,12 +33,16 @@
         .sub { color: #8397b1; font-size: 13px; }
         .bars { display: flex; gap: 2px; height: 30px; margin-top: 10px; }
         .bars i { flex: 1; border-radius: 2px; background: #25364b; }
-        .legend { display: flex; justify-content: space-between; color: #657b95; font-size: 11px; margin-top: 4px; }
+        .legend { display: flex; justify-content: space-between; color: #94a3b8; font-size: 12px; margin-top: 4px; }
         h2 { font-size: 17px; margin: 32px 0 12px; }
         .incident { padding: 14px 0; border-bottom: 1px solid #172338; }
         .incident:last-child { border-bottom: 0; }
-        footer { margin-top: 40px; color: #657b95; font-size: 12px; text-align: center; }
+        footer { margin-top: 40px; color: #94a3b8; font-size: 12px; text-align: center; }
         a { color: var(--accent); }
+        .locale { display: inline-flex; gap: 4px; margin-top: 14px; }
+        .locale button { padding: 3px 9px; border: 1px solid #1f2e47; border-radius: 7px; background: transparent; color: #8397b1; font: inherit; font-size: 12px; cursor: pointer; }
+        .locale button[aria-pressed="true"] { background: #edf4ff; border-color: #edf4ff; color: #070c17; }
+        .locale button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     </style>
 </head>
 <body>
@@ -57,42 +53,42 @@
     <div class="banner" style="--state: {{ $colors[$status['overall']] }}"><span class="dot"></span>{{ $headline }}</div>
 
     @if ($active->isNotEmpty())
-        <h2>Lopende incidenten</h2>
+        <h2>{{ __('status_page.active_incidents') }}</h2>
         <div class="card">
             @foreach ($active as $incident)
                 <div class="incident">
-                    <div class="row"><strong>{{ $incident['title'] }}</strong><span class="state" style="--state: {{ $incident['severity'] === 'critical' ? $colors['major_outage'] : $colors['degraded'] }}">{{ $statusLabels[$incident['status']] }}</span></div>
-                    <div class="sub">Sinds {{ $fmt($incident['started_at']) }}</div>
+                    <div class="row"><strong>{{ $incident['title'] }}</strong><span class="state" style="--state: {{ $incident['severity'] === 'critical' ? $colors['major_outage'] : $colors['degraded'] }}">{{ __('status_page.incident_status.'.$incident['status']) }}</span></div>
+                    <div class="sub">{{ __('status_page.since', ['time' => $fmt($incident['started_at'])]) }}</div>
                 </div>
             @endforeach
         </div>
     @endif
 
-    <h2>Onderdelen</h2>
+    <h2>{{ __('status_page.components') }}</h2>
     <div class="card">
         @forelse ($status['components'] as $component)
             <div class="component" style="--state: {{ $colors[$component['state']] }}">
                 <div class="row">
                     <div><strong>{{ $component['name'] }}</strong>@if ($component['description'])<div class="sub">{{ $component['description'] }}</div>@endif</div>
-                    <span class="state">{{ StatusPagePresenter::STATE_LABELS[$component['state']] }}</span>
+                    <span class="state">{{ __('status_page.state.'.$component['state']) }}</span>
                 </div>
                 @if ($component['uptime'])
                     @php $known = collect($component['uptime'])->pluck('uptime')->filter(fn ($v) => $v !== null); @endphp
-                    <div class="bars" role="img" aria-label="Beschikbaarheid per dag">
+                    <div class="bars" role="img" aria-label="{{ __('status_page.availability_per_day') }}">
                         @foreach ($component['uptime'] as $day)
-                            <i style="background: {{ $day['uptime'] === null ? '#25364b' : ($day['uptime'] >= 99.5 ? '#22c55e' : ($day['uptime'] >= 95 ? '#fbbf24' : '#fb7185')) }}" title="{{ $day['date'] }}: {{ $day['uptime'] === null ? 'geen gegevens' : number_format($day['uptime'], 2, ',', '.').'%' }}"></i>
+                            <i style="background: {{ $day['uptime'] === null ? '#25364b' : ($day['uptime'] >= 99.5 ? '#22c55e' : ($day['uptime'] >= 95 ? '#fbbf24' : '#fb7185')) }}" title="{{ $day['date'] }}: {{ $day['uptime'] === null ? __('status_page.no_data') : \App\Support\Format::percent($day['uptime'], 2) }}"></i>
                         @endforeach
                     </div>
-                    <div class="legend"><span>90 dagen geleden</span><span>{{ $known->isNotEmpty() ? number_format($known->avg(), 2, ',', '.').'% beschikbaar' : 'nog geen gegevens' }}</span><span>vandaag</span></div>
+                    <div class="legend"><span>{{ __('status_page.days_ago') }}</span><span>{{ $known->isNotEmpty() ? __('status_page.available', ['percent' => \App\Support\Format::percent($known->avg(), 2)]) : __('status_page.no_data_yet') }}</span><span>{{ __('status_page.today') }}</span></div>
                 @endif
             </div>
         @empty
-            <p class="sub" style="padding:12px 0">Er zijn nog geen onderdelen gepubliceerd.</p>
+            <p class="sub" style="padding:12px 0">{{ __('status_page.no_components') }}</p>
         @endforelse
     </div>
 
     @if ($resolved->isNotEmpty())
-        <h2>Opgelost (laatste 7 dagen)</h2>
+        <h2>{{ __('status_page.resolved_recent') }}</h2>
         <div class="card">
             @foreach ($resolved as $incident)
                 <div class="incident">
@@ -103,7 +99,14 @@
         </div>
     @endif
 
-    <footer>Bijgewerkt {{ $fmt($status['generated_at']) }} · ververst elke minuut · <a href="{{ request()->url() }}.json">JSON</a> · aangedreven door ServerScope</footer>
+    <footer>{{ __('status_page.updated', ['time' => $fmt($status['generated_at'])]) }} · {{ __('status_page.refreshes') }} · <a href="{{ request()->url() }}.json">JSON</a> · {{ __('status_page.powered_by') }}
+        <form method="POST" action="{{ route('locale.update') }}" class="locale" aria-label="{{ __('locale.label') }}">
+            @csrf
+            @foreach (\App\Support\Locale::SUPPORTED as $code)
+                <button type="submit" name="locale" value="{{ $code }}" lang="{{ $code }}" aria-pressed="{{ $code === app()->getLocale() ? 'true' : 'false' }}" title="{{ __('locale.names.'.$code) }}">{{ strtoupper($code) }}</button>
+            @endforeach
+        </form>
+    </footer>
 </main>
 </body>
 </html>

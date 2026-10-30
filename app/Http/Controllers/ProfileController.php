@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Notifications\NotificationDispatcher;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -27,10 +28,18 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'locale' => ['sometimes', 'string', Rule::in(\App\Support\Locale::SUPPORTED)],
         ]);
 
         $validated['email'] = strtolower(trim($validated['email']));
-        $user->fill($validated);
+        $user->fill(Arr::only($validated, ['name', 'email']));
+
+        if (isset($validated['locale'])) {
+            $user->forceFill(['locale' => $validated['locale']]);
+            $request->session()->put(\App\Support\Locale::SESSION_KEY, $validated['locale']);
+            app()->setLocale($validated['locale']);
+        }
+
         $changes = Audit::diff($user);
         $user->save();
 
@@ -38,7 +47,7 @@ class ProfileController extends Controller
             Audit::log('user.profile_updated', 'Profiel bijgewerkt', $user, ['changes' => $changes]);
         }
 
-        return back()->with('success', 'Profiel opgeslagen.');
+        return back()->with('success', __('profile.flash.saved'));
     }
 
     public function password(Request $request): RedirectResponse
@@ -56,7 +65,7 @@ class ProfileController extends Controller
 
         Audit::log('user.password_changed', 'Wachtwoord gewijzigd', $user);
 
-        return back()->with('success', 'Wachtwoord gewijzigd. Andere sessies zijn afgemeld.');
+        return back()->with('success', __('profile.flash.password_changed'));
     }
 
     public function notifications(Request $request): RedirectResponse
@@ -77,7 +86,7 @@ class ProfileController extends Controller
             'notify_min_severity' => $validated['notify_min_severity'],
         ])->save();
 
-        return back()->with('success', 'Meldingsvoorkeuren opgeslagen.');
+        return back()->with('success', __('profile.flash.notifications_saved'));
     }
 
     public function testNotification(Request $request, NotificationDispatcher $dispatcher): RedirectResponse
@@ -85,12 +94,12 @@ class ProfileController extends Controller
         $key = 'test-notification:'.$request->user()->id;
 
         if (RateLimiter::tooManyAttempts($key, 3)) {
-            return back()->with('error', 'Te veel testmeldingen; probeer het over een paar minuten opnieuw.');
+            return back()->with('error', __('profile.flash.test_throttled'));
         }
 
         RateLimiter::hit($key, 600);
         $dispatcher->test($request->user());
 
-        return back()->with('success', 'Testmelding verstuurd. Bekijk de verzendstatus onder Meldingen.');
+        return back()->with('success', __('profile.flash.test_sent'));
     }
 }

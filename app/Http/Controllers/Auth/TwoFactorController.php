@@ -39,7 +39,7 @@ class TwoFactorController extends Controller
         }
 
         if (! $this->verifyCode($user, $request->input('code'))) {
-            throw ValidationException::withMessages(['code' => 'De code is ongeldig. Controleer de tijd op je telefoon en probeer het opnieuw.'])->errorBag('twoFactor');
+            throw ValidationException::withMessages(['code' => __('profile.two_factor.flash.code_invalid_check_time')])->errorBag('twoFactor');
         }
 
         $user->forceFill(['two_factor_confirmed_at' => now()])->save();
@@ -47,7 +47,7 @@ class TwoFactorController extends Controller
         Audit::log('user.two_factor_enabled', 'Tweestapsverificatie ingeschakeld', $user);
 
         return redirect()->route('profile.edit')
-            ->with('success', 'Tweestapsverificatie is ingeschakeld.')
+            ->with('success', __('profile.two_factor.flash.enabled'))
             ->with('recovery_codes', $codes);
     }
 
@@ -59,7 +59,7 @@ class TwoFactorController extends Controller
         $codes = $request->user()->regenerateRecoveryCodes();
         Audit::log('user.recovery_codes_regenerated', 'Herstelcodes vernieuwd', $request->user());
 
-        return redirect()->route('profile.edit')->with('success', 'Nieuwe herstelcodes gegenereerd; de oude zijn ongeldig.')->with('recovery_codes', $codes);
+        return redirect()->route('profile.edit')->with('success', __('profile.two_factor.flash.recovery_codes_regenerated'))->with('recovery_codes', $codes);
     }
 
     public function disable(Request $request): RedirectResponse
@@ -74,7 +74,7 @@ class TwoFactorController extends Controller
 
         Audit::log('user.two_factor_disabled', 'Tweestapsverificatie uitgeschakeld', $request->user());
 
-        return redirect()->route('profile.edit')->with('success', 'Tweestapsverificatie is uitgeschakeld.');
+        return redirect()->route('profile.edit')->with('success', __('profile.two_factor.flash.disabled'));
     }
 
     // ---- Login challenge ----
@@ -102,7 +102,7 @@ class TwoFactorController extends Controller
         $key = 'two-factor:'.$user->id.'|'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            throw ValidationException::withMessages(['code' => 'Te veel pogingen. Probeer het over '.RateLimiter::availableIn($key).' seconden opnieuw.']);
+            throw ValidationException::withMessages(['code' => __('auth.messages.two_factor_throttled', ['seconds' => RateLimiter::availableIn($key)])]);
         }
 
         $valid = $request->filled('recovery_code')
@@ -112,7 +112,7 @@ class TwoFactorController extends Controller
         if (! $valid) {
             RateLimiter::hit($key, 300);
 
-            throw ValidationException::withMessages(['code' => 'De code is ongeldig.']);
+            throw ValidationException::withMessages(['code' => __('auth.messages.two_factor_invalid')]);
         }
 
         RateLimiter::clear($key);

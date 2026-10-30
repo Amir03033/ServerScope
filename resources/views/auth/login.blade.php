@@ -1,55 +1,30 @@
-<x-layouts.guest title="Inloggen">
-    <h1>Welkom terug</h1>
-    <p class="muted">Log in om je servers en monitoringgegevens te bekijken.</p>
+<x-layouts.guest :title="__('auth.login.title')">
+    <h1 class="m-0 text-2xl font-semibold tracking-tight">{{ __('auth.login.heading') }}</h1>
+    <p class="mt-2 text-sm text-muted">{{ __('auth.login.intro') }}</p>
 
-    @if (session('status'))
-        <div class="status" role="status">{{ session('status') }}</div>
-    @endif
-    @if (session('error'))
-        <div class="error" role="alert">{{ session('error') }}</div>
-    @endif
+    @include('auth._messages')
 
-    @if ($errors->any())
-        <div class="error" role="alert">
-            {{ $errors->first() }}
-        </div>
-    @endif
-
-    <form method="POST" action="{{ route('login') }}">
+    <form method="POST" action="{{ route('login') }}" class="mt-6 grid gap-4">
         @csrf
 
-        <label for="email">E-mailadres</label>
-        <input
-            id="email"
-            type="email"
-            name="email"
-            value="{{ old('email') }}"
-            autocomplete="username"
-            required
-            autofocus
-        >
+        <div>
+            <label class="ss-label" for="email">{{ __('auth.fields.email') }}</label>
+            <input id="email" class="ss-input mt-1.5" type="email" name="email" value="{{ old('email') }}" autocomplete="username" required autofocus
+                   @error('email') aria-invalid="true" @enderror>
+        </div>
 
-        <label for="password">Wachtwoord</label>
-        <input
-            id="password"
-            type="password"
-            name="password"
-            autocomplete="current-password"
-            required
-        >
+        <div>
+            <label class="ss-label" for="password">{{ __('auth.fields.password') }}</label>
+            <input id="password" class="ss-input mt-1.5" type="password" name="password" autocomplete="current-password" required>
+        </div>
 
-        <label>
-            <input
-                type="checkbox"
-                name="remember"
-                value="1"
-                style="width:auto"
-            >
-            Onthoud mij
+        <label class="ss-check">
+            <input type="checkbox" name="remember" value="1">
+            {{ __('auth.login.remember') }}
         </label>
 
-        <button type="submit">Inloggen</button>
+        <button type="submit" class="ss-btn ss-btn-primary w-full">{{ __('auth.login.submit') }}</button>
     </form>
 
-    <div class="links"><a href="{{ route('password.request') }}">Wachtwoord vergeten?</a></div>
+    <div class="mt-5 text-sm"><a class="text-accent underline-offset-2 hover:underline" href="{{ route('password.request') }}">{{ __('auth.login.forgot') }}</a></div>
 </x-layouts.guest>

@@ -170,7 +170,7 @@ class StatusPagePresenter
             ->map(fn (Incident $i) => [
                 'title' => $page->show_incident_titles
                     ? $i->title
-                    : ($i->severity === 'critical' ? 'Storing' : 'Verstoring').' bij '.($names[$i->subject_type.':'.$i->subject_id] ?? 'een component'),
+                    : __($i->severity === 'critical' ? 'status_page.incident.outage_at' : 'status_page.incident.disruption_at', ['component' => $names[$i->subject_type.':'.$i->subject_id] ?? __('status_page.incident.a_component')]),
                 'component' => $names[$i->subject_type.':'.$i->subject_id] ?? null,
                 'severity' => $i->severity,
                 'status' => $i->isActive() ? ($i->status === 'investigating' ? 'investigating' : ($i->acknowledged_at ? 'identified' : 'detected')) : 'resolved',

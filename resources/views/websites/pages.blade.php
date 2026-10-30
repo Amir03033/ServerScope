@@ -73,7 +73,7 @@
                 @else
                     <ul style="margin:0;padding:0;list-style:none" class="small">
                         @foreach ($incidents as $incident)
-                            <li style="padding:8px 0;border-bottom:1px solid #1a2840;display:flex;gap:8px;align-items:flex-start">
+                            <li style="padding:8px 0;border-bottom:1px solid var(--ss-line);display:flex;gap:8px;align-items:flex-start">
                                 <x-severity :severity="$incident->severity" />
                                 <div><a href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>
                                     <div class="muted">{{ Time::relative($incident->opened_at) }}@if ($incident->failing_pages_count) · {{ $incident->failing_pages_count }} pagina('s) getroffen @endif @if ($incident->parent_id) · gegroepeerd onder #{{ $incident->parent_id }} @endif</div>
