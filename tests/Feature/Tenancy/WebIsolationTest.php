@@ -252,26 +252,18 @@ class WebIsolationTest extends TestCase
         $this->actingAs($admin)->post(route('incidents.store'), ['title' => 'x', 'severity' => 'warning', 'subject' => 'server:'.$this->b['server']->id])->assertNotFound();
     }
 
-    public function test_domain_names_are_unique_platform_wide_without_revealing_the_owner(): void
+    public function test_domain_names_are_unique_per_team_and_invisible_across_teams(): void
     {
         $payload = ['scheme' => 'https', 'path' => '/', 'check_interval_minutes' => 5, 'timeout_seconds' => 10, 'failure_threshold' => 3, 'recovery_threshold' => 2,
             'http_enabled' => '1', 'ssl_enabled' => '1', 'dns_enabled' => '1', 'expiry_enabled' => '1', 'ssl_warning_days' => '30', 'expiry_warning_days' => '30'];
 
-        // Active and soft-deleted domains of another team answer the same,
-        // without saying that (or by whom) the domain is monitored.
-        $messages = [];
+        // A domain of another team (active or soft-deleted) is no obstacle.
         \App\Models\Domain::forceCreate(['team_id' => $this->b['team']->id, 'name' => 'bravo-oud.example.com'])->delete();
 
         foreach (['bravo-shop.example.com', 'bravo-oud.example.com'] as $name) {
-            $response = $this->actingAs($this->a['admin'])->post(route('domains.store'), ['name' => $name, ...$payload]);
-            $response->assertSessionHasErrors('name');
-            $messages[] = $this->errorFor($response, 'name');
+            $this->actingAs($this->a['admin'])->post(route('domains.store'), ['name' => $name, ...$payload])->assertSessionHasNoErrors();
+            $this->assertTrue(\App\Models\Domain::query()->where('name', $name)->exists());
         }
-
-        $this->assertSame($messages[0], $messages[1]);
-        $this->assertStringNotContainsString('gemonitord', $messages[0]);
-        $this->assertStringNotContainsString('verwijderd', $messages[0]);
-        $this->assertStringNotContainsStringIgnoringCase('bravo', $messages[0]);
 
         // Within the own team the specific messages remain.
         $own = $this->actingAs($this->a['admin'])->post(route('domains.store'), ['name' => 'alpha-shop.example.com', ...$payload]);

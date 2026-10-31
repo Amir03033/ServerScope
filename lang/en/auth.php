@@ -40,6 +40,8 @@ return [
     'register' => [
         'title' => 'Create account',
         'intro' => 'You get your own team. Only members of your team see your servers and domains.',
+        'sent_title' => 'Check your email',
+        'sent_body' => 'If this address can be used, we have sent you an email. Follow the link in it to continue. Nothing is available until the address is verified.',
         'have_account' => 'I already have an account',
     ],
 
@@ -72,6 +74,20 @@ return [
         'reset_link_invalid' => 'This reset link is invalid or has expired.',
         'two_factor_throttled' => 'Too many attempts. Please try again in :seconds seconds.',
         'two_factor_invalid' => 'The code is invalid.',
+    ],
+
+    'verify' => [
+        'title' => 'Verify your email address',
+        'intro' => 'We sent a link to :email. Open it to use your account.',
+        'resend' => 'Send the email again',
+        'logout' => 'Sign out',
+        'done' => 'Your email address is verified. You can now sign in.',
+        'sent' => 'A new link has been sent.',
+    ],
+
+    'mail' => [
+        'verify' => ['subject' => 'Verify your email address', 'line1' => 'Click the button below to confirm this email address for your ServerScope account.', 'action' => 'Verify email address', 'line2' => 'If you did not create an account, you can ignore this email.'],
+        'attempt' => ['subject' => 'Someone tried to register with your address', 'line1' => 'Someone tried to create a ServerScope account with this email address, but you already have an account.', 'action' => 'Reset my password', 'line2' => 'If this was not you, you can ignore this email.'],
     ],
 
 ];

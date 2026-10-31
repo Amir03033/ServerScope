@@ -48,7 +48,7 @@ class PlanRegistrationTest extends TestCase
 
     public function test_free_is_active_immediately(): void
     {
-        $this->post('/register', $this->payload(['plan' => 'free']))->assertRedirect(route('dashboard'));
+        $this->post('/register', $this->payload(['plan' => 'free']))->assertRedirect(route('register.sent'));
         $team = Team::query()->where('name', 'Acme')->sole();
         $this->assertSame(['free', 'active'], [$team->plan, $team->plan_status]);
         $this->assertFalse($team->isPendingPayment());
@@ -57,16 +57,16 @@ class PlanRegistrationTest extends TestCase
     public function test_paid_plans_are_pending_and_unknown_plan_becomes_free(): void
     {
         foreach (['pro', 'premium'] as $i => $plan) {
-            auth()->logout();
+            $this->app['auth']->forgetGuards();
             $this->post('/register', $this->payload(['plan' => $plan, 'team' => "T{$i}", 'email' => "u{$i}@example.test"]));
             $team = Team::query()->where('name', "T{$i}")->sole();
             $this->assertSame([$plan, 'pending_payment'], [$team->plan, $team->plan_status]);
             $this->assertSame('free', $team->effectivePlan());
-            $this->actingAs(User::query()->where('email', "u{$i}@example.test")->sole())
+            $this->actingAs(User::query()->where('email', "u{$i}@example.test")->sole()->forceFill(['email_verified_at' => now()]))
                 ->get('/dashboard')->assertSee('betaling volgt', false) ;
         }
 
-        auth()->logout();
+        $this->app['auth']->forgetGuards();
         $this->post('/register', $this->payload(['plan' => 'ultra', 'team' => 'Odd', 'email' => 'odd@example.test']));
         $odd = Team::query()->where('name', 'Odd')->sole();
         $this->assertSame(['free', 'active'], [$odd->plan, $odd->plan_status]);

@@ -47,6 +47,7 @@ Route::middleware('guest')->group(function () {
     // Public sign-up; 404 unless serverscope.tenancy.registration_enabled.
     Route::get('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'create'])->name('register');
     Route::post('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'store'])->middleware('throttle:5,1');
+    Route::get('/register/sent', [\App\Http\Controllers\Auth\RegisterController::class, 'sent'])->name('register.sent');
 
     Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
@@ -85,7 +86,18 @@ Route::get('/agent/releases/{version}/{file}', [\App\Http\Controllers\AgentDownl
 Route::get('/status/{slug}.json', [PublicStatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.json');
 Route::get('/status/{slug}', [PublicStatusPageController::class, 'show'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.show');
 
-Route::middleware(['auth', 'tenant'])->group(function () {
+// Signed in but not necessarily verified: the verification screens and sign-out.
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'resend'])->middleware('throttle:3,1')->name('verification.send');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
+
+// The link in the verification mail: signed, works without a session.
+Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'verify'])
+    ->whereNumber('id')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+
+Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
@@ -261,11 +273,6 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::delete('/alert-rules/{alertRule}', [AlertRuleController::class, 'destroy'])
         ->name('alert-rules.destroy');
-
-    Route::post('/logout', [
-        AuthenticatedSessionController::class,
-        'destroy',
-    ])->name('logout');
 
     Route::post('/servers/register', [
         ServerRegistrationController::class,

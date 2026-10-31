@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\Domain;
-use App\Tenancy\TeamScope;
 use App\Tenancy\Tenant;
 use App\Services\Domains\DomainNormalizer;
 use App\Support\Time;
@@ -84,17 +83,14 @@ class DomainRequest extends FormRequest
                     return;
                 }
 
-                // Domain names are unique across the whole platform (unique
-                // index); look in every team, but only explain the conflict
-                // when the domain belongs to the own team.
-                $existing = Domain::query()->withoutGlobalScope(TeamScope::class)->withTrashed()
+                // Domain names are unique per team (unique index team_id + name).
+                // Another team's domain is neither visible nor in the way.
+                $existing = Domain::query()->withTrashed()
                     ->where('name', $this->input('name'))
                     ->when($this->route('domain'), fn ($q, $domain) => $q->whereKeyNot($domain->id))
                     ->first();
 
-                if ($existing !== null && $existing->team_id !== Tenant::id()) {
-                    $validator->errors()->add('name', __('domains.validation.other_team'));
-                } elseif ($existing?->trashed()) {
+                if ($existing?->trashed()) {
                     $validator->errors()->add('name', __('domains.validation.trashed'));
                 } elseif ($existing) {
                     $validator->errors()->add('name', __('domains.validation.exists'));

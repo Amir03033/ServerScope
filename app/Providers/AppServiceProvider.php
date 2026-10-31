@@ -67,6 +67,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Verification mail texts come from the lang files, in the language of the user.
+        \Illuminate\Auth\Notifications\VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
+            $locale = $notifiable->preferredLocale();
+
+            return (new \Illuminate\Notifications\Messages\MailMessage)
+                ->subject(__('auth.mail.verify.subject', [], $locale))
+                ->line(__('auth.mail.verify.line1', [], $locale))
+                ->action(__('auth.mail.verify.action', [], $locale), $url)
+                ->line(__('auth.mail.verify.line2', [], $locale));
+        });
+
         // Administrator of the current team (owner or admin role). The
         // users.is_admin column is only a mirror and grants nothing.
         Gate::define('admin', fn (User $user): bool => \App\Tenancy\Tenant::check() && $user->isAdminOf(\App\Tenancy\Tenant::id()));

@@ -220,13 +220,13 @@ Remaining, by priority:
   system-health summary); other cache keys contain a resource or token id.
 
 ### Known limitations and blockers (must be fixed before public registration)
-1. **Domain names are unique platform-wide** (unique index on
+1. **FIXED (2026-11): domain names are now unique per team** (index `team_id, name`; another team's domain is no obstacle). Previously: domain names were unique platform-wide (unique index on
    `domains.name`, kept because phase 1 only adds schema). A customer could
    "claim" and thereby block a domain of another customer. Another team gets
    a neutral message that does not reveal the owner, but the block itself
    remains. **Fix before `SERVERSCOPE_REGISTRATION_ENABLED` is turned on**
    (unique per team, or domain ownership verification).
-2. User e-mail addresses are unique platform-wide: inviting or registering
+2. User e-mail addresses are unique platform-wide. **Registration is fixed**: it answers the same for a new and an existing address (the existing one gets a notice mail). **Inviting is still open** (see 8): inviting or registering
    an address that already has an account tells the inviter that it exists.
 3. Status page slugs are unique platform-wide (they are public URLs).
 4. Escalation contacts from `SERVERSCOPE_ESCALATION_EMAILS` only receive
@@ -244,7 +244,7 @@ Remaining, by priority:
    must become an invitation the recipient accepts, and the inviter must
    not learn whether the e-mail address already has an account (same
    answer for new and existing addresses).
-9. **Registration has no e-mail verification.** Anyone can sign up with
+9. **FIXED: registration now requires e-mail verification** (signed link; no sign-in until verified; `verified` middleware on the app; existing users are marked verified by migration; a password reset also verifies). Previously: registration had no e-mail verification. Anyone can sign up with
    someone else's address. **Fix before enabling registration**: verify
    the address before the account can be used.
 
@@ -256,10 +256,10 @@ Remaining, by priority:
   `App\Support\PlanLimits`; a pending team gets the Free limits. The default
   team is exempt. The values are proposals; nothing enforced them before.
 - Nothing sets `plan_status` to active yet (payment is phase 2).
-- Registration stays off: blockers 1, 2 and 9 above are still open.
+- Registration stays off by default (flag); its audit blockers are fixed, it needs working mail first.
 
 ### Flags (both off by default)
-Do not enable registration before blockers 1, 2 and 9 are fixed, nor
+Blockers 1, 2 (registration part) and 9 are fixed; registration still needs a working MAIL_* configuration and an explicit decision. Do not enable invitations before blockers 2 and 8 are fixed; and not
 invitations before blockers 2 and 8 are fixed.
 - `SERVERSCOPE_REGISTRATION_ENABLED`: `/register` creates an account with
   its own team (otherwise 404).

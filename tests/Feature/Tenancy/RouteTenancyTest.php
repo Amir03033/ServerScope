@@ -27,6 +27,9 @@ class RouteTenancyTest extends TestCase
         'GET|HEAD login',
         'POST login',
         'GET|HEAD register',
+        'GET|HEAD register/sent',
+        // Signed link from the verification mail: marks the address, shows no team data.
+        'GET|HEAD email/verify/{id}/{hash}',
         'POST register',
         'GET|HEAD forgot-password',
         'POST forgot-password',
@@ -64,12 +67,15 @@ class RouteTenancyTest extends TestCase
     /** Middleware that authenticates and sets the tenant itself. */
     private const SELF_TENANTING = [AuthenticateApiToken::class, AuthenticateAgent::class];
 
+    /** Signed in but no team data: verification screens and sign-out. */
+    private const AUTH_ONLY = ['GET|HEAD email/verify', 'POST email/verification-notification', 'POST logout'];
+
     public function test_every_authenticated_route_sets_the_tenant(): void
     {
         $missing = [];
 
         foreach (Route::getRoutes() as $route) {
-            if ($this->has($route, ['auth', Authenticate::class]) && ! $this->has($route, ['tenant', ResolveTenant::class])) {
+            if ($this->has($route, ['auth', Authenticate::class]) && ! $this->has($route, ['tenant', ResolveTenant::class]) && ! in_array($this->key($route), self::AUTH_ONLY, true)) {
                 $missing[] = $this->key($route);
             }
         }

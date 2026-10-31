@@ -117,9 +117,13 @@ class TeamAccessTest extends TestCase
     {
         config(['serverscope.tenancy.registration_enabled' => true]);
 
-        $this->post('/register', ['name' => 'Klant', 'email' => 'klant@example.test', 'password' => 'Wachtwoord123456', 'password_confirmation' => 'Wachtwoord123456', 'team' => 'Klant BV'])->assertRedirect(route('dashboard'));
+        $this->post('/register', ['name' => 'Klant', 'email' => 'klant@example.test', 'password' => 'Wachtwoord123456', 'password_confirmation' => 'Wachtwoord123456', 'team' => 'Klant BV'])->assertRedirect(route('register.sent'));
 
         $user = User::query()->where('email', 'klant@example.test')->firstOrFail();
+        $this->assertGuest();
+        $this->assertNull($user->email_verified_at);
+        $user->markEmailAsVerified();
+        $this->actingAs($user);
         $team = $user->currentTeam;
         $this->assertSame('owner', $user->roleIn($team));
         $this->assertFalse($user->is_platform_admin);
