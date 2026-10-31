@@ -24,6 +24,7 @@ class BillingController extends Controller
         $team = Team::query()->findOrFail(Tenant::id());
 
         return view('billing.show', [
+            'cards' => $this->cards($team, $billing),
             'team' => $team,
             'enabled' => $billing->enabled(),
             'prices' => collect(['pro', 'premium'])->mapWithKeys(fn ($p) => [$p => collect(['month', 'year'])->mapWithKeys(fn ($i) => [$i => $billing->displayPrice($p, $i)])->all()])->all(),
@@ -74,5 +75,53 @@ class BillingController extends Controller
         $sub->update(['cancel_at_period_end' => true]);
 
         return back()->with('success', __('billing.flash.cancel_scheduled'));
+    }
+
+    /**
+     * One card per plan: what is in it, what it costs and whether it can be bought.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function cards(Team $team, BillingManager $billing): array
+    {
+        $cards = [];
+
+        foreach (PlanLimits::PLANS as $key) {
+            $limits = (array) config("serverscope.plans.{$key}.limits", []);
+            $features = (array) config("serverscope.plans.{$key}.features", []);
+            $lines = [];
+
+            foreach (['servers', 'domains', 'pages_per_website', 'status_pages'] as $limit) {
+                if (isset($limits[$limit])) {
+                    $lines[] = __('billing.limits.'.$limit, ['n' => number_format((int) $limits[$limit], 0, ',', '.')]);
+                }
+            }
+
+            $lines[] = __('billing.limits.interval', ['n' => (int) ($limits['min_interval_minutes'] ?? 1)]);
+            $lines[] = ($limits['retention_days'] ?? null) === null ? __('billing.limits.retention_unlimited') : __('billing.limits.retention', ['n' => (int) $limits['retention_days']]);
+
+            foreach ($features as $feature) {
+                $lines[] = __('billing.features.'.$feature);
+            }
+
+            $intervals = [];
+
+            foreach (['month', 'year'] as $interval) {
+                if ($billing->canCheckout($key, $interval)) {
+                    $intervals[$interval] = $billing->displayPrice($key, $interval);
+                }
+            }
+
+            $cards[] = [
+                'key' => $key,
+                'lines' => $lines,
+                'intervals' => $intervals,
+                'chosen' => $team->plan === $key,
+                'active' => $team->plan === $key && $team->plan_status === PlanLimits::ACTIVE,
+                'pending' => $team->plan === $key && $team->plan_status === PlanLimits::PENDING_PAYMENT,
+            ];
+        }
+
+        return $cards;
     }
 }

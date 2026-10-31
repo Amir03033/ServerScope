@@ -163,10 +163,12 @@ class MollieProviderTest extends TestCase
 
         $html = $this->actingAs($this->owner($team))->get(route('billing.show'))->assertOk()->getContent();
 
+        // One card per plan; with two intervals each button carries its price.
         foreach (['€ 19,00', '€ 190,00', '€ 49,00', '€ 490,00'] as $price) {
             $this->assertStringContainsString($price, $html);
         }
-        $this->assertSame(4, substr_count($html, 'data-testid="price"'));
+        $this->assertSame(3, substr_count($html, 'data-testid="plan-card"'));
+        $this->assertSame(3, substr_count($html, 'data-testid="price"'));
     }
 
     public function test_a_cancelled_subscription_says_it_ends_instead_of_renews(): void
@@ -175,9 +177,9 @@ class MollieProviderTest extends TestCase
         $sub = Subscription::query()->create(['team_id' => $team->id, 'provider' => 'mollie', 'provider_subscription_id' => 'sub_9', 'provider_customer_id' => 'cst_9', 'plan' => 'pro', 'interval' => 'month', 'status' => 'active', 'current_period_end' => '2026-11-30 12:00:00']);
         $user = $this->owner($team);
 
-        $this->actingAs($user)->get(route('billing.show'))->assertSee('verlengt op 2026-11-30')->assertDontSee('eindigt op 2026-11-30');
+        $this->actingAs($user)->get(route('billing.show'))->assertSee('Verlengt op 2026-11-30')->assertDontSee('Eindigt op 2026-11-30');
 
         $sub->update(['cancel_at_period_end' => true]);
-        $this->actingAs($user)->get(route('billing.show'))->assertSee('eindigt op 2026-11-30 (opgezegd)')->assertDontSee('verlengt op');
+        $this->actingAs($user)->get(route('billing.show'))->assertSee('Eindigt op 2026-11-30 (opgezegd)')->assertDontSee('Verlengt op');
     }
 }
