@@ -24,6 +24,11 @@
   483 plus 52 new; still only the known TLS test fails) and 43 agent tests,
   plus container tests on Ubuntu 22.04, Ubuntu 24.04 and Debian 12 and one
   with real systemd. See §7.
+- Metric rollups and storage foundation (Phase 0 of the feasibility audit):
+  branch `claude/relaxed-brahmagupta-b57hx8`. Baseline on PHP 8.4 / SQLite:
+  669 PHPUnit tests, 667 passed, 2 skipped (pcntl not available), 0
+  failures; 43 agent tests passed. Afterwards 683 tests, 681 passed, the
+  same 2 skipped; 46 agent tests passed. Not run on MySQL. See §8.
 
 Scope: the ServerScope Laravel application (not `info.serverscope.nl`).
 Statuses are based on code plus automated tests and local runs in a
@@ -678,4 +683,40 @@ agent and the updater stay out of scope. Plan and decisions:
   exceptions of `IncidentManager` (shown as a flash message on an invalid
   transition) and the column headings of the CSV exports (an export format
   that other tools may read).
+
+## 8. Metric rollups and storage foundation (Phase 0)
+
+Verified against the code before changing it:
+- `metric_samples` held the only copy of metric history (one wide row per
+  sample); there were no aggregates.
+- `MetricHistory` (anomaly detection, forecasts) read every raw sample of
+  the window for every server, every hour: 7 days for anomalies and 14
+  days for disk forecasts.
+- Raw retention deleted `WHERE collected_at < ? ORDER BY id`; there is no
+  index starting with `collected_at`, so on MySQL each batch could scan the
+  table.
+- The agent sent no CPU count; the Python agent's User-Agent said 0.2.0.
+- Alert evaluation runs inside the ingestion transaction. **Kept
+  synchronous** on purpose: rules need the sample just stored and a queue
+  would delay alerts by the worker cadence.
+
+Implemented:
+
+| Item | Status | Evidence |
+|---|---|---|
+| Hourly and daily rollups (`metric_rollups`: count/sum/min/max per server, bucket, metric, disk mount) | COMPLETE | `App\Services\Analytics\MetricRollups`, `serverscope:rollup` (hourly at :12), `RollupServerMetrics` job |
+| Only closed hours (ingest window + 1 minute); idempotent upserts on a unique key; no shrinking after raw pruning; watermark per 24-hour chunk | COMPLETE | `MetricRollupTest` (duplicates, recomputation, late samples, failure + retry, pruned raw data) |
+| Analytics read rollups for aggregated hours, raw for the rest | COMPLETE | `MetricHistory::buckets`; parity with raw-only results and identical analyzer findings tested; `SERVERSCOPE_ROLLUPS_READ=false` restores the old path |
+| Rollup retention independent of raw (global per period + per plan) | COMPLETE | `serverscope:prune`; plan values in `serverscope.rollups.plan_retention_days` are **proposals** (Free 90, Pro 730, Premium unlimited) |
+| Raw retention per server through `(server_id, collected_at)` | COMPLETE | `PruneMonitoringData::pruneSamples` |
+| Server chart query selects only used columns | COMPLETE | `ServerDetailController` (same 2,000-point resolution) |
+| `servers.cpu_count` from the agent (Python + Bash), API and server page | COMPLETE (server); agent change ships with the next signed release | `MetricSampleController`, `ServerResource`, agent tests |
+| Tenant isolation of rollups | COMPLETE | `team_id` from the server, `BelongsToTeam` scope; tested |
+
+Not changed (deliberately): server charts and reports still read raw
+samples; the redundant plain index next to the unique
+`(server_id, collected_at)` index on `metric_samples` was left in place
+(dropping an index on the largest table is an operator decision);
+`serverscope:analyze` still runs sequentially (cheap now; split into jobs
+above ~1,000 servers). Worker guidance: `DEPLOYMENT.md` §9.
 

@@ -202,6 +202,42 @@ return [
         'anomaly_incidents' => (bool) env('SERVERSCOPE_ANOMALY_INCIDENTS', false),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Metric rollups
+    |--------------------------------------------------------------------------
+    |
+    | serverscope:rollup (hourly at :12) aggregates raw metric samples into
+    | hourly and daily rows (count, sum, min, max per metric). Anomaly
+    | detection and forecasts read the rollups for aggregated hours and
+    | raw samples only for the most recent ones, so their cost no longer
+    | grows with the raw history. Rollups have their own retention below,
+    | so they can be kept much longer than raw samples.
+    |
+    | queue: dispatch one job per server instead of running inline (only
+    | useful with supervised queue workers).
+    | initial_backfill_days: how far back the first run for a server goes;
+    | older history can be aggregated with `serverscope:rollup --from=`.
+    | read: let analytics read rollups (false = raw samples only).
+    | plan_retention_days: days of rollups kept per effective plan (null =
+    | no plan limit), on top of the global retention below. Kept apart
+    | from plans.*.limits.retention_days, which governs raw history and is
+    | what the pricing page shows. The values are proposals: align them
+    | with the pricing page and the privacy statement.
+    |
+    */
+
+    'rollups' => [
+        'queue' => (bool) env('SERVERSCOPE_ROLLUPS_QUEUE', false),
+        'initial_backfill_days' => (int) env('SERVERSCOPE_ROLLUPS_BACKFILL_DAYS', 35),
+        'read' => (bool) env('SERVERSCOPE_ROLLUPS_READ', true),
+        'plan_retention_days' => [
+            'free' => 90,
+            'pro' => 730,
+            'premium' => null,
+        ],
+    ],
+
     'reports' => [
         // Availability target shown in reports (calculated, not contractual).
         'default_target' => (float) env('SERVERSCOPE_REPORT_TARGET', 99.9),
@@ -229,6 +265,10 @@ return [
         'discovery_runs_days' => env('SERVERSCOPE_RETAIN_DISCOVERY_RUNS_DAYS'),
         'service_events_days' => env('SERVERSCOPE_RETAIN_SERVICE_EVENTS_DAYS'),
         'predictions_days' => env('SERVERSCOPE_RETAIN_PREDICTIONS_DAYS'),
+        // Rollups are small (about 1.5 MB per server per month for hourly
+        // rows) and are kept independently of raw samples.
+        'metric_rollups_hourly_days' => env('SERVERSCOPE_RETAIN_HOURLY_ROLLUPS_DAYS', 400),
+        'metric_rollups_daily_days' => env('SERVERSCOPE_RETAIN_DAILY_ROLLUPS_DAYS'),
     ],
 
     'api' => [

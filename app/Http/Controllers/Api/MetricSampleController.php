@@ -16,6 +16,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class MetricSampleController extends Controller
 {
+    /**
+     * Oldest accepted sample. Hourly rollups treat an hour as closed one
+     * minute after this window (App\Services\Analytics\MetricRollups).
+     */
+    public const MAX_SAMPLE_AGE_MINUTES = 10;
+
     public function store(
         Request $request,
         AlertDetectionService $alertDetectionService,
@@ -29,7 +35,7 @@ class MetricSampleController extends Controller
             'collected_at' => [
                 'required',
                 'date',
-                'after_or_equal:' . now()->subMinutes(10)->toIso8601String(),
+                'after_or_equal:' . now()->subMinutes(self::MAX_SAMPLE_AGE_MINUTES)->toIso8601String(),
                 'before_or_equal:' . now()->addSeconds(30)->toIso8601String(),
             ],
 
@@ -67,6 +73,8 @@ class MetricSampleController extends Controller
             'network_drops_out' => ['nullable', 'integer', 'min:0'],
             'process_count' => ['nullable', 'integer', 'min:0', 'max:10000000'],
             'agent_checksum' => ['nullable', 'string', 'regex:/^[a-f0-9]{64}$/'],
+            // Server metadata (logical CPUs), stored on the server, not per sample.
+            'cpu_count' => ['nullable', 'integer', 'between:1,4096'],
             'services' => ['nullable', 'array', 'max:'.ServiceMonitor::MAX_SERVICES],
             'services.*.name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9@._:-]+$/', 'distinct'],
             'services.*.state' => ['required', 'string', Rule::in(['running', 'starting', 'stopped', 'failed', 'not_found', 'unknown'])],
@@ -107,7 +115,7 @@ class MetricSampleController extends Controller
         $sampleData = $validated;
         $services = $validated['services'] ?? null;
 
-        unset($sampleData['collected_at'], $sampleData['services'], $sampleData['agent_checksum']);
+        unset($sampleData['collected_at'], $sampleData['services'], $sampleData['agent_checksum'], $sampleData['cpu_count']);
 
         try {
             $sample = DB::transaction(function () use (
@@ -131,6 +139,8 @@ class MetricSampleController extends Controller
                         ?? $server->agent_version,
                     'agent_checksum' => $validated['agent_checksum']
                         ?? $server->agent_checksum,
+                    'cpu_count' => $validated['cpu_count']
+                        ?? $server->cpu_count,
                 ])->save();
 
                 // Only agents configured to watch services send the key.

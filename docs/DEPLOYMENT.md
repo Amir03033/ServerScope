@@ -44,7 +44,8 @@ The scheduler runs:
 | `serverscope:dispatch-domain-checks` | every minute | queue due HTTP/TLS/DNS/RDAP checks (atomic claim, no duplicates) |
 | `serverscope:dispatch-page-checks` | every minute | queue due website page checks (max. 20 per website and 500 in total per run, configurable) |
 | `serverscope:escalate-incidents` | every minute | escalate unacknowledged incidents (grouped incidents escalate via their root) |
-| `serverscope:analyze` | hourly at :07 | anomaly detection and capacity forecasts |
+| `serverscope:analyze` | hourly at :07 | anomaly detection and capacity forecasts (reads hourly rollups for aggregated hours) |
+| `serverscope:rollup` | hourly at :12 | aggregate closed hours of raw metric samples into hourly and daily rollups (see §9) |
 | heartbeat (closure) | every minute | lets **Beheer → Systeemstatus** report whether the scheduler runs |
 | `queue:work --stop-when-empty --max-time=55` | every minute | process queued checks, notifications, webhooks |
 | `serverscope:prune` | daily 03:17 | delete history older than the configured retention (disabled by default) |
@@ -86,6 +87,7 @@ web requests and webhook retries are disabled.
 | `2026_10_28_120000_add_service_checks_and_extended_metrics` | nullable disk I/O, network error, process-count columns on `metric_samples`; `servers.agent_checksum/predictive_alerts_enabled/anomaly_sensitivity`; `service_checks`, `service_check_events` |
 | `2026_10_28_130000_create_predictions_table` | `predictions` |
 | `2026_10_28_140000_create_ssl_certificates_table` | `ssl_certificates` (certificate history) |
+| `2026_11_09_100000_create_metric_rollups_table` | `metric_rollups` (hourly/daily aggregates, unique per server/period/bucket/metric/dimension); nullable `servers.metrics_rolled_up_until` and `servers.cpu_count`. Additive; `migrate:rollback --step=1` drops only the rollups (raw samples are untouched) |
 
 The five 2026-10-28 migrations only add tables and nullable/defaulted
 columns; existing rows and history are untouched. To roll them back:
@@ -145,6 +147,10 @@ All optional; the defaults are shown.
 | `SERVERSCOPE_PREDICTIVE` / `_PREDICTIVE_ALERTS` | `true` / `true` | run the analysis / open incidents for near-term capacity forecasts |
 | `SERVERSCOPE_PREDICTIVE_HORIZON_DAYS` | `7` | forecast incidents only within this horizon |
 | `SERVERSCOPE_ANOMALY_INCIDENTS` | `false` | also open incidents for anomalies (they are always shown) |
+| `SERVERSCOPE_RETAIN_HOURLY_ROLLUPS_DAYS` / `_DAILY_ROLLUPS_DAYS` | `400` / – (keep forever) | retention of metric rollups, independent of `SERVERSCOPE_RETAIN_METRICS_DAYS` (raw samples) |
+| `SERVERSCOPE_ROLLUPS_QUEUE` | `false` | `serverscope:rollup` dispatches one job per server instead of running inline (only with supervised workers) |
+| `SERVERSCOPE_ROLLUPS_BACKFILL_DAYS` | `35` | how far back the first rollup run per server goes (older: `serverscope:rollup --from=`) |
+| `SERVERSCOPE_ROLLUPS_READ` | `true` | analytics read rollups for aggregated hours (`false` = raw samples only, the old behaviour) |
 | `TRUSTED_PROXIES` | `127.0.0.1,::1` | proxies in front of PHP (Plesk nginx); read at boot, not from the config cache |
 
 Also set `SESSION_SECURE_COOKIE=true`, `APP_ENV=production`, `APP_DEBUG=false`
@@ -154,11 +160,13 @@ and a real `APP_URL=https://serverscope.nl`.
 
 ```sh
 php artisan about                    # PHP version, environment, cache status
-php artisan schedule:list            # eight scheduled entries
+php artisan schedule:list            # includes serverscope:rollup (hourly at :12)
 php artisan migrate:status           # all migrations ran
 php artisan serverscope:check-agents
 php artisan serverscope:dispatch-domain-checks && php artisan queue:work --stop-when-empty
 php artisan queue:failed             # should be empty
+php artisan serverscope:rollup       # first run backfills up to 35 days per server; safe to repeat
+php artisan serverscope:prune --dry-run   # shows raw and rollup retention before anything is deleted
 ```
 
 In the UI: open **Beheer → Systeemstatus** (scheduler, queue and overdue
@@ -191,3 +199,62 @@ on its page; send a test notification from **Profiel**; check
 7. Record which websites run on which servers (**Afhankelijkheden**, or
    confirm the suggestions on the domain pages); without dependencies no
    cross-resource incident grouping happens.
+
+## 9. Metric rollups and worker requirements
+
+**Storage.** Raw samples (`metric_samples`, one row per server per agent
+interval, about 25–50 MB per server per month at 60 s) are aggregated by
+`serverscope:rollup` into `metric_rollups`: per server, hour and day, one
+row per metric and disk mount with `count`, `sum`, `min` and `max`. Hourly
+rows take roughly 1.5 MB per server per month. Rollups have their own
+retention (`SERVERSCOPE_RETAIN_HOURLY_ROLLUPS_DAYS`, default 400 days;
+daily rows are kept) and, per team, `serverscope.rollups.plan_retention_days`
+(proposal: Free 90, Pro 730, Premium unlimited; the default team is
+exempt). They are therefore kept when raw samples are pruned, e.g. with
+`SERVERSCOPE_RETAIN_METRICS_DAYS=30`.
+
+**How it runs.** An hour is aggregated once it is closed: 11 minutes after
+its end, when the ingest API (which accepts samples up to 10 minutes old)
+can no longer add to it. Writes are upserts on a unique key and a bucket is
+never replaced by one built from fewer samples, so a repeated run, a
+retried job or a recomputation with `--from` never creates duplicates or
+shrinks history. `servers.metrics_rolled_up_until` advances per 24-hour
+chunk; an interrupted run resumes there.
+
+**First deploy.** After `migrate`, run `php artisan serverscope:rollup`
+once by hand (or wait for :12). It aggregates at most
+`SERVERSCOPE_ROLLUPS_BACKFILL_DAYS` (35) per server; for older history:
+`php artisan serverscope:rollup --from=2026-01-01` (inline, any time,
+repeatable). Until a server has rollups, analytics read raw samples as
+before.
+
+**Readers.** Anomaly detection and forecasts (`serverscope:analyze`) read
+rollups for aggregated hours and raw samples only for the partial first
+hour and the not yet aggregated hours, so their cost no longer grows with
+14 days of raw rows per server. The server charts still read raw samples
+(only the needed columns); reports count raw samples for coverage.
+
+**Raw retention** now deletes per server through the
+`(server_id, collected_at)` index instead of scanning `metric_samples` by
+`collected_at` (which has no index of its own).
+
+**Workers.** What runs where:
+
+| Work | Where | Notes |
+|---|---|---|
+| Metric ingestion + alert evaluation | web request (sync) | Kept synchronous on purpose: rules need the sample just stored, and a queue would delay alerts by the worker cadence. Cost: one rule query plus one short transaction per rule and dimension. |
+| Domain/page checks, discovery, notifications, webhooks | queue | unchanged |
+| Rollups | scheduler, inline (default) or queue (`SERVERSCOPE_ROLLUPS_QUEUE=true`) | one unique job per server, 3 tries with backoff |
+| Analysis (`serverscope:analyze`) | scheduler, inline | sequential; cheap now that it reads rollups. Candidate for per-server jobs above ~1,000 servers |
+| Pruning | scheduler, daily | batched deletes |
+
+The scheduler-driven worker (`queue:work --stop-when-empty --max-time=55`,
+`SERVERSCOPE_SCHEDULER_QUEUE_WORKER=true`) is enough for small
+installations. Use a supervised worker (`php artisan queue:work --sleep=3
+--tries=1 --max-time=3600 --timeout=300`, and set
+`SERVERSCOPE_SCHEDULER_QUEUE_WORKER=false`) when any of these hold: more
+than about 100 servers or 500 monitored pages, `SERVERSCOPE_ROLLUPS_QUEUE`
+is enabled, or **Beheer → Systeemstatus** shows a queue backlog. Page
+checks are capped at `SERVERSCOPE_PAGE_CHECKS_PER_RUN` (500) per minute in
+total; raise it together with worker capacity.
+

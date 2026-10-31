@@ -206,3 +206,9 @@ def test_failed_submissions_have_a_safe_reason(monkeypatch, status, body, expect
 
     assert error.value.reason.startswith(expected)
     assert "test-token" not in error.value.reason
+
+
+def test_client_user_agent_names_the_running_agent_version():
+    from serverscope_agent.collector import AGENT_VERSION
+
+    assert create_client().session.headers["User-Agent"] == f"ServerScope-Agent/{AGENT_VERSION}"

@@ -29,6 +29,8 @@ return [
         'check_agents' => ['title' => 'Stille agents controleren', 'when' => 'Foutzoeken: zet offline servers nu op offline.'],
         'dispatch_domains' => ['title' => 'Domeincontroles starten', 'when' => 'Foutzoeken: start openstaande HTTP/TLS/DNS-controles nu.'],
         'dispatch_pages' => ['title' => 'Paginacontroles starten', 'when' => 'Foutzoeken: start openstaande paginacontroles nu.'],
+        'rollup' => ['title' => 'Metingen samenvatten per uur en dag', 'when' => 'Foutzoeken: draait normaal elk uur om :12; herhalen kan geen kwaad.'],
+        'rollup_backfill' => ['title' => 'Oudere meetgeschiedenis samenvatten', 'when' => 'Eenmalig na de eerste deploy, voor ruwe metingen ouder dan 35 dagen; herhaalbaar.'],
         'analyze' => ['title' => 'Afwijkingen en voorspellingen berekenen', 'when' => 'Foutzoeken: draait normaal elk uur.'],
         'escalate' => ['title' => 'Onbevestigde incidenten escaleren', 'when' => 'Foutzoeken: draait normaal ingepland.'],
         'prune_dry' => ['title' => 'Tonen wat opschonen zou verwijderen', 'when' => 'Doe dit altijd eerst. Verwijdert niets.'],

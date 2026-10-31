@@ -29,6 +29,8 @@ return [
         'check_agents' => ['title' => 'Check silent agents', 'when' => 'Debugging: mark offline servers right now.'],
         'dispatch_domains' => ['title' => 'Queue domain checks', 'when' => 'Debugging: start due HTTP/TLS/DNS checks now.'],
         'dispatch_pages' => ['title' => 'Queue website page checks', 'when' => 'Debugging: start due page checks now.'],
+        'rollup' => ['title' => 'Aggregate metric rollups', 'when' => 'Debugging: normally hourly at :12; safe to repeat.'],
+        'rollup_backfill' => ['title' => 'Aggregate older metric history', 'when' => 'Once after the first deploy, to roll up raw samples older than 35 days; repeatable.'],
         'analyze' => ['title' => 'Run anomaly and forecast analysis', 'when' => 'Debugging: normally hourly.'],
         'escalate' => ['title' => 'Escalate unacknowledged incidents', 'when' => 'Debugging: normally scheduled.'],
         'prune_dry' => ['title' => 'Show what clean-up would delete', 'when' => 'Always do this first. Deletes nothing.'],

@@ -151,6 +151,7 @@ return [
         'ip_none' => 'Not set',
         'os' => 'Operating system',
         'agent_version' => 'Agent version',
+        'cpu_count' => 'CPU cores',
         'last_contact' => 'Last contact',
         'last_sample' => 'Latest measurement',
         'no_samples' => 'No measurements',

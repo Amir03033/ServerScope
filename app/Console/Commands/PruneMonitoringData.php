@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Deletes monitoring history older than the configured retention.
- * Every category is disabled (kept forever) unless a number of days is
- * configured. Deletes in batches to keep locks short.
+ * Every raw-history category is disabled (kept forever) unless a number
+ * of days is configured; hourly metric rollups default to 400 days and
+ * daily rollups are kept forever. Deletes in batches to keep locks short.
  */
 class PruneMonitoringData extends Command
 {
@@ -60,18 +61,18 @@ class PruneMonitoringData extends Command
                 continue;
             }
 
-            $deleted = 0;
-
-            do {
-                $ids = $query()->orderBy('id')->limit(5000)->pluck('id');
-                $batch = $ids->isEmpty() ? 0 : DB::table($table)->whereIn('id', $ids)->delete();
-                $deleted += $batch;
-            } while ($batch > 0);
+            // metric_samples is by far the largest table and has no index
+            // on collected_at alone: delete per server through the
+            // (server_id, collected_at) index instead of scanning it.
+            $deleted = $table === 'metric_samples'
+                ? $this->pruneSamples(DB::table('servers')->orderBy('id')->pluck('id'), $cutoff)
+                : $this->deleteInBatches($query);
 
             $this->line("{$table}: {$deleted} rijen verwijderd (ouder dan {$days} dagen)");
             $total += $deleted;
         }
 
+        $total += $this->pruneRollups($dryRun);
         $total += $this->prunePlanRetention($dryRun);
 
         $this->info(($dryRun ? 'Totaal te verwijderen: ' : 'Totaal verwijderd: ').$total);
@@ -115,13 +116,9 @@ class PruneMonitoringData extends Command
                     continue;
                 }
 
-                $deleted = 0;
-
-                do {
-                    $ids = $query()->orderBy('id')->limit(5000)->pluck('id');
-                    $batch = $ids->isEmpty() ? 0 : DB::table($table)->whereIn('id', $ids)->delete();
-                    $deleted += $batch;
-                } while ($batch > 0);
+                $deleted = $table === 'metric_samples'
+                    ? $this->pruneSamples(DB::table('servers')->where('team_id', $team->id)->orderBy('id')->pluck('id'), $cutoff)
+                    : $this->deleteInBatches($query);
 
                 $total += $deleted;
                 $this->line("{$table} (team {$team->id}, plan {$team->effectivePlan()}): {$deleted} rijen verwijderd (ouder dan {$days} dagen)");
@@ -129,5 +126,90 @@ class PruneMonitoringData extends Command
         }
 
         return $total;
+    }
+
+    /**
+     * Rollups have their own retention, independent of raw samples: the
+     * global setting per period, and per team its plan's
+     * serverscope.rollups.plan_retention_days.
+     */
+    private function pruneRollups(bool $dryRun): int
+    {
+        $total = 0;
+
+        foreach (['hour' => 'metric_rollups_hourly_days', 'day' => 'metric_rollups_daily_days'] as $period => $key) {
+            $days = config("serverscope.retention.{$key}");
+
+            if ($days === null || $days === '' || (int) $days <= 0) {
+                $this->line("metric_rollups ({$period}): bewaard (geen retentie ingesteld)");
+
+                continue;
+            }
+
+            $query = fn () => DB::table('metric_rollups')->where('period', $period)->where('bucket_start', '<', now()->subDays((int) $days));
+            $count = $dryRun ? $query()->count() : $this->deleteInBatches($query);
+            $total += $count;
+            $this->line("metric_rollups ({$period}): {$count} rijen ".($dryRun ? 'zouden worden verwijderd' : 'verwijderd')." (ouder dan {$days} dagen)");
+        }
+
+        foreach (Team::query()->orderBy('id')->get() as $team) {
+            if (PlanLimits::isExempt($team)) {
+                continue;
+            }
+
+            $plan = $team->effectivePlan();
+            $days = config("serverscope.rollups.plan_retention_days.{$plan}");
+
+            if ($days === null || (int) $days <= 0) {
+                continue;
+            }
+
+            $query = fn () => DB::table('metric_rollups')->where('team_id', $team->id)->where('bucket_start', '<', now()->subDays((int) $days));
+            $count = $dryRun ? $query()->count() : $this->deleteInBatches($query);
+
+            if ($count > 0) {
+                $this->line("metric_rollups (team {$team->id}, plan {$plan}): {$count} rijen ".($dryRun ? 'zouden worden verwijderd' : 'verwijderd')." (ouder dan {$days} dagen)");
+            }
+
+            $total += $count;
+        }
+
+        return $total;
+    }
+
+    /** Deletes in id batches of 5000 so locks stay short. */
+    private function deleteInBatches(callable $query): int
+    {
+        $deleted = 0;
+
+        do {
+            $ids = $query()->orderBy('id')->limit(5000)->pluck('id');
+            $batch = $ids->isEmpty() ? 0 : DB::table($query()->from)->whereIn('id', $ids)->delete();
+            $deleted += $batch;
+        } while ($batch > 0);
+
+        return $deleted;
+    }
+
+    /**
+     * Deletes raw samples older than $cutoff for the given servers, each
+     * batch an index range scan on (server_id, collected_at).
+     *
+     * @param  iterable<int>  $serverIds
+     */
+    private function pruneSamples(iterable $serverIds, \DateTimeInterface $cutoff): int
+    {
+        $deleted = 0;
+
+        foreach ($serverIds as $serverId) {
+            do {
+                $ids = DB::table('metric_samples')->where('server_id', $serverId)->where('collected_at', '<', $cutoff)
+                    ->orderBy('collected_at')->limit(5000)->pluck('id');
+                $batch = $ids->isEmpty() ? 0 : DB::table('metric_samples')->whereIn('id', $ids)->delete();
+                $deleted += $batch;
+            } while ($batch > 0);
+        }
+
+        return $deleted;
     }
 }

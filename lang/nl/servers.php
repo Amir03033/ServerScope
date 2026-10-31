@@ -151,6 +151,7 @@ return [
         'ip_none' => 'Niet ingesteld',
         'os' => 'Besturingssysteem',
         'agent_version' => 'Agentversie',
+        'cpu_count' => 'CPU-kernen',
         'last_contact' => 'Laatste contact',
         'last_sample' => 'Laatste meting',
         'no_samples' => 'Geen metingen',

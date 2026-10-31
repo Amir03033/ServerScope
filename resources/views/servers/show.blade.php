@@ -296,6 +296,9 @@
                     <dt><svg class="ico"><use href="#i-swap"/></svg> {{ __('servers.show.ip') }}</dt><dd class="font-mono text-xs">{{ $server->ip_address ?? __('servers.show.ip_none') }}</dd>
                     <dt><svg class="ico"><use href="#i-os"/></svg> {{ __('servers.show.os') }}</dt><dd>{{ $server->operating_system ?? __('servers.unknown_cap') }}</dd>
                     <dt><svg class="ico"><use href="#i-tag"/></svg> {{ __('servers.show.agent_version') }}</dt><dd>{{ $server->agent_version ?? __('servers.unknown_cap') }}</dd>
+                    @if ($server->cpu_count)
+                        <dt><svg class="ico"><use href="#i-cpu"/></svg> {{ __('servers.show.cpu_count') }}</dt><dd>{{ $server->cpu_count }}</dd>
+                    @endif
                     <dt><svg class="ico"><use href="#i-clock"/></svg> {{ __('servers.show.last_contact') }}</dt><dd title="{{ Time::relative($server->last_seen_at) }}">{{ $server->last_seen_at ? Time::format($server->last_seen_at, 'd-m-Y H:i:s') : __('servers.never') }}</dd>
                     <dt><svg class="ico"><use href="#i-metrics"/></svg> {{ __('servers.show.last_sample') }}</dt><dd>{{ $latestSample ? Time::format($latestSample->collected_at, 'd-m-Y H:i:s') : __('servers.show.no_samples') }}</dd>
                     <dt><svg class="ico"><use href="#i-bars"/></svg> {{ __('servers.show.samples_in_range') }}</dt><dd>{{ $sampleCount }}</dd>

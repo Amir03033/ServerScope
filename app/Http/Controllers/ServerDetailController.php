@@ -54,8 +54,15 @@ class ServerDetailController extends Controller
 
         $sampleCount = (clone $samplesQuery)->count();
 
+        // Only the columns the charts use: the 7d/30d ranges read up to
+        // 43,200 rows, and the disks JSON is by far the widest column.
         $samples = $this->downsample(
-            $samplesQuery,
+            $samplesQuery->select([
+                'id', 'server_id', 'collected_at', 'cpu_percent', 'load_1', 'load_5', 'load_15',
+                'memory_total_bytes', 'memory_used_bytes', 'swap_total_bytes', 'swap_used_bytes',
+                'network_rx_bytes', 'network_tx_bytes', 'disk_read_bytes', 'disk_write_bytes',
+                'network_errors_in', 'network_errors_out', 'process_count',
+            ]),
             $sampleCount,
             self::MAX_CHART_POINTS,
         );

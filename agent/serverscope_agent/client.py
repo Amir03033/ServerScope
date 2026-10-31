@@ -2,6 +2,8 @@ import os
 
 import requests
 
+from serverscope_agent.collector import AGENT_VERSION
+
 
 class SubmissionError(RuntimeError):
     """A failed submission with a reason that is safe to log.
@@ -70,7 +72,7 @@ class ServerScopeClient:
             "Authorization": f"Bearer {self.token}",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "ServerScope-Agent/0.2.0",
+            "User-Agent": f"ServerScope-Agent/{AGENT_VERSION}",
         })
 
     def send_metrics(self, metrics: dict) -> dict:

@@ -70,12 +70,19 @@ class Server extends Model
             'auto_update_enabled' => 'boolean',
             'updater_version' => 'integer',
             'updater_last_seen_at' => 'datetime',
+            'metrics_rolled_up_until' => 'datetime',
+            'cpu_count' => 'integer',
         ];
     }
 
     public function agentCredentials(): HasMany
     {
         return $this->hasMany(AgentCredential::class);
+    }
+
+    public function metricRollups(): HasMany
+    {
+        return $this->hasMany(MetricRollup::class);
     }
 
     public function updateRequests(): HasMany
