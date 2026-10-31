@@ -8,6 +8,7 @@ return [
     'sub_status' => ['active' => 'actief', 'past_due' => 'betaling mislukt', 'canceled' => 'beëindigd'],
     'subscription' => 'Abonnement: :status',
     'renews' => 'verlengt op :date',
+    'ends_on' => 'eindigt op :date (opgezegd)',
     'cancels' => 'eindigt aan het einde van de periode',
     'interval' => ['month' => 'per maand', 'year' => 'per jaar'],
     'price_per' => ['month' => 'per maand', 'year' => 'per jaar'],

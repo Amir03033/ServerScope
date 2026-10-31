@@ -4,8 +4,11 @@
         @if ($subscription)
             <p class="mt-2 text-sm text-muted">
                 {{ __('billing.subscription', ['status' => __('billing.sub_status.'.$subscription->status)]) }}
-                @if ($subscription->current_period_end) · {{ __('billing.renews', ['date' => $subscription->current_period_end->format('Y-m-d')]) }} @endif
-                @if ($subscription->cancel_at_period_end) · {{ __('billing.cancels') }} @endif
+                @if ($subscription->current_period_end)
+                    · {{ __($subscription->cancel_at_period_end ? 'billing.ends_on' : 'billing.renews', ['date' => $subscription->current_period_end->format('Y-m-d')]) }}
+                @elseif ($subscription->cancel_at_period_end)
+                    · {{ __('billing.cancels') }}
+                @endif
             </p>
         @endif
     </div>

@@ -8,6 +8,7 @@ return [
     'sub_status' => ['active' => 'active', 'past_due' => 'payment failed', 'canceled' => 'ended'],
     'subscription' => 'Subscription: :status',
     'renews' => 'renews on :date',
+    'ends_on' => 'ends on :date (cancelled)',
     'cancels' => 'ends at the end of the period',
     'interval' => ['month' => 'monthly', 'year' => 'yearly'],
     'price_per' => ['month' => 'per month', 'year' => 'per year'],
