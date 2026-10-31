@@ -10,8 +10,11 @@ return [
     ],
 
     'banner' => [
+        'over_limit' => 'You are over the limits of your current plan (:items). Everything keeps working, but you cannot add more.',
         'pending' => 'You chose :plan, payment follows. Until then the Free limits apply.',
     ],
+
+    'items' => ['servers' => 'servers', 'domains' => 'domains', 'status_pages' => 'status pages'],
 
     'limit' => [
         'servers' => 'Your plan allows at most :limit servers.',

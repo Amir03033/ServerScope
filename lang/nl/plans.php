@@ -10,8 +10,11 @@ return [
     ],
 
     'banner' => [
+        'over_limit' => 'Je zit boven de limieten van je huidige abonnement (:items). Alles blijft werken, maar je kunt niets toevoegen.',
         'pending' => 'Je hebt :plan gekozen, betaling volgt nog. Tot die tijd gelden de Free-limieten.',
     ],
+
+    'items' => ['servers' => 'servers', 'domains' => 'domeinen', 'status_pages' => 'statuspagina\'s'],
 
     'limit' => [
         'servers' => 'Je abonnement staat maximaal :limit servers toe.',

@@ -102,6 +102,33 @@ class PlanLimits
         return $plan === null ? $global : min($global, (int) $plan);
     }
 
+    /**
+     * Resources beyond the limits of the current plan (after a downgrade or
+     * a failed payment). They keep working; only new ones are refused.
+     *
+     * @return array<string, array{count: int, limit: int}>
+     */
+    public static function overLimit(?Team $team = null): array
+    {
+        $team ??= self::currentTeam();
+        $counts = [
+            'servers' => fn () => \App\Models\Server::query()->count(),
+            'domains' => fn () => \App\Models\Domain::query()->count(),
+            'status_pages' => fn () => \App\Models\StatusPage::query()->count(),
+        ];
+        $over = [];
+
+        foreach ($counts as $key => $count) {
+            $limit = self::limit($key, $team);
+
+            if ($limit !== null && ($n = $count()) > $limit) {
+                $over[$key] = ['count' => $n, 'limit' => (int) $limit];
+            }
+        }
+
+        return $over;
+    }
+
     public static function pendingPayment(?Team $team): bool
     {
         return $team !== null && $team->plan !== self::FREE && $team->plan_status === self::PENDING_PAYMENT;

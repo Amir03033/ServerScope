@@ -237,6 +237,13 @@
                 </div>
             @endif
 
+            @if ($planTeam && ! $planTeam->isPendingPayment() && $isAdmin && ($over = \App\Support\PlanLimits::overLimit($planTeam)))
+                <div class="ss-alert ss-alert-warning mb-5" role="status" data-testid="plan-over-limit">
+                    <svg class="ico"><use href="#i-alert"/></svg>
+                    <div>{{ __('plans.banner.over_limit', ['items' => collect($over)->map(fn ($o, $k) => __('plans.items.'.$k).' '.$o['count'].'/'.$o['limit'])->implode(', ')]) }}</div>
+                </div>
+            @endif
+
             @if ($flash && (session('success') || session('error') || $errors->any()))
                 <div class="mb-5 grid gap-3">
                     @if (session('success'))

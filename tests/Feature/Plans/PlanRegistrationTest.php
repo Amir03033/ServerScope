@@ -125,4 +125,20 @@ class PlanRegistrationTest extends TestCase
 
         $this->assertSame(1, \Illuminate\Support\Facades\DB::table('metric_samples')->count());
     }
+
+    public function test_over_limit_notice_after_downgrade(): void
+    {
+        config(['serverscope.plans.free.limits.servers' => 1]);
+        $team = Team::query()->create(['name' => 'Over', 'plan' => 'free', 'plan_status' => 'active']);
+        Tenant::run($team, function () {
+            Server::query()->create(['name' => 'a', 'hostname' => 'a.example.test', 'status' => 'pending']);
+            Server::query()->create(['name' => 'b', 'hostname' => 'b.example.test', 'status' => 'pending']);
+        });
+        $user = User::factory()->create();
+        $user->teams()->attach($team->id, ['role' => 'owner']);
+        $user->forceFill(['current_team_id' => $team->id, 'is_admin' => true])->save();
+
+        $this->actingAs($user)->get('/dashboard')->assertSee('data-testid="plan-over-limit"', false)->assertSee('2/1');
+        $this->assertSame(['servers' => ['count' => 2, 'limit' => 1]], Tenant::run($team, fn () => PlanLimits::overLimit($team)));
+    }
 }
