@@ -71,7 +71,10 @@ class TlsInspectorTest extends TestCase
 
     public function test_expired_certificate(): void
     {
-        [$cert, $key] = $this->selfSigned('tls.example.test', -1);
+        // Newer PHP/OpenSSL builds refuse negative validity ("Days must be
+        // between 0 and ..."): a certificate valid for 0 days expires at once.
+        [$cert, $key] = $this->selfSigned('tls.example.test', 0);
+        sleep(2);
 
         $result = $this->inspectAgainst($cert, $key, 'tls.example.test');
 
