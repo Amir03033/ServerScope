@@ -256,17 +256,14 @@ return [
     |--------------------------------------------------------------------------
     |
     | Every customer is a team that only sees its own data. Public sign-up
-    | (a new account with its own team) and invitations of existing
-    | accounts into another team are off until explicitly enabled.
-    | Do not enable either before the blockers in docs/AUDIT.md section 5
-    | are fixed (domain names unique per team, invitations the recipient
-    | accepts, e-mail verification for registration).
+    | (a new account with its own team) is off until explicitly enabled;
+    | it needs working mail (e-mail verification). Team invitations are
+    | always available: the recipient accepts through a link in the mail.
     |
     */
 
     'tenancy' => [
         'registration_enabled' => (bool) env('SERVERSCOPE_REGISTRATION_ENABLED', false),
-        'invitations_enabled' => (bool) env('SERVERSCOPE_TEAM_INVITATIONS_ENABLED', false),
         // Automated tests only: records created without any team context
         // go to the default team. Never applies outside tests.
         'test_fallback' => true,

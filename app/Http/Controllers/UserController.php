@@ -30,59 +30,37 @@ class UserController extends Controller
         return view('users.index', ['users' => $this->members()->orderBy('name')->get()]);
     }
 
+    /**
+     * Invite by e-mail. The answer is the same for an address with and
+     * without an account; the person accepts through the link in the mail.
+     */
     public function store(Request $request): RedirectResponse
     {
         Gate::authorize('admin');
 
-        $email = strtolower(trim((string) $request->input('email')));
-        $existing = config('serverscope.tenancy.invitations_enabled') ? User::query()->where('email', $email)->first() : null;
-
-        if ($existing !== null) {
-            return $this->addExisting($request, $existing);
-        }
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+        $data = $request->validate([
+            'name' => ['nullable', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
             'is_admin' => ['boolean'],
         ]);
 
-        $role = $request->boolean('is_admin') ? 'admin' : 'member';
+        $email = strtolower(trim($data['email']));
 
-        $user = DB::transaction(function () use ($validated, $role): User {
-            $user = new User;
-            $user->name = $validated['name'];
-            $user->email = strtolower(trim($validated['email']));
-            // Unusable random password until the user sets their own.
-            $user->password = Hash::make(Str::random(64));
-            $user->is_admin = $role === 'admin';
-            $user->current_team_id = Tenant::id();
-            $user->save();
-            $user->teams()->attach(Tenant::id(), ['role' => $role]);
-
-            return $user;
-        });
-
-        Password::sendResetLink(['email' => $user->email]);
-        Audit::log('user.invited', "Gebruiker {$user->email} uitgenodigd".($role === 'admin' ? ' als beheerder' : ''), $user);
-
-        return back()->with('success', __('admin.users.flash.invited', ['email' => $user->email]));
-    }
-
-    /** Team invitation of an existing account (only when enabled). */
-    private function addExisting(Request $request, User $user): RedirectResponse
-    {
-        $request->validate(['is_admin' => ['boolean']]);
-
-        if ($user->belongsToTeam(Tenant::id())) {
-            return back()->withErrors(['email' => __('admin.users.flash.already_member')]);
+        // Members of the own team are visible to its administrators anyway.
+        if ($this->members()->where('users.email', $email)->exists()) {
+            return back()->withErrors(['email' => __('admin.users.flash.already_member')])->withInput();
         }
 
         $role = $request->boolean('is_admin') ? 'admin' : 'member';
-        $user->teams()->attach(Tenant::id(), ['role' => $role]);
-        Audit::log('user.added_to_team', "Bestaand account {$user->email} toegevoegd aan het team", $user);
+        $team = \App\Models\Team::query()->findOrFail(Tenant::id());
+        [$invitation, $plain] = \App\Models\TeamInvitation::issue($team, $email, $role, $data['name'] ?? null, $request->user()->id);
 
-        return back()->with('success', __('admin.users.flash.added', ['email' => $user->email]));
+        \Illuminate\Support\Facades\Notification::route('mail', $email)
+            ->notify(new \App\Notifications\TeamInvitationNotice($team->name, route('invitations.show', $plain)));
+
+        Audit::log('user.invited', "Uitnodiging verstuurd aan {$email}".($role === 'admin' ? ' (beheerder)' : ''), $team);
+
+        return back()->with('success', __('admin.users.flash.invited', ['email' => $email]));
     }
 
     public function update(Request $request, User $user): RedirectResponse

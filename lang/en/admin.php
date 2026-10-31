@@ -30,7 +30,7 @@ return [
         'is_admin' => 'Administrator',
         'invite' => 'Invite',
         'flash' => [
-            'invited' => 'Invitation sent to :email. The user sets their own password through the link (valid for 60 minutes).',
+            'invited' => 'If :email can be invited, an invitation has been sent. The link is valid for 7 days.',
             'already_member' => 'This user is already a member of this team.',
             'added' => ':email has been added to this team.',
             'own_admin' => 'You cannot revoke your own administrator rights.',

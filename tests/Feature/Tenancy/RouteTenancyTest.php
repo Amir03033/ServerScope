@@ -28,6 +28,10 @@ class RouteTenancyTest extends TestCase
         'POST login',
         'GET|HEAD register',
         'GET|HEAD register/sent',
+        // Team invitations: the token is the credential; accepting also needs the matching account.
+        'GET|HEAD invitations/{token}',
+        'GET|HEAD invitations/{token}/login',
+        'POST invitations/{token}/register',
         // Signed link from the verification mail: marks the address, shows no team data.
         'GET|HEAD email/verify/{id}/{hash}',
         'POST register',
@@ -70,7 +74,7 @@ class RouteTenancyTest extends TestCase
     private const SELF_TENANTING = [AuthenticateApiToken::class, AuthenticateAgent::class];
 
     /** Signed in but no team data: verification screens and sign-out. */
-    private const AUTH_ONLY = ['GET|HEAD email/verify', 'POST email/verification-notification', 'POST logout'];
+    private const AUTH_ONLY = ['POST invitations/{token}/accept', 'GET|HEAD email/verify', 'POST email/verification-notification', 'POST logout'];
 
     public function test_every_authenticated_route_sets_the_tenant(): void
     {

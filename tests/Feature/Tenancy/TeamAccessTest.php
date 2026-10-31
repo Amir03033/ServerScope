@@ -102,14 +102,13 @@ class TeamAccessTest extends TestCase
     public function test_registration_and_invitations_are_off_by_default(): void
     {
         $this->assertFalse(config('serverscope.tenancy.registration_enabled'));
-        $this->assertFalse(config('serverscope.tenancy.invitations_enabled'));
 
         $this->get('/register')->assertNotFound();
         $this->post('/register', ['name' => 'x', 'email' => 'nieuw@example.test', 'password' => 'Wachtwoord123456', 'password_confirmation' => 'Wachtwoord123456', 'team' => 'Nieuw'])->assertNotFound();
         $this->assertFalse(User::query()->where('email', 'nieuw@example.test')->exists());
 
-        // Without invitations an existing account of another team cannot be added.
-        $this->actingAs($this->a['admin'])->post(route('users.store'), ['name' => 'x', 'email' => $this->b['member']->email])->assertSessionHasErrors('email');
+        // Inviting an existing account of another team adds nothing until it accepts.
+        $this->actingAs($this->a['admin'])->post(route('users.store'), ['name' => 'x', 'email' => $this->b['member']->email])->assertSessionHas('success');
         $this->assertFalse($this->b['member']->fresh()->belongsToTeam($this->a['team']));
     }
 
@@ -129,15 +128,6 @@ class TeamAccessTest extends TestCase
         $this->assertFalse($user->is_platform_admin);
         $this->assertTrue(AlertRule::withoutGlobalScopes()->where('team_id', $team->id)->where('metric', 'agent_offline')->exists());
         $this->get(route('servers.index'))->assertOk()->assertDontSee('alpha-server')->assertDontSee('bravo-server');
-    }
-
-    public function test_invitations_add_existing_accounts_only_when_enabled(): void
-    {
-        config(['serverscope.tenancy.invitations_enabled' => true]);
-
-        $this->actingAs($this->a['admin'])->post(route('users.store'), ['name' => 'x', 'email' => $this->b['member']->email])->assertSessionHas('success');
-        $this->assertSame('member', $this->b['member']->fresh()->roleIn($this->a['team']));
-        $this->assertSame($this->b['team']->id, $this->b['member']->fresh()->current_team_id, 'current team is unchanged');
     }
 
     public function test_records_without_a_team_fail_outside_tests(): void

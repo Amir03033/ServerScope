@@ -30,7 +30,7 @@ return [
         'is_admin' => 'Beheerder',
         'invite' => 'Uitnodigen',
         'flash' => [
-            'invited' => 'Uitnodiging verstuurd naar :email. De gebruiker stelt zelf een wachtwoord in via de link (60 minuten geldig).',
+            'invited' => 'Als :email kan worden uitgenodigd, is er een uitnodiging verstuurd. De link is 7 dagen geldig.',
             'already_member' => 'Deze gebruiker is al lid van dit team.',
             'added' => ':email is toegevoegd aan dit team.',
             'own_admin' => 'Je kunt je eigen beheerdersrechten niet intrekken.',

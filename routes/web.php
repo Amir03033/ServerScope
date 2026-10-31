@@ -33,6 +33,16 @@ use App\Http\Controllers\WebsitePageController;
 
 Route::redirect('/', '/dashboard');
 
+// Invitation links: the token is the credential; accepting needs the matching account.
+Route::get('/invitations/{token}', [\App\Http\Controllers\InvitationController::class, 'show'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:20,1')->name('invitations.show');
+Route::get('/invitations/{token}/login', function (string $token) {
+    session()->put('url.intended', route('invitations.show', $token));
+
+    return redirect()->route('login');
+})->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:20,1')->name('invitations.login');
+Route::post('/invitations/{token}/register', [\App\Http\Controllers\InvitationController::class, 'register'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:10,1')->name('invitations.register');
+Route::post('/invitations/{token}/accept', [\App\Http\Controllers\InvitationController::class, 'accept'])->where('token', '[A-Za-z0-9]{48}')->middleware(['auth', 'throttle:10,1'])->name('invitations.accept');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [
         AuthenticatedSessionController::class,
