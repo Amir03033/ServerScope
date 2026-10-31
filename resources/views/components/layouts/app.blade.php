@@ -18,6 +18,7 @@
         ['route' => 'status-pages.index', 'match' => 'status-pages.*', 'icon' => 'i-status', 'label' => 'status_pages', 'admin' => true],
         ['route' => 'webhooks.index', 'match' => 'webhooks.*', 'icon' => 'i-webhook', 'label' => 'webhooks', 'admin' => true],
         ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'i-users', 'label' => 'users', 'admin' => true],
+        ['route' => 'billing.show', 'match' => 'billing.*', 'icon' => 'i-status', 'label' => 'billing', 'admin' => true],
         ['route' => 'audit-logs.index', 'match' => 'audit-logs.*', 'icon' => 'i-history', 'label' => 'audit_log', 'admin' => true],
         ['route' => 'system-health', 'match' => 'system-health', 'icon' => 'i-pulse', 'label' => 'system_health', 'admin' => true, 'platform' => true],
         ['route' => 'platform.commands', 'match' => 'platform.commands', 'icon' => 'i-sliders', 'label' => 'owner_commands', 'platform' => true],

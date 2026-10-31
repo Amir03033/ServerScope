@@ -105,4 +105,19 @@ class BillingTest extends TestCase
         $this->assertSame(['pro', 'active'], [$team->fresh()->plan, $team->fresh()->plan_status]);
         $this->artisan('serverscope:team:plan', ['team' => $team->id, 'plan' => 'bogus'])->assertFailed();
     }
+
+    public function test_billing_has_a_menu_item_for_admins_only(): void
+    {
+        $team = Team::query()->create(['name' => 'Nav']);
+        $mk = function (string $role) use ($team) {
+            $u = User::factory()->create();
+            $u->teams()->attach($team->id, ['role' => $role]);
+            $u->forceFill(['current_team_id' => $team->id, 'is_admin' => $role !== 'member'])->save();
+
+            return $u;
+        };
+
+        $this->actingAs($mk('owner'))->get('/dashboard')->assertSee(route('billing.show'), false);
+        $this->actingAs($mk('member'))->get('/dashboard')->assertDontSee(route('billing.show'), false);
+    }
 }

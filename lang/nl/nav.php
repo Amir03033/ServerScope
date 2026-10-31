@@ -28,6 +28,7 @@ return [
         'status_pages' => 'Statuspagina\'s',
         'webhooks' => 'Webhooks',
         'users' => 'Gebruikers',
+        'billing' => 'Abonnement en betaling',
         'audit_log' => 'Auditlog',
         'system_health' => 'Systeemstatus',
         'agent_releases' => 'Agentreleases',

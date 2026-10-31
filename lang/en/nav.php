@@ -28,6 +28,7 @@ return [
         'status_pages' => 'Status pages',
         'webhooks' => 'Webhooks',
         'users' => 'Users',
+        'billing' => 'Plan and billing',
         'audit_log' => 'Audit log',
         'system_health' => 'System status',
         'agent_releases' => 'Agent releases',
