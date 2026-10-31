@@ -1,4 +1,4 @@
-@props(['points', 'unit' => '', 'height' => 160, 'color' => 'var(--ss-accent)', 'label' => 'Grafiek'])
+@props(['points', 'unit' => '', 'height' => 160, 'color' => 'var(--ss-accent)', 'label' => 'Grafiek', 'flagLabel' => null])
 
 @php
     // $points: list of ['label' => string, 'value' => ?float, 'flag' => bool]
@@ -39,7 +39,7 @@
         @endforeach
         @foreach ($points as $i => $p)
             @if (! empty($p['flag']))
-                <rect x="{{ round($x($i) - 2, 1) }}" y="{{ $pad['t'] }}" width="4" height="{{ $plotH }}" fill="color-mix(in srgb, var(--ss-bad) 28%, transparent)"><title>{{ $p['label'] }}: {{ __('components.line_chart.failed_checks') }}</title></rect>
+                <rect x="{{ round($x($i) - 2, 1) }}" y="{{ $pad['t'] }}" width="4" height="{{ $plotH }}" fill="color-mix(in srgb, var(--ss-bad) 28%, transparent)"><title>{{ $p['label'] }}: {{ $flagLabel ?? __('components.line_chart.failed_checks') }}</title></rect>
             @endif
         @endforeach
         @foreach ($segments as $segment)

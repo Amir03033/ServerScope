@@ -37,6 +37,7 @@
     <x-slot:subtitle>{{ __('incidents.show.subtitle', ['source' => Label::of('incident_source', $incident->source, Incident::SOURCE_LABELS), 'date' => Time::dateTimeSeconds($incident->opened_at)]) }}</x-slot:subtitle>
     <x-slot:actions>
         <a href="{{ route('incidents.index') }}" class="ss-btn ss-btn-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('incidents.overview') }}</a>
+        <a href="{{ route('incidents.time-machine', $incident) }}" class="ss-btn ss-btn-secondary"><svg class="ico"><use href="#i-history"/></svg> {{ __('time_machine.open') }}</a>
     </x-slot:actions>
 
     {{-- Status bar with the actions that are possible now (directly under it on mobile). --}}

@@ -179,6 +179,19 @@ class IncidentController extends Controller
         ]);
     }
 
+    /**
+     * Time Machine: what happened before, during and after the incident.
+     * Same access as the incident itself (any member of its team; route
+     * model binding already limits incidents to the current team).
+     */
+    public function timeMachine(Incident $incident, \App\Services\Incidents\TimeMachine $timeMachine): View
+    {
+        return view('incidents.time-machine', [
+            'incident' => $incident,
+            'tm' => $timeMachine->build($incident),
+        ]);
+    }
+
     public function transition(Request $request, Incident $incident): RedirectResponse
     {
         $validated = $request->validate([
