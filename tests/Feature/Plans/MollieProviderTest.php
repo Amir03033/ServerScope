@@ -175,9 +175,9 @@ class MollieProviderTest extends TestCase
         $sub = Subscription::query()->create(['team_id' => $team->id, 'provider' => 'mollie', 'provider_subscription_id' => 'sub_9', 'provider_customer_id' => 'cst_9', 'plan' => 'pro', 'interval' => 'month', 'status' => 'active', 'current_period_end' => '2026-11-30 12:00:00']);
         $user = $this->owner($team);
 
-        $this->actingAs($user)->get(route('billing.show'))->assertSee('renews on 2026-11-30')->assertDontSee('ends on 2026-11-30');
+        $this->actingAs($user)->get(route('billing.show'))->assertSee('verlengt op 2026-11-30')->assertDontSee('eindigt op 2026-11-30');
 
         $sub->update(['cancel_at_period_end' => true]);
-        $this->actingAs($user)->get(route('billing.show'))->assertSee('ends on 2026-11-30 (cancelled)')->assertDontSee('renews on');
+        $this->actingAs($user)->get(route('billing.show'))->assertSee('eindigt op 2026-11-30 (opgezegd)')->assertDontSee('verlengt op');
     }
 }
