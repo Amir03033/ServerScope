@@ -259,8 +259,7 @@ Remaining, by priority:
 - Registration stays off by default (flag); its audit blockers are fixed, it needs working mail first.
 
 ### Flags (both off by default)
-Blockers 1, 2 (registration part) and 9 are fixed; registration still needs a working MAIL_* configuration and an explicit decision. Do not enable invitations before blockers 2 and 8 are fixed; and not
-invitations before blockers 2 and 8 are fixed.
+Blockers 1, 2 (registration part) and 9 are fixed; registration still needs a working MAIL_* configuration and an explicit decision. Do not enable invitations before blockers 2 and 8 are fixed.
 - `SERVERSCOPE_REGISTRATION_ENABLED`: `/register` creates an account with
   its own team (otherwise 404).
 - `SERVERSCOPE_TEAM_INVITATIONS_ENABLED`: an administrator can add an
