@@ -342,6 +342,19 @@
             </section>
 
             <x-dependencies :resource="$server" />
+
+            @if ($deployments->isNotEmpty())
+                <section class="ss-panel" data-testid="server-deployments">
+                    <div class="ss-panel-head">
+                        <div><h2 class="ss-panel-title">{{ __('deployments.title') }}</h2></div>
+                        <a href="{{ route('deployments.index') }}" class="ss-btn ss-btn-secondary ss-btn-sm">{{ __('deployments.title') }}</a>
+                    </div>
+                    @foreach ($deployments as $deployment)
+                        <p class="m-0 mt-2 text-sm"><a href="{{ route('deployments.show', $deployment) }}">{{ $deployment->label() }}</a>
+                            <span class="block text-xs text-muted">{{ $deployment->environment }} · {{ Time::dateTime($deployment->deployed_at) }}</span></p>
+                    @endforeach
+                </section>
+            @endif
         </section>
 
         {{-- Agent & updates --}}

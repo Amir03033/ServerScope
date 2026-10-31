@@ -21,6 +21,7 @@ return [
         'servers' => 'Servers',
         'domains' => 'Domeinen',
         'dependencies' => 'Afhankelijkheden',
+        'deployments' => 'Deployments',
         'incidents' => 'Incidenten',
         'alerts' => 'Alerts',
         'reports' => 'Rapporten',

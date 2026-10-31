@@ -4,6 +4,7 @@ namespace App\Services\Incidents;
 
 use App\Models\AgentUpdateRequest;
 use App\Models\AuditLog;
+use App\Models\Deployment;
 use App\Models\DnsChange;
 use App\Models\Incident;
 use App\Models\IncidentEvent;
@@ -108,7 +109,9 @@ class TimeMachine
             $gaps[] = __('time_machine.gaps.no_server');
         }
 
-        $gaps[] = __('time_machine.gaps.no_deployments');
+        if (! Deployment::query()->withoutGlobalScopes()->where('team_id', $incident->team_id)->exists()) {
+            $gaps[] = __('time_machine.gaps.no_deployments');
+        }
 
         [$findings, $explanations] = $this->analyse($incident, $events, $metrics, $window);
 
@@ -274,6 +277,23 @@ class TimeMachine
             }
         }
 
+        // Deployments (recorded through the API) linked to any resource in scope.
+        $links = $byType === [] ? collect() : DB::table('deployment_resources')->where(function ($q) use ($byType) {
+            foreach ($byType as $type => $items) {
+                $q->orWhere(fn ($q) => $q->where('resource_type', $type)->whereIn('resource_id', array_keys($items)));
+            }
+        })->get(['deployment_id', 'resource_type', 'resource_id']);
+
+        if ($links->isNotEmpty()) {
+            $deployments = Deployment::query()->withoutGlobalScopes()->where('team_id', $incident->team_id)
+                ->whereIn('id', $links->pluck('deployment_id')->unique())->whereBetween('deployed_at', [$from, $to])->limit(50)->get();
+
+            foreach ($deployments as $deployment) {
+                $link = $links->firstWhere('deployment_id', $deployment->id);
+                $add($deployment->deployed_at, 'change', $byType[$link->resource_type][$link->resource_id]['label'], __('deployments.timeline', ['label' => $deployment->label(), 'environment' => $deployment->environment]), $deployment->commit_sha ? substr($deployment->commit_sha, 0, 12) : null, route('deployments.show', $deployment));
+            }
+        }
+
         foreach ($byType as $type => $items) {
             if (in_array($type, ['server', 'domain', 'page'], true)) {
                 foreach (AuditLog::query()->where('auditable_type', $type)->whereIn('auditable_id', array_keys($items))->whereBetween('created_at', [$from, $to])->limit(100)->get() as $log) {
@@ -344,6 +364,12 @@ class TimeMachine
             $series[$metric] = $points;
         }
 
+        // Deployments of this server on the hourly charts.
+        $firstHour = intdiv($onset->subHours(self::BASELINE_HOURS)->getTimestamp(), 3600) * 3600;
+        $markers = Deployment::query()->withoutGlobalScopes()->where('team_id', $server->team_id)->forResource($server)
+            ->whereBetween('deployed_at', [CarbonImmutable::createFromTimestampUTC($firstHour), $window['to']])->limit(20)->get()
+            ->map(fn (Deployment $d) => ['index' => intdiv($d->deployed_at->getTimestamp() - $firstHour, 3600), 'label' => __('deployments.chart_marker').' '.$d->label().' · '.Time::format($d->deployed_at, 'd-m H:i')])->all();
+
         $step = max(1, (int) ceil($raw->count() / 240));
         $detail = ['cpu_percent' => [], 'memory_percent' => []];
 
@@ -363,6 +389,7 @@ class TimeMachine
             'label' => $resource['label'],
             'relation' => $resource['relation'],
             'hourly' => $series,
+            'markers' => $markers,
             'detail' => $raw->isEmpty() ? [] : $detail,
             'shifts' => $this->shifts($server, $hourly, $onset),
         ];

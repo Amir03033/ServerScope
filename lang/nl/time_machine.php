@@ -55,7 +55,7 @@ return [
         'no_server' => 'Er is geen server bij betrokken, dus er worden geen servermetingen getoond.',
         'no_metrics' => 'Voor :server zijn in deze periode geen metingen beschikbaar (niet gemeld, of verwijderd door de bewaartermijn).',
         'no_raw' => 'Losse metingen van :server rond het begin worden niet meer bewaard (bewaartermijn); waar beschikbaar worden uurgemiddelden getoond.',
-        'no_deployments' => 'Deployments worden nog niet door ServerScope vastgelegd; wijzigingen buiten ServerScope staan hier niet.',
+        'no_deployments' => 'Voor dit team zijn geen deployments vastgelegd; leg ze vast met POST /api/v1/deployments om ze hier te zien.',
     ],
     'events' => [
         'onset' => 'Probleem begonnen',

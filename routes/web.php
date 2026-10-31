@@ -270,6 +270,9 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         ->middleware('throttle:30,1')
         ->name('incidents.comment');
 
+    Route::get('/deployments', [\App\Http\Controllers\DeploymentController::class, 'index'])->name('deployments.index');
+    Route::get('/deployments/{deployment}', [\App\Http\Controllers\DeploymentController::class, 'show'])->name('deployments.show');
+
     Route::get('/dependencies', [DependencyController::class, 'index'])->name('dependencies.index');
     Route::post('/dependencies', [DependencyController::class, 'store'])->name('dependencies.store');
     Route::delete('/dependencies/{dependency}', [DependencyController::class, 'destroy'])->name('dependencies.destroy');

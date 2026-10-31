@@ -63,6 +63,8 @@ Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-token')->group(fu
         Route::get('/dependencies', [MonitoringApiController::class, 'dependencies'])->name('dependencies.index');
         Route::get('/servers/{server}/services', [MonitoringApiController::class, 'services'])->name('servers.services');
         Route::get('/predictions', [MonitoringApiController::class, 'predictions'])->name('predictions.index');
+        Route::get('/deployments', [\App\Http\Controllers\Api\V1\DeploymentApiController::class, 'index'])->name('deployments.index');
+        Route::get('/deployments/{deployment}', [\App\Http\Controllers\Api\V1\DeploymentApiController::class, 'show'])->name('deployments.show');
     });
 
     Route::middleware([AuthenticateApiToken::class.':write', IdempotentRequests::class])->group(function () {
@@ -74,6 +76,7 @@ Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-token')->group(fu
         Route::post('/dependencies', [MonitoringApiController::class, 'storeDependency'])->name('dependencies.store');
         Route::delete('/dependencies/{dependency}', [MonitoringApiController::class, 'destroyDependency'])->name('dependencies.destroy');
         Route::post('/incidents/{incident}/assign', [MonitoringApiController::class, 'assign'])->name('incidents.assign');
+        Route::post('/deployments', [\App\Http\Controllers\Api\V1\DeploymentApiController::class, 'store'])->name('deployments.store');
 
         Route::post('/incidents/{incident}/acknowledge', [ApiController::class, 'transition'])->defaults('status', 'acknowledged')->name('incidents.acknowledge');
         Route::post('/incidents/{incident}/investigate', [ApiController::class, 'transition'])->defaults('status', 'investigating')->name('incidents.investigate');

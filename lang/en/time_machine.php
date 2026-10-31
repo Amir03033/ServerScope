@@ -55,7 +55,7 @@ return [
         'no_server' => 'No server is involved, so no server metrics are shown.',
         'no_metrics' => 'No metrics of :server are available for this period (not reported, or removed by retention).',
         'no_raw' => 'Per-sample metrics of :server around the onset are no longer kept (retention); hourly averages are shown where available.',
-        'no_deployments' => 'Deployment events are not recorded by ServerScope yet; changes outside ServerScope do not appear here.',
+        'no_deployments' => 'No deployments have been recorded for this team; record them with POST /api/v1/deployments to see them here.',
     ],
     'events' => [
         'onset' => 'Problem started',

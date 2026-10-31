@@ -229,6 +229,7 @@ class ServerDetailController extends Controller
             'credentials' => $credentials,
             'agentUpdate' => app(\App\Services\AgentUpdates::class)->summary($server),
             'recentAlerts' => $recentAlerts,
+            'deployments' => \App\Models\Deployment::query()->forResource($server)->latest('deployed_at')->limit(5)->get(),
             'displayStatus' => $displayStatus,
             'range' => $range,
             'rangeOptions' => $rangeOptions,

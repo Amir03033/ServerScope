@@ -63,7 +63,7 @@
                     <div class="ss-panel-head"><div><h2 id="metrics-{{ $loop->index }}" class="ss-panel-title">{{ __('time_machine.metrics_title', ['server' => $m['label']]) }}</h2><p class="ss-panel-sub">{{ __('time_machine.metrics_hourly', ['hours' => \App\Services\Incidents\TimeMachine::BASELINE_HOURS]) }}</p></div></div>
                     @foreach ($m['hourly'] as $metric => $points)
                         <h3 class="m-0 mt-3 text-xs text-muted">{{ __('time_machine.metric.'.$metric) }}</h3>
-                        <x-line-chart :points="$points" :unit="$metric === 'load_1' ? '' : '%'" :height="120" :label="__('time_machine.metric.'.$metric)" :flag-label="__('time_machine.incident_period')" />
+                        <x-line-chart :points="$points" :unit="$metric === 'load_1' ? '' : '%'" :height="120" :label="__('time_machine.metric.'.$metric)" :flag-label="__('time_machine.incident_period')" :markers="$m['markers']" />
                     @endforeach
                     @if ($m['detail'] !== [])
                         <h3 class="m-0 mt-4 text-sm text-fg">{{ __('time_machine.metrics_detail') }}</h3>

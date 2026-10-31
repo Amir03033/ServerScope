@@ -155,7 +155,7 @@
             </div>
             <div class="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
                 <div class="min-w-0">
-                    <x-line-chart :points="$chartPoints" unit=" ms" :label="__('domains.show.chart_label')" />
+                    <x-line-chart :points="$chartPoints" unit=" ms" :label="__('domains.show.chart_label')" :markers="$deployMarkers ?? []" />
 
                     <h3 class="mt-5 mb-2 text-xs font-semibold text-muted">{{ __('domains.show.daily_title') }}</h3>
                     <div class="ss-strip" role="img" aria-label="{{ __('domains.show.daily_label') }}">
