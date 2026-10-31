@@ -112,7 +112,8 @@ class MollieProvider implements PaymentProvider
             }
 
             $from = $local?->current_period_end?->isFuture() ? $local->current_period_end : now();
-            $end = $interval === 'year' ? $from->copy()->addYear() : $from->copy()->addMonth();
+            // No overflow: 31 October + 1 month is 30 November, not 1 December.
+            $end = $interval === 'year' ? $from->copy()->addYearNoOverflow() : $from->copy()->addMonthNoOverflow();
 
             return new BillingEvent($eventId, BillingEvent::PAID, $teamId, $plan, $interval, $customerId, $subscriptionId, $end, $id, (int) str_replace('.', '', (string) $payment['amount']['value']));
         }
@@ -154,7 +155,7 @@ class MollieProvider implements PaymentProvider
         }
 
         $every = $interval === 'year' ? '12 months' : '1 month';
-        $start = ($interval === 'year' ? now()->addYear() : now()->addMonth())->toDateString();
+        $start = ($interval === 'year' ? now()->addYearNoOverflow() : now()->addMonthNoOverflow())->toDateString();
 
         $created = $this->api()->post("/customers/{$customerId}/subscriptions", [
             'amount' => ['currency' => $this->currency(), 'value' => $amount],

@@ -138,4 +138,21 @@ class MollieProviderTest extends TestCase
         $this->actingAs($this->owner($team))->post(route('billing.checkout'), ['plan' => 'pro', 'interval' => 'month'])->assertSessionHas('error');
         Http::assertNothingSent();
     }
+
+    public function test_a_month_from_the_31st_ends_on_the_last_day_of_the_next_month(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-10-31 12:00:00');
+        $team = Team::query()->create(['name' => 'M', 'plan' => 'pro', 'plan_status' => 'pending_payment']);
+        Http::fake([
+            'api.mollie.com/v2/payments/tr_date31' => Http::response(['id' => 'tr_date31', 'status' => 'paid', 'sequenceType' => 'first', 'customerId' => 'cst_1',
+                'amount' => ['currency' => 'EUR', 'value' => '19.00'], 'metadata' => ['team_id' => $team->id, 'plan' => 'pro', 'interval' => 'month']]),
+            'api.mollie.com/v2/customers/cst_1/subscriptions' => Http::sequence()->push(['_embedded' => ['subscriptions' => []]])->push(['id' => 'sub_1'], 201),
+        ]);
+
+        $this->post('/api/webhooks/payments?t='.$this->token(), ['id' => 'tr_date31'])->assertOk();
+
+        $this->assertSame('2026-11-30', Subscription::query()->sole()->current_period_end->toDateString());
+        Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/subscriptions') && $r['startDate'] === '2026-11-30');
+        \Illuminate\Support\Carbon::setTestNow();
+    }
 }
