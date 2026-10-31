@@ -101,6 +101,10 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
 
+    Route::get('/billing', [\App\Http\Controllers\BillingController::class, 'show'])->name('billing.show');
+    Route::post('/billing/checkout', [\App\Http\Controllers\BillingController::class, 'checkout'])->middleware('throttle:10,1')->name('billing.checkout');
+    Route::post('/billing/cancel', [\App\Http\Controllers\BillingController::class, 'cancel'])->middleware('throttle:5,1')->name('billing.cancel');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'password'])->middleware('throttle:6,1')->name('profile.password');

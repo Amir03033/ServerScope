@@ -324,6 +324,51 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Billing (payments)
+    |--------------------------------------------------------------------------
+    |
+    | Off until a provider is chosen and configured. With enabled=false (or
+    | driver "none") there is no checkout, the webhook answers 404 and
+    | Pro/Premium teams stay on pending_payment (Free limits).
+    | Everything below comes from .env; no keys in the repo.
+    | prices: provider price ids per plan and interval (the provider is the
+    | source of truth for amounts; Info shows the same prices).
+    | company: the seller details printed on invoices. Fill in after the
+    | KvK / btw registration.
+    |
+    */
+
+    'billing' => [
+        'enabled' => (bool) env('SERVERSCOPE_BILLING_ENABLED', false),
+        // none | (future) mollie | stripe. Drivers live in App\Billing\Providers.
+        'driver' => env('SERVERSCOPE_BILLING_DRIVER', 'none'),
+        'webhook_secret' => env('SERVERSCOPE_BILLING_WEBHOOK_SECRET'),
+        'api_key' => env('SERVERSCOPE_BILLING_API_KEY'),
+        'test_mode' => (bool) env('SERVERSCOPE_BILLING_TEST_MODE', true),
+        'currency' => env('SERVERSCOPE_BILLING_CURRENCY', 'EUR'),
+        // Days a failed renewal keeps the paid plan before the Free limits apply.
+        'grace_days' => (int) env('SERVERSCOPE_BILLING_GRACE_DAYS', 7),
+        'prices' => [
+            'pro' => [
+                'month' => env('SERVERSCOPE_PRICE_PRO_MONTHLY'),
+                'year' => env('SERVERSCOPE_PRICE_PRO_YEARLY'),
+            ],
+            'premium' => [
+                'month' => env('SERVERSCOPE_PRICE_PREMIUM_MONTHLY'),
+                'year' => env('SERVERSCOPE_PRICE_PREMIUM_YEARLY'),
+            ],
+        ],
+        'company' => [
+            'name' => env('SERVERSCOPE_COMPANY_NAME'),
+            'kvk' => env('SERVERSCOPE_COMPANY_KVK'),
+            'vat_id' => env('SERVERSCOPE_COMPANY_VAT_ID'),
+            'address' => env('SERVERSCOPE_COMPANY_ADDRESS'),
+            'email' => env('SERVERSCOPE_COMPANY_EMAIL'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Server enrollment (install.sh)
     |--------------------------------------------------------------------------
     |

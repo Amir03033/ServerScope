@@ -45,3 +45,5 @@ if (config('serverscope.scheduler_queue_worker')) {
         ->everyMinute()
         ->withoutOverlapping(5);
 }
+
+Schedule::command('serverscope:billing:expire-grace')->daily();

@@ -229,7 +229,11 @@
             @if ($planTeam?->isPendingPayment())
                 <div class="ss-alert ss-alert-warning mb-5" role="status" data-testid="plan-pending-banner">
                     <svg class="ico"><use href="#i-alert"/></svg>
-                    <div>{{ __('plans.banner.pending', ['plan' => __('plans.names.'.$planTeam->plan)]) }}</div>
+                    <div>{{ __('plans.banner.pending', ['plan' => __('plans.names.'.$planTeam->plan)]) }}
+                        @if (app(\App\Billing\BillingManager::class)->enabled() && $isAdmin)
+                            <a class="underline" href="{{ route('billing.show') }}">{{ __('billing.banner_link') }}</a>
+                        @endif
+                    </div>
                 </div>
             @endif
 

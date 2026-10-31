@@ -1,6 +1,16 @@
-# Betalingen (fase 2) — voorstel, nog niets gebouwd
+# Betalingen (fase 2)
 
-Wacht op een keuze van de eigenaar voordat er code komt.
+**Status:** het provider-neutrale skelet staat er (uitgeschakeld). Wat er al is: `subscriptions` en
+`billing_events` (idempotentie), `App\Billing\PaymentProvider` (interface), `BillingManager`
+(webhook-event -> plan_status, coulance, opzegging, downgrade naar Free), `/billing` (pagina),
+`POST /api/webhooks/payments` (404 zolang uit), `serverscope:team:plan` (handmatig activeren, bijv. op factuur)
+en `serverscope:billing:expire-grace`. Alle sleutels, prijs-ID's en KvK/btw-gegevens komen uit `.env`
+(zie `.env.example`, blok "Billing").
+
+**Nog te doen na KvK en providerkeuze:** een driver in `App\Billing\Providers` (checkoutUrl,
+parseWebhook met handtekeningcontrole, cancel), registreren in `BillingManager::DRIVERS`,
+`.env` invullen, `SERVERSCOPE_BILLING_ENABLED=true`, factuur/btw volgens sectie 5. Die driver is niet
+gebouwd en dus ook niet getest tegen een echte provider.
 
 ## Uitgangspunt (fase 1, gebouwd)
 `teams.plan` (free|pro|premium) en `teams.plan_status` (active|pending_payment).

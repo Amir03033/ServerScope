@@ -18,6 +18,11 @@ Route::post('/agent/metrics', [
     ])
     ->name('agent.metrics.store');
 
+// Payment provider webhook: 404 unless billing is enabled; the driver verifies the signature.
+Route::post('/webhooks/payments', \App\Http\Controllers\Api\PaymentWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('webhooks.payments');
+
 // One-command install (install.sh): exchange a one-time enrollment token
 // for an agent credential, check the first sample, revoke on uninstall.
 Route::post('/agent/enroll', [\App\Http\Controllers\Api\AgentEnrollmentController::class, 'enroll'])
