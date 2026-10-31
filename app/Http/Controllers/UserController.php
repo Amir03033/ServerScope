@@ -27,7 +27,10 @@ class UserController extends Controller
     {
         Gate::authorize('admin');
 
-        return view('users.index', ['users' => $this->members()->orderBy('name')->get()]);
+        return view('users.index', [
+            'users' => $this->members()->orderBy('name')->get(),
+            'invitations' => \App\Models\TeamInvitation::query()->where('team_id', Tenant::id())->whereNull('accepted_at')->where('expires_at', '>', now())->orderBy('expires_at')->get(),
+        ]);
     }
 
     /**
@@ -54,13 +57,48 @@ class UserController extends Controller
         $role = $request->boolean('is_admin') ? 'admin' : 'member';
         $team = \App\Models\Team::query()->findOrFail(Tenant::id());
         [$invitation, $plain] = \App\Models\TeamInvitation::issue($team, $email, $role, $data['name'] ?? null, $request->user()->id);
-
-        \Illuminate\Support\Facades\Notification::route('mail', $email)
-            ->notify(new \App\Notifications\TeamInvitationNotice($team->name, route('invitations.show', $plain)));
+        $this->mailInvitation($team, $email, $plain);
 
         Audit::log('user.invited', "Uitnodiging verstuurd aan {$email}".($role === 'admin' ? ' (beheerder)' : ''), $team);
 
         return back()->with('success', __('admin.users.flash.invited', ['email' => $email]));
+    }
+
+    /** Send the invitation again with a new link; the old link stops working. */
+    public function resendInvitation(Request $request, \App\Models\TeamInvitation $invitation): RedirectResponse
+    {
+        Gate::authorize('admin');
+        $this->ownInvitation($invitation);
+
+        $team = \App\Models\Team::query()->findOrFail(Tenant::id());
+        [, $plain] = \App\Models\TeamInvitation::issue($team, $invitation->email, $invitation->role, $invitation->name, $request->user()->id);
+        $this->mailInvitation($team, $invitation->email, $plain);
+        Audit::log('user.invitation_resent', "Uitnodiging opnieuw verstuurd aan {$invitation->email}", $team);
+
+        return back()->with('success', __('admin.users.flash.invitation_resent', ['email' => $invitation->email]));
+    }
+
+    public function revokeInvitation(\App\Models\TeamInvitation $invitation): RedirectResponse
+    {
+        Gate::authorize('admin');
+        $this->ownInvitation($invitation);
+
+        $invitation->delete();
+        Audit::log('user.invitation_revoked', "Uitnodiging voor {$invitation->email} ingetrokken", \App\Models\Team::query()->findOrFail(Tenant::id()));
+
+        return back()->with('success', __('admin.users.flash.invitation_revoked', ['email' => $invitation->email]));
+    }
+
+    /** An invitation of another team (or an used one) does not exist for this team. */
+    private function ownInvitation(\App\Models\TeamInvitation $invitation): void
+    {
+        abort_unless($invitation->team_id === Tenant::id() && $invitation->accepted_at === null, 404);
+    }
+
+    private function mailInvitation(\App\Models\Team $team, string $email, string $plain): void
+    {
+        \Illuminate\Support\Facades\Notification::route('mail', $email)
+            ->notify(new \App\Notifications\TeamInvitationNotice($team->name, route('invitations.show', $plain)));
     }
 
     public function update(Request $request, User $user): RedirectResponse

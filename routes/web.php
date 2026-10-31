@@ -157,6 +157,8 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->middleware('throttle:10,1')->name('users.store');
+    Route::post('/users/invitations/{invitation}/resend', [UserController::class, 'resendInvitation'])->middleware('throttle:10,1')->name('users.invitations.resend');
+    Route::delete('/users/invitations/{invitation}', [UserController::class, 'revokeInvitation'])->name('users.invitations.revoke');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
