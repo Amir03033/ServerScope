@@ -17,7 +17,7 @@ class Team extends Model
 
     protected function casts(): array
     {
-        return ['is_default' => 'boolean'];
+        return ['is_default' => 'boolean', 'billing_details' => 'array'];
     }
 
     protected static function booted(): void

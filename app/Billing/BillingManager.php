@@ -72,7 +72,7 @@ class BillingManager
                 ]);
 
                 match ($event->type) {
-                    BillingEvent::PAID => $this->activate($team, $sub),
+                    BillingEvent::PAID => $this->activate($team, $sub, $event, $provider),
                     BillingEvent::PAYMENT_FAILED => $this->pastDue($team, $sub),
                     BillingEvent::CANCELED => $this->cancel($team, $sub),
                     default => null,
@@ -85,9 +85,10 @@ class BillingManager
         return true;
     }
 
-    private function activate(Team $team, Subscription $sub): void
+    private function activate(Team $team, Subscription $sub, BillingEvent $event, string $provider): void
     {
         $sub->fill(['status' => 'active', 'cancel_at_period_end' => false])->save();
+        app(InvoiceService::class)->recordPayment($team, $event, $provider);
         $team->forceFill(['plan' => $sub->plan, 'plan_status' => PlanLimits::ACTIVE])->save();
         Tenant::run($team, fn () => Audit::log('billing.paid', "Betaling ontvangen, plan {$sub->plan} actief"));
     }

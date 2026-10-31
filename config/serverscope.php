@@ -355,6 +355,9 @@ return [
                 'year' => env('SERVERSCOPE_PRICE_PREMIUM_YEARLY'),
             ],
         ],
+        // Btw: only charged when a btw number is configured below.
+        'vat_rate' => (float) env('SERVERSCOPE_VAT_RATE', 21),
+        'vat_note' => env('SERVERSCOPE_VAT_NOTE', 'BTW niet van toepassing.'),
         'company' => [
             'name' => env('SERVERSCOPE_COMPANY_NAME'),
             'kvk' => env('SERVERSCOPE_COMPANY_KVK'),

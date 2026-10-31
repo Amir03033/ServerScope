@@ -113,6 +113,9 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
 
     Route::get('/billing', [\App\Http\Controllers\BillingController::class, 'show'])->name('billing.show');
     Route::post('/billing/checkout', [\App\Http\Controllers\BillingController::class, 'checkout'])->middleware('throttle:10,1')->name('billing.checkout');
+    Route::get('/billing/invoices', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('billing.invoices');
+    Route::get('/billing/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'show'])->name('billing.invoice');
+    Route::put('/billing/details', [\App\Http\Controllers\InvoiceController::class, 'details'])->name('billing.details');
     Route::post('/billing/cancel', [\App\Http\Controllers\BillingController::class, 'cancel'])->middleware('throttle:5,1')->name('billing.cancel');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

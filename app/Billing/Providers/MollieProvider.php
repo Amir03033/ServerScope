@@ -91,6 +91,11 @@ class MollieProvider implements PaymentProvider
 
         $eventId = "{$id}:{$status}";
 
+        // A chargeback is treated like a failed payment (grace, then Free).
+        if ($status === 'paid' && (float) ($payment['amountChargedBack']['value'] ?? 0) > 0) {
+            return new BillingEvent("{$id}:chargeback", BillingEvent::PAYMENT_FAILED, $teamId, $plan, $interval, $customerId, $subscriptionId);
+        }
+
         if ($status === 'paid') {
             // A paid amount that differs from the configured price grants nothing.
             if (! hash_equals($this->amount($plan, $interval), (string) ($payment['amount']['value'] ?? ''))) {
@@ -104,7 +109,7 @@ class MollieProvider implements PaymentProvider
             $from = $local?->current_period_end?->isFuture() ? $local->current_period_end : now();
             $end = $interval === 'year' ? $from->copy()->addYear() : $from->copy()->addMonth();
 
-            return new BillingEvent($eventId, BillingEvent::PAID, $teamId, $plan, $interval, $customerId, $subscriptionId, $end);
+            return new BillingEvent($eventId, BillingEvent::PAID, $teamId, $plan, $interval, $customerId, $subscriptionId, $end, $id, (int) str_replace('.', '', (string) $payment['amount']['value']));
         }
 
         // A failed renewal starts the grace period. A failed first payment

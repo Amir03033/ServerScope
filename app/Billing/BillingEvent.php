@@ -22,5 +22,7 @@ final class BillingEvent
         public readonly ?string $customerId = null,
         public readonly ?string $subscriptionId = null,
         public readonly ?CarbonInterface $periodEnd = null,
+        public readonly ?string $paymentId = null,
+        public readonly ?int $amountCents = null,
     ) {}
 }

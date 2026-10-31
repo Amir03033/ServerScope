@@ -10,6 +10,8 @@
         @endif
     </div>
 
+    <p class="mt-3 text-sm"><a class="text-accent" href="{{ route('billing.invoices') }}">{{ __('billing.invoices.title') }}</a></p>
+
     @if (! $enabled)
         <div class="ss-alert ss-alert-info mt-5" role="status"><svg class="ico"><use href="#i-alert"/></svg><div>{{ __('billing.not_available') }}</div></div>
     @else

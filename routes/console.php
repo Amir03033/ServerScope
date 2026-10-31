@@ -47,3 +47,5 @@ if (config('serverscope.scheduler_queue_worker')) {
 }
 
 Schedule::command('serverscope:billing:expire-grace')->daily();
+
+Schedule::command('serverscope:invoices:issue')->daily();
