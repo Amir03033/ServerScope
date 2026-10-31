@@ -45,4 +45,13 @@ return [
     'incident' => 'Incident #:id',
     'resolved_at' => 'Opgelost:',
     'disabled_at' => 'Uitgeschakeld:',
+    'delete' => 'Verwijderen',
+    'delete_confirm' => 'Weet je zeker dat je deze alert uit de geschiedenis wilt verwijderen?',
+    'clear' => 'Geschiedenis opruimen',
+    'clear_confirm' => 'Alle opgeloste en uitgeschakelde alerts verwijderen? Actieve alerts blijven staan.',
+    'flash' => [
+        'active_cannot_delete' => 'Deze alert is nog actief en kan niet worden verwijderd.',
+        'deleted' => 'Alert verwijderd.',
+        'cleared' => ':count alerts verwijderd.',
+    ],
 ];

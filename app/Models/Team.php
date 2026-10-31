@@ -13,11 +13,11 @@ use Illuminate\Support\Str;
  */
 class Team extends Model
 {
-    protected $fillable = ['name', 'slug'];
+    protected $fillable = ['name', 'slug', 'plan', 'plan_status'];
 
     protected function casts(): array
     {
-        return ['is_default' => 'boolean'];
+        return ['is_default' => 'boolean', 'billing_details' => 'array', 'escalation_emails' => 'array'];
     }
 
     protected static function booted(): void
@@ -39,6 +39,16 @@ class Team extends Model
                 'is_enabled' => true,
             ]));
         });
+    }
+
+    public function effectivePlan(): string
+    {
+        return \App\Support\PlanLimits::effectivePlan($this);
+    }
+
+    public function isPendingPayment(): bool
+    {
+        return \App\Support\PlanLimits::pendingPayment($this);
     }
 
     public function users(): BelongsToMany

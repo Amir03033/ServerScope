@@ -256,20 +256,124 @@ return [
     |--------------------------------------------------------------------------
     |
     | Every customer is a team that only sees its own data. Public sign-up
-    | (a new account with its own team) and invitations of existing
-    | accounts into another team are off until explicitly enabled.
-    | Do not enable either before the blockers in docs/AUDIT.md section 5
-    | are fixed (domain names unique per team, invitations the recipient
-    | accepts, e-mail verification for registration).
+    | (a new account with its own team) is off until explicitly enabled;
+    | it needs working mail (e-mail verification). Team invitations are
+    | always available: the recipient accepts through a link in the mail.
     |
     */
 
+    // Terms and privacy links shown (and required) at sign-up once both are set.
+    // No legal text is part of the app; these point to your published pages.
+    'legal' => [
+        'terms_url' => env('SERVERSCOPE_TERMS_URL'),
+        'privacy_url' => env('SERVERSCOPE_PRIVACY_URL'),
+        // Change when the terms change materially; stored with each acceptance.
+        'version' => env('SERVERSCOPE_LEGAL_VERSION', '1'),
+    ],
+
     'tenancy' => [
         'registration_enabled' => (bool) env('SERVERSCOPE_REGISTRATION_ENABLED', false),
-        'invitations_enabled' => (bool) env('SERVERSCOPE_TEAM_INVITATIONS_ENABLED', false),
         // Automated tests only: records created without any team context
         // go to the default team. Never applies outside tests.
         'test_fallback' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Plans (free | pro | premium)
+    |--------------------------------------------------------------------------
+    |
+    | The one place that defines what a plan allows (see App\Support\PlanLimits).
+    | null = unlimited. A team on Pro or Premium with plan_status
+    | pending_payment gets the Free limits until payment is confirmed.
+    | The keys must match the plan keys of the marketing site. Payment is
+    | not built yet: nothing sets plan_status to active except an operator.
+    | The values below are proposals: align them with the pricing page.
+    |
+    */
+
+    'plans' => [
+        'free' => [
+            'limits' => [
+                'servers' => 3,
+                'domains' => 5,
+                'pages_per_website' => 25,
+                'status_pages' => 1,
+                'min_interval_minutes' => 5,
+                'retention_days' => 30,
+            ],
+            'features' => [],
+        ],
+        'pro' => [
+            'limits' => [
+                'servers' => 25,
+                'domains' => 50,
+                'pages_per_website' => 250,
+                'status_pages' => 5,
+                'min_interval_minutes' => 1,
+                'retention_days' => 365,
+            ],
+            'features' => ['api_tokens', 'webhooks'],
+        ],
+        'premium' => [
+            'limits' => [
+                'servers' => 250,
+                'domains' => 1000,
+                'pages_per_website' => 1000,
+                'status_pages' => 25,
+                'min_interval_minutes' => 1,
+                'retention_days' => null,
+            ],
+            'features' => ['api_tokens', 'webhooks'],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Billing (payments)
+    |--------------------------------------------------------------------------
+    |
+    | Off until a provider is chosen and configured. With enabled=false (or
+    | driver "none") there is no checkout, the webhook answers 404 and
+    | Pro/Premium teams stay on pending_payment (Free limits).
+    | Everything below comes from .env; no keys in the repo.
+    | prices: provider price ids per plan and interval (the provider is the
+    | source of truth for amounts; Info shows the same prices).
+    | company: the seller details printed on invoices. Fill in after the
+    | KvK / btw registration.
+    |
+    */
+
+    'billing' => [
+        'enabled' => (bool) env('SERVERSCOPE_BILLING_ENABLED', false),
+        // none | mollie. Drivers live in App\Billing\Providers.
+        'driver' => env('SERVERSCOPE_BILLING_DRIVER', 'none'),
+        'webhook_secret' => env('SERVERSCOPE_BILLING_WEBHOOK_SECRET'),
+        'api_key' => env('SERVERSCOPE_BILLING_API_KEY'),
+        'test_mode' => (bool) env('SERVERSCOPE_BILLING_TEST_MODE', true),
+        'currency' => env('SERVERSCOPE_BILLING_CURRENCY', 'EUR'),
+        // Days a failed renewal keeps the paid plan before the Free limits apply.
+        'grace_days' => (int) env('SERVERSCOPE_BILLING_GRACE_DAYS', 7),
+        'prices' => [
+            'pro' => [
+                'month' => env('SERVERSCOPE_PRICE_PRO_MONTHLY'),
+                'year' => env('SERVERSCOPE_PRICE_PRO_YEARLY'),
+            ],
+            'premium' => [
+                'month' => env('SERVERSCOPE_PRICE_PREMIUM_MONTHLY'),
+                'year' => env('SERVERSCOPE_PRICE_PREMIUM_YEARLY'),
+            ],
+        ],
+        // Btw: only charged when a btw number is configured below.
+        'vat_rate' => (float) env('SERVERSCOPE_VAT_RATE', 21),
+        'vat_note' => env('SERVERSCOPE_VAT_NOTE', 'BTW niet van toepassing.'),
+        'company' => [
+            'name' => env('SERVERSCOPE_COMPANY_NAME'),
+            'kvk' => env('SERVERSCOPE_COMPANY_KVK'),
+            'vat_id' => env('SERVERSCOPE_COMPANY_VAT_ID'),
+            'address' => env('SERVERSCOPE_COMPANY_ADDRESS'),
+            'email' => env('SERVERSCOPE_COMPANY_EMAIL'),
+        ],
     ],
 
     /*

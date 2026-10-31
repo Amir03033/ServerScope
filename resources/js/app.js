@@ -790,3 +790,35 @@ document.querySelectorAll('[data-enroll-status]').forEach((box) => {
 
     poll();
 });
+
+/* ------------------------------------------------------------------ */
+/* Sidebar groups: collapse and expand, remembered in this browser.    */
+/* The group of the current page always stays open.                    */
+/* ------------------------------------------------------------------ */
+
+(() => {
+    const KEY = 'ss-nav-closed';
+    let closed = [];
+
+    try {
+        closed = JSON.parse(localStorage.getItem(KEY) || '[]') || [];
+    } catch (e) {
+        closed = [];
+    }
+
+    document.querySelectorAll('details[data-nav-group]').forEach((group) => {
+        if (closed.includes(group.dataset.navGroup) && !group.querySelector('[aria-current="page"]')) {
+            group.removeAttribute('open');
+        }
+
+        group.addEventListener('toggle', () => {
+            const list = [...document.querySelectorAll('details[data-nav-group]:not([open])')].map((d) => d.dataset.navGroup);
+
+            try {
+                localStorage.setItem(KEY, JSON.stringify(list));
+            } catch (e) {
+                /* Storage unavailable: the state is simply not remembered. */
+            }
+        });
+    });
+})();

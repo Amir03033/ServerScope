@@ -47,7 +47,10 @@ class PasswordResetController extends Controller
         $status = Password::reset(
             [...$request->only('email', 'password', 'password_confirmation', 'token'), 'email' => Str::lower(trim($request->input('email')))],
             function (User $user, string $password): void {
-                $user->forceFill(['password' => Hash::make($password), 'remember_token' => Str::random(60)])->save();
+                $user->forceFill(['password' => Hash::make($password), 'remember_token' => Str::random(60)]);
+                // Opening the reset link proves control of the mailbox.
+                $user->email_verified_at ??= now();
+                $user->save();
                 event(new PasswordReset($user));
                 Audit::log('user.password_reset', 'Wachtwoord opnieuw ingesteld via resetlink', $user);
             },

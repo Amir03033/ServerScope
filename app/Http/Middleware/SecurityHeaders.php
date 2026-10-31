@@ -31,7 +31,10 @@ class SecurityHeaders
                 "connect-src 'self'",
                 "object-src 'none'",
                 "base-uri 'self'",
-                "form-action 'self'",
+                // A page may allow extra form targets for itself (the billing page
+                // sends people on to the payment provider), see the request
+                // attribute "csp.form_action". Everywhere else only this site.
+                trim("form-action 'self' ".implode(' ', (array) $request->attributes->get('csp.form_action', []))),
                 "frame-ancestors 'none'",
             ]),
         ];

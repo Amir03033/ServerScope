@@ -90,8 +90,10 @@ return [
         'name' => 'Domeinnaam *',
         'name_placeholder' => 'example.com of www.example.nl',
         'name_help' => 'Een URL mag ook; alleen de hostname wordt bewaard. Internationale domeinnamen worden ondersteund.',
-        'url' => 'Te controleren URL',
+        'url' => 'Te controleren pagina',
         'path' => 'Pad',
+        'path_help' => 'De pagina op je site die wordt opgevraagd, meestal / (de homepage). Typ hier niet de domeinnaam: die komt uit het veld hierboven.',
+        'checked_address' => 'Gecontroleerd adres: :url',
         'checks_title' => 'Controles',
         'checks_text' => 'Kies welke onderdelen van dit domein worden bewaakt.',
         'checks' => [
@@ -303,6 +305,7 @@ return [
         'other_team' => 'Dit domein kan niet worden toegevoegd. Neem contact op met de beheerder van ServerScope als je denkt dat dit niet klopt.',
         'trashed' => 'Dit domein is eerder verwijderd. Herstel het via het filter "Verwijderd".',
         'exists' => 'Dit domein wordt al gemonitord.',
+        'path_is_domain' => 'Dit lijkt de domeinnaam. Vul hier alleen de te controleren pagina in, meestal /.',
         'limit' => 'Het maximale aantal domeinen is bereikt.',
     ],
 

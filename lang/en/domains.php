@@ -90,8 +90,10 @@ return [
         'name' => 'Domain name *',
         'name_placeholder' => 'example.com or www.example.org',
         'name_help' => 'A URL works too; only the hostname is stored. Internationalised domain names are supported.',
-        'url' => 'URL to check',
+        'url' => 'Page to check',
         'path' => 'Path',
+        'path_help' => 'The page on your site that is requested, usually / (the home page). Do not enter the domain name here, it is taken from the field above.',
+        'checked_address' => 'Checked address: :url',
         'checks_title' => 'Checks',
         'checks_text' => 'Choose which parts of this domain are monitored.',
         'checks' => [
@@ -304,6 +306,7 @@ return [
         'trashed' => 'This domain was deleted earlier. Restore it via the "Deleted" filter.',
         'exists' => 'This domain is already being monitored.',
         'limit' => 'The maximum number of domains has been reached.',
+        'path_is_domain' => 'This looks like the domain name. Enter only the page to check here, usually /.',
     ],
 
     'attributes' => [

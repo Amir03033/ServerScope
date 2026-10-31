@@ -62,7 +62,7 @@ class PageRequest extends FormRequest
 
     public function rules(): array
     {
-        $min = (int) config('serverscope.monitoring.min_interval_minutes', 1);
+        $min = \App\Support\PlanLimits::minIntervalMinutes();
 
         return [
             'urls' => [$this->isMethod('post') ? 'required' : 'prohibited', 'string', 'max:20000'],

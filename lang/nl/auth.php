@@ -35,6 +35,8 @@ return [
     'register' => [
         'title' => 'Account aanmaken',
         'intro' => 'Je krijgt een eigen team. Alleen leden van je team zien je servers en domeinen.',
+        'sent_title' => 'Controleer je e-mail',
+        'sent_body' => 'Als dit adres gebruikt kan worden, hebben we je een e-mail gestuurd. Volg de link daarin om verder te gaan. Er is niets beschikbaar zolang het adres niet is bevestigd.',
         'have_account' => 'Ik heb al een account',
     ],
 
@@ -69,4 +71,23 @@ return [
         'two_factor_invalid' => 'De code is ongeldig.',
     ],
 
+    'verify' => [
+        'title' => 'Bevestig je e-mailadres',
+        'intro' => 'We hebben een link gestuurd naar :email. Open die om je account te gebruiken.',
+        'resend' => 'Stuur de e-mail opnieuw',
+        'logout' => 'Uitloggen',
+        'done' => 'Je e-mailadres is bevestigd. Je kunt nu inloggen.',
+        'sent' => 'Er is een nieuwe link verstuurd.',
+    ],
+
+    'mail' => [
+        'verify' => ['subject' => 'Bevestig je e-mailadres', 'line1' => 'Klik op de knop hieronder om dit e-mailadres voor je ServerScope-account te bevestigen.', 'action' => 'E-mailadres bevestigen', 'line2' => 'Heb je geen account aangemaakt? Dan kun je deze e-mail negeren.'],
+        'attempt' => ['subject' => 'Iemand probeerde te registreren met je adres', 'line1' => 'Iemand probeerde een ServerScope-account aan te maken met dit e-mailadres, maar je hebt al een account.', 'action' => 'Wachtwoord opnieuw instellen', 'line2' => 'Was jij dit niet? Dan kun je deze e-mail negeren.'],
+    ],
+
+    'terms' => [
+        'label' => 'Ik ga akkoord met de :terms en de :privacy.',
+        'terms' => 'algemene voorwaarden',
+        'privacy' => 'privacyverklaring',
+    ],
 ];

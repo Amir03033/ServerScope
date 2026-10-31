@@ -101,7 +101,7 @@ class WebsitePageController extends Controller
         Audit::log('website.pages_added', "{$added} pagina('s) toegevoegd aan {$domain->name}", $domain, ['urls' => array_slice($request->normalizedUrls, 0, 50)]);
 
         if ($result['limit_reached']) {
-            $limit = (int) config('serverscope.websites.max_pages_per_website', 1000);
+            $limit = \App\Support\PlanLimits::pagesPerWebsite(\App\Models\Team::query()->find($domain->team_id));
 
             return redirect()->route('websites.pages', $domain)->with('error', __('websites.flash.limit', ['limit' => $limit, 'added' => $added]));
         }
@@ -227,7 +227,7 @@ class WebsitePageController extends Controller
             'action' => ['required', Rule::in(self::BULK_ACTIONS)],
             'ids' => ['required', 'array', 'min:1', 'max:500'],
             'ids.*' => ['integer'],
-            'interval' => ['required_if:action,interval', 'nullable', 'integer', 'between:'.(int) config('serverscope.monitoring.min_interval_minutes', 1).',1440'],
+            'interval' => ['required_if:action,interval', 'nullable', 'integer', 'between:'.\App\Support\PlanLimits::minIntervalMinutes().',1440'],
         ], ['ids.required' => __('websites.validation.select_first')]);
 
         // Only pages of this website, whatever ids were posted.

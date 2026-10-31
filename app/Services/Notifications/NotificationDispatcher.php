@@ -73,10 +73,12 @@ class NotificationDispatcher
         }
 
         // Escalation contacts outside the user list (e.g. an on-call mailbox).
-        // They are configured for the platform owner, so they only receive
-        // incidents of the default team.
-        if (in_array($kind, [IncidentNotification::UNACKNOWLEDGED], true) && $this->isDefaultTeam($incident->team_id)) {
-            foreach (config('serverscope.escalation.emails', []) as $email) {
+        // The env list (SERVERSCOPE_ESCALATION_EMAILS) belongs to the platform
+        // owner and only applies to the default team. Every team can add its
+        // own addresses (teams.escalation_emails); a team never receives
+        // those of another.
+        if (in_array($kind, [IncidentNotification::UNACKNOWLEDGED], true)) {
+            foreach ($this->escalationEmails($incident->team_id) as $email) {
                 $notification = new IncidentNotification($incident, $kind, ['mail']);
                 $notification->id = (string) Str::uuid();
                 $this->log($notification, null, $email, $incident, $kind, 'mail');
@@ -144,6 +146,24 @@ class NotificationDispatcher
     private function members(?int $teamId)
     {
         return User::query()->whereHas('teams', fn ($q) => $q->where('teams.id', $teamId));
+    }
+
+    /** @return array<int, string> */
+    private function escalationEmails(?int $teamId): array
+    {
+        $team = $teamId === null ? null : \App\Models\Team::query()->find($teamId);
+
+        if ($team === null) {
+            return [];
+        }
+
+        $emails = (array) ($team->escalation_emails ?? []);
+
+        if ($team->is_default) {
+            $emails = [...(array) config('serverscope.escalation.emails', []), ...$emails];
+        }
+
+        return array_values(array_unique(array_map('strtolower', $emails)));
     }
 
     private function isDefaultTeam(?int $teamId): bool

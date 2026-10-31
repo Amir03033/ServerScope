@@ -56,7 +56,7 @@ class WebsiteDiscoveryController extends Controller
             'keep_query' => ['boolean'],
             'include_subdomains' => ['boolean'],
             'auto_monitor' => ['boolean'],
-            'default_interval' => ['required', 'integer', 'between:'.(int) config('serverscope.monitoring.min_interval_minutes', 1).',1440'],
+            'default_interval' => ['required', 'integer', 'between:'.\App\Support\PlanLimits::minIntervalMinutes().',1440'],
             'broad_confirmed' => ['boolean'],
         ], [], [
             'max_pages' => 'maximum aantal pagina\'s',

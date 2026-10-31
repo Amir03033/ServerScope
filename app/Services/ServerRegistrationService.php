@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\AgentCredential;
 use App\Models\Server;
+use App\Support\PlanLimitException;
+use App\Support\PlanLimits;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -32,6 +34,12 @@ class ServerRegistrationService
             throw new RuntimeException(
                 'A server name and hostname are required.'
             );
+        }
+
+        $limit = PlanLimits::limit('servers');
+
+        if ($limit !== null && PlanLimits::reached('servers', Server::query()->count())) {
+            throw PlanLimitException::limit('servers', $limit);
         }
 
         return DB::transaction(function () use (

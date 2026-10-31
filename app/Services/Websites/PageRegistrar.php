@@ -19,7 +19,7 @@ class PageRegistrar
      */
     public function add(Domain $domain, array $urls, array $settings): array
     {
-        $limit = (int) config('serverscope.websites.max_pages_per_website', 1000);
+        $limit = \App\Support\PlanLimits::pagesPerWebsite(\App\Models\Team::query()->find($domain->team_id));
         $existing = $domain->pages()->count();
         $added = [];
         $duplicates = 0;

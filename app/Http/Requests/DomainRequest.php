@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\Domain;
-use App\Tenancy\TeamScope;
 use App\Tenancy\Tenant;
 use App\Services\Domains\DomainNormalizer;
 use App\Support\Time;
@@ -42,7 +41,7 @@ class DomainRequest extends FormRequest
 
     public function rules(): array
     {
-        $min = (int) config('serverscope.monitoring.min_interval_minutes', 1);
+        $min = \App\Support\PlanLimits::minIntervalMinutes();
 
         $rules = [
             'name' => ['required', 'string', 'max:253'],
@@ -78,23 +77,29 @@ class DomainRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
+                // Typing the domain into the path field is a common slip: the
+                // monitor would request https://example.com/example.com.
+                $hostLike = strtolower(ltrim((string) $this->path, '/'));
+                $names = array_filter([strtolower((string) $this->name), strtolower((string) preg_replace('~^https?://~i', '', trim((string) $this->name_input)))]);
+
+                if ($hostLike !== '' && collect($names)->contains(fn ($n) => $hostLike === $n || $hostLike === 'www.'.$n || $hostLike === preg_replace('/^www\./', '', $n))) {
+                    $validator->errors()->add('path', __('domains.validation.path_is_domain'));
+                }
+
                 if (! $this->boolean('name_valid')) {
                     $validator->errors()->add('name', __('domains.validation.invalid_name'));
 
                     return;
                 }
 
-                // Domain names are unique across the whole platform (unique
-                // index); look in every team, but only explain the conflict
-                // when the domain belongs to the own team.
-                $existing = Domain::query()->withoutGlobalScope(TeamScope::class)->withTrashed()
+                // Domain names are unique per team (unique index team_id + name).
+                // Another team's domain is neither visible nor in the way.
+                $existing = Domain::query()->withTrashed()
                     ->where('name', $this->input('name'))
                     ->when($this->route('domain'), fn ($q, $domain) => $q->whereKeyNot($domain->id))
                     ->first();
 
-                if ($existing !== null && $existing->team_id !== Tenant::id()) {
-                    $validator->errors()->add('name', __('domains.validation.other_team'));
-                } elseif ($existing?->trashed()) {
+                if ($existing?->trashed()) {
                     $validator->errors()->add('name', __('domains.validation.trashed'));
                 } elseif ($existing) {
                     $validator->errors()->add('name', __('domains.validation.exists'));
@@ -103,6 +108,8 @@ class DomainRequest extends FormRequest
                 // The limit applies per team.
                 if ($this->isMethod('post') && Domain::withTrashed()->where('team_id', Tenant::id())->count() >= (int) config('serverscope.monitoring.max_domains', 1000)) {
                     $validator->errors()->add('name', __('domains.validation.limit'));
+                } elseif ($this->isMethod('post') && \App\Support\PlanLimits::reached('domains', Domain::query()->count())) {
+                    $validator->errors()->add('name', __('plans.limit.domains', ['limit' => \App\Support\PlanLimits::limit('domains')]));
                 }
             },
         ];

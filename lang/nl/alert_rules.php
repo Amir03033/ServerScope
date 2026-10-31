@@ -74,7 +74,7 @@ return [
         'created' => 'Alertregel aangemaakt.',
         'updated_enabled' => 'Alertregel bijgewerkt en ingeschakeld.',
         'updated_disabled' => 'Alertregel bijgewerkt. Actieve alerts zijn als uitgeschakeld geregistreerd.',
-        'has_history' => 'Deze alertregel heeft meldingsgeschiedenis en kan daarom niet worden verwijderd. Schakel de regel uit als je deze niet meer wilt gebruiken.',
+        'has_history' => 'Deze alertregel heeft nog actieve alerts. Wacht tot ze zijn opgelost of schakel de regel eerst uit.',
         'deleted' => 'Alertregel verwijderd.',
     ],
 ];

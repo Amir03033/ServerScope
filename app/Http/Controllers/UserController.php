@@ -27,62 +27,98 @@ class UserController extends Controller
     {
         Gate::authorize('admin');
 
-        return view('users.index', ['users' => $this->members()->orderBy('name')->get()]);
+        return view('users.index', [
+            'users' => $this->members()->orderBy('name')->get(),
+            'escalationEmails' => (array) (\App\Models\Team::query()->find(Tenant::id())?->escalation_emails ?? []),
+            'invitations' => \App\Models\TeamInvitation::query()->where('team_id', Tenant::id())->whereNull('accepted_at')->where('expires_at', '>', now())->orderBy('expires_at')->get(),
+        ]);
     }
 
+    /**
+     * Invite by e-mail. The answer is the same for an address with and
+     * without an account; the person accepts through the link in the mail.
+     */
     public function store(Request $request): RedirectResponse
     {
         Gate::authorize('admin');
 
-        $email = strtolower(trim((string) $request->input('email')));
-        $existing = config('serverscope.tenancy.invitations_enabled') ? User::query()->where('email', $email)->first() : null;
-
-        if ($existing !== null) {
-            return $this->addExisting($request, $existing);
-        }
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+        $data = $request->validate([
+            'name' => ['nullable', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
             'is_admin' => ['boolean'],
         ]);
 
-        $role = $request->boolean('is_admin') ? 'admin' : 'member';
+        $email = strtolower(trim($data['email']));
 
-        $user = DB::transaction(function () use ($validated, $role): User {
-            $user = new User;
-            $user->name = $validated['name'];
-            $user->email = strtolower(trim($validated['email']));
-            // Unusable random password until the user sets their own.
-            $user->password = Hash::make(Str::random(64));
-            $user->is_admin = $role === 'admin';
-            $user->current_team_id = Tenant::id();
-            $user->save();
-            $user->teams()->attach(Tenant::id(), ['role' => $role]);
-
-            return $user;
-        });
-
-        Password::sendResetLink(['email' => $user->email]);
-        Audit::log('user.invited', "Gebruiker {$user->email} uitgenodigd".($role === 'admin' ? ' als beheerder' : ''), $user);
-
-        return back()->with('success', __('admin.users.flash.invited', ['email' => $user->email]));
-    }
-
-    /** Team invitation of an existing account (only when enabled). */
-    private function addExisting(Request $request, User $user): RedirectResponse
-    {
-        $request->validate(['is_admin' => ['boolean']]);
-
-        if ($user->belongsToTeam(Tenant::id())) {
-            return back()->withErrors(['email' => __('admin.users.flash.already_member')]);
+        // Members of the own team are visible to its administrators anyway.
+        if ($this->members()->where('users.email', $email)->exists()) {
+            return back()->withErrors(['email' => __('admin.users.flash.already_member')])->withInput();
         }
 
         $role = $request->boolean('is_admin') ? 'admin' : 'member';
-        $user->teams()->attach(Tenant::id(), ['role' => $role]);
-        Audit::log('user.added_to_team', "Bestaand account {$user->email} toegevoegd aan het team", $user);
+        $team = \App\Models\Team::query()->findOrFail(Tenant::id());
+        [$invitation, $plain] = \App\Models\TeamInvitation::issue($team, $email, $role, $data['name'] ?? null, $request->user()->id);
+        $this->mailInvitation($team, $email, $plain);
 
-        return back()->with('success', __('admin.users.flash.added', ['email' => $user->email]));
+        Audit::log('user.invited', "Uitnodiging verstuurd aan {$email}".($role === 'admin' ? ' (beheerder)' : ''), $team);
+
+        return back()->with('success', __('admin.users.flash.invited', ['email' => $email]));
+    }
+
+    /** Extra escalation recipients of the own team (one per line or comma separated, max 5). */
+    public function updateEscalation(Request $request): RedirectResponse
+    {
+        Gate::authorize('admin');
+
+        $emails = collect(preg_split('/[\s,;]+/', (string) $request->input('escalation_emails'), -1, PREG_SPLIT_NO_EMPTY))
+            ->map(fn ($e) => strtolower(trim($e)))->unique()->values();
+
+        validator(['emails' => $emails->all()], [
+            'emails' => ['array', 'max:5'],
+            'emails.*' => ['email', 'max:255'],
+        ], [], ['emails' => __('admin.users.escalation_title')])->validate();
+
+        \App\Models\Team::query()->findOrFail(Tenant::id())->forceFill(['escalation_emails' => $emails->all() ?: null])->save();
+        Audit::log('team.escalation_updated', 'Escalatiecontacten bijgewerkt ('.$emails->count().')');
+
+        return back()->with('success', __('admin.users.flash.escalation_saved'));
+    }
+
+    /** Send the invitation again with a new link; the old link stops working. */
+    public function resendInvitation(Request $request, \App\Models\TeamInvitation $invitation): RedirectResponse
+    {
+        Gate::authorize('admin');
+        $this->ownInvitation($invitation);
+
+        $team = \App\Models\Team::query()->findOrFail(Tenant::id());
+        [, $plain] = \App\Models\TeamInvitation::issue($team, $invitation->email, $invitation->role, $invitation->name, $request->user()->id);
+        $this->mailInvitation($team, $invitation->email, $plain);
+        Audit::log('user.invitation_resent', "Uitnodiging opnieuw verstuurd aan {$invitation->email}", $team);
+
+        return back()->with('success', __('admin.users.flash.invitation_resent', ['email' => $invitation->email]));
+    }
+
+    public function revokeInvitation(\App\Models\TeamInvitation $invitation): RedirectResponse
+    {
+        Gate::authorize('admin');
+        $this->ownInvitation($invitation);
+
+        $invitation->delete();
+        Audit::log('user.invitation_revoked', "Uitnodiging voor {$invitation->email} ingetrokken", \App\Models\Team::query()->findOrFail(Tenant::id()));
+
+        return back()->with('success', __('admin.users.flash.invitation_revoked', ['email' => $invitation->email]));
+    }
+
+    /** An invitation of another team (or an used one) does not exist for this team. */
+    private function ownInvitation(\App\Models\TeamInvitation $invitation): void
+    {
+        abort_unless($invitation->team_id === Tenant::id() && $invitation->accepted_at === null, 404);
+    }
+
+    private function mailInvitation(\App\Models\Team $team, string $email, string $plain): void
+    {
+        \Illuminate\Support\Facades\Notification::route('mail', $email)
+            ->notify(new \App\Notifications\TeamInvitationNotice($team->name, route('invitations.show', $plain)));
     }
 
     public function update(Request $request, User $user): RedirectResponse

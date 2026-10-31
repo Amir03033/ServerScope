@@ -30,6 +30,10 @@
                     </select>
                     <input id="path" class="ss-input" name="path" type="text" maxlength="255" value="{{ old('path', $domain->path ?? '/') }}" aria-label="{{ __('domains.form.path') }}" placeholder="/" {{ $field('path') }}>
                 </div>
+                <p class="ss-help">{{ __('domains.form.path_help') }}</p>
+                @if ($domain->exists)
+                    <p class="ss-help" data-testid="checked-address">{{ __('domains.form.checked_address', ['url' => $domain->scheme.'://'.$domain->name.$domain->path]) }}</p>
+                @endif
                 @error('path')<p id="path-error" class="ss-error">{{ $message }}</p>@enderror
             </div>
 

@@ -220,41 +220,43 @@ Remaining, by priority:
   system-health summary); other cache keys contain a resource or token id.
 
 ### Known limitations and blockers (must be fixed before public registration)
-1. **Domain names are unique platform-wide** (unique index on
+1. **FIXED (2026-11): domain names are now unique per team** (index `team_id, name`; another team's domain is no obstacle). Previously: domain names were unique platform-wide (unique index on
    `domains.name`, kept because phase 1 only adds schema). A customer could
    "claim" and thereby block a domain of another customer. Another team gets
    a neutral message that does not reveal the owner, but the block itself
    remains. **Fix before `SERVERSCOPE_REGISTRATION_ENABLED` is turned on**
    (unique per team, or domain ownership verification).
-2. User e-mail addresses are unique platform-wide: inviting or registering
+2. User e-mail addresses are unique platform-wide. **Registration is fixed**: it answers the same for a new and an existing address (the existing one gets a notice mail). **Inviting is still open** (see 8): inviting or registering
    an address that already has an account tells the inviter that it exists.
 3. Status page slugs are unique platform-wide (they are public URLs).
-4. Escalation contacts from `SERVERSCOPE_ESCALATION_EMAILS` only receive
-   incidents of the default team; other teams have no escalation contacts
-   yet (their members still receive escalations).
+4. **FIXED (2026-11):** every team can set up to 5 extra escalation e-mail addresses (Users page); `SERVERSCOPE_ESCALATION_EMAILS` remains for the default team only.
 5. `max_domains` applies per team; there is no per-team plan or limit UI.
 6. Team management UI is minimal: team switcher, members page per team;
    creating teams is `php artisan serverscope:create-team`.
 7. In-app notifications (Laravel `notifications` table) belong to a user,
    not a team: a user removed from a team keeps the notifications they
    already received.
-8. **Invitations add an existing account without its consent.** With
-   `SERVERSCOPE_TEAM_INVITATIONS_ENABLED` an administrator adds an existing
-   account to their team directly. **Fix before enabling invitations**: it
-   must become an invitation the recipient accepts, and the inviter must
-   not learn whether the e-mail address already has an account (same
-   answer for new and existing addresses).
-9. **Registration has no e-mail verification.** Anyone can sign up with
+8. **FIXED (2026-11): invitations are mails the recipient accepts** (token in the link, 7 days, answer identical for new and existing addresses; the existing-account flag is gone). Previously an administrator could add an existing account directly.
+9. **FIXED: registration now requires e-mail verification** (signed link; no sign-in until verified; `verified` middleware on the app; existing users are marked verified by migration; a password reset also verifies). Previously: registration had no e-mail verification. Anyone can sign up with
    someone else's address. **Fix before enabling registration**: verify
    the address before the account can be used.
 
-### Flags (both off by default)
-Do not enable registration before blockers 1, 2 and 9 are fixed, nor
-invitations before blockers 2 and 8 are fixed.
-- `SERVERSCOPE_REGISTRATION_ENABLED`: `/register` creates an account with
-  its own team (otherwise 404).
-- `SERVERSCOPE_TEAM_INVITATIONS_ENABLED`: an administrator can add an
-  existing account to their team by e-mail address.
+### Plans (phase 1, no payment yet)
+- `teams.plan` (free | pro | premium) and `teams.plan_status` (active |
+  pending_payment). `/register?plan=` is whitelisted server-side (unknown =
+  free); free is active at once, pro/premium start `pending_payment`.
+- Limits live in `config/serverscope.php` (`plans`) and are applied through
+  `App\Support\PlanLimits`; a pending team gets the Free limits. The default
+  team is exempt. The values are proposals; nothing enforced them before.
+- Nothing sets `plan_status` to active yet (payment is phase 2).
+- Registration stays off by default (flag); its audit blockers are fixed, it needs working mail first.
+
+### Flags
+All registration blockers are fixed. Registration still needs working `MAIL_*` and an explicit decision.
+- `SERVERSCOPE_REGISTRATION_ENABLED` (off by default): `/register` creates an
+  account with its own team (otherwise 404).
+- Team invitations are always available (no flag).
+Still open: 7 (in-app notifications of removed members).
 
 ### Verified on MySQL 8.0 (local container, never production)
 - All 43 new tests pass on MySQL 8.0.46, including the migration tests

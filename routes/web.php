@@ -33,6 +33,16 @@ use App\Http\Controllers\WebsitePageController;
 
 Route::redirect('/', '/dashboard');
 
+// Invitation links: the token is the credential; accepting needs the matching account.
+Route::get('/invitations/{token}', [\App\Http\Controllers\InvitationController::class, 'show'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:20,1')->name('invitations.show');
+Route::get('/invitations/{token}/login', function (string $token) {
+    session()->put('url.intended', route('invitations.show', $token));
+
+    return redirect()->route('login');
+})->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:20,1')->name('invitations.login');
+Route::post('/invitations/{token}/register', [\App\Http\Controllers\InvitationController::class, 'register'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:10,1')->name('invitations.register');
+Route::post('/invitations/{token}/accept', [\App\Http\Controllers\InvitationController::class, 'accept'])->where('token', '[A-Za-z0-9]{48}')->middleware(['auth', 'throttle:10,1'])->name('invitations.accept');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [
         AuthenticatedSessionController::class,
@@ -47,6 +57,7 @@ Route::middleware('guest')->group(function () {
     // Public sign-up; 404 unless serverscope.tenancy.registration_enabled.
     Route::get('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'create'])->name('register');
     Route::post('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'store'])->middleware('throttle:5,1');
+    Route::get('/register/sent', [\App\Http\Controllers\Auth\RegisterController::class, 'sent'])->name('register.sent');
 
     Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
@@ -85,9 +96,27 @@ Route::get('/agent/releases/{version}/{file}', [\App\Http\Controllers\AgentDownl
 Route::get('/status/{slug}.json', [PublicStatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.json');
 Route::get('/status/{slug}', [PublicStatusPageController::class, 'show'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.show');
 
-Route::middleware(['auth', 'tenant'])->group(function () {
+// Signed in but not necessarily verified: the verification screens and sign-out.
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'resend'])->middleware('throttle:3,1')->name('verification.send');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+});
+
+// The link in the verification mail: signed, works without a session.
+Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'verify'])
+    ->whereNumber('id')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+
+Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
+
+    Route::get('/billing', [\App\Http\Controllers\BillingController::class, 'show'])->name('billing.show');
+    Route::post('/billing/checkout', [\App\Http\Controllers\BillingController::class, 'checkout'])->middleware('throttle:10,1')->name('billing.checkout');
+    Route::get('/billing/invoices', [\App\Http\Controllers\InvoiceController::class, 'index'])->name('billing.invoices');
+    Route::get('/billing/invoices/{invoice}', [\App\Http\Controllers\InvoiceController::class, 'show'])->name('billing.invoice');
+    Route::put('/billing/details', [\App\Http\Controllers\InvoiceController::class, 'details'])->name('billing.details');
+    Route::post('/billing/cancel', [\App\Http\Controllers\BillingController::class, 'cancel'])->middleware('throttle:5,1')->name('billing.cancel');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -121,12 +150,16 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
         return view('system-health', ['report' => $health->report($platform ? null : \App\Tenancy\Tenant::id())]);
     })->name('system-health');
+    Route::get('/platform/commands', \App\Http\Controllers\OwnerCommandsController::class)->name('platform.commands');
     Route::get('/platform/agent-releases', \App\Http\Controllers\AgentReleaseOverviewController::class)->name('platform.agent-releases');
 
     Route::post('/teams/{team}/switch', [\App\Http\Controllers\TeamController::class, 'switch'])->middleware('throttle:20,1')->name('teams.switch');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->middleware('throttle:10,1')->name('users.store');
+    Route::put('/team/escalation', [UserController::class, 'updateEscalation'])->middleware('throttle:10,1')->name('team.escalation');
+    Route::post('/users/invitations/{invitation}/resend', [UserController::class, 'resendInvitation'])->middleware('throttle:10,1')->name('users.invitations.resend');
+    Route::delete('/users/invitations/{invitation}', [UserController::class, 'revokeInvitation'])->name('users.invitations.revoke');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
@@ -241,6 +274,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('/dependencies/{dependency}', [DependencyController::class, 'destroy'])->name('dependencies.destroy');
 
     Route::get('/alerts', AlertController::class)->name('alerts.index');
+    Route::delete('/alerts/{alert}', [AlertController::class, 'destroy'])->name('alerts.destroy');
+    Route::delete('/alerts', [AlertController::class, 'clear'])->name('alerts.clear');
 
     Route::get('/alert-rules', [AlertRuleController::class, 'index'])
         ->name('alert-rules.index');
@@ -259,11 +294,6 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::delete('/alert-rules/{alertRule}', [AlertRuleController::class, 'destroy'])
         ->name('alert-rules.destroy');
-
-    Route::post('/logout', [
-        AuthenticatedSessionController::class,
-        'destroy',
-    ])->name('logout');
 
     Route::post('/servers/register', [
         ServerRegistrationController::class,

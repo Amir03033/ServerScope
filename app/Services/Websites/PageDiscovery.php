@@ -378,7 +378,7 @@ class PageDiscovery
         $added = 0;
         $seen = 0;
         $now = now();
-        $capacity = max(0, (int) config('serverscope.websites.max_pages_per_website', 1000) - $domain->pages()->count());
+        $capacity = max(0, \App\Support\PlanLimits::pagesPerWebsite(\App\Models\Team::query()->find($domain->team_id)) - $domain->pages()->count());
 
         foreach ($this->found as $url => $info) {
             $hash = MonitoredPage::hashUrl($url);

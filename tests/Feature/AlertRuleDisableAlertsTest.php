@@ -139,6 +139,48 @@ class AlertRuleDisableAlertsTest extends TestCase
             ->assertViewHas('totalCount', 3);
     }
 
+    public function test_admin_can_delete_a_finished_alert_but_not_an_active_one(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $server = $this->createServer();
+        $rule = $this->createRule();
+        $active = $this->createAlert($server, $rule, 'active');
+        $resolved = $this->createAlert($server, $rule, 'resolved');
+
+        $this->actingAs($admin)->delete(route('alerts.destroy', $resolved))->assertSessionHas('success');
+        $this->assertDatabaseMissing('alerts', ['id' => $resolved->id]);
+
+        $this->actingAs($admin)->delete(route('alerts.destroy', $active))->assertSessionHas('error');
+        $this->assertDatabaseHas('alerts', ['id' => $active->id]);
+    }
+
+    public function test_clearing_history_keeps_active_alerts(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $server = $this->createServer();
+        $rule = $this->createRule();
+        $active = $this->createAlert($server, $rule, 'active');
+        $resolved = $this->createAlert($server, $rule, 'resolved');
+
+        $this->actingAs($admin)->delete(route('alerts.clear'))->assertRedirect();
+
+        $this->assertDatabaseHas('alerts', ['id' => $active->id]);
+        $this->assertDatabaseMissing('alerts', ['id' => $resolved->id]);
+    }
+
+    public function test_rule_with_alert_history_can_be_deleted(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $server = $this->createServer();
+        $rule = $this->createRule();
+        $resolved = $this->createAlert($server, $rule, 'resolved');
+
+        $this->actingAs($admin)->delete(route('alert-rules.destroy', $rule))->assertSessionHas('success');
+
+        $this->assertSoftDeleted('alert_rules', ['id' => $rule->id]);
+        $this->assertDatabaseMissing('alerts', ['id' => $resolved->id]);
+    }
+
     private function createServer(): Server
     {
         return Server::create([

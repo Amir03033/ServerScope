@@ -12,7 +12,7 @@ class UserManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_invites_users_who_set_their_own_password(): void
+    public function test_admin_invites_by_mail_and_nothing_exists_until_accepted(): void
     {
         Notification::fake();
         $admin = User::factory()->create(['is_admin' => true]);
@@ -21,12 +21,10 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($admin)->post(route('users.store'), ['name' => 'Nieuw', 'email' => 'Nieuw@Example.com', 'is_admin' => '0'])->assertSessionHas('success');
 
-        $user = User::query()->where('email', 'nieuw@example.com')->sole();
-        $this->assertFalse($user->is_admin);
-        Notification::assertSentTo($user, ResetPassword::class);
+        $this->assertFalse(User::query()->where('email', 'nieuw@example.com')->exists());
+        $this->assertDatabaseHas('team_invitations', ['email' => 'nieuw@example.com', 'role' => 'member']);
+        Notification::assertSentOnDemand(\App\Notifications\TeamInvitationNotice::class);
         $this->assertDatabaseHas('audit_logs', ['action' => 'user.invited']);
-
-        $this->actingAs($admin)->post(route('users.store'), ['name' => 'Dubbel', 'email' => 'nieuw@example.com'])->assertSessionHasErrors('email');
     }
 
     public function test_role_changes_and_deletion_protect_admins(): void

@@ -18,8 +18,10 @@
         ['route' => 'status-pages.index', 'match' => 'status-pages.*', 'icon' => 'i-status', 'label' => 'status_pages', 'admin' => true],
         ['route' => 'webhooks.index', 'match' => 'webhooks.*', 'icon' => 'i-webhook', 'label' => 'webhooks', 'admin' => true],
         ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'i-users', 'label' => 'users', 'admin' => true],
+        ['route' => 'billing.show', 'match' => 'billing.*', 'icon' => 'i-status', 'label' => 'billing', 'admin' => true],
         ['route' => 'audit-logs.index', 'match' => 'audit-logs.*', 'icon' => 'i-history', 'label' => 'audit_log', 'admin' => true],
         ['route' => 'system-health', 'match' => 'system-health', 'icon' => 'i-pulse', 'label' => 'system_health', 'admin' => true, 'platform' => true],
+        ['route' => 'platform.commands', 'match' => 'platform.commands', 'icon' => 'i-sliders', 'label' => 'owner_commands', 'platform' => true],
         ['route' => 'platform.agent-releases', 'match' => 'platform.agent-releases', 'icon' => 'i-key', 'label' => 'agent_releases', 'platform' => true],
     ];
 
@@ -94,7 +96,12 @@
                 @continue(empty($items))
 
                 @if ($group !== '')
-                    <div class="ss-nav-group">{{ __('nav.groups.'.$group) }}</div>
+                    @php $groupCount = collect($items)->sum(fn ($item) => (int) ($item['count'] ?? 0)); @endphp
+                    <details class="ss-nav-section" data-nav-group="{{ $group }}" open>
+                        <summary class="ss-nav-group">
+                            <span>{{ __('nav.groups.'.$group) }}</span>
+                            @if ($groupCount > 0)<span class="nav-count ss-nav-sumcount" aria-hidden="true">{{ $groupCount }}</span>@endif
+                        </summary>
                 @endif
 
                 @foreach ($items as $item)
@@ -107,6 +114,10 @@
                         @endif
                     </a>
                 @endforeach
+
+                @if ($group !== '')
+                    </details>
+                @endif
             @endforeach
         </nav>
 
@@ -224,6 +235,25 @@
                     <div class="actions">{{ $actions }}</div>
                 @endisset
             </div>
+
+            @php($planTeam = $user?->current_team_id ? \App\Models\Team::query()->find($user->current_team_id) : null)
+            @if ($planTeam?->isPendingPayment() && ! request()->routeIs('billing.*'))
+                <div class="ss-alert ss-alert-warning mb-5" role="status" data-testid="plan-pending-banner">
+                    <svg class="ico"><use href="#i-alert"/></svg>
+                    <div>{{ __('plans.banner.pending', ['plan' => __('plans.names.'.$planTeam->plan)]) }}
+                        @if (app(\App\Billing\BillingManager::class)->enabled() && $isAdmin)
+                            <a class="underline" href="{{ route('billing.show') }}">{{ __('billing.banner_link') }}</a>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
+            @if ($planTeam && ! $planTeam->isPendingPayment() && $isAdmin && ($over = \App\Support\PlanLimits::overLimit($planTeam)))
+                <div class="ss-alert ss-alert-warning mb-5" role="status" data-testid="plan-over-limit">
+                    <svg class="ico"><use href="#i-alert"/></svg>
+                    <div>{{ __('plans.banner.over_limit', ['items' => collect($over)->map(fn ($o, $k) => __('plans.items.'.$k).' '.$o['count'].'/'.$o['limit'])->implode(', ')]) }}</div>
+                </div>
+            @endif
 
             @if ($flash && (session('success') || session('error') || $errors->any()))
                 <div class="mb-5 grid gap-3">

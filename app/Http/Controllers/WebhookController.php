@@ -41,6 +41,10 @@ class WebhookController extends Controller
     {
         Gate::authorize('admin');
 
+        if (! \App\Support\PlanLimits::allows('webhooks')) {
+            return back()->with('error', __('plans.feature.webhooks'));
+        }
+
         $type = $request->input('type') === WebhookEndpoint::TYPE_DISCORD ? WebhookEndpoint::TYPE_DISCORD : WebhookEndpoint::TYPE_GENERIC;
         $data = $this->validated($request, $guard, $type, null);
 

@@ -41,6 +41,36 @@
             </div>
         </section>
 
+        @if ($invitations->isNotEmpty())
+            <section class="ss-panel" aria-labelledby="pending-title" data-testid="pending-invitations">
+                <h2 id="pending-title" class="ss-panel-title">{{ __('admin.users.pending_title') }}</h2>
+                <div class="grid gap-3 p-4">
+                    @foreach ($invitations as $invitation)
+                        <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+                            <span><strong>{{ $invitation->email }}</strong> · {{ $invitation->role === 'admin' ? __('admin.users.is_admin') : __('admin.users.role_member') }} · {{ __('admin.users.pending_expires', ['date' => $invitation->expires_at->format('Y-m-d')]) }}</span>
+                            <span class="flex gap-2">
+                                <form method="POST" action="{{ route('users.invitations.resend', $invitation) }}">@csrf<button type="submit" class="ss-btn">{{ __('admin.users.pending_resend') }}</button></form>
+                                <form method="POST" action="{{ route('users.invitations.revoke', $invitation) }}">@csrf @method('DELETE')<button type="submit" class="ss-btn">{{ __('admin.users.pending_revoke') }}</button></form>
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        <section class="ss-panel" aria-labelledby="escalation-title" data-testid="escalation-contacts">
+            <h2 id="escalation-title" class="ss-panel-title">{{ __('admin.users.escalation_title') }}</h2>
+            <p class="ss-panel-sub mb-4">{{ __('admin.users.escalation_text') }}</p>
+            <form method="POST" action="{{ route('team.escalation') }}" class="grid gap-4">
+                @csrf @method('PUT')
+                <div>
+                    <label class="ss-label" for="escalation_emails">{{ __('admin.users.escalation_label') }}</label>
+                    <textarea id="escalation_emails" class="ss-input mt-1.5" name="escalation_emails" rows="3">{{ old('escalation_emails', implode("\n", $escalationEmails)) }}</textarea>
+                </div>
+                <div><button class="ss-btn ss-btn-primary" type="submit">{{ __('admin.users.escalation_save') }}</button></div>
+            </form>
+        </section>
+
         <section class="ss-panel" aria-labelledby="invite-title">
             <h2 id="invite-title" class="ss-panel-title">{{ __('admin.users.invite_title') }}</h2>
             <p class="ss-panel-sub mb-4">{{ __('admin.users.invite_text') }}</p>

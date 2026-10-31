@@ -35,7 +35,18 @@
         <section class="ss-panel" aria-labelledby="history-title">
             <div class="ss-panel-head">
                 <div><h2 id="history-title" class="ss-panel-title">{{ __('alerts.history_title') }}</h2><p class="ss-panel-sub">{{ __('alerts.history_text') }}</p></div>
-                <span class="text-xs text-muted">{{ __('alerts.results', ['count' => $alerts->total()]) }}</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-muted">{{ __('alerts.results', ['count' => $alerts->total()]) }}</span>
+                    @can('admin')
+                        @if ($resolvedCount + $disabledCount > 0)
+                            <form method="POST" action="{{ route('alerts.clear') }}" data-confirm="{{ __('alerts.clear_confirm') }}">
+                                @csrf
+                                @method('DELETE')
+                                <button class="ss-btn ss-btn-secondary ss-btn-sm" type="submit"><svg class="ico"><use href="#i-trash"/></svg> {{ __('alerts.clear') }}</button>
+                            </form>
+                        @endif
+                    @endcan
+                </div>
             </div>
 
             <nav class="ss-tabs-scroll mb-4" aria-label="{{ __('alerts.filter_label') }}">
@@ -99,6 +110,16 @@
                                     <span class="inline-flex items-center gap-1.5"><svg class="ico"><use href="#i-flag"/></svg> {{ $isDisabled ? __('alerts.disabled_at') : __('alerts.resolved_at') }} {{ Time::dateTimeSeconds($alert->resolved_at) }}</span>
                                 @endif
                             </div>
+
+                            @can('admin')
+                                @unless ($isActive)
+                                    <form method="POST" action="{{ route('alerts.destroy', $alert) }}" class="mt-3" data-confirm="{{ __('alerts.delete_confirm') }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="ss-btn ss-btn-danger ss-btn-sm" type="submit"><svg class="ico"><use href="#i-trash"/></svg> {{ __('alerts.delete') }}</button>
+                                    </form>
+                                @endunless
+                            @endcan
                         </article>
                     @endforeach
                 </div>
