@@ -238,12 +238,7 @@ Remaining, by priority:
 7. In-app notifications (Laravel `notifications` table) belong to a user,
    not a team: a user removed from a team keeps the notifications they
    already received.
-8. **Invitations add an existing account without its consent.** With
-   `SERVERSCOPE_TEAM_INVITATIONS_ENABLED` an administrator adds an existing
-   account to their team directly. **Fix before enabling invitations**: it
-   must become an invitation the recipient accepts, and the inviter must
-   not learn whether the e-mail address already has an account (same
-   answer for new and existing addresses).
+8. **FIXED (2026-11): invitations are mails the recipient accepts** (token in the link, 7 days, answer identical for new and existing addresses; the existing-account flag is gone). Previously an administrator could add an existing account directly.
 9. **FIXED: registration now requires e-mail verification** (signed link; no sign-in until verified; `verified` middleware on the app; existing users are marked verified by migration; a password reset also verifies). Previously: registration had no e-mail verification. Anyone can sign up with
    someone else's address. **Fix before enabling registration**: verify
    the address before the account can be used.
@@ -258,12 +253,12 @@ Remaining, by priority:
 - Nothing sets `plan_status` to active yet (payment is phase 2).
 - Registration stays off by default (flag); its audit blockers are fixed, it needs working mail first.
 
-### Flags (both off by default)
-Blockers 1, 2 (registration part) and 9 are fixed; registration still needs a working MAIL_* configuration and an explicit decision. Do not enable invitations before blockers 2 and 8 are fixed.
-- `SERVERSCOPE_REGISTRATION_ENABLED`: `/register` creates an account with
-  its own team (otherwise 404).
-- `SERVERSCOPE_TEAM_INVITATIONS_ENABLED`: an administrator can add an
-  existing account to their team by e-mail address.
+### Flags
+All registration blockers are fixed. Registration still needs working `MAIL_*` and an explicit decision.
+- `SERVERSCOPE_REGISTRATION_ENABLED` (off by default): `/register` creates an
+  account with its own team (otherwise 404).
+- Team invitations are always available (no flag).
+Still open: 4 (escalation contacts per team) and 7 (in-app notifications of removed members).
 
 ### Verified on MySQL 8.0 (local container, never production)
 - All 43 new tests pass on MySQL 8.0.46, including the migration tests

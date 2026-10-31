@@ -13,6 +13,11 @@ mislukte verlenging = coulanceperiode, opzeggen = doorlopen tot einde periode. M
 betaal-id en geen handtekening: de betaling wordt opnieuw bij Mollie opgehaald, de URL bevat een geheim token en het
 betaalde bedrag moet gelijk zijn aan de ingestelde prijs. De prijs-variabelen bevatten bij Mollie het bedrag (bijv. `19.00`).
 
+**Facturen (gebouwd):** per geslaagde betaling een factuur als concept; uitgegeven (doorlopend nummer, verkoper en koper
+vastgelegd) zodra `SERVERSCOPE_COMPANY_*` compleet is (`serverscope:invoices:issue`, dagelijks). Zonder btw-nummer geen
+btw en de tekst `SERVERSCOPE_VAT_NOTE`. Niet afgehandeld: btw-verlegging EU/niet-EU en creditnota's/terugbetalingen.
+Chargebacks tellen als mislukte betaling.
+
 **Oud lijstje (nu grotendeels gedaan, alleen invullen en echt testen):** een driver in `App\Billing\Providers` (checkoutUrl,
 parseWebhook met handtekeningcontrole, cancel), registreren in `BillingManager::DRIVERS`,
 `.env` invullen, `SERVERSCOPE_BILLING_ENABLED=true`, factuur/btw volgens sectie 5. Die driver is niet
