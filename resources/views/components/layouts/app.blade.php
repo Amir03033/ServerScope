@@ -96,7 +96,12 @@
                 @continue(empty($items))
 
                 @if ($group !== '')
-                    <div class="ss-nav-group">{{ __('nav.groups.'.$group) }}</div>
+                    @php $groupCount = collect($items)->sum(fn ($item) => (int) ($item['count'] ?? 0)); @endphp
+                    <details class="ss-nav-section" data-nav-group="{{ $group }}" open>
+                        <summary class="ss-nav-group">
+                            <span>{{ __('nav.groups.'.$group) }}</span>
+                            @if ($groupCount > 0)<span class="nav-count ss-nav-sumcount" aria-hidden="true">{{ $groupCount }}</span>@endif
+                        </summary>
                 @endif
 
                 @foreach ($items as $item)
@@ -109,6 +114,10 @@
                         @endif
                     </a>
                 @endforeach
+
+                @if ($group !== '')
+                    </details>
+                @endif
             @endforeach
         </nav>
 

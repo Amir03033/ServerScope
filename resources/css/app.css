@@ -642,6 +642,45 @@
         color: var(--ss-subtle);
     }
 
+    /* Collapsible sidebar groups (<details>), see resources/js/app.js. */
+    .ss-nav-section > summary.ss-nav-group {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .5rem;
+        cursor: pointer;
+        list-style: none;
+        border-radius: 6px;
+        user-select: none;
+    }
+
+    .ss-nav-section > summary.ss-nav-group::-webkit-details-marker { display: none; }
+
+    .ss-nav-section > summary.ss-nav-group::after {
+        content: "";
+        flex: none;
+        width: .5rem;
+        height: .5rem;
+        margin: -.15rem .15rem 0 auto;
+        border-right: 1.5px solid currentColor;
+        border-bottom: 1.5px solid currentColor;
+        transform: rotate(45deg);
+        transition: transform .2s ease;
+    }
+
+    .ss-nav-section:not([open]) > summary.ss-nav-group::after { transform: rotate(-45deg); }
+    .ss-nav-section > summary.ss-nav-group:hover { color: var(--ss-text); }
+    .ss-nav-section > summary.ss-nav-group:focus-visible { outline: 2px solid var(--ss-accent); outline-offset: 2px; }
+    .ss-nav-sumcount { display: none; }
+    .ss-nav-section:not([open]) .ss-nav-sumcount { display: inline-flex; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ss-nav-section > summary.ss-nav-group::after { transition: none; }
+    }
+
+    /* Long command lines scroll instead of overflowing their box. */
+    .ss-scroll-x { overflow-x: auto; }
+
     .ss-nav-item {
         display: flex;
         align-items: center;
