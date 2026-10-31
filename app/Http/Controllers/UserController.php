@@ -29,6 +29,7 @@ class UserController extends Controller
 
         return view('users.index', [
             'users' => $this->members()->orderBy('name')->get(),
+            'escalationEmails' => (array) (\App\Models\Team::query()->find(Tenant::id())?->escalation_emails ?? []),
             'invitations' => \App\Models\TeamInvitation::query()->where('team_id', Tenant::id())->whereNull('accepted_at')->where('expires_at', '>', now())->orderBy('expires_at')->get(),
         ]);
     }
@@ -62,6 +63,25 @@ class UserController extends Controller
         Audit::log('user.invited', "Uitnodiging verstuurd aan {$email}".($role === 'admin' ? ' (beheerder)' : ''), $team);
 
         return back()->with('success', __('admin.users.flash.invited', ['email' => $email]));
+    }
+
+    /** Extra escalation recipients of the own team (one per line or comma separated, max 5). */
+    public function updateEscalation(Request $request): RedirectResponse
+    {
+        Gate::authorize('admin');
+
+        $emails = collect(preg_split('/[\s,;]+/', (string) $request->input('escalation_emails'), -1, PREG_SPLIT_NO_EMPTY))
+            ->map(fn ($e) => strtolower(trim($e)))->unique()->values();
+
+        validator(['emails' => $emails->all()], [
+            'emails' => ['array', 'max:5'],
+            'emails.*' => ['email', 'max:255'],
+        ], [], ['emails' => __('admin.users.escalation_title')])->validate();
+
+        \App\Models\Team::query()->findOrFail(Tenant::id())->forceFill(['escalation_emails' => $emails->all() ?: null])->save();
+        Audit::log('team.escalation_updated', 'Escalatiecontacten bijgewerkt ('.$emails->count().')');
+
+        return back()->with('success', __('admin.users.flash.escalation_saved'));
     }
 
     /** Send the invitation again with a new link; the old link stops working. */

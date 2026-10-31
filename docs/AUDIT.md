@@ -229,9 +229,7 @@ Remaining, by priority:
 2. User e-mail addresses are unique platform-wide. **Registration is fixed**: it answers the same for a new and an existing address (the existing one gets a notice mail). **Inviting is still open** (see 8): inviting or registering
    an address that already has an account tells the inviter that it exists.
 3. Status page slugs are unique platform-wide (they are public URLs).
-4. Escalation contacts from `SERVERSCOPE_ESCALATION_EMAILS` only receive
-   incidents of the default team; other teams have no escalation contacts
-   yet (their members still receive escalations).
+4. **FIXED (2026-11):** every team can set up to 5 extra escalation e-mail addresses (Users page); `SERVERSCOPE_ESCALATION_EMAILS` remains for the default team only.
 5. `max_domains` applies per team; there is no per-team plan or limit UI.
 6. Team management UI is minimal: team switcher, members page per team;
    creating teams is `php artisan serverscope:create-team`.
@@ -258,7 +256,7 @@ All registration blockers are fixed. Registration still needs working `MAIL_*` a
 - `SERVERSCOPE_REGISTRATION_ENABLED` (off by default): `/register` creates an
   account with its own team (otherwise 404).
 - Team invitations are always available (no flag).
-Still open: 4 (escalation contacts per team) and 7 (in-app notifications of removed members).
+Still open: 7 (in-app notifications of removed members).
 
 ### Verified on MySQL 8.0 (local container, never production)
 - All 43 new tests pass on MySQL 8.0.46, including the migration tests
