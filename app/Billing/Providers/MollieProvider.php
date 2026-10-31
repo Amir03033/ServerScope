@@ -34,6 +34,11 @@ class MollieProvider implements PaymentProvider
         return 'mollie';
     }
 
+    public function checkoutOrigins(): array
+    {
+        return ['https://www.mollie.com', 'https://*.mollie.com'];
+    }
+
     public function checkoutUrl(Team $team, string $plan, string $interval, string $returnUrl): string
     {
         $this->assertConfigured();

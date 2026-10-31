@@ -26,6 +26,7 @@ class BillingTest extends TestCase
             public function checkoutUrl(Team $team, string $plan, string $interval, string $returnUrl): string { return 'https://pay.example.test/c/'.$plan; }
             public function parseWebhook(Request $request): ?BillingEvent { if ($request->header('X-Sig') !== 'ok') { throw new \RuntimeException('bad'); } return $this->event; }
             public function cancel(Subscription $subscription): void { $this->canceled[] = $subscription->id; }
+            public function checkoutOrigins(): array { return ['https://pay.example.test']; }
         };
         $this->app->bind(\App\Billing\Providers\NullProvider::class, fn () => $provider);
         config(['serverscope.billing.enabled' => true, 'serverscope.billing.driver' => 'none']);
@@ -119,5 +120,20 @@ class BillingTest extends TestCase
 
         $this->actingAs($mk('owner'))->get('/dashboard')->assertSee(route('billing.show'), false);
         $this->actingAs($mk('member'))->get('/dashboard')->assertDontSee(route('billing.show'), false);
+    }
+
+    public function test_only_the_billing_page_allows_the_provider_as_form_target(): void
+    {
+        $team = Team::query()->create(['name' => 'Csp', 'plan' => 'pro', 'plan_status' => 'pending_payment']);
+        $u = User::factory()->create();
+        $u->teams()->attach($team->id, ['role' => 'owner']);
+        $u->forceFill(['current_team_id' => $team->id, 'is_admin' => true])->save();
+        $this->enableFake(null);
+
+        $billingPage = $this->actingAs($u)->get(route('billing.show'))->assertOk()->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString("form-action 'self' https://pay.example.test;", $billingPage);
+        $other = $this->actingAs($u)->get('/dashboard')->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString("form-action 'self';", $other);
+        $this->assertStringNotContainsString('pay.example.test', $other);
     }
 }

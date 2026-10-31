@@ -17,6 +17,11 @@ class NullProvider implements PaymentProvider
         return 'none';
     }
 
+    public function checkoutOrigins(): array
+    {
+        return [];
+    }
+
     public function checkoutUrl(Team $team, string $plan, string $interval, string $returnUrl): string
     {
         throw new RuntimeException('No payment provider is configured.');

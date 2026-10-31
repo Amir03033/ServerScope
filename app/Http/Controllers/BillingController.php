@@ -14,9 +14,13 @@ use Illuminate\View\View;
 
 class BillingController extends Controller
 {
-    public function show(BillingManager $billing): View
+    public function show(Request $request, BillingManager $billing): View
     {
         Gate::authorize('admin');
+
+        // The checkout form ends up on the payment provider's domain; the
+        // browser would otherwise block that redirect (CSP form-action).
+        $request->attributes->set('csp.form_action', $billing->provider()->checkoutOrigins());
         $team = Team::query()->findOrFail(Tenant::id());
 
         return view('billing.show', [

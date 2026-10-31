@@ -14,6 +14,14 @@ interface PaymentProvider
 {
     public function name(): string;
 
+    /**
+     * Origins the browser is sent to for checkout (allowed as form target
+     * on the billing page only), like https://www.mollie.com.
+     *
+     * @return array<int, string>
+     */
+    public function checkoutOrigins(): array;
+
     /** Hosted checkout URL; no card or bank data ever touches this app. */
     public function checkoutUrl(Team $team, string $plan, string $interval, string $returnUrl): string;
 
