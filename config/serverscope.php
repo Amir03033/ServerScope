@@ -295,12 +295,12 @@ return [
     'plans' => [
         'free' => [
             'limits' => [
-                'servers' => 3,
-                'domains' => 5,
-                'pages_per_website' => 25,
+                'servers' => 1,
+                'domains' => 3,
+                'pages_per_website' => 15,
                 'status_pages' => 1,
                 'min_interval_minutes' => 5,
-                'retention_days' => 30,
+                'retention_days' => 14,
             ],
             'features' => [],
         ],

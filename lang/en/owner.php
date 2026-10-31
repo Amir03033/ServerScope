@@ -32,7 +32,7 @@ return [
         'analyze' => ['title' => 'Run anomaly and forecast analysis', 'when' => 'Debugging: normally hourly.'],
         'escalate' => ['title' => 'Escalate unacknowledged incidents', 'when' => 'Debugging: normally scheduled.'],
         'prune_dry' => ['title' => 'Show what clean-up would delete', 'when' => 'Always do this first. Deletes nothing.'],
-        'prune' => ['title' => 'Delete history beyond the retention', 'when' => 'Applies global retention and the plan retention (Free 30 days). Cannot be undone; runs daily by itself.'],
+        'prune' => ['title' => 'Delete history beyond the retention', 'when' => 'Applies global retention and the plan retention (Free 14 days). Cannot be undone; runs daily by itself.'],
         'release_list' => ['title' => 'List agent releases', 'when' => 'See which agent versions are available or withdrawn.'],
         'release_import' => ['title' => 'Import a signed agent release', 'when' => 'When you publish a new agent version.'],
         'release_withdraw' => ['title' => 'Withdraw an agent release', 'when' => 'When a release turns out to be bad. Servers stop being offered it.'],
