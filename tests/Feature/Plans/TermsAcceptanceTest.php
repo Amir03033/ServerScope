@@ -64,4 +64,14 @@ class TermsAcceptanceTest extends TestCase
         $this->post("/invitations/{$token}/register", [...$form, 'terms' => '1'])->assertRedirect(route('dashboard'));
         $this->assertNotNull(User::query()->where('email', 'kees@example.test')->sole()->terms_accepted_at);
     }
+
+    public function test_the_locale_placeholder_points_to_the_page_in_the_interface_language(): void
+    {
+        config(['serverscope.legal.terms_url' => 'https://info.example.test/{locale}/terms', 'serverscope.legal.privacy_url' => 'https://info.example.test/{locale}/privacy']);
+
+        app()->setLocale('nl');
+        $this->assertSame('https://info.example.test/nl/terms', \App\Support\Legal::termsUrl());
+        app()->setLocale('en');
+        $this->assertSame('https://info.example.test/en/privacy', \App\Support\Legal::privacyUrl());
+    }
 }

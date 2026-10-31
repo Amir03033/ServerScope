@@ -46,10 +46,15 @@ class Legal
         }
     }
 
-    /** Only http(s) URLs are ever linked (never javascript: or similar). */
+    /**
+     * Only http(s) URLs are ever linked (never javascript: or similar).
+     * "{locale}" in the URL becomes the interface language (nl or en), so one
+     * setting can point at the page in the right language.
+     */
     private static function safe(mixed $url): ?string
     {
         $url = is_string($url) ? trim($url) : '';
+        $url = str_replace('{locale}', app()->getLocale() === 'nl' ? 'nl' : 'en', $url);
 
         return $url !== '' && filter_var($url, FILTER_VALIDATE_URL) && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true) ? $url : null;
     }
