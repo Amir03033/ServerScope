@@ -77,6 +77,15 @@ class DomainRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
+                // Typing the domain into the path field is a common slip: the
+                // monitor would request https://example.com/example.com.
+                $hostLike = strtolower(ltrim((string) $this->path, '/'));
+                $names = array_filter([strtolower((string) $this->name), strtolower((string) preg_replace('~^https?://~i', '', trim((string) $this->name_input)))]);
+
+                if ($hostLike !== '' && collect($names)->contains(fn ($n) => $hostLike === $n || $hostLike === 'www.'.$n || $hostLike === preg_replace('/^www\./', '', $n))) {
+                    $validator->errors()->add('path', __('domains.validation.path_is_domain'));
+                }
+
                 if (! $this->boolean('name_valid')) {
                     $validator->errors()->add('name', __('domains.validation.invalid_name'));
 
