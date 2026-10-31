@@ -12,7 +12,7 @@
                             <strong>{{ __('owner.cmd.'.$id.'.title') }}</strong>
                             <span class="ss-chip">{{ $app === 'info' ? __('owner.in_info') : __('owner.in_app') }}</span>
                             @if ($danger)<span class="ss-chip" title="{{ __('owner.danger_hint') }}">{{ __('owner.danger') }}</span>@endif
-                            <pre class="mt-1.5 overflow-x-auto rounded-md border border-line p-2 text-xs"><code>{{ $cmd }}</code></pre>
+                            <pre class="mt-1.5 rounded-md border border-line p-2 text-xs" style="overflow-x:auto"><code>{{ $cmd }}</code></pre>
                             <p class="m-0 mt-1 text-sm text-muted">{{ __('owner.cmd.'.$id.'.when') }}</p>
                         </div>
                     @endforeach
