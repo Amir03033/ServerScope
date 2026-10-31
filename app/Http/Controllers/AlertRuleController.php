@@ -101,16 +101,17 @@ class AlertRuleController extends Controller
     {
         $this->authorizeAdmin();
 
-        if ($alertRule->alerts()->exists()) {
+        if ($alertRule->alerts()->where('status', 'active')->exists()) {
             return redirect()
                 ->route('alert-rules.index')
-                ->with(
-                    'error',
-                    __('alert_rules.flash.has_history'),
-                );
+                ->with('error', __('alert_rules.flash.has_history'));
         }
 
-        $alertRule->delete();
+        // The confirmation promises the history goes with the rule.
+        DB::transaction(function () use ($alertRule): void {
+            $alertRule->alerts()->delete();
+            $alertRule->delete();
+        });
 
         return redirect()
             ->route('alert-rules.index')

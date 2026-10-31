@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alert;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class AlertController extends Controller
@@ -65,5 +67,31 @@ class AlertController extends Controller
             'disabledCount' => $disabledCount,
             'totalCount' => $totalCount,
         ]);
+    }
+
+    /** Remove one finished alert from the history. Active alerts resolve themselves first. */
+    public function destroy(Alert $alert): RedirectResponse
+    {
+        abort_unless(Gate::allows('admin'), 403, __('alert_rules.forbidden'));
+
+        if ($alert->isActive()) {
+            return back()->with('error', __('alerts.flash.active_cannot_delete'));
+        }
+
+        $alert->delete();
+
+        return back()->with('success', __('alerts.flash.deleted'));
+    }
+
+    /** Remove all finished alerts (resolved/disabled) of the current team; active ones stay. */
+    public function clear(): RedirectResponse
+    {
+        abort_unless(Gate::allows('admin'), 403, __('alert_rules.forbidden'));
+
+        $count = Alert::query()->where('status', '!=', 'active')->delete();
+
+        return redirect()
+            ->route('alerts.index', ['status' => 'all'])
+            ->with('success', __('alerts.flash.cleared', ['count' => $count]));
     }
 }

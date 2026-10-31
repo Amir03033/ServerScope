@@ -45,4 +45,13 @@ return [
     'incident' => 'Incident #:id',
     'resolved_at' => 'Resolved:',
     'disabled_at' => 'Disabled:',
+    'delete' => 'Delete',
+    'delete_confirm' => 'Are you sure you want to remove this alert from the history?',
+    'clear' => 'Clear history',
+    'clear_confirm' => 'Delete all resolved and disabled alerts? Active alerts are kept.',
+    'flash' => [
+        'active_cannot_delete' => 'This alert is still active and cannot be deleted.',
+        'deleted' => 'Alert deleted.',
+        'cleared' => ':count alerts deleted.',
+    ],
 ];

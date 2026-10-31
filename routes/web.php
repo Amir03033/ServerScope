@@ -241,6 +241,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('/dependencies/{dependency}', [DependencyController::class, 'destroy'])->name('dependencies.destroy');
 
     Route::get('/alerts', AlertController::class)->name('alerts.index');
+    Route::delete('/alerts/{alert}', [AlertController::class, 'destroy'])->name('alerts.destroy');
+    Route::delete('/alerts', [AlertController::class, 'clear'])->name('alerts.clear');
 
     Route::get('/alert-rules', [AlertRuleController::class, 'index'])
         ->name('alert-rules.index');

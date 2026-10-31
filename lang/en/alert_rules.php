@@ -74,7 +74,7 @@ return [
         'created' => 'Alert rule created.',
         'updated_enabled' => 'Alert rule updated and enabled.',
         'updated_disabled' => 'Alert rule updated. Active alerts have been recorded as disabled.',
-        'has_history' => 'This alert rule has alert history and therefore cannot be deleted. Disable the rule if you no longer want to use it.',
+        'has_history' => 'This alert rule still has active alerts. Wait until they resolve or disable the rule first.',
         'deleted' => 'Alert rule deleted.',
     ],
 ];
