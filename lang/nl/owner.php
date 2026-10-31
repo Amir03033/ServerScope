@@ -32,7 +32,7 @@ return [
         'analyze' => ['title' => 'Afwijkingen en voorspellingen berekenen', 'when' => 'Foutzoeken: draait normaal elk uur.'],
         'escalate' => ['title' => 'Onbevestigde incidenten escaleren', 'when' => 'Foutzoeken: draait normaal ingepland.'],
         'prune_dry' => ['title' => 'Tonen wat opschonen zou verwijderen', 'when' => 'Doe dit altijd eerst. Verwijdert niets.'],
-        'prune' => ['title' => 'Historie voorbij de bewaartermijn verwijderen', 'when' => 'Past de algemene en de plan-bewaartermijn toe (Free 30 dagen). Niet terug te draaien; draait dagelijks vanzelf.'],
+        'prune' => ['title' => 'Historie voorbij de bewaartermijn verwijderen', 'when' => 'Past de algemene en de plan-bewaartermijn toe (Free 14 dagen). Niet terug te draaien; draait dagelijks vanzelf.'],
         'release_list' => ['title' => 'Agentreleases tonen', 'when' => 'Zie welke agentversies beschikbaar of ingetrokken zijn.'],
         'release_import' => ['title' => 'Ondertekende agentrelease importeren', 'when' => 'Als je een nieuwe agentversie uitbrengt.'],
         'release_withdraw' => ['title' => 'Agentrelease intrekken', 'when' => 'Als een release slecht blijkt. Servers krijgen hem niet meer aangeboden.'],

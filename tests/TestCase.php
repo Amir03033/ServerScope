@@ -20,6 +20,13 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // Tests must not depend on the commercial Free limits (config 'plans'):
+        // they get generous ones. Tests of the limits set their own values, and
+        // PlanDefaultsTest pins the real numbers.
+        foreach (['servers', 'domains', 'pages_per_website', 'status_pages'] as $limit) {
+            config(["serverscope.plans.free.limits.{$limit}" => 1000]);
+        }
+
         config(['app.locale' => $this->locale]);
         app()->setLocale($this->locale);
 
