@@ -24,7 +24,7 @@ return [
         'delete_confirm' => 'Gebruiker :email verwijderen?',
         'delete' => 'Verwijderen',
         'invite_title' => 'Gebruiker uitnodigen',
-        'invite_text' => 'De gebruiker ontvangt een e-mail om zelf een wachtwoord in te stellen.',
+        'invite_text' => 'De persoon ontvangt een uitnodiging per e-mail (7 dagen geldig) en wordt lid van dit team door die te accepteren.',
         'name' => 'Naam',
         'email' => 'E-mailadres',
         'is_admin' => 'Beheerder',

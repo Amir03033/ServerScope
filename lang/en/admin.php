@@ -24,7 +24,7 @@ return [
         'delete_confirm' => 'Delete user :email?',
         'delete' => 'Delete',
         'invite_title' => 'Invite user',
-        'invite_text' => 'The user receives an e-mail to set their own password.',
+        'invite_text' => 'The person receives an invitation by e-mail (valid for 7 days) and joins this team by accepting it.',
         'name' => 'Name',
         'email' => 'E-mail address',
         'is_admin' => 'Administrator',
