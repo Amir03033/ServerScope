@@ -44,6 +44,18 @@ class BillingManager
         return filled($id) ? (string) $id : null;
     }
 
+    /** The configured price as shown to the customer, like "€ 19,00", or null. */
+    public function displayPrice(string $plan, string $interval): ?string
+    {
+        $value = $this->priceId($plan, $interval);
+
+        if ($value === null || preg_match('/\A\d{1,6}\.\d{2}\z/', $value) !== 1) {
+            return null;
+        }
+
+        return \App\Models\Invoice::money((int) str_replace('.', '', $value), strtoupper((string) config('serverscope.billing.currency', 'EUR')));
+    }
+
     public function canCheckout(string $plan, string $interval): bool
     {
         return $this->enabled() && in_array($plan, ['pro', 'premium'], true)

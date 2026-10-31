@@ -10,6 +10,7 @@ return [
     'renews' => 'renews on :date',
     'cancels' => 'ends at the end of the period',
     'interval' => ['month' => 'monthly', 'year' => 'yearly'],
+    'price_per' => ['month' => 'per month', 'year' => 'per year'],
     'pay' => 'Pay and activate',
     'cancel' => 'Cancel subscription',
     'cancel_note' => 'Your plan stays until the end of the paid period, then you return to Free. Your data stays; only the limits change, and history older than the Free retention is removed.',

@@ -155,4 +155,17 @@ class MollieProviderTest extends TestCase
         Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), '/subscriptions') && $r['startDate'] === '2026-11-30');
         \Illuminate\Support\Carbon::setTestNow();
     }
+
+    public function test_the_billing_page_shows_the_price_next_to_each_option(): void
+    {
+        $team = Team::query()->create(['name' => 'P', 'plan' => 'pro', 'plan_status' => 'pending_payment']);
+        config(['serverscope.billing.prices.premium.month' => '49.00', 'serverscope.billing.prices.premium.year' => '490.00']);
+
+        $html = $this->actingAs($this->owner($team))->get(route('billing.show'))->assertOk()->getContent();
+
+        foreach (['€ 19,00', '€ 190,00', '€ 49,00', '€ 490,00'] as $price) {
+            $this->assertStringContainsString($price, $html);
+        }
+        $this->assertSame(4, substr_count($html, 'data-testid="price"'));
+    }
 }

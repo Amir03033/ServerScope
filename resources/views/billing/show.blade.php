@@ -23,6 +23,9 @@
                         <input type="hidden" name="plan" value="{{ $plan }}">
                         <input type="hidden" name="interval" value="{{ $interval }}">
                         <strong>{{ __('plans.names.'.$plan) }}</strong> · {{ __('billing.interval.'.$interval) }}
+                        @if ($prices[$plan][$interval] ?? null)
+                            <div class="mt-1 text-lg font-semibold" data-testid="price">{{ $prices[$plan][$interval] }} <span class="text-sm font-normal text-muted">{{ __('billing.price_per.'.$interval) }}</span></div>
+                        @endif
                         <button type="submit" class="ss-btn ss-btn-primary mt-3 w-full">{{ __('billing.pay') }}</button>
                     </form>
                 @endforeach

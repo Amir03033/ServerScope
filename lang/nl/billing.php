@@ -10,6 +10,7 @@ return [
     'renews' => 'verlengt op :date',
     'cancels' => 'eindigt aan het einde van de periode',
     'interval' => ['month' => 'per maand', 'year' => 'per jaar'],
+    'price_per' => ['month' => 'per maand', 'year' => 'per jaar'],
     'pay' => 'Betalen en activeren',
     'cancel' => 'Abonnement opzeggen',
     'cancel_note' => 'Je abonnement loopt door tot het einde van de betaalde periode, daarna ga je terug naar Free. Je gegevens blijven; alleen de limieten veranderen en historie ouder dan de Free-bewaartermijn wordt verwijderd.',

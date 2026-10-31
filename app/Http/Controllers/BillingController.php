@@ -26,6 +26,7 @@ class BillingController extends Controller
         return view('billing.show', [
             'team' => $team,
             'enabled' => $billing->enabled(),
+            'prices' => collect(['pro', 'premium'])->mapWithKeys(fn ($p) => [$p => collect(['month', 'year'])->mapWithKeys(fn ($i) => [$i => $billing->displayPrice($p, $i)])->all()])->all(),
             'subscription' => Subscription::query()->where('team_id', $team->id)->latest('id')->first(),
             'options' => collect(['pro', 'premium'])->mapWithKeys(fn ($p) => [$p => collect(['month', 'year'])->filter(fn ($i) => $billing->canCheckout($p, $i))->values()->all()]),
         ]);
