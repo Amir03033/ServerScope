@@ -17,6 +17,7 @@ return [
     'flash' => [
         'unavailable' => 'This plan cannot be bought right now.',
         'no_subscription' => 'There is no active subscription.',
+        'cancel_failed' => 'Cancelling did not work. Please try again later.',
         'cancel_scheduled' => 'Your subscription will end at the end of the paid period.',
     ],
 ];

@@ -38,7 +38,13 @@ class BillingController extends Controller
         }
 
         $team = Team::query()->findOrFail(Tenant::id());
-        $url = $billing->provider()->checkoutUrl($team, $plan, $interval, route('billing.show'));
+        try {
+            $url = $billing->provider()->checkoutUrl($team, $plan, $interval, route('billing.show'));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('billing.flash.unavailable'));
+        }
 
         return redirect()->away($url);
     }
@@ -52,7 +58,14 @@ class BillingController extends Controller
             return back()->with('error', __('billing.flash.no_subscription'));
         }
 
-        $billing->provider()->cancel($sub);
+        try {
+            $billing->provider()->cancel($sub);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', __('billing.flash.cancel_failed'));
+        }
+
         $sub->update(['cancel_at_period_end' => true]);
 
         return back()->with('success', __('billing.flash.cancel_scheduled'));

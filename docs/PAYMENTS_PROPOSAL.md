@@ -7,7 +7,13 @@
 en `serverscope:billing:expire-grace`. Alle sleutels, prijs-ID's en KvK/btw-gegevens komen uit `.env`
 (zie `.env.example`, blok "Billing").
 
-**Nog te doen na KvK en providerkeuze:** een driver in `App\Billing\Providers` (checkoutUrl,
+**Mollie-driver (gebouwd, getest tegen een nagebootste API):** eerste betaling via iDEAL/kaart, na `paid` maakt
+de webhook een Mollie-abonnement aan dat per incasso verlengt; verlengingen komen als eigen betalingen binnen;
+mislukte verlenging = coulanceperiode, opzeggen = doorlopen tot einde periode. Mollie-webhooks bevatten alleen een
+betaal-id en geen handtekening: de betaling wordt opnieuw bij Mollie opgehaald, de URL bevat een geheim token en het
+betaalde bedrag moet gelijk zijn aan de ingestelde prijs. De prijs-variabelen bevatten bij Mollie het bedrag (bijv. `19.00`).
+
+**Oud lijstje (nu grotendeels gedaan, alleen invullen en echt testen):** een driver in `App\Billing\Providers` (checkoutUrl,
 parseWebhook met handtekeningcontrole, cancel), registreren in `BillingManager::DRIVERS`,
 `.env` invullen, `SERVERSCOPE_BILLING_ENABLED=true`, factuur/btw volgens sectie 5. Die driver is niet
 gebouwd en dus ook niet getest tegen een echte provider.

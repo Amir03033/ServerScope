@@ -340,7 +340,7 @@ return [
 
     'billing' => [
         'enabled' => (bool) env('SERVERSCOPE_BILLING_ENABLED', false),
-        // none | (future) mollie | stripe. Drivers live in App\Billing\Providers.
+        // none | mollie. Drivers live in App\Billing\Providers.
         'driver' => env('SERVERSCOPE_BILLING_DRIVER', 'none'),
         'webhook_secret' => env('SERVERSCOPE_BILLING_WEBHOOK_SECRET'),
         'api_key' => env('SERVERSCOPE_BILLING_API_KEY'),

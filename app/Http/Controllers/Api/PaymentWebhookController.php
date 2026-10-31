@@ -20,7 +20,8 @@ class PaymentWebhookController extends Controller
 
         try {
             $event = $billing->provider()->parseWebhook($request);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            report($e);
             return response('invalid', 400);
         }
 

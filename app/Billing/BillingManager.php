@@ -21,6 +21,7 @@ class BillingManager
     /** driver name => provider class. Add Mollie/Stripe here once chosen. */
     public const DRIVERS = [
         'none' => NullProvider::class,
+        'mollie' => \App\Billing\Providers\MollieProvider::class,
     ];
 
     public function enabled(): bool
@@ -118,6 +119,15 @@ class BillingManager
         $count = 0;
 
         Subscription::query()->where('status', 'past_due')->where('updated_at', '<', $cutoff)->get()->each(function (Subscription $sub) use (&$count): void {
+            $sub->update(['status' => 'canceled']);
+            if ($sub->team) {
+                $this->downgrade($sub->team);
+                $count++;
+            }
+        });
+
+        // Cancelled subscriptions end when the paid period is over.
+        Subscription::query()->where('status', 'active')->where('cancel_at_period_end', true)->where('current_period_end', '<', now())->get()->each(function (Subscription $sub) use (&$count): void {
             $sub->update(['status' => 'canceled']);
             if ($sub->team) {
                 $this->downgrade($sub->team);

@@ -17,6 +17,7 @@ return [
     'flash' => [
         'unavailable' => 'Dit abonnement kan nu niet worden afgesloten.',
         'no_subscription' => 'Er is geen actief abonnement.',
+        'cancel_failed' => 'Opzeggen is niet gelukt. Probeer het later opnieuw.',
         'cancel_scheduled' => 'Je abonnement eindigt aan het einde van de betaalde periode.',
     ],
 ];
