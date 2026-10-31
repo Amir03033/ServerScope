@@ -40,10 +40,14 @@ class ServerRegistrationController extends Controller
 
         unset($validated['credential_name']);
 
-        $result = $registrationService->register(
-            $validated,
-            $credentialName,
-        );
+        try {
+            $result = $registrationService->register(
+                $validated,
+                $credentialName,
+            );
+        } catch (\App\Support\PlanLimitException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
 
         return response()->json([
             'message' => 'Server succesvol geregistreerd.',

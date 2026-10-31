@@ -6,6 +6,11 @@
 
     <form method="POST" action="{{ route('register') }}" class="mt-6 grid gap-4">
         @csrf
+        <input type="hidden" name="plan" value="{{ $plan }}">
+        <div class="rounded-md border border-line p-3 text-sm" data-testid="chosen-plan">
+            <strong>{{ __('plans.register.chosen', ['plan' => __('plans.names.'.$plan)]) }}</strong>
+            <div class="mt-1 text-muted">{{ $plan === 'free' ? __('plans.register.free_note') : __('plans.register.paid_note') }}</div>
+        </div>
         <div>
             <label class="ss-label" for="name">{{ __('auth.fields.name') }}</label>
             <input id="name" class="ss-input mt-1.5" type="text" name="name" value="{{ old('name') }}" autocomplete="name" required autofocus>

@@ -274,6 +274,56 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Plans (free | pro | premium)
+    |--------------------------------------------------------------------------
+    |
+    | The one place that defines what a plan allows (see App\Support\PlanLimits).
+    | null = unlimited. A team on Pro or Premium with plan_status
+    | pending_payment gets the Free limits until payment is confirmed.
+    | The keys must match the plan keys of the marketing site. Payment is
+    | not built yet: nothing sets plan_status to active except an operator.
+    | The values below are proposals: align them with the pricing page.
+    |
+    */
+
+    'plans' => [
+        'free' => [
+            'limits' => [
+                'servers' => 3,
+                'domains' => 5,
+                'pages_per_website' => 25,
+                'status_pages' => 1,
+                'min_interval_minutes' => 5,
+                'retention_days' => 30,
+            ],
+            'features' => [],
+        ],
+        'pro' => [
+            'limits' => [
+                'servers' => 25,
+                'domains' => 50,
+                'pages_per_website' => 250,
+                'status_pages' => 5,
+                'min_interval_minutes' => 1,
+                'retention_days' => 365,
+            ],
+            'features' => ['api_tokens', 'webhooks'],
+        ],
+        'premium' => [
+            'limits' => [
+                'servers' => 250,
+                'domains' => 1000,
+                'pages_per_website' => 1000,
+                'status_pages' => 25,
+                'min_interval_minutes' => 1,
+                'retention_days' => null,
+            ],
+            'features' => ['api_tokens', 'webhooks'],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Server enrollment (install.sh)
     |--------------------------------------------------------------------------
     |

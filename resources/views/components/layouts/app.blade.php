@@ -225,6 +225,14 @@
                 @endisset
             </div>
 
+            @php($planTeam = $user?->current_team_id ? \App\Models\Team::query()->find($user->current_team_id) : null)
+            @if ($planTeam?->isPendingPayment())
+                <div class="ss-alert ss-alert-warning mb-5" role="status" data-testid="plan-pending-banner">
+                    <svg class="ico"><use href="#i-alert"/></svg>
+                    <div>{{ __('plans.banner.pending', ['plan' => __('plans.names.'.$planTeam->plan)]) }}</div>
+                </div>
+            @endif
+
             @if ($flash && (session('success') || session('error') || $errors->any()))
                 <div class="mb-5 grid gap-3">
                     @if (session('success'))

@@ -87,7 +87,11 @@ class ServerController extends Controller
         $credentialName = $validated['credential_name'];
         unset($validated['credential_name']);
 
-        $result = $registration->register($validated, $credentialName);
+        try {
+            $result = $registration->register($validated, $credentialName);
+        } catch (\App\Support\PlanLimitException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         Audit::log('server.created', "Server {$result['server']->name} geregistreerd", $result['server'], [
             'hostname' => $result['server']->hostname,

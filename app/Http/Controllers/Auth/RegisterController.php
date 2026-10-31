@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Team;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\PlanLimits;
 use App\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,11 +24,11 @@ use Illuminate\View\View;
  */
 class RegisterController extends Controller
 {
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->ensureEnabled();
 
-        return view('auth.register');
+        return view('auth.register', ['plan' => PlanLimits::normalize($request->query('plan'))]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -41,8 +42,14 @@ class RegisterController extends Controller
             'password' => ['required', 'confirmed', Password::min(12)->mixedCase()->numbers()],
         ]);
 
-        $user = DB::transaction(function () use ($validated): User {
-            $team = Team::query()->create(['name' => $validated['team']]);
+        // The submitted plan is only a wish: it is whitelisted here and
+        // grants nothing. Paid plans stay pending (Free limits) until a
+        // payment confirms them.
+        $plan = PlanLimits::normalize($request->input('plan'));
+        $planStatus = $plan === PlanLimits::FREE ? PlanLimits::ACTIVE : PlanLimits::PENDING_PAYMENT;
+
+        $user = DB::transaction(function () use ($validated, $plan, $planStatus): User {
+            $team = Team::query()->create(['name' => $validated['team'], 'plan' => $plan, 'plan_status' => $planStatus]);
 
             $user = new User;
             $user->name = $validated['name'];
@@ -53,7 +60,7 @@ class RegisterController extends Controller
             $user->save();
             $user->teams()->attach($team->id, ['role' => 'owner']);
 
-            Tenant::run($team, fn () => Audit::log('team.registered', "Team {$team->name} geregistreerd door {$user->email}", $user));
+            Tenant::run($team, fn () => Audit::log('team.registered', "Team {$team->name} geregistreerd door {$user->email} (plan {$team->plan}, {$team->plan_status})", $user));
 
             return $user;
         });

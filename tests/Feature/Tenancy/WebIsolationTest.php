@@ -231,6 +231,8 @@ class WebIsolationTest extends TestCase
     public function test_resources_of_another_team_cannot_be_linked(): void
     {
         $admin = $this->a['admin'];
+        // This test is about isolation, not plan limits (team A already has a status page).
+        config(['serverscope.plans.free.limits.status_pages' => null]);
 
         // Status page component
         $this->actingAs($admin)->post(route('status-pages.store'), [

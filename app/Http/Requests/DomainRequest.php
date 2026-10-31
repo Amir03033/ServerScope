@@ -42,7 +42,7 @@ class DomainRequest extends FormRequest
 
     public function rules(): array
     {
-        $min = (int) config('serverscope.monitoring.min_interval_minutes', 1);
+        $min = \App\Support\PlanLimits::minIntervalMinutes();
 
         $rules = [
             'name' => ['required', 'string', 'max:253'],
@@ -103,6 +103,8 @@ class DomainRequest extends FormRequest
                 // The limit applies per team.
                 if ($this->isMethod('post') && Domain::withTrashed()->where('team_id', Tenant::id())->count() >= (int) config('serverscope.monitoring.max_domains', 1000)) {
                     $validator->errors()->add('name', __('domains.validation.limit'));
+                } elseif ($this->isMethod('post') && \App\Support\PlanLimits::reached('domains', Domain::query()->count())) {
+                    $validator->errors()->add('name', __('plans.limit.domains', ['limit' => \App\Support\PlanLimits::limit('domains')]));
                 }
             },
         ];

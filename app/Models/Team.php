@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
  */
 class Team extends Model
 {
-    protected $fillable = ['name', 'slug'];
+    protected $fillable = ['name', 'slug', 'plan', 'plan_status'];
 
     protected function casts(): array
     {
@@ -39,6 +39,16 @@ class Team extends Model
                 'is_enabled' => true,
             ]));
         });
+    }
+
+    public function effectivePlan(): string
+    {
+        return \App\Support\PlanLimits::effectivePlan($this);
+    }
+
+    public function isPendingPayment(): bool
+    {
+        return \App\Support\PlanLimits::pendingPayment($this);
     }
 
     public function users(): BelongsToMany

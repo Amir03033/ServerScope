@@ -32,12 +32,17 @@ class AgentEnrollmentController extends Controller
         ]);
 
         $token = $request->input('token');
-        $result = is_string($token) ? $enrollment->redeem($token, [
-            'hostname' => strtolower(rtrim(trim($facts['hostname']), '.')),
-            'os' => trim($facts['os']),
-            'arch' => $facts['arch'],
-            'agent_version' => $facts['agent_version'],
-        ], $request->ip()) : null;
+        try {
+            $result = is_string($token) ? $enrollment->redeem($token, [
+                'hostname' => strtolower(rtrim(trim($facts['hostname']), '.')),
+                'os' => trim($facts['os']),
+                'arch' => $facts['arch'],
+                'agent_version' => $facts['agent_version'],
+            ], $request->ip()) : null;
+        } catch (\App\Support\PlanLimitException $e) {
+            // The token stays usable (the claim was rolled back).
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
 
         if ($result === null) {
             return response()->json(['message' => self::NEUTRAL], 401);

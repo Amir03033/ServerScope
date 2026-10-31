@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Team;
+use App\Support\PlanLimits;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -70,8 +72,62 @@ class PruneMonitoringData extends Command
             $total += $deleted;
         }
 
+        $total += $this->prunePlanRetention($dryRun);
+
         $this->info(($dryRun ? 'Totaal te verwijderen: ' : 'Totaal verwijderd: ').$total);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Plan retention (config serverscope.plans): the history of a team
+     * is kept no longer than its effective plan allows, on top of any
+     * global retention above. Only the largest tables are covered:
+     * metric samples and domain checks.
+     */
+    private function prunePlanRetention(bool $dryRun): int
+    {
+        $total = 0;
+        $targets = [
+            'metric_samples' => ['servers', 'server_id', 'collected_at'],
+            'domain_checks' => ['domains', 'domain_id', 'checked_at'],
+        ];
+
+        foreach (Team::query()->orderBy('id')->get() as $team) {
+            $days = PlanLimits::limit('retention_days', $team);
+
+            if ($days === null || $days <= 0) {
+                continue;
+            }
+
+            $cutoff = now()->subDays((int) $days);
+
+            foreach ($targets as $table => [$parent, $fk, $column]) {
+                $query = fn () => DB::table($table)
+                    ->whereIn($fk, fn ($q) => $q->select('id')->from($parent)->where('team_id', $team->id))
+                    ->where($column, '<', $cutoff);
+
+                if ($dryRun) {
+                    $count = $query()->count();
+                    $total += $count;
+                    $this->line("{$table} (team {$team->id}, plan {$team->effectivePlan()}): {$count} rijen ouder dan {$days} dagen zouden worden verwijderd");
+
+                    continue;
+                }
+
+                $deleted = 0;
+
+                do {
+                    $ids = $query()->orderBy('id')->limit(5000)->pluck('id');
+                    $batch = $ids->isEmpty() ? 0 : DB::table($table)->whereIn('id', $ids)->delete();
+                    $deleted += $batch;
+                } while ($batch > 0);
+
+                $total += $deleted;
+                $this->line("{$table} (team {$team->id}, plan {$team->effectivePlan()}): {$deleted} rijen verwijderd (ouder dan {$days} dagen)");
+            }
+        }
+
+        return $total;
     }
 }

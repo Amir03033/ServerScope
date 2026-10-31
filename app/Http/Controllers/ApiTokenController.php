@@ -20,6 +20,10 @@ class ApiTokenController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if (! \App\Support\PlanLimits::allows('api_tokens')) {
+            return back()->with('error', __('plans.feature.api_tokens'));
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'abilities' => ['required', 'array', 'min:1'],

@@ -248,6 +248,16 @@ Remaining, by priority:
    someone else's address. **Fix before enabling registration**: verify
    the address before the account can be used.
 
+### Plans (phase 1, no payment yet)
+- `teams.plan` (free | pro | premium) and `teams.plan_status` (active |
+  pending_payment). `/register?plan=` is whitelisted server-side (unknown =
+  free); free is active at once, pro/premium start `pending_payment`.
+- Limits live in `config/serverscope.php` (`plans`) and are applied through
+  `App\Support\PlanLimits`; a pending team gets the Free limits. The default
+  team is exempt. The values are proposals; nothing enforced them before.
+- Nothing sets `plan_status` to active yet (payment is phase 2).
+- Registration stays off: blockers 1, 2 and 9 above are still open.
+
 ### Flags (both off by default)
 Do not enable registration before blockers 1, 2 and 9 are fixed, nor
 invitations before blockers 2 and 8 are fixed.

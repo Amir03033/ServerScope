@@ -42,6 +42,10 @@ class StatusPageController extends Controller
     {
         Gate::authorize('admin');
 
+        if (\App\Support\PlanLimits::reached('status_pages', StatusPage::query()->count())) {
+            return back()->withInput()->with('error', __('plans.limit.status_pages', ['limit' => \App\Support\PlanLimits::limit('status_pages')]));
+        }
+
         $page = DB::transaction(function () use ($request) {
             $page = StatusPage::query()->create([...$this->validated($request), 'created_by' => $request->user()->id]);
             $this->syncComponents($page, $request);
