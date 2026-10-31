@@ -73,6 +73,7 @@ class InvitationController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'password' => ['required', 'confirmed', Password::min(12)->mixedCase()->numbers()],
+            ...\App\Support\Legal::rules(),
         ]);
 
         $user = DB::transaction(function () use ($invitation, $data): User {
@@ -84,6 +85,7 @@ class InvitationController extends Controller
             $user->is_admin = in_array($invitation->role, ['owner', 'admin'], true);
             $user->current_team_id = $invitation->team_id;
             $user->locale = app()->getLocale();
+            \App\Support\Legal::stamp($user);
             $user->save();
             $user->teams()->attach($invitation->team_id, ['role' => $invitation->role]);
             $invitation->update(['accepted_at' => now()]);

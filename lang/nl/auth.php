@@ -85,4 +85,9 @@ return [
         'attempt' => ['subject' => 'Iemand probeerde te registreren met je adres', 'line1' => 'Iemand probeerde een ServerScope-account aan te maken met dit e-mailadres, maar je hebt al een account.', 'action' => 'Wachtwoord opnieuw instellen', 'line2' => 'Was jij dit niet? Dan kun je deze e-mail negeren.'],
     ],
 
+    'terms' => [
+        'label' => 'Ik ga akkoord met de :terms en de :privacy.',
+        'terms' => 'algemene voorwaarden',
+        'privacy' => 'privacyverklaring',
+    ],
 ];

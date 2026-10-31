@@ -31,6 +31,7 @@
             <label class="ss-label" for="password_confirmation">{{ __('auth.fields.password_confirmation') }}</label>
             <input id="password_confirmation" class="ss-input mt-1.5" type="password" name="password_confirmation" autocomplete="new-password" required>
         </div>
+        @include('auth._terms')
         <button type="submit" class="ss-btn ss-btn-primary w-full">{{ __('auth.register.title') }}</button>
     </form>
     <div class="mt-5 text-sm"><a class="text-accent underline-offset-2 hover:underline" href="{{ route('login') }}">{{ __('auth.register.have_account') }}</a></div>

@@ -262,6 +262,15 @@ return [
     |
     */
 
+    // Terms and privacy links shown (and required) at sign-up once both are set.
+    // No legal text is part of the app; these point to your published pages.
+    'legal' => [
+        'terms_url' => env('SERVERSCOPE_TERMS_URL'),
+        'privacy_url' => env('SERVERSCOPE_PRIVACY_URL'),
+        // Change when the terms change materially; stored with each acceptance.
+        'version' => env('SERVERSCOPE_LEGAL_VERSION', '1'),
+    ],
+
     'tenancy' => [
         'registration_enabled' => (bool) env('SERVERSCOPE_REGISTRATION_ENABLED', false),
         // Automated tests only: records created without any team context

@@ -40,6 +40,7 @@ class RegisterController extends Controller
             'team' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'confirmed', Password::min(12)->mixedCase()->numbers()],
+            ...\App\Support\Legal::rules(),
         ]);
 
         $email = strtolower(trim($validated['email']));
@@ -71,6 +72,7 @@ class RegisterController extends Controller
             $user->is_admin = true;
             $user->current_team_id = $team->id;
             $user->locale = app()->getLocale();
+            \App\Support\Legal::stamp($user);
             $user->save();
             $user->teams()->attach($team->id, ['role' => 'owner']);
 

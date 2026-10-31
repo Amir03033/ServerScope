@@ -90,4 +90,9 @@ return [
         'attempt' => ['subject' => 'Someone tried to register with your address', 'line1' => 'Someone tried to create a ServerScope account with this email address, but you already have an account.', 'action' => 'Reset my password', 'line2' => 'If this was not you, you can ignore this email.'],
     ],
 
+    'terms' => [
+        'label' => 'I accept the :terms and the :privacy.',
+        'terms' => 'terms and conditions',
+        'privacy' => 'privacy statement',
+    ],
 ];
