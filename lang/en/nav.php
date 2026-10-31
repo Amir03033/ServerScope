@@ -31,6 +31,7 @@ return [
         'audit_log' => 'Audit log',
         'system_health' => 'System status',
         'agent_releases' => 'Agent releases',
+        'owner_commands' => 'Owner commands',
         'notifications' => 'Notifications',
         'profile' => 'Profile',
     ],

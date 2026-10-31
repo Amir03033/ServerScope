@@ -20,6 +20,7 @@
         ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'i-users', 'label' => 'users', 'admin' => true],
         ['route' => 'audit-logs.index', 'match' => 'audit-logs.*', 'icon' => 'i-history', 'label' => 'audit_log', 'admin' => true],
         ['route' => 'system-health', 'match' => 'system-health', 'icon' => 'i-pulse', 'label' => 'system_health', 'admin' => true, 'platform' => true],
+        ['route' => 'platform.commands', 'match' => 'platform.commands', 'icon' => 'i-sliders', 'label' => 'owner_commands', 'platform' => true],
         ['route' => 'platform.agent-releases', 'match' => 'platform.agent-releases', 'icon' => 'i-key', 'label' => 'agent_releases', 'platform' => true],
     ];
 

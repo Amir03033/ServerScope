@@ -150,6 +150,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
 
         return view('system-health', ['report' => $health->report($platform ? null : \App\Tenancy\Tenant::id())]);
     })->name('system-health');
+    Route::get('/platform/commands', \App\Http\Controllers\OwnerCommandsController::class)->name('platform.commands');
     Route::get('/platform/agent-releases', \App\Http\Controllers\AgentReleaseOverviewController::class)->name('platform.agent-releases');
 
     Route::post('/teams/{team}/switch', [\App\Http\Controllers\TeamController::class, 'switch'])->middleware('throttle:20,1')->name('teams.switch');
