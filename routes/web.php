@@ -261,6 +261,9 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('/incidents/create', [IncidentController::class, 'create'])->name('incidents.create');
     Route::post('/incidents', [IncidentController::class, 'store'])->name('incidents.store');
     Route::get('/incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
+    Route::post('/incidents/{incident}/analysis', [IncidentController::class, 'requestAnalysis'])->middleware('throttle:10,1')->name('incidents.analysis');
+    Route::post('/incidents/{incident}/learning', [IncidentController::class, 'saveLearning'])->middleware('throttle:30,1')->name('incidents.learning');
+    Route::get('/incidents/{incident}/time-machine', [IncidentController::class, 'timeMachine'])->middleware('throttle:30,1')->name('incidents.time-machine');
     Route::post('/incidents/{incident}/status', [IncidentController::class, 'transition'])->name('incidents.transition');
     Route::post('/incidents/{incident}/assign', [IncidentController::class, 'assign'])->name('incidents.assign');
     Route::post('/incidents/{incident}/detach', [IncidentController::class, 'detach'])->name('incidents.detach');
@@ -268,6 +271,10 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::post('/incidents/{incident}/comments', [IncidentController::class, 'comment'])
         ->middleware('throttle:30,1')
         ->name('incidents.comment');
+
+    Route::post('/favorites', [\App\Http\Controllers\FavoriteController::class, 'toggle'])->middleware('throttle:60,1')->name('favorites.toggle');
+    Route::get('/deployments', [\App\Http\Controllers\DeploymentController::class, 'index'])->name('deployments.index');
+    Route::get('/deployments/{deployment}', [\App\Http\Controllers\DeploymentController::class, 'show'])->name('deployments.show');
 
     Route::get('/dependencies', [DependencyController::class, 'index'])->name('dependencies.index');
     Route::post('/dependencies', [DependencyController::class, 'store'])->name('dependencies.store');

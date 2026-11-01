@@ -10,6 +10,24 @@ return [
     'system' => 'System',
     'unknown' => 'unknown',
 
+    'actions' => [
+        'column' => 'Actions',
+        'menu' => 'Actions for incident #:id',
+        'view' => 'View incident',
+        'time_machine' => 'Open Time Machine',
+        'deployments' => 'Related deployments',
+        'memory' => 'Incident memory',
+        'ai' => 'AI analysis',
+        'resolve' => 'Resolve or update status',
+    ],
+    'workflow' => [
+        'title' => 'Workflow',
+        'text' => 'From investigation to a resolved, documented incident.',
+        'steps' => ['investigate' => 'Investigate', 'cause' => 'Identify the likely cause', 'resolve' => 'Resolve', 'verify' => 'Verify recovery', 'close' => 'Close and keep the lesson'],
+        'done' => 'done', 'current' => 'next step', 'todo' => 'to do',
+        'links' => ['timeline' => 'Timeline', 'actions' => 'Status actions', 'resource' => 'Current monitoring'],
+        'note' => 'Recovery is verified with live monitoring results. An AI suggestion never resolves an incident; causes count as confirmed only when someone records them so.',
+    ],
     'index' => [
         'subtitle' => 'Outages and warnings of servers and domains, with their full history.',
         'report' => 'Report incident',

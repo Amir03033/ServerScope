@@ -202,6 +202,95 @@ return [
         'anomaly_incidents' => (bool) env('SERVERSCOPE_ANOMALY_INCIDENTS', false),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Metric rollups
+    |--------------------------------------------------------------------------
+    |
+    | serverscope:rollup (hourly at :12) aggregates raw metric samples into
+    | hourly and daily rows (count, sum, min, max per metric). Anomaly
+    | detection and forecasts read the rollups for aggregated hours and
+    | raw samples only for the most recent ones, so their cost no longer
+    | grows with the raw history. Rollups have their own retention below,
+    | so they can be kept much longer than raw samples.
+    |
+    | queue: dispatch one job per server instead of running inline (only
+    | useful with supervised queue workers).
+    | initial_backfill_days: how far back the first run for a server goes;
+    | older history can be aggregated with `serverscope:rollup --from=`.
+    | read: let analytics read rollups (false = raw samples only).
+    | plan_retention_days: days of rollups kept per effective plan (null =
+    | no plan limit), on top of the global retention below. Kept apart
+    | from plans.*.limits.retention_days, which governs raw history and is
+    | what the pricing page shows. The values are proposals: align them
+    | with the pricing page and the privacy statement.
+    |
+    */
+
+    'rollups' => [
+        'queue' => (bool) env('SERVERSCOPE_ROLLUPS_QUEUE', false),
+        'initial_backfill_days' => (int) env('SERVERSCOPE_ROLLUPS_BACKFILL_DAYS', 35),
+        'read' => (bool) env('SERVERSCOPE_ROLLUPS_READ', true),
+        'plan_retention_days' => [
+            'free' => 90,
+            'pro' => 730,
+            'premium' => null,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Remote probe (Global Pulse Lite)
+    |--------------------------------------------------------------------------
+    |
+    | Central side: when a website reaches its failure threshold and the
+    | probe (serverscope:probe:create) has polled within stale_after_seconds,
+    | the incident waits up to job_ttl_seconds for the probe's own check.
+    | Without a healthy probe everything works as before.
+    | Probe side (a second installation running serverscope:probe:run):
+    | central_url, key and secret from serverscope:probe:create.
+    |
+    */
+
+    'probe' => [
+        'confirmation_enabled' => (bool) env('SERVERSCOPE_PROBE_CONFIRMATION', true),
+        'job_ttl_seconds' => (int) env('SERVERSCOPE_PROBE_JOB_TTL', 120),
+        'stale_after_seconds' => (int) env('SERVERSCOPE_PROBE_STALE_AFTER', 180),
+        'recheck_minutes' => (int) env('SERVERSCOPE_PROBE_RECHECK_MINUTES', 10),
+        'max_timeout_seconds' => (float) env('SERVERSCOPE_PROBE_MAX_TIMEOUT', 10),
+        'central_url' => env('SERVERSCOPE_PROBE_URL'),
+        'key' => env('SERVERSCOPE_PROBE_KEY'),
+        'secret' => env('SERVERSCOPE_PROBE_SECRET'),
+        'poll_seconds' => (int) env('SERVERSCOPE_PROBE_POLL_SECONDS', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI (Incident Investigator)
+    |--------------------------------------------------------------------------
+    |
+    | Off unless an API key AND a model are configured. The key is only used
+    | by the backend (App\Services\Ai). Analyses run on the queue; incident
+    | detection and notifications never wait for or depend on them.
+    | auto_min_severity: automatic analysis for new root incidents of at
+    | least this severity (null = manual only).
+    |
+    */
+
+    'ai' => [
+        'provider' => env('SERVERSCOPE_AI_PROVIDER', 'openai'),
+        'api_key' => env('OPENAI_API_KEY'),
+        'model' => env('SERVERSCOPE_AI_MODEL'),
+        'base_url' => rtrim((string) env('OPENAI_BASE_URL', 'https://api.openai.com/v1'), '/'),
+        'timeout_seconds' => (int) env('SERVERSCOPE_AI_TIMEOUT', 45),
+        'max_output_tokens' => (int) env('SERVERSCOPE_AI_MAX_OUTPUT_TOKENS', 1500),
+        'max_input_chars' => (int) env('SERVERSCOPE_AI_MAX_INPUT_CHARS', 24000),
+        'auto_min_severity' => env('SERVERSCOPE_AI_AUTO_MIN_SEVERITY', 'high'),
+        'auto_delay_seconds' => (int) env('SERVERSCOPE_AI_AUTO_DELAY', 120),
+        'manual_cooldown_minutes' => (int) env('SERVERSCOPE_AI_MANUAL_COOLDOWN', 10),
+        'max_per_team_per_hour' => (int) env('SERVERSCOPE_AI_MAX_PER_TEAM_HOUR', 20),
+    ],
+
     'reports' => [
         // Availability target shown in reports (calculated, not contractual).
         'default_target' => (float) env('SERVERSCOPE_REPORT_TARGET', 99.9),
@@ -229,6 +318,10 @@ return [
         'discovery_runs_days' => env('SERVERSCOPE_RETAIN_DISCOVERY_RUNS_DAYS'),
         'service_events_days' => env('SERVERSCOPE_RETAIN_SERVICE_EVENTS_DAYS'),
         'predictions_days' => env('SERVERSCOPE_RETAIN_PREDICTIONS_DAYS'),
+        // Rollups are small (about 1.5 MB per server per month for hourly
+        // rows) and are kept independently of raw samples.
+        'metric_rollups_hourly_days' => env('SERVERSCOPE_RETAIN_HOURLY_ROLLUPS_DAYS', 400),
+        'metric_rollups_daily_days' => env('SERVERSCOPE_RETAIN_DAILY_ROLLUPS_DAYS'),
     ],
 
     'api' => [
@@ -416,6 +509,10 @@ return [
         // without a check-in the dashboard shows it as not active.
         'updater_stale_minutes' => (int) env('SERVERSCOPE_UPDATER_STALE_MINUTES', 30),
     ],
+
+    // Public website and status page, linked from the error pages (empty = hidden).
+    'public_url' => env('SERVERSCOPE_PUBLIC_URL', 'https://serverscope.nl'),
+    'status_url' => env('SERVERSCOPE_STATUS_URL'),
 
     'docs_url' => rtrim((string) env('SERVERSCOPE_DOCS_URL', 'https://info.serverscope.nl/nl/docs'), '/'),
 

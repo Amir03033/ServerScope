@@ -17,6 +17,9 @@ return [
     'types' => [
         'server' => 'Server',
         'domain' => 'Domein',
+        'deployment' => 'Deployment',
+        'docs' => 'Documentatie',
         'incident' => 'Incident',
     ],
+    'deployments' => 'Deployments (:count)',
 ];

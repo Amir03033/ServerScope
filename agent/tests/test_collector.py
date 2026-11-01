@@ -80,3 +80,20 @@ def test_missing_counters_are_sent_as_null(mock_cpu, mock_disk_io, mock_partitio
 
     assert result["disk_read_bytes"] is None
     assert result["disk_write_bytes"] is None
+
+
+@patch("serverscope_agent.collector.psutil.disk_partitions", return_value=[])
+@patch("serverscope_agent.collector.psutil.cpu_count", return_value=8)
+@patch("serverscope_agent.collector.psutil.cpu_percent", return_value=1.0)
+def test_collect_metrics_reports_logical_cpu_count(mock_cpu, mock_count, mock_partitions):
+    result = collect_metrics()
+
+    assert result["cpu_count"] == 8
+    mock_count.assert_called_once_with(logical=True)
+
+
+@patch("serverscope_agent.collector.psutil.disk_partitions", return_value=[])
+@patch("serverscope_agent.collector.psutil.cpu_count", return_value=None)
+@patch("serverscope_agent.collector.psutil.cpu_percent", return_value=1.0)
+def test_unknown_cpu_count_is_sent_as_null(mock_cpu, mock_count, mock_partitions):
+    assert collect_metrics()["cpu_count"] is None

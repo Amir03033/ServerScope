@@ -1,9 +1,15 @@
 # ServerScope agent
 
 Collects read-only system metrics (CPU, load, memory, swap, disks, disk I/O,
-network counters and errors, process count, uptime) and, optionally, the
+network counters and errors, process count, logical CPU count, uptime) and,
+optionally, the
 state of configured services every 60 seconds and sends them over HTTPS to
 `POST /api/agent/metrics`. It executes no remote commands.
+
+`cpu_count` (logical CPUs, `psutil.cpu_count()` / `nproc` in the Bash agent)
+is stored as server metadata, not per sample. Agents that do not send it
+keep working; the server then shows no CPU count. It ships with the next
+signed agent release (the release process sets the version number).
 
 ## Install with one command (Ubuntu 22.04+ / Debian 12+, amd64 / arm64)
 

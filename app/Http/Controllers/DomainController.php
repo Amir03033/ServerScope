@@ -25,6 +25,7 @@ class DomainController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::in(['healthy', 'warning', 'critical', 'unknown', 'paused', 'deleted'])],
             'sort' => ['nullable', Rule::in(['name', 'status', 'ssl', 'expiry', 'response'])],
+            'favorites' => ['nullable', 'boolean'],
         ]);
 
         $status = $filters['status'] ?? null;
@@ -48,6 +49,10 @@ class DomainController extends Controller
             $query->where(fn ($q) => $q->where('name', 'like', $term)->when($ascii, fn ($q) => $q->orWhere('name', 'like', '%'.$ascii.'%')));
         }
 
+        if (! empty($filters['favorites'])) {
+            \App\Models\Favorite::limit($query, $request->user(), 'domain');
+        }
+
         match ($filters['sort'] ?? 'status') {
             'name' => $query->orderBy('name'),
             'ssl' => $query->orderByRaw('ssl_valid_to IS NULL')->orderBy('ssl_valid_to'),
@@ -68,14 +73,33 @@ class DomainController extends Controller
             'deleted' => Domain::onlyTrashed()->count(),
         ];
 
-        return view('domains.index', compact('domains', 'filters', 'counts', 'status'));
+        $favorites = \App\Models\Favorite::idsFor($request->user(), 'domain');
+
+        return view('domains.index', compact('domains', 'filters', 'counts', 'status', 'favorites'));
     }
 
-    public function create(): View
+    /** Settings a duplicated domain may reuse: check settings only, never identity, notes or state. */
+    public const DUPLICABLE = ['scheme', 'check_interval_minutes', 'timeout_seconds', 'failure_threshold', 'recovery_threshold',
+        'expected_status_codes', 'expected_content', 'follow_redirects', 'http_enabled', 'ssl_enabled', 'dns_enabled', 'expiry_enabled',
+        'ssl_warning_days', 'expiry_warning_days', 'notifications_enabled', 'sla_target'];
+
+    public function create(Request $request): View
     {
         Gate::authorize('admin');
 
-        return view('domains.create', ['domain' => new Domain]);
+        $domain = new Domain;
+        $source = null;
+
+        // "Duplicate configuration": prefill the form from a domain of the
+        // current team (tenant-scoped lookup); the name must be entered anew
+        // and the normal validation and plan limits apply on save.
+        if ($request->filled('from')) {
+            $source = Domain::query()->findOrFail((int) $request->query('from'));
+            $domain->forceFill(collect($source->getAttributes())->only(self::DUPLICABLE)->all());
+            $domain->syncOriginal();
+        }
+
+        return view('domains.create', ['domain' => $domain, 'duplicateOf' => $source]);
     }
 
     public function store(DomainRequest $request): RedirectResponse
@@ -121,6 +145,11 @@ class DomainController extends Controller
             'stats' => $stats,
             'daily' => $uptime->dailyBuckets($domain, 30),
             'series' => $uptime->responseSeries($domain, $now->copy()->subDay(), $now),
+            // Deployments linked to this domain, as markers on the 48 half-hour buckets.
+            // Remote probe confirmations of this domain (team-scoped).
+            'probeChecks' => \App\Models\ProbeCheck::query()->with('probe:id,name')->where('domain_id', $domain->id)->latest('requested_at')->latest('id')->limit(5)->get(),
+            'deployMarkers' => \App\Models\Deployment::query()->forResource($domain)->whereBetween('deployed_at', [$now->copy()->subDay(), $now])->limit(20)->get()
+                ->map(fn ($d) => ['index' => min(47, (int) floor(($d->deployed_at->getTimestamp() - $now->copy()->subDay()->getTimestamp()) / 1800)), 'label' => __('deployments.chart_marker').' '.$d->label()])->all(),
             'checks' => $checks,
             'type' => $type,
             'dnsRecords' => $dnsRecords,

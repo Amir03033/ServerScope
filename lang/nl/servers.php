@@ -18,6 +18,14 @@ return [
     'deleted' => 'Verwijderd',
     'deleted_server' => 'Verwijderde server',
 
+    'actions' => [
+        'menu' => 'Acties voor :name',
+        'view' => 'Details bekijken',
+        'metrics' => 'Historische metingen',
+        'incidents' => 'Gerelateerde incidenten',
+        'edit' => 'Instellingen bewerken',
+        'maintenance' => 'Onderhoudsvenster',
+    ],
     'index' => [
         'subtitle' => 'Alle gemonitorde servers, hun status en de meest recente metingen.',
         'update_all' => 'Alles bijwerken naar :version',
@@ -60,7 +68,12 @@ return [
         'end_maintenance' => 'Onderhoud beëindigen',
         'cancel_maintenance' => 'Gepland onderhoud annuleren',
         'maintenance_duration' => 'Duur onderhoud',
+        'maintenance_custom_end' => 'Eigen eindtijd',
+        'maintenance_invalid_end' => 'Kies een eindtijd van minstens 5 minuten vanaf nu en hoogstens 7 dagen vooruit.',
+        'maintenance_confirm' => 'Onderhoud voor :name nu starten? Tot de eindtijd worden voor deze server geen nieuwe meldingen en incidenten geopend.',
+        'maintenance_effect' => 'Tijdens onderhoud worden voor de resourcemetingen, agent offline en servicecontroles van deze server geen nieuwe meldingen of incidenten geopend, bij elke ernst, ook kritiek. Metingen worden gewoon verzameld. Meldingen en incidenten die al open waren lopen door en kunnen nog notificeren en escaleren; capaciteitsprognoses en de websitecontroles op deze server blijven draaien en melden. Zodra het venster afloopt zijn nieuwe meldingen weer mogelijk.',
         'durations' => [
+            'custom' => 'Eigen eindtijd',
             '30' => '30 minuten',
             '60' => '1 uur',
             '240' => '4 uur',
@@ -151,6 +164,7 @@ return [
         'ip_none' => 'Niet ingesteld',
         'os' => 'Besturingssysteem',
         'agent_version' => 'Agentversie',
+        'cpu_count' => 'CPU-kernen',
         'last_contact' => 'Laatste contact',
         'last_sample' => 'Laatste meting',
         'no_samples' => 'Geen metingen',

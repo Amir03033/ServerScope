@@ -127,6 +127,78 @@ curl -s https://serverscope.nl/api/v1/incidents?state=active \
 The monitoring agent uses a separate endpoint (`POST /api/agent/metrics`) with
 per-server agent tokens; those tokens do not work for this API.
 
+## Deployments (Deploy Judge)
+
+| Method | Path | Ability | Notes |
+|---|---|---|---|
+| `POST` | `/api/v1/deployments` | write | record a deployment; supports `Idempotency-Key` |
+| `GET` | `/api/v1/deployments` | read | newest first; filters `application`, `environment`, `per_page` (1–100) |
+| `GET` | `/api/v1/deployments/{id}` | read | the deployment plus `analysis` (before/after comparison) |
+
+Request body for `POST`:
+
+| Field | Required | Rules |
+|---|---|---|
+| `application` | yes | string, max 100 |
+| `environment` | no | `[A-Za-z0-9._-]`, max 50 (default `production`) |
+| `version` | no | string, max 100 |
+| `commit_sha` | no | 7–64 hex characters (stored lower case) |
+| `deployed_at` | no | ISO 8601; within the last 30 days and at most 5 minutes ahead (default: now) |
+| `source`, `actor` | no | strings, max 50 / 100 (e.g. `github-actions`, the user) |
+| `url` | no | http(s) URL of the run or release |
+| `external_id` | no | `[A-Za-z0-9._:/-]`, max 191; a second request with the same value returns the existing deployment (`200`) instead of creating one |
+| `resources` | yes | 1–50 items `{ "type": "server" \| "domain" \| "page" \| "service", "id": <int> }`; every resource must belong to the token's team (otherwise `422`, also for other teams' ids) |
+
+Responses: `201` created, `200` existing (same `external_id`), `401`
+invalid token, `403` token without write ability, `422` validation.
+
+**Analysis.** `analysis.status` is `pending` until 60 minutes after the
+deployment, then `regression`, `no_regression` or `insufficient_data`
+(`no_resources` when no linked resource exists any more). `analysis.checks`
+compares the 60 minutes before and after per linked resource:
+availability, HTTP 5xx share and median response time from the website's
+or page's own checks (at least 10 checks on each side), and CPU and
+memory medians from raw samples (at least 20 on each side; when raw
+samples are no longer kept, hourly averages over 3 hours from the
+rollups). A change only counts as `regression` when it exceeds a fixed
+minimum (availability −5 points, 5xx +5 points, response time +30 % and
++100 ms, CPU +15 points, memory +10 points) and, for samples, the normal
+spread before the deployment. `new_incidents` lists incidents opened on a
+linked resource within 60 minutes after the deployment, when none opened
+in the hour before. Nothing is notified. **A change after a deployment is
+not proof that the deployment caused it**; `overlapping_deployments` lists
+other deployments in the same period.
+
+```sh
+curl -sS -X POST https://serverscope.nl/api/v1/deployments \
+  -H "Authorization: Bearer $SERVERSCOPE_API_TOKEN" \
+  -H "Content-Type: application/json" -H "Accept: application/json" \
+  -H "Idempotency-Key: deploy-shop-1f3a9c2" \
+  -d '{"application":"shop","environment":"production","version":"1.4.2","commit_sha":"1f3a9c2","resources":[{"type":"server","id":3},{"type":"domain","id":7}]}'
+```
+
+### GitHub Actions example
+
+Store an API token with the write ability as the secret
+`SERVERSCOPE_API_TOKEN`, and add this step after the deploy step:
+
+```yaml
+      - name: Record deployment in ServerScope
+        if: success()
+        env:
+          SERVERSCOPE_API_TOKEN: ${{ secrets.SERVERSCOPE_API_TOKEN }}
+        run: |
+          curl -sS --fail-with-body -X POST https://serverscope.nl/api/v1/deployments \
+            -H "Authorization: Bearer $SERVERSCOPE_API_TOKEN" \
+            -H "Content-Type: application/json" -H "Accept: application/json" \
+            -H "Idempotency-Key: gh-${{ github.run_id }}-${{ github.run_attempt }}" \
+            -d "{\"application\":\"${{ github.event.repository.name }}\",\"environment\":\"production\",\"version\":\"${{ github.ref_name }}\",\"commit_sha\":\"${{ github.sha }}\",\"source\":\"github-actions\",\"actor\":\"${{ github.actor }}\",\"url\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"external_id\":\"gh-${{ github.run_id }}\",\"resources\":[{\"type\":\"server\",\"id\":3}]}"
+```
+
+Deployments appear under **Deployments**, as markers on the domain
+response-time chart and the Time Machine charts, on the server page, and in
+the Time Machine timeline of incidents on the linked resources.
+
 ## Webhooks
 
 Administrators configure endpoints under **Beheer → Webhooks**. Events:

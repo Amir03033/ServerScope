@@ -587,7 +587,19 @@ if (searchDialog && typeof searchDialog.showModal === 'function') {
         list.replaceChildren();
         active = -1;
 
+        let group = null;
+
         results.forEach((result, i) => {
+            // A heading per resource type (not selectable).
+            if (result.type !== group) {
+                group = result.type;
+                const heading = document.createElement('li');
+                heading.setAttribute('role', 'presentation');
+                heading.className = 'px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted';
+                heading.textContent = types[result.type] || result.type;
+                list.append(heading);
+            }
+
             const li = document.createElement('li');
             li.id = `quick-search-${i}`;
             li.setAttribute('role', 'option');
@@ -654,7 +666,11 @@ if (searchDialog && typeof searchDialog.showModal === 'function') {
             const data = await response.json();
             if (input.value.trim() === q) render(q, data.results || []);
         } catch (error) {
-            if (error.name !== 'AbortError') showStatus('');
+            // A failed request is an error, not "no results".
+            if (error.name !== 'AbortError') {
+                list.replaceChildren();
+                showStatus(t('search.error'));
+            }
         }
     }
 
@@ -822,3 +838,33 @@ document.querySelectorAll('[data-enroll-status]').forEach((box) => {
         });
     });
 })();
+
+/* Favourites: toggle in place (the form still works without JavaScript). */
+document.querySelectorAll('[data-favorite-form]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const button = form.querySelector('button');
+        if (button.disabled) return;
+        button.disabled = true;
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+                body: new FormData(form),
+            });
+            if (!response.ok) throw new Error(String(response.status));
+            const data = await response.json();
+            button.setAttribute('aria-pressed', data.favorite ? 'true' : 'false');
+            button.setAttribute('aria-label', data.label);
+            button.title = data.label;
+            button.querySelector('svg')?.setAttribute('fill', data.favorite ? 'currentColor' : 'none');
+        } catch {
+            form.submit();
+        } finally {
+            button.disabled = false;
+        }
+    });
+});
+

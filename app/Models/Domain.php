@@ -60,6 +60,14 @@ class Domain extends Model
         'expiry_status' => 'unknown',
     ];
 
+    protected static function booted(): void
+    {
+        // Personal favourites have no foreign key to the (polymorphic)
+        // resource: remove them when the resource is permanently deleted.
+        // A soft delete keeps them, so a restore brings them back.
+        static::forceDeleted(fn (self $resource) => Favorite::forgetResource($resource));
+    }
+
     protected function casts(): array
     {
         return [

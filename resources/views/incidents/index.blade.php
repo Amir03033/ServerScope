@@ -90,13 +90,13 @@
             @else
                 <div class="ss-table-wrap">
                     <table class="ss-table ss-table-cards">
-                        <thead><tr><th scope="col">{{ __('incidents.index.col_incident') }}</th><th scope="col">{{ __('incidents.index.col_severity') }}</th><th scope="col">{{ __('incidents.index.col_status') }}</th><th scope="col">{{ __('incidents.index.col_subject') }}</th><th scope="col">{{ __('incidents.index.col_opened') }}</th><th scope="col">{{ __('incidents.index.col_duration') }}</th><th scope="col">{{ __('incidents.index.col_assigned') }}</th></tr></thead>
+                        <thead><tr><th scope="col">{{ __('incidents.index.col_incident') }}</th><th scope="col">{{ __('incidents.index.col_severity') }}</th><th scope="col">{{ __('incidents.index.col_status') }}</th><th scope="col">{{ __('incidents.index.col_subject') }}</th><th scope="col">{{ __('incidents.index.col_opened') }}</th><th scope="col">{{ __('incidents.index.col_duration') }}</th><th scope="col">{{ __('incidents.index.col_assigned') }}</th><th scope="col"><span class="sr-only">{{ __('incidents.actions.column') }}</span></th></tr></thead>
                         <tbody>
                             @foreach ($incidents as $incident)
                                 <tr>
                                     <td class="is-primary">
                                         <a class="font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>
-                                        <span class="block text-xs text-muted">#{{ $incident->id }} · {{ Label::of('incident_source', $incident->source, Incident::SOURCE_LABELS) }}@if ($incident->occurrence_count > 1){{ __('incidents.index.seen_times', ['count' => $incident->occurrence_count]) }}@endif @if ($incident->reopened_count){{ __('incidents.index.reopened_times', ['count' => $incident->reopened_count]) }}@endif @if ($incident->parent_id){{ __('incidents.index.grouped_under', ['id' => $incident->parent_id]) }}@endif @if ($incident->children_count){{ __('incidents.index.related_count', ['count' => $incident->children_count]) }}@endif</span>
+                                        <span class="block text-xs text-muted">#{{ $incident->id }} · {{ Label::of('incident_source', $incident->source, Incident::SOURCE_LABELS) }}@if ($incident->occurrence_count > 1){{ __('incidents.index.seen_times', ['count' => $incident->occurrence_count]) }}@endif @if ($incident->reopened_count){{ __('incidents.index.reopened_times', ['count' => $incident->reopened_count]) }}@endif @if ($incident->parent_id){{ __('incidents.index.grouped_under', ['id' => $incident->parent_id]) }}@endif@if ($incident->learning) · {{ __('incident_memory.list_badge.'.$incident->learning->cause_status) }}@endif @if ($incident->children_count){{ __('incidents.index.related_count', ['count' => $incident->children_count]) }}@endif</span>
                                     </td>
                                     <td data-label="{{ __('incidents.index.col_severity') }}"><x-severity :severity="$incident->severity" /></td>
                                     <td data-label="{{ __('incidents.index.col_status') }}"><x-status :status="$incident->status" /></td>
@@ -104,6 +104,23 @@
                                     <td data-label="{{ __('incidents.index.col_opened') }}" class="whitespace-nowrap" title="{{ Time::format($incident->opened_at, 'd-m-Y H:i:s') }}">{{ Time::relative($incident->opened_at) }}</td>
                                     <td data-label="{{ __('incidents.index.col_duration') }}" class="whitespace-nowrap">{{ IncidentMetrics::humanDuration($incident->resolved_at ? $incident->timeToResolve() : (int) $incident->opened_at->diffInSeconds(now(), true)) }}</td>
                                     <td data-label="{{ __('incidents.index.col_assigned') }}" class="text-sm">{{ $incident->assignee?->name ?? '—' }}</td>
+                                    <td class="is-actions">
+                                        @php
+                                            $actions = [
+                                                [__('incidents.actions.view'), route('incidents.show', $incident), 'i-siren'],
+                                                [__('incidents.actions.time_machine'), route('incidents.time-machine', $incident), 'i-history'],
+                                                [__('incidents.actions.deployments'), route('incidents.time-machine', $incident).'#timeline', 'i-flag'],
+                                                [__('incidents.actions.memory'), route('incidents.show', $incident).'#memory', 'i-list'],
+                                            ];
+                                            if ($aiAvailable) {
+                                                $actions[] = [__('incidents.actions.ai'), route('incidents.show', $incident).'#ai-analysis', 'i-pulse'];
+                                            }
+                                            if ($incident->isActive()) {
+                                                $actions[] = [__('incidents.actions.resolve'), route('incidents.show', $incident).'#workflow', 'i-check'];
+                                            }
+                                        @endphp
+                                        <x-row-actions :label="__('incidents.actions.menu', ['id' => $incident->id])" :links="$actions" />
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

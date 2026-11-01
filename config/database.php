@@ -58,6 +58,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // Session time zone: timestamps are written as UTC wall-clock
+            // values (app.timezone = UTC). Without this a server in a DST
+            // zone shifts or merges values around clock changes.
+            'timezone' => env('DB_TIMEZONE', '+00:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
@@ -78,6 +82,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // Session time zone: timestamps are written as UTC wall-clock
+            // values (app.timezone = UTC). Without this a server in a DST
+            // zone shifts or merges values around clock changes.
+            'timezone' => env('DB_TIMEZONE', '+00:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),

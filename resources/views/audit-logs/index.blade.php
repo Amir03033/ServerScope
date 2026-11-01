@@ -26,11 +26,38 @@
                     </select>
                 </div>
             </div>
-            <div><button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-search"/></svg> {{ __('admin.audit.filter') }}</button></div>
+            <div class="grid grid-cols-2 gap-3 sm:col-span-4 sm:grid-cols-4">
+                <div>
+                    <label class="ss-label" for="type">{{ __('admin.audit.resource_type') }}</label>
+                    <select id="type" class="ss-input mt-1.5" name="type"><option value="">{{ __('admin.audit.all') }}</option>
+                        @foreach ($types as $type)<option value="{{ $type }}" @selected(($filters['type'] ?? null) === $type)>{{ Lang::has('labels.resource_type.'.$type) ? __('labels.resource_type.'.$type) : class_basename($type) }}</option>@endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="ss-label" for="resource">{{ __('admin.audit.resource_id') }}</label>
+                    <input id="resource" class="ss-input mt-1.5" type="number" min="1" name="resource" value="{{ $filters['resource'] ?? '' }}">
+                </div>
+                <div>
+                    <label class="ss-label" for="from">{{ __('admin.audit.from') }}</label>
+                    <input id="from" class="ss-input mt-1.5" type="date" name="from" value="{{ $filters['from'] ?? '' }}">
+                </div>
+                <div>
+                    <label class="ss-label" for="to">{{ __('admin.audit.to') }}</label>
+                    <input id="to" class="ss-input mt-1.5" type="date" name="to" value="{{ $filters['to'] ?? '' }}">
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-search"/></svg> {{ __('admin.audit.filter') }}</button>
+                @if (array_filter($filters))<a class="ss-btn ss-btn-ghost" href="{{ route('audit-logs.index') }}">{{ __('admin.audit.clear') }}</a>@endif
+            </div>
         </form>
 
         @if ($logs->isEmpty())
-            <x-empty-state icon="i-history" :title="__('admin.audit.empty_title')">{{ __('admin.audit.empty_text') }}</x-empty-state>
+            @if (array_filter($filters))
+                <x-empty-state icon="i-search" :title="__('admin.audit.none_found')"><x-slot:actions><a class="ss-btn ss-btn-secondary" href="{{ route('audit-logs.index') }}">{{ __('admin.audit.clear') }}</a></x-slot:actions></x-empty-state>
+            @else
+                <x-empty-state icon="i-history" :title="__('admin.audit.empty_title')">{{ __('admin.audit.empty_text') }}</x-empty-state>
+            @endif
         @else
             <div class="ss-table-wrap">
                 <table class="ss-table ss-table-cards">

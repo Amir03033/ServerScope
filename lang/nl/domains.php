@@ -14,6 +14,22 @@ return [
     'expired_cap' => 'Verlopen',
     'days' => ':days d',
 
+    'duplicate_notice' => 'Instellingen gekopieerd van :name. Vul het nieuwe domein in; naam, pad, notities en geschiedenis worden niet gekopieerd.',
+    'actions' => [
+        'column' => 'Acties',
+        'menu' => 'Acties voor :name',
+        'view' => 'Details bekijken',
+        'http' => 'HTTP-beschikbaarheid',
+        'ssl' => 'SSL-certificaat',
+        'dns' => 'DNS-resultaten',
+        'expiry' => 'Domeinregistratie',
+        'incidents' => 'Gerelateerde incidenten',
+        'duplicate' => 'Configuratie dupliceren',
+        'pause' => 'Bewaking pauzeren',
+        'resume' => 'Bewaking hervatten',
+        'pause_confirm' => 'Bewaking van :name pauzeren? Tijdens de pauze draaien geen controles en worden geen incidenten geopend.',
+        'resume_confirm' => 'Bewaking van :name hervatten?',
+    ],
     'index' => [
         'subtitle' => 'Beschikbaarheid, certificaten, DNS en registratie van je domeinen.',
         'stats_label' => 'Domeinstatistieken',

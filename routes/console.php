@@ -26,9 +26,20 @@ Schedule::command('serverscope:dispatch-page-checks')
     ->everyMinute()
     ->withoutOverlapping(5);
 
+// Unanswered remote-probe confirmations fall back to a normal incident.
+Schedule::command('serverscope:probe:expire')
+    ->everyMinute()
+    ->withoutOverlapping(5);
+
 Schedule::command('serverscope:escalate-incidents')
     ->everyMinute()
     ->withoutOverlapping(5);
+
+// Aggregates the previous closed hour (hours close 11 minutes after
+// they end, see MetricRollups) into hourly and daily rollups.
+Schedule::command('serverscope:rollup')
+    ->hourlyAt(12)
+    ->withoutOverlapping(55);
 
 Schedule::command('serverscope:analyze')
     ->hourlyAt(7)

@@ -51,17 +51,21 @@
                         </button>
                     </form>
                 @else
-                    <form method="POST" action="{{ route('servers.maintenance.start', $server) }}" class="flex gap-2">
+                    <form method="POST" action="{{ route('servers.maintenance.start', $server) }}" class="flex flex-wrap items-start gap-2" data-confirm="{{ __('servers.show.maintenance_confirm', ['name' => $server->name]) }}">
                         @csrf
                         <label class="sr-only" for="duration_minutes">{{ __('servers.show.maintenance_duration') }}</label>
                         <select id="duration_minutes" name="duration_minutes" class="ss-input !w-auto !py-2 !text-sm">
-                            @foreach (['30', '60', '240', '1440'] as $minutes)
-                                <option value="{{ $minutes }}" @selected($minutes === '60')>{{ __('servers.show.durations.'.$minutes) }}</option>
+                            @foreach (['30', '60', '240', '1440', 'custom'] as $minutes)
+                                <option value="{{ $minutes }}" @selected(old('duration_minutes', '60') === $minutes)>{{ __('servers.show.durations.'.$minutes) }}</option>
                             @endforeach
                         </select>
+                        <label class="sr-only" for="ends_at">{{ __('servers.show.maintenance_custom_end') }}</label>
+                        <input id="ends_at" name="ends_at" type="datetime-local" class="ss-input !w-auto !py-2 !text-sm" value="{{ old('ends_at') }}" title="{{ __('servers.show.maintenance_custom_end') }} ({{ config('serverscope.display_timezone') }})">
                         <button type="submit" class="ss-btn ss-btn-secondary">
                             <svg class="ico"><use href="#i-wrench"/></svg> {{ __('servers.show.start_maintenance') }}
                         </button>
+                        @error('ends_at')<p class="m-0 w-full text-xs text-bad" role="alert">{{ $message }}</p>@enderror
+                        <p class="m-0 w-full max-w-md text-xs text-muted">{{ __('servers.show.maintenance_effect') }}</p>
                     </form>
                 @endif
             @endunless
@@ -111,6 +115,17 @@
         @endif
 
         {{-- Head: who it is and how it is doing --}}
+        @php
+            // Same threshold as the agent heartbeat (Server::OFFLINE_AFTER_MINUTES).
+            // Stale metrics are reported as stale, not as proof that the host is down.
+            $staleMetrics = ! $server->trashed() && ! $server->isInMaintenance() && $latestSample && $latestSample->collected_at->lt(now()->subMinutes(\App\Models\Server::OFFLINE_AFTER_MINUTES))
+                ? __('health.freshness.stale_metrics', ['age' => \App\Support\Time::relative($latestSample->collected_at)]) : null;
+        @endphp
+        <x-freshness class="mb-4" :rows="[
+            [__('health.freshness.last_metrics'), $latestSample?->collected_at],
+            [__('servers.show.last_contact'), $server->last_seen_at],
+        ]" :stale="$staleMetrics" />
+
         <section class="ss-panel flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" id="overview">
             <div class="flex min-w-0 items-center gap-4">
                 <span class="ss-stat-icon !h-12 !w-12 !basis-12 !text-2xl"><svg class="ico"><use href="#i-server"/></svg></span>
@@ -126,7 +141,11 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <span class="ss-chip">{{ Label::of('server_environment', $server->environment, Server::ENVIRONMENTS) }}</span>
-                <x-status :status="$server->trashed() ? 'closed' : $displayStatus" :label="$server->trashed() ? __('servers.deleted') : null" />
+                @if ($server->trashed())
+                    <x-status status="closed" :label="__('servers.deleted')" />
+                @else
+                    <x-health :state="\App\Support\Health::server($server, \App\Support\Health::serverIncidentSeverities([$server->id])[$server->id] ?? null)" />
+                @endif
             </div>
         </section>
 
@@ -296,6 +315,9 @@
                     <dt><svg class="ico"><use href="#i-swap"/></svg> {{ __('servers.show.ip') }}</dt><dd class="font-mono text-xs">{{ $server->ip_address ?? __('servers.show.ip_none') }}</dd>
                     <dt><svg class="ico"><use href="#i-os"/></svg> {{ __('servers.show.os') }}</dt><dd>{{ $server->operating_system ?? __('servers.unknown_cap') }}</dd>
                     <dt><svg class="ico"><use href="#i-tag"/></svg> {{ __('servers.show.agent_version') }}</dt><dd>{{ $server->agent_version ?? __('servers.unknown_cap') }}</dd>
+                    @if ($server->cpu_count)
+                        <dt><svg class="ico"><use href="#i-cpu"/></svg> {{ __('servers.show.cpu_count') }}</dt><dd>{{ $server->cpu_count }}</dd>
+                    @endif
                     <dt><svg class="ico"><use href="#i-clock"/></svg> {{ __('servers.show.last_contact') }}</dt><dd title="{{ Time::relative($server->last_seen_at) }}">{{ $server->last_seen_at ? Time::format($server->last_seen_at, 'd-m-Y H:i:s') : __('servers.never') }}</dd>
                     <dt><svg class="ico"><use href="#i-metrics"/></svg> {{ __('servers.show.last_sample') }}</dt><dd>{{ $latestSample ? Time::format($latestSample->collected_at, 'd-m-Y H:i:s') : __('servers.show.no_samples') }}</dd>
                     <dt><svg class="ico"><use href="#i-bars"/></svg> {{ __('servers.show.samples_in_range') }}</dt><dd>{{ $sampleCount }}</dd>
@@ -339,6 +361,19 @@
             </section>
 
             <x-dependencies :resource="$server" />
+
+            @if ($deployments->isNotEmpty())
+                <section class="ss-panel" data-testid="server-deployments">
+                    <div class="ss-panel-head">
+                        <div><h2 class="ss-panel-title">{{ __('deployments.title') }}</h2></div>
+                        <a href="{{ route('deployments.index') }}" class="ss-btn ss-btn-secondary ss-btn-sm">{{ __('deployments.title') }}</a>
+                    </div>
+                    @foreach ($deployments as $deployment)
+                        <p class="m-0 mt-2 text-sm"><a href="{{ route('deployments.show', $deployment) }}">{{ $deployment->label() }}</a>
+                            <span class="block text-xs text-muted">{{ $deployment->environment }} · {{ Time::dateTime($deployment->deployed_at) }}</span></p>
+                    @endforeach
+                </section>
+            @endif
         </section>
 
         {{-- Agent & updates --}}

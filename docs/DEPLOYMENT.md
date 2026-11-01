@@ -44,7 +44,8 @@ The scheduler runs:
 | `serverscope:dispatch-domain-checks` | every minute | queue due HTTP/TLS/DNS/RDAP checks (atomic claim, no duplicates) |
 | `serverscope:dispatch-page-checks` | every minute | queue due website page checks (max. 20 per website and 500 in total per run, configurable) |
 | `serverscope:escalate-incidents` | every minute | escalate unacknowledged incidents (grouped incidents escalate via their root) |
-| `serverscope:analyze` | hourly at :07 | anomaly detection and capacity forecasts |
+| `serverscope:analyze` | hourly at :07 | anomaly detection and capacity forecasts (reads hourly rollups for aggregated hours) |
+| `serverscope:rollup` | hourly at :12 | aggregate closed hours of raw metric samples into hourly and daily rollups (see §9) |
 | heartbeat (closure) | every minute | lets **Beheer → Systeemstatus** report whether the scheduler runs |
 | `queue:work --stop-when-empty --max-time=55` | every minute | process queued checks, notifications, webhooks |
 | `serverscope:prune` | daily 03:17 | delete history older than the configured retention (disabled by default) |
@@ -86,6 +87,10 @@ web requests and webhook retries are disabled.
 | `2026_10_28_120000_add_service_checks_and_extended_metrics` | nullable disk I/O, network error, process-count columns on `metric_samples`; `servers.agent_checksum/predictive_alerts_enabled/anomaly_sensitivity`; `service_checks`, `service_check_events` |
 | `2026_10_28_130000_create_predictions_table` | `predictions` |
 | `2026_10_28_140000_create_ssl_certificates_table` | `ssl_certificates` (certificate history) |
+| `2026_11_15_100000_create_favorites_table` | `favorites` (personal favourite servers/domains; unique per user and resource). Additive |
+| `2026_11_14_100000_create_incident_analyses_table` | `incident_analyses` (AI Incident Investigator: status, evidence snapshot, validated result, usage; unique `incident_id` + `evidence_hash`). Additive |
+| `2026_11_13_100000_create_incident_learnings_table` | `incident_learnings` (Incident Memory: one row per incident, unique `incident_id`, `version` for concurrent edits). Additive |
+| `2026_11_09_100000_create_metric_rollups_table` | `metric_rollups` (hourly/daily aggregates, unique per server/period/bucket/metric/dimension); nullable `servers.metrics_rolled_up_until` and `servers.cpu_count`. Additive; `migrate:rollback --step=1` drops only the rollups (raw samples are untouched) |
 
 The five 2026-10-28 migrations only add tables and nullable/defaulted
 columns; existing rows and history are untouched. To roll them back:
@@ -145,6 +150,10 @@ All optional; the defaults are shown.
 | `SERVERSCOPE_PREDICTIVE` / `_PREDICTIVE_ALERTS` | `true` / `true` | run the analysis / open incidents for near-term capacity forecasts |
 | `SERVERSCOPE_PREDICTIVE_HORIZON_DAYS` | `7` | forecast incidents only within this horizon |
 | `SERVERSCOPE_ANOMALY_INCIDENTS` | `false` | also open incidents for anomalies (they are always shown) |
+| `SERVERSCOPE_RETAIN_HOURLY_ROLLUPS_DAYS` / `_DAILY_ROLLUPS_DAYS` | `400` / – (keep forever) | retention of metric rollups, independent of `SERVERSCOPE_RETAIN_METRICS_DAYS` (raw samples) |
+| `SERVERSCOPE_ROLLUPS_QUEUE` | `false` | `serverscope:rollup` dispatches one job per server instead of running inline (only with supervised workers) |
+| `SERVERSCOPE_ROLLUPS_BACKFILL_DAYS` | `35` | how far back the first rollup run per server goes (older: `serverscope:rollup --from=`) |
+| `SERVERSCOPE_ROLLUPS_READ` | `true` | analytics read rollups for aggregated hours (`false` = raw samples only, the old behaviour) |
 | `TRUSTED_PROXIES` | `127.0.0.1,::1` | proxies in front of PHP (Plesk nginx); read at boot, not from the config cache |
 
 Also set `SESSION_SECURE_COOKIE=true`, `APP_ENV=production`, `APP_DEBUG=false`
@@ -154,11 +163,13 @@ and a real `APP_URL=https://serverscope.nl`.
 
 ```sh
 php artisan about                    # PHP version, environment, cache status
-php artisan schedule:list            # eight scheduled entries
+php artisan schedule:list            # includes serverscope:rollup (hourly at :12)
 php artisan migrate:status           # all migrations ran
 php artisan serverscope:check-agents
 php artisan serverscope:dispatch-domain-checks && php artisan queue:work --stop-when-empty
 php artisan queue:failed             # should be empty
+php artisan serverscope:rollup       # first run backfills up to 35 days per server; safe to repeat
+php artisan serverscope:prune --dry-run   # shows raw and rollup retention before anything is deleted
 ```
 
 In the UI: open **Beheer → Systeemstatus** (scheduler, queue and overdue
@@ -191,3 +202,168 @@ on its page; send a test notification from **Profiel**; check
 7. Record which websites run on which servers (**Afhankelijkheden**, or
    confirm the suggestions on the domain pages); without dependencies no
    cross-resource incident grouping happens.
+
+## 9. Metric rollups and worker requirements
+
+**Storage.** Raw samples (`metric_samples`, one row per server per agent
+interval, about 25–50 MB per server per month at 60 s) are aggregated by
+`serverscope:rollup` into `metric_rollups`: per server, hour and day, one
+row per metric and disk mount with `count`, `sum`, `min` and `max`. Hourly
+rows take roughly 1.5 MB per server per month. Rollups have their own
+retention (`SERVERSCOPE_RETAIN_HOURLY_ROLLUPS_DAYS`, default 400 days;
+daily rows are kept) and, per team, `serverscope.rollups.plan_retention_days`
+(proposal: Free 90, Pro 730, Premium unlimited; the default team is
+exempt). They are therefore kept when raw samples are pruned, e.g. with
+`SERVERSCOPE_RETAIN_METRICS_DAYS=30`.
+
+**How it runs.** An hour is aggregated once it is closed: 11 minutes after
+its end, when the ingest API (which accepts samples up to 10 minutes old)
+can no longer add to it. Writes are upserts on a unique key and a bucket is
+never replaced by one built from fewer samples, so a repeated run, a
+retried job or a recomputation with `--from` never creates duplicates or
+shrinks history. `servers.metrics_rolled_up_until` advances per 24-hour
+chunk; an interrupted run resumes there.
+
+**First deploy.** After `migrate`, run `php artisan serverscope:rollup`
+once by hand (or wait for :12). It aggregates at most
+`SERVERSCOPE_ROLLUPS_BACKFILL_DAYS` (35) per server; for older history:
+`php artisan serverscope:rollup --from=2026-01-01` (inline, any time,
+repeatable). Until a server has rollups, analytics read raw samples as
+before.
+
+**Readers.** Anomaly detection and forecasts (`serverscope:analyze`) read
+rollups for aggregated hours and raw samples only for the partial first
+hour and the not yet aggregated hours, so their cost no longer grows with
+14 days of raw rows per server. The server charts still read raw samples
+(only the needed columns); reports count raw samples for coverage.
+
+**Raw retention** now deletes per server through the
+`(server_id, collected_at)` index instead of scanning `metric_samples` by
+`collected_at` (which has no index of its own).
+
+**Workers.** What runs where:
+
+| Work | Where | Notes |
+|---|---|---|
+| Metric ingestion + alert evaluation | web request (sync) | Kept synchronous on purpose: rules need the sample just stored, and a queue would delay alerts by the worker cadence. Cost: one rule query plus one short transaction per rule and dimension. |
+| Domain/page checks, discovery, notifications, webhooks | queue | unchanged |
+| Rollups | scheduler, inline (default) or queue (`SERVERSCOPE_ROLLUPS_QUEUE=true`) | one unique job per server, 3 tries with backoff |
+| Analysis (`serverscope:analyze`) | scheduler, inline | sequential; cheap now that it reads rollups. Candidate for per-server jobs above ~1,000 servers |
+| Pruning | scheduler, daily | batched deletes |
+
+The scheduler-driven worker (`queue:work --stop-when-empty --max-time=55`,
+`SERVERSCOPE_SCHEDULER_QUEUE_WORKER=true`) is enough for small
+installations. Use a supervised worker (`php artisan queue:work --sleep=3
+--tries=1 --max-time=3600 --timeout=300`, and set
+`SERVERSCOPE_SCHEDULER_QUEUE_WORKER=false`) when any of these hold: more
+than about 100 servers or 500 monitored pages, `SERVERSCOPE_ROLLUPS_QUEUE`
+is enabled, or **Beheer → Systeemstatus** shows a queue backlog. Page
+checks are capped at `SERVERSCOPE_PAGE_CHECKS_PER_RUN` (500) per minute in
+total; raise it together with worker capacity.
+
+
+## 10. Remote probe (Global Pulse Lite)
+
+One second monitoring location that re-checks a failing website before an
+HTTP incident is opened. Without a probe nothing changes.
+
+**Central server:** migrate, then register the probe once (prints the
+credentials once; `--rotate` replaces the secret):
+
+```
+php artisan serverscope:probe:create probe-1 --location="Frankfurt"
+```
+
+The scheduler runs `serverscope:probe:expire` every minute.
+
+**Probe host** (a small VPS in another network/region): the same code,
+`composer install --no-dev`, and an `.env` with `APP_KEY` (its own),
+`APP_ENV=production`, `CACHE_STORE=file`, `SERVERSCOPE_PROBE_URL=https://…`,
+`SERVERSCOPE_PROBE_KEY`, `SERVERSCOPE_PROBE_SECRET`. No database, no web
+server and no inbound ports are needed. Run `php artisan serverscope:probe:run`
+as a supervised service (systemd, `Restart=always`); it polls every 30 s.
+Outbound: HTTPS to ServerScope, TCP 80/443 to monitored sites, DNS.
+
+**Behaviour.** At the failure threshold, with a probe that polled in the
+last 3 minutes, a confirmation job is queued (one per website) and the
+incident waits for it: probe fails too → critical incident ("confirmed");
+probe reaches the site → warning incident ("main location only"),
+rechecked every 10 minutes and raised to critical when confirmed; main
+monitor recovered but probe fails → recorded only ("probe only"); no answer
+within 120 s or no healthy probe → critical incident as before
+("unavailable"). Alerts are therefore delayed by at most about two
+minutes, and only while the probe is healthy.
+
+**Security.** Requests are HMAC-SHA256 signed (method, path, timestamp,
+nonce, body hash), refused outside ±5 minutes or with a reused nonce, and
+rate limited. Jobs contain only URL, time-out and redirect setting; results
+only status code, timing and an error code. The probe forces the SSRF rules
+on (private, loopback, link-local/metadata, reserved addresses and
+non-allowed ports are blocked, also after redirects), makes plain GET
+requests with a 10 s cap, and accepts no inbound connections.
+
+## 11. AI Incident Investigator
+
+Off unless `OPENAI_API_KEY` **and** `SERVERSCOPE_AI_MODEL` are set (the
+model is only named in `.env`). Without them the incident page says that
+AI analysis is unavailable and nothing else changes.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `OPENAI_API_KEY` | – | used only by the backend (`App\Services\Ai\OpenAiProvider`), never sent to browsers |
+| `SERVERSCOPE_AI_MODEL` | – | an OpenAI model that supports Structured Outputs (`json_schema`) |
+| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | API base URL |
+| `SERVERSCOPE_AI_TIMEOUT` / `_MAX_OUTPUT_TOKENS` / `_MAX_INPUT_CHARS` | `45` / `1500` / `24000` | per-request limits |
+| `SERVERSCOPE_AI_AUTO_MIN_SEVERITY` | `high` | automatic analysis for new root incidents of at least this severity (empty = manual only) |
+| `SERVERSCOPE_AI_AUTO_DELAY` | `120` | seconds after opening, so confirmations and samples are in |
+| `SERVERSCOPE_AI_MANUAL_COOLDOWN` | `10` | minutes between manual requests per incident |
+| `SERVERSCOPE_AI_MAX_PER_TEAM_HOUR` | `20` | analyses per team per hour |
+
+**Queue.** Analyses run as queued jobs (`QueueAutomaticIncidentAnalysis`,
+`RunIncidentAnalysis`, 120 s time-out, no automatic retries). The
+scheduler-driven worker handles them; with a supervised worker use
+`--timeout` of at least 130 s. Incident creation and notifications never
+wait for them.
+
+**What is sent.** Only the incident's own team data, built by
+`IncidentEvidence` from Time Machine (timeline, findings, hourly metric
+summaries), Deploy Judge (deployments in the window), Global Pulse probe
+results and Incident Memory (similar earlier incidents and their recorded
+learnings). Text is shortened; credentials, tokens, private keys, e-mail
+and IP addresses are redacted; URLs, configuration and environment values
+are never included. The data is wrapped as untrusted input; the model has
+no tools and cannot change anything. Answers are validated against a
+strict schema; facts without valid evidence references and references to
+incidents outside the evidence are dropped.
+
+**Costs.** One analysis per incident and evidence snapshot (unique key),
+a job that runs twice calls the provider once, manual requests are
+admin-only with a cooldown, and a per-team hourly cap applies. Token usage
+is stored per analysis (`input_tokens`, `output_tokens`). Failures store
+only a kind (timeout, rate_limited, provider_error, invalid_response,
+unavailable, queue_failure); prompts and answers are not logged.
+
+AI output is labelled as hypotheses and never written to Incident Memory;
+people record confirmed causes there themselves.
+
+## 12. Error and maintenance pages
+
+`resources/views/errors/{403,404,419,429,500,503}.blade.php` share one
+self-contained layout (inline CSS, no Vite assets, no database, session
+or JavaScript), so they render in maintenance mode and when the database
+is down. Optional links: `SERVERSCOPE_PUBLIC_URL` (homepage, default
+`https://serverscope.nl`, empty = hidden) and `SERVERSCOPE_STATUS_URL`
+(public status page, hidden when empty).
+
+Maintenance mode uses Laravel's mechanism unchanged:
+
+```
+php artisan down --retry=600            # 503 page + Retry-After: 600 ("back in about 10 minutes")
+php artisan down --secret="<random>"    # bypass link for the operator; never shown on the page
+php artisan up
+```
+
+Without `--retry` the page says that no return time has been announced; it
+never shows a countdown. Production must keep `APP_DEBUG=false` so that the
+500 page (and no exception details) is shown.
+

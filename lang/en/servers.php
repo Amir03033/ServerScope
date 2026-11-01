@@ -18,6 +18,14 @@ return [
     'deleted' => 'Deleted',
     'deleted_server' => 'Deleted server',
 
+    'actions' => [
+        'menu' => 'Actions for :name',
+        'view' => 'View details',
+        'metrics' => 'Historical metrics',
+        'incidents' => 'Related incidents',
+        'edit' => 'Edit settings',
+        'maintenance' => 'Maintenance window',
+    ],
     'index' => [
         'subtitle' => 'All monitored servers, their status and the latest measurements.',
         'update_all' => 'Update all to :version',
@@ -60,7 +68,12 @@ return [
         'end_maintenance' => 'End maintenance',
         'cancel_maintenance' => 'Cancel scheduled maintenance',
         'maintenance_duration' => 'Maintenance duration',
+        'maintenance_custom_end' => 'Custom end time',
+        'maintenance_invalid_end' => 'Choose an end time at least 5 minutes from now and at most 7 days ahead.',
+        'maintenance_confirm' => 'Start maintenance for :name now? New alerts and incidents for this server are not opened until the end time.',
+        'maintenance_effect' => 'During maintenance no new alerts or incidents are opened for this server\'s resource metrics, agent offline and service checks, at every severity including critical. Metrics keep being collected. Alerts and incidents that were already open continue and can still notify and escalate; capacity forecasts and the website checks on this server keep running and alerting. New alerts are possible again as soon as the window ends.',
         'durations' => [
+            'custom' => 'Custom end time',
             '30' => '30 minutes',
             '60' => '1 hour',
             '240' => '4 hours',
@@ -151,6 +164,7 @@ return [
         'ip_none' => 'Not set',
         'os' => 'Operating system',
         'agent_version' => 'Agent version',
+        'cpu_count' => 'CPU cores',
         'last_contact' => 'Last contact',
         'last_sample' => 'Latest measurement',
         'no_samples' => 'No measurements',

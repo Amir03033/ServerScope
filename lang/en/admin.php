@@ -59,6 +59,12 @@ return [
     ],
 
     'audit' => [
+        'resource_type' => 'Resource type',
+        'resource_id' => 'Resource ID',
+        'from' => 'From',
+        'to' => 'Until',
+        'clear' => 'Clear filters',
+        'none_found' => 'No entries match these filters',
         'title' => 'Audit log',
         'subtitle' => 'Who changed what. Secrets (tokens, passwords) are never recorded.',
         'search' => 'Search',

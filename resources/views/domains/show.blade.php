@@ -97,7 +97,7 @@
                 <span class="ss-stat-icon"><svg class="ico"><use href="#i-pulse"/></svg></span>
                 <div class="min-w-0">
                     <div class="ss-stat-label">{{ __('domains.show.status') }}</div>
-                    <div class="mt-1"><x-status :status="$status" :label="$domain->trashed() ? __('domains.deleted') : Label::of('domain_status', $status, Domain::STATUS_LABELS)" /></div>
+                    <div class="mt-1">@if ($domain->trashed())<x-status status="closed" :label="__('domains.deleted')" />@else<x-health :state="\App\Support\Health::domain($domain)" />@endif</div>
                     <div class="ss-stat-caption" title="{{ Time::format($lastCheck, 'd-m-Y H:i:s') }}">{{ __('domains.show.last_check', ['time' => Time::relative($lastCheck)]) }}</div>
                 </div>
             </article>
@@ -150,12 +150,23 @@
                 <div>
                     <h2 id="availability-title" class="ss-panel-title">{{ __('domains.show.http_title') }}</h2>
                     <p class="ss-panel-sub">{{ __('domains.show.http_text') }}</p>
+                    @php
+                        // Next check from the domain's own interval; stale after two
+                        // missed runs of the per-minute scheduler on top of it.
+                        $next = $domain->is_active && $domain->http_enabled && $domain->http_last_checked_at ? $domain->http_last_checked_at->copy()->addMinutes((int) $domain->check_interval_minutes) : null;
+                        $stale = $next && $next->lt(now()->subMinutes(2)) ? __('health.freshness.stale_checks', ['age' => \App\Support\Time::relative($domain->http_last_checked_at)]) : null;
+                    @endphp
+                    <x-freshness :rows="[
+                        [__('health.freshness.last_check'), $domain->http_last_checked_at],
+                        [__('health.freshness.last_success'), $domain->http_last_success_at],
+                        [__('health.freshness.next_check'), $next],
+                    ]" :stale="$stale" />
                 </div>
                 @if ($domain->http_enabled)<x-status :status="$domain->http_status" />@else<span class="ss-chip">{{ __('domains.off') }}</span>@endif
             </div>
             <div class="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
                 <div class="min-w-0">
-                    <x-line-chart :points="$chartPoints" unit=" ms" :label="__('domains.show.chart_label')" />
+                    <x-line-chart :points="$chartPoints" unit=" ms" :label="__('domains.show.chart_label')" :markers="$deployMarkers ?? []" />
 
                     <h3 class="mt-5 mb-2 text-xs font-semibold text-muted">{{ __('domains.show.daily_title') }}</h3>
                     <div class="ss-strip" role="img" aria-label="{{ __('domains.show.daily_label') }}">
@@ -370,6 +381,16 @@
                 </section>
 
                 <x-dependencies :resource="$domain" />
+
+                @if (($probeChecks ?? collect())->isNotEmpty())
+                    <section class="ss-panel" aria-labelledby="probe-title" data-testid="probe-checks">
+                        <div class="ss-panel-head"><div><h2 id="probe-title" class="ss-panel-title">{{ __('probes.domain_title') }}</h2><p class="ss-panel-sub">{{ __('probes.domain_text') }}</p></div></div>
+                        @foreach ($probeChecks as $check)
+                            <p class="m-0 mt-2 text-sm"><strong>{{ __('probes.outcome.'.($check->outcome ?? 'pending')) }}</strong>
+                                <span class="block text-xs text-muted">{{ Time::dateTime($check->checked_at ?? $check->requested_at) }} · {{ $check->probe?->name }}@if ($check->http_status_code) · HTTP {{ $check->http_status_code }}@endif @if ($check->response_time_ms !== null) · {{ Format::number($check->response_time_ms, 0) }} ms @endif @if ($check->error_code) · {{ $check->error_code }}@endif</span></p>
+                        @endforeach
+                    </section>
+                @endif
             </div>
 
             @if ($predictions->isNotEmpty())

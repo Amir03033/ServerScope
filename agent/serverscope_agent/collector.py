@@ -79,6 +79,13 @@ def collect_metrics() -> dict:
     except (AttributeError, OSError):
         process_count = None
 
+    # Logical CPUs: server metadata (normalises load, sizing). psutil
+    # returns None when it cannot be determined.
+    try:
+        cpu_count = psutil.cpu_count(logical=True)
+    except (AttributeError, OSError):
+        cpu_count = None
+
     return {
         "collected_at": datetime.now(timezone.utc).isoformat(),
         "cpu_percent": psutil.cpu_percent(interval=1),
@@ -100,6 +107,7 @@ def collect_metrics() -> dict:
         "disk_read_bytes": _counter(disk_io, "read_bytes"),
         "disk_write_bytes": _counter(disk_io, "write_bytes"),
         "process_count": process_count,
+        "cpu_count": cpu_count if isinstance(cpu_count, int) and cpu_count > 0 else None,
         "uptime_seconds": max(
             0,
             int(time.time() - psutil.boot_time()),

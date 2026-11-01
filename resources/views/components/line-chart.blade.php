@@ -1,4 +1,4 @@
-@props(['points', 'unit' => '', 'height' => 160, 'color' => 'var(--ss-accent)', 'label' => 'Grafiek'])
+@props(['points', 'unit' => '', 'height' => 160, 'color' => 'var(--ss-accent)', 'label' => 'Grafiek', 'flagLabel' => null, 'markers' => []])
 
 @php
     // $points: list of ['label' => string, 'value' => ?float, 'flag' => bool]
@@ -39,7 +39,13 @@
         @endforeach
         @foreach ($points as $i => $p)
             @if (! empty($p['flag']))
-                <rect x="{{ round($x($i) - 2, 1) }}" y="{{ $pad['t'] }}" width="4" height="{{ $plotH }}" fill="color-mix(in srgb, var(--ss-bad) 28%, transparent)"><title>{{ $p['label'] }}: {{ __('components.line_chart.failed_checks') }}</title></rect>
+                <rect x="{{ round($x($i) - 2, 1) }}" y="{{ $pad['t'] }}" width="4" height="{{ $plotH }}" fill="color-mix(in srgb, var(--ss-bad) 28%, transparent)"><title>{{ $p['label'] }}: {{ $flagLabel ?? __('components.line_chart.failed_checks') }}</title></rect>
+            @endif
+        @endforeach
+        {{-- Event markers (e.g. deployments): [['index' => int, 'label' => string]]. --}}
+        @foreach ($markers as $marker)
+            @if ($marker['index'] >= 0 && $marker['index'] < $count)
+                <line x1="{{ round($x($marker['index']), 1) }}" x2="{{ round($x($marker['index']), 1) }}" y1="{{ $pad['t'] }}" y2="{{ $pad['t'] + $plotH }}" stroke="var(--ss-warn)" stroke-width="1.5" stroke-dasharray="4 3" data-marker><title>{{ $marker['label'] }}</title></line>
             @endif
         @endforeach
         @foreach ($segments as $segment)

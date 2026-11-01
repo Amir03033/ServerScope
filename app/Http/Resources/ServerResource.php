@@ -21,6 +21,7 @@ class ServerResource extends JsonResource
             'environment' => $this->environment,
             'operating_system' => $this->operating_system,
             'agent_version' => $this->agent_version,
+            'cpu_count' => $this->cpu_count,
             'status' => $this->displayStatus(),
             'last_seen_at' => $this->last_seen_at?->toIso8601String(),
             'maintenance' => [

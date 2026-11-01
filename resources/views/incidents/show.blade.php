@@ -37,10 +37,11 @@
     <x-slot:subtitle>{{ __('incidents.show.subtitle', ['source' => Label::of('incident_source', $incident->source, Incident::SOURCE_LABELS), 'date' => Time::dateTimeSeconds($incident->opened_at)]) }}</x-slot:subtitle>
     <x-slot:actions>
         <a href="{{ route('incidents.index') }}" class="ss-btn ss-btn-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('incidents.overview') }}</a>
+        <a href="{{ route('incidents.time-machine', $incident) }}" class="ss-btn ss-btn-secondary"><svg class="ico"><use href="#i-history"/></svg> {{ __('time_machine.open') }}</a>
     </x-slot:actions>
 
     {{-- Status bar with the actions that are possible now (directly under it on mobile). --}}
-    <section class="ss-panel mb-4 grid gap-4">
+    <section class="ss-panel mb-4 grid gap-4" id="actions">
         <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <x-severity :severity="$incident->severity" />
             <ol class="ss-progress min-w-0" aria-label="{{ __('incidents.show.progress_label') }}">
@@ -70,6 +71,8 @@
         </div>
         @endif
     </section>
+
+    <div class="mb-4">@include('incidents._workflow')</div>
 
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div class="grid min-w-0 gap-4">
@@ -106,6 +109,10 @@
                     <dt>{{ __('incidents.show.fingerprint') }}</dt><dd class="font-mono text-xs">{{ $incident->fingerprint }}</dd>
                 </dl>
             </section>
+
+            @include('incidents._ai_analysis')
+
+            @include('incidents._memory')
 
             @if ($incident->parent)
                 <section class="ss-panel" aria-labelledby="grouped-title">

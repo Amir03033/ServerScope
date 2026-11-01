@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\AgentRelease;
 use App\Models\Domain;
 use App\Models\MetricSample;
 use App\Models\ResourceDependency;
 use App\Models\Server;
 use App\Models\ServiceCheck;
+use App\Support\Label;
 use Illuminate\Support\Collection;
 
 /**
@@ -44,10 +46,7 @@ class ServerDiagnosis
         }
 
         if ($status === 'offline') {
-            $websites = $this->websites($server);
-            $recent = $websites->filter(fn (Domain $d) => $d->http_enabled && $d->http_last_checked_at?->gt(now()->subMinutes(self::RECENT_CHECK_MINUTES)));
-            $up = $recent->filter(fn (Domain $d) => $d->http_status === 'up' && $d->http_consecutive_failures === 0);
-            $down = $recent->filter(fn (Domain $d) => $d->http_status === 'down' || $d->http_consecutive_failures > 0);
+            [$up, $down] = self::splitWebsites($this->websites($server));
             $silent = __('servers.diagnosis.silent', ['time' => $server->last_seen_at?->locale(app()->getLocale())->diffForHumans()]);
 
             foreach ($up as $domain) {
@@ -78,7 +77,7 @@ class ServerDiagnosis
 
         if ($failing->isNotEmpty()) {
             foreach ($failing as $service) {
-                $evidence[] = "{$service->name}: ".\App\Support\Label::of('service_status', $service->status, ServiceCheck::STATUS_LABELS).($service->state_detail ? " ({$service->state_detail})" : '');
+                $evidence[] = "{$service->name}: ".Label::of('service_status', $service->status, ServiceCheck::STATUS_LABELS).($service->state_detail ? " ({$service->state_detail})" : '');
             }
 
             return $this->result('service_failed', 'red', $failing->count() === 1 ? __('servers.diagnosis.service_failed_one') : __('servers.diagnosis.service_failed_many', ['count' => $failing->count()]), __('servers.diagnosis.service_failed'), $evidence);
@@ -136,7 +135,7 @@ class ServerDiagnosis
         }
 
         // The newest signed release; the setting only before the first import.
-        $latestVersion = \App\Models\AgentRelease::latestAvailable()?->version ?? (string) config('serverscope.agent.latest_version');
+        $latestVersion = AgentRelease::latestAvailable()?->version ?? (string) config('serverscope.agent.latest_version');
         $outdated = $server->agent_version !== null && $latestVersion !== '' && version_compare(ltrim($server->agent_version, 'v'), $latestVersion, '<');
 
         $known = (array) config('serverscope.agent.known_checksums', []);
@@ -179,6 +178,71 @@ class ServerDiagnosis
     }
 
     /** Websites with a confirmed dependency on the server. */
+    /**
+     * Websites on a silent server that were checked recently, split into
+     * answering and failing ones: the independent evidence for the
+     * offline diagnosis. Shared by diagnose() and offlineState().
+     *
+     * @return array{0: Collection<int, Domain>, 1: Collection<int, Domain>}
+     */
+    public static function splitWebsites(Collection $websites): array
+    {
+        $recent = $websites->filter(fn (Domain $d) => $d->http_enabled && $d->http_last_checked_at?->gt(now()->subMinutes(self::RECENT_CHECK_MINUTES)));
+
+        return [
+            $recent->filter(fn (Domain $d) => $d->http_status === 'up' && $d->http_consecutive_failures === 0),
+            $recent->filter(fn (Domain $d) => $d->http_status === 'down' || $d->http_consecutive_failures > 0),
+        ];
+    }
+
+    /** The offline state diagnose() returns, from already loaded websites (no queries). */
+    public static function offlineState(Collection $websites): string
+    {
+        [$up, $down] = self::splitWebsites($websites);
+
+        return match (true) {
+            $up->isNotEmpty() && $down->isEmpty() => 'agent_unhealthy',
+            $down->isNotEmpty() && $up->isEmpty() => 'host_unreachable',
+            $down->isNotEmpty() => 'agent_offline_mixed',
+            default => 'agent_offline_unknown',
+        };
+    }
+
+    /**
+     * The websites of several servers in two queries (same filters as
+     * websites()), keyed by server id.
+     *
+     * @param  Collection<int, Server>  $servers
+     * @return array<int, Collection<int, Domain>>
+     */
+    public function websitesFor(Collection $servers): array
+    {
+        $out = $servers->mapWithKeys(fn (Server $s) => [$s->id => collect()])->all();
+
+        if ($out === []) {
+            return [];
+        }
+
+        $edges = ResourceDependency::query()
+            ->whereIn('team_id', $servers->pluck('team_id')->unique())
+            ->where('dependency_type', 'server')->whereIn('dependency_id', $servers->pluck('id'))
+            ->where('dependent_type', 'domain')
+            ->get(['team_id', 'dependency_id', 'dependent_id']);
+        $domains = Domain::query()->whereIn('id', $edges->pluck('dependent_id')->unique())->where('is_active', true)->get()->keyBy('id');
+        $teams = $servers->pluck('team_id', 'id');
+
+        foreach ($edges as $edge) {
+            $domain = $domains->get($edge->dependent_id);
+
+            // Same team on both ends, as in websites().
+            if ($domain !== null && (int) $domain->team_id === (int) $teams[$edge->dependency_id] && (int) $edge->team_id === (int) $domain->team_id) {
+                $out[$edge->dependency_id]->push($domain);
+            }
+        }
+
+        return $out;
+    }
+
     private function websites(Server $server): Collection
     {
         $ids = ResourceDependency::query()

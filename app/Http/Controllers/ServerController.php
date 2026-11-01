@@ -24,6 +24,7 @@ class ServerController extends Controller
             'status' => ['nullable', Rule::in(['online', 'offline', 'pending', 'maintenance', 'deleted'])],
             'environment' => ['nullable', Rule::in(array_keys(Server::ENVIRONMENTS))],
             'sort' => ['nullable', Rule::in(['name', 'last_seen', 'environment'])],
+            'favorites' => ['nullable', 'boolean'],
         ]);
 
         $status = $filters['status'] ?? null;
@@ -53,6 +54,10 @@ class ServerController extends Controller
             $query->where('environment', $filters['environment']);
         }
 
+        if (! empty($filters['favorites'])) {
+            \App\Models\Favorite::limit($query, $request->user(), 'server');
+        }
+
         match ($filters['sort'] ?? 'name') {
             'last_seen' => $query->orderByRaw('last_seen_at IS NULL')->orderByDesc('last_seen_at'),
             'environment' => $query->orderBy('environment')->orderBy('name'),
@@ -71,7 +76,12 @@ class ServerController extends Controller
             'deleted' => Server::onlyTrashed()->count(),
         ];
 
-        return view('servers.index', compact('servers', 'filters', 'counts', 'status'));
+        $favorites = \App\Models\Favorite::idsFor($request->user(), 'server');
+        $incidentSeverities = \App\Support\Health::serverIncidentSeverities($servers->getCollection());
+        // Websites of the silent servers on this page in two queries instead of two per row.
+        $offlineWebsites = app(\App\Services\ServerDiagnosis::class)->websitesFor($servers->getCollection()->filter(fn (Server $s) => ! $s->trashed() && $s->displayStatus() === 'offline')->values());
+
+        return view('servers.index', compact('servers', 'filters', 'counts', 'status', 'favorites', 'incidentSeverities', 'offlineWebsites'));
     }
 
     public function create(): View

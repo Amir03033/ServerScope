@@ -58,15 +58,18 @@ while true; do
   read -r dread dwrite < <(awk '$3 ~ /^(sd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+)$/ {r+=$6;w+=$10} END{printf "%.0f %.0f",r*512,w*512}' /proc/diskstats 2>/dev/null || echo "0 0")
 
   procs=$(ls -d /proc/[0-9]* 2>/dev/null | wc -l)
+  # Logical CPUs (server metadata); null when it cannot be determined.
+  cpus=$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || true)
+  case "$cpus" in ''|*[!0-9]*|0) cpus=null ;; esac
   up=$(cut -d. -f1 /proc/uptime)
   ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   svc=$(services_json)
   services_field=""
   [ -n "${SERVERSCOPE_SERVICES:-}" ] && services_field=",\"services\":[${svc}]"
 
-  json=$(printf '{"collected_at":"%s","cpu_percent":%s,"load_1":%s,"load_5":%s,"load_15":%s,"memory_total_bytes":%s,"memory_used_bytes":%s,"memory_available_bytes":%s,"swap_total_bytes":%s,"swap_used_bytes":%s,"disks":[{"path":"/","total_bytes":%s,"used_bytes":%s,"available_bytes":%s,"percent":%s}],"disk_read_bytes":%s,"disk_write_bytes":%s,"network_rx_bytes":%s,"network_tx_bytes":%s,"network_errors_in":%s,"network_errors_out":%s,"network_drops_in":%s,"network_drops_out":%s,"process_count":%s,"uptime_seconds":%s,"agent_version":"%s","agent_checksum":"%s"%s}' \
+  json=$(printf '{"collected_at":"%s","cpu_percent":%s,"load_1":%s,"load_5":%s,"load_15":%s,"memory_total_bytes":%s,"memory_used_bytes":%s,"memory_available_bytes":%s,"swap_total_bytes":%s,"swap_used_bytes":%s,"disks":[{"path":"/","total_bytes":%s,"used_bytes":%s,"available_bytes":%s,"percent":%s}],"disk_read_bytes":%s,"disk_write_bytes":%s,"network_rx_bytes":%s,"network_tx_bytes":%s,"network_errors_in":%s,"network_errors_out":%s,"network_drops_in":%s,"network_drops_out":%s,"process_count":%s,"cpu_count":%s,"uptime_seconds":%s,"agent_version":"%s","agent_checksum":"%s"%s}' \
     "$ts" "$cpu" "$l1" "$l5" "$l15" "$mem_total" "$mem_used" "$mem_avail" "$swap_total" "$swap_used" "$dsize" "$dused" "$davail" "$dpct" \
-    "$dread" "$dwrite" "$rx" "$tx" "$rxerr" "$txerr" "$rxdrop" "$txdrop" "$procs" "$up" "$VERSION" "$CHECKSUM" "$services_field")
+    "$dread" "$dwrite" "$rx" "$tx" "$rxerr" "$txerr" "$rxdrop" "$txdrop" "$procs" "$cpus" "$up" "$VERSION" "$CHECKSUM" "$services_field")
 
   if [ -n "$SERVERSCOPE_DRY_RUN" ]; then echo "$json"; exit 0; fi
 

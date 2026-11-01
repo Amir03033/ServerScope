@@ -80,6 +80,11 @@ class Incident extends Model
         return $this->morphTo()->withTrashed();
     }
 
+    public function learning(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(IncidentLearning::class);
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(IncidentEvent::class)->orderBy('created_at')->orderBy('id');
