@@ -1490,12 +1490,18 @@
     .ss-print main { max-width: none; padding: 0; }
 }
 
-/* Row action menus inside (scrolling) tables open inline instead of floating,
-   so they are never clipped by the table's overflow. */
+/* Row action menus: a floating panel, like the user menu. A horizontally
+   scrolling table would clip it, so while a row menu is open its table
+   may overflow instead (the row itself never grows). */
 @layer components {
-    .ss-row-actions { display: inline-block; text-align: left; }
-    .ss-table .ss-row-actions[open] .ss-menu-panel { position: static; width: min(15rem, calc(100vw - 3rem)); margin-top: .375rem; box-shadow: none; animation: none; }
+    .ss-row-actions { position: relative; display: inline-block; text-align: left; vertical-align: middle; }
+    .ss-row-actions > summary { display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; padding: 0; border: 1px solid var(--ss-line); border-radius: 8px; color: var(--ss-muted); background: transparent; cursor: pointer; }
+    .ss-row-actions > summary:hover, .ss-row-actions[open] > summary { color: var(--ss-text); border-color: var(--ss-line-strong); background: var(--ss-surface-2); }
+    .ss-row-actions > summary:focus-visible { outline: 2px solid var(--ss-accent); outline-offset: 2px; }
+    .ss-row-actions > summary svg { width: 1.125rem; height: 1.125rem; }
+    .ss-row-actions .ss-menu-panel { width: min(15rem, calc(100vw - 2rem)); }
     .ss-row-actions .ss-menu-item { min-height: 2.5rem; }
+    .ss-table-wrap:has(.ss-row-actions[open]) { overflow: visible; }
     .ss-fav { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 8px; color: var(--ss-muted); border: 0; background: transparent; cursor: pointer; }
     .ss-fav:hover, .ss-fav:focus-visible { color: var(--ss-warn); }
     .ss-fav[aria-pressed="true"] { color: var(--ss-warn); }
