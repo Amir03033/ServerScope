@@ -108,6 +108,8 @@
                 </dl>
             </section>
 
+            @include('incidents._memory')
+
             @if ($incident->parent)
                 <section class="ss-panel" aria-labelledby="grouped-title">
                     <div class="ss-panel-head">

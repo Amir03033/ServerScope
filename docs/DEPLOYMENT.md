@@ -87,6 +87,7 @@ web requests and webhook retries are disabled.
 | `2026_10_28_120000_add_service_checks_and_extended_metrics` | nullable disk I/O, network error, process-count columns on `metric_samples`; `servers.agent_checksum/predictive_alerts_enabled/anomaly_sensitivity`; `service_checks`, `service_check_events` |
 | `2026_10_28_130000_create_predictions_table` | `predictions` |
 | `2026_10_28_140000_create_ssl_certificates_table` | `ssl_certificates` (certificate history) |
+| `2026_11_13_100000_create_incident_learnings_table` | `incident_learnings` (Incident Memory: one row per incident, unique `incident_id`, `version` for concurrent edits). Additive |
 | `2026_11_09_100000_create_metric_rollups_table` | `metric_rollups` (hourly/daily aggregates, unique per server/period/bucket/metric/dimension); nullable `servers.metrics_rolled_up_until` and `servers.cpu_count`. Additive; `migrate:rollback --step=1` drops only the rollups (raw samples are untouched) |
 
 The five 2026-10-28 migrations only add tables and nullable/defaulted

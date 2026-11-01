@@ -720,3 +720,24 @@ samples; the redundant plain index next to the unique
 `serverscope:analyze` still runs sequentially (cheap now; split into jobs
 above ~1,000 servers). Worker guidance: `DEPLOYMENT.md` §9.
 
+## 9. Incident Memory
+
+On the incident page any team member (the same people who may resolve
+incidents) records what was learned: cause category, root cause marked
+**hypothesis** or **confirmed**, symptoms, resolution steps, outcome
+(successful / did not work / unresolved), an optional deployment of the
+same team from the 24 hours before the incident, and the computed time to
+resolve. One record per incident (unique `incident_id`); every save checks
+the edited `version` inside a row lock, so a concurrent edit is refused
+instead of overwritten. Saves are audited.
+
+"Similar previous incidents" are earlier incidents of the same team, found
+rule-based (no AI, no external service): same fingerprint (same problem),
+same resource, same type of check, shared failure details (error, failure
+type, metric, probe confirmation) and shared recorded symptoms. Each match
+shows its reasons, the recorded cause with its certainty and whether the
+fix worked. The incident search also searches recorded causes and
+resolutions. Every query filters on the incident's team explicitly
+(`IncidentMemory`), routes are tenant-bound; tested in
+`IncidentMemoryTest`. Not changed: notifications and the REST API.
+

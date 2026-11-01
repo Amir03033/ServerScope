@@ -47,7 +47,7 @@ class IncidentController extends Controller
         ]);
 
         $state = $filters['state'] ?? 'active';
-        $query = Incident::query()->with(['subject', 'assignee:id,name'])->withCount('children');
+        $query = Incident::query()->with(['subject', 'assignee:id,name', 'learning:id,incident_id,cause_status,outcome'])->withCount('children');
 
         match ($state) {
             'active' => $query->active(),
@@ -63,7 +63,12 @@ class IncidentController extends Controller
             ->when($filters['domain'] ?? null, fn ($q, $v) => $q->where('subject_type', 'domain')->where('subject_id', $v))
             ->when(($filters['assigned'] ?? null) === 'me', fn ($q) => $q->where('assigned_to', $request->user()->id))
             ->when(($filters['assigned'] ?? null) === 'none', fn ($q) => $q->whereNull('assigned_to'))
-            ->when($filters['q'] ?? null, fn ($q, $v) => $q->where('title', 'like', '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $v).'%'));
+            // Search titles and the recorded memory (cause, resolution).
+            ->when($filters['q'] ?? null, function ($q, $v) {
+                $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $v).'%';
+                $q->where(fn ($q) => $q->where('title', 'like', $like)
+                    ->orWhereHas('learning', fn ($l) => $l->where(fn ($w) => $w->where('root_cause', 'like', $like)->orWhere('resolution_steps', 'like', $like))));
+            });
 
         $incidents = $query
             ->orderByRaw("CASE status WHEN 'open' THEN 0 WHEN 'acknowledged' THEN 1 WHEN 'investigating' THEN 2 ELSE 3 END")
@@ -170,8 +175,14 @@ class IncidentController extends Controller
             'reopened' => $incident->reopened_count,
         ];
 
+        $memory = app(\App\Services\Incidents\IncidentMemory::class);
+        $incident->load('learning.deployment', 'learning.recorder:id,name');
+
         return view('incidents.show', [
             'incident' => $incident,
+            'learning' => $incident->learning,
+            'similar' => $memory->similar($incident),
+            'deploymentCandidates' => $memory->deploymentCandidates($incident),
             'recurrence' => $recurrence,
             'related' => $related,
             'checks' => $checks,
@@ -190,6 +201,37 @@ class IncidentController extends Controller
             'incident' => $incident,
             'tm' => $timeMachine->build($incident),
         ]);
+    }
+
+    /**
+     * Incident Memory: record or update what was learned. Any team member
+     * may do this, like resolving an incident; the route is tenant-scoped.
+     */
+    public function saveLearning(Request $request, Incident $incident, \App\Services\Incidents\IncidentMemory $memory): RedirectResponse
+    {
+        $v = $request->validate([
+            'cause_category' => ['required', Rule::in(\App\Models\IncidentLearning::CATEGORIES)],
+            'cause_status' => ['required', Rule::in(\App\Models\IncidentLearning::CAUSE_STATUSES)],
+            'root_cause' => ['required', 'string', 'min:3', 'max:5000'],
+            'symptoms' => ['nullable', 'string', 'max:700'],
+            'resolution_steps' => ['nullable', 'string', 'max:10000'],
+            'outcome' => ['required', Rule::in(\App\Models\IncidentLearning::OUTCOMES)],
+            'deployment_id' => ['nullable', 'integer'],
+            'version' => ['nullable', 'integer', 'min:1'],
+        ]);
+        $v['symptoms'] = explode(',', (string) ($v['symptoms'] ?? ''));
+
+        try {
+            $learning = $memory->save($incident, $v, $request->user(), isset($v['version']) ? (int) $v['version'] : null);
+        } catch (\App\Services\Incidents\StaleLearningException) {
+            return back()->withInput()->with('error', __('incident_memory.stale'));
+        } catch (\InvalidArgumentException) {
+            return back()->withInput()->withErrors(['deployment_id' => __('incident_memory.unknown_deployment')]);
+        }
+
+        \App\Support\Audit::log('incident.learning_saved', "Lessen vastgelegd voor incident #{$incident->id}", $incident, ['version' => $learning->version, 'cause_status' => $learning->cause_status, 'outcome' => $learning->outcome]);
+
+        return redirect()->to(route('incidents.show', $incident).'#memory')->with('success', __('incident_memory.saved'));
     }
 
     public function transition(Request $request, Incident $incident): RedirectResponse
