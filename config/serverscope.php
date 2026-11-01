@@ -264,6 +264,33 @@ return [
         'poll_seconds' => (int) env('SERVERSCOPE_PROBE_POLL_SECONDS', 30),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | AI (Incident Investigator)
+    |--------------------------------------------------------------------------
+    |
+    | Off unless an API key AND a model are configured. The key is only used
+    | by the backend (App\Services\Ai). Analyses run on the queue; incident
+    | detection and notifications never wait for or depend on them.
+    | auto_min_severity: automatic analysis for new root incidents of at
+    | least this severity (null = manual only).
+    |
+    */
+
+    'ai' => [
+        'provider' => env('SERVERSCOPE_AI_PROVIDER', 'openai'),
+        'api_key' => env('OPENAI_API_KEY'),
+        'model' => env('SERVERSCOPE_AI_MODEL'),
+        'base_url' => rtrim((string) env('OPENAI_BASE_URL', 'https://api.openai.com/v1'), '/'),
+        'timeout_seconds' => (int) env('SERVERSCOPE_AI_TIMEOUT', 45),
+        'max_output_tokens' => (int) env('SERVERSCOPE_AI_MAX_OUTPUT_TOKENS', 1500),
+        'max_input_chars' => (int) env('SERVERSCOPE_AI_MAX_INPUT_CHARS', 24000),
+        'auto_min_severity' => env('SERVERSCOPE_AI_AUTO_MIN_SEVERITY', 'high'),
+        'auto_delay_seconds' => (int) env('SERVERSCOPE_AI_AUTO_DELAY', 120),
+        'manual_cooldown_minutes' => (int) env('SERVERSCOPE_AI_MANUAL_COOLDOWN', 10),
+        'max_per_team_per_hour' => (int) env('SERVERSCOPE_AI_MAX_PER_TEAM_HOUR', 20),
+    ],
+
     'reports' => [
         // Availability target shown in reports (calculated, not contractual).
         'default_target' => (float) env('SERVERSCOPE_REPORT_TARGET', 99.9),

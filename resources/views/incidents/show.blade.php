@@ -108,6 +108,8 @@
                 </dl>
             </section>
 
+            @include('incidents._ai_analysis')
+
             @include('incidents._memory')
 
             @if ($incident->parent)

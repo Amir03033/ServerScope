@@ -178,8 +178,12 @@ class IncidentController extends Controller
         $memory = app(\App\Services\Incidents\IncidentMemory::class);
         $incident->load('learning.deployment', 'learning.recorder:id,name');
 
+        $investigator = app(\App\Services\Incidents\IncidentInvestigator::class);
+
         return view('incidents.show', [
             'incident' => $incident,
+            'aiAvailable' => $investigator->available(),
+            'analysis' => \App\Models\IncidentAnalysis::query()->where('incident_id', $incident->id)->latest('id')->first(),
             'learning' => $incident->learning,
             'similar' => $memory->similar($incident),
             'deploymentCandidates' => $memory->deploymentCandidates($incident),
@@ -232,6 +236,25 @@ class IncidentController extends Controller
         \App\Support\Audit::log('incident.learning_saved', "Lessen vastgelegd voor incident #{$incident->id}", $incident, ['version' => $learning->version, 'cause_status' => $learning->cause_status, 'outcome' => $learning->outcome]);
 
         return redirect()->to(route('incidents.show', $incident).'#memory')->with('success', __('incident_memory.saved'));
+    }
+
+    /**
+     * Requests a new AI analysis (costs money: team administrators only,
+     * with a per-incident cooldown and a per-team hourly cap).
+     */
+    public function requestAnalysis(Request $request, Incident $incident, \App\Services\Incidents\IncidentInvestigator $investigator): RedirectResponse
+    {
+        Gate::authorize('admin');
+
+        $result = $investigator->request($incident, 'manual', $request->user());
+
+        if (is_string($result)) {
+            return redirect()->to(route('incidents.show', $incident).'#ai-analysis')->with('error', __('ai_analysis.refused.'.$result, ['minutes' => (int) config('serverscope.ai.manual_cooldown_minutes', 10)]));
+        }
+
+        \App\Support\Audit::log('incident.ai_analysis_requested', "AI-analyse aangevraagd voor incident #{$incident->id}", $incident, ['analysis' => $result->id]);
+
+        return redirect()->to(route('incidents.show', $incident).'#ai-analysis')->with('success', __($result->wasRecentlyCreated || $result->status === 'queued' ? 'ai_analysis.queued' : 'ai_analysis.unchanged'));
     }
 
     public function transition(Request $request, Incident $incident): RedirectResponse

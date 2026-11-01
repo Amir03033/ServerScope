@@ -261,6 +261,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('/incidents/create', [IncidentController::class, 'create'])->name('incidents.create');
     Route::post('/incidents', [IncidentController::class, 'store'])->name('incidents.store');
     Route::get('/incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
+    Route::post('/incidents/{incident}/analysis', [IncidentController::class, 'requestAnalysis'])->middleware('throttle:10,1')->name('incidents.analysis');
     Route::post('/incidents/{incident}/learning', [IncidentController::class, 'saveLearning'])->middleware('throttle:30,1')->name('incidents.learning');
     Route::get('/incidents/{incident}/time-machine', [IncidentController::class, 'timeMachine'])->middleware('throttle:30,1')->name('incidents.time-machine');
     Route::post('/incidents/{incident}/status', [IncidentController::class, 'transition'])->name('incidents.transition');

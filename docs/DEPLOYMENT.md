@@ -87,6 +87,7 @@ web requests and webhook retries are disabled.
 | `2026_10_28_120000_add_service_checks_and_extended_metrics` | nullable disk I/O, network error, process-count columns on `metric_samples`; `servers.agent_checksum/predictive_alerts_enabled/anomaly_sensitivity`; `service_checks`, `service_check_events` |
 | `2026_10_28_130000_create_predictions_table` | `predictions` |
 | `2026_10_28_140000_create_ssl_certificates_table` | `ssl_certificates` (certificate history) |
+| `2026_11_14_100000_create_incident_analyses_table` | `incident_analyses` (AI Incident Investigator: status, evidence snapshot, validated result, usage; unique `incident_id` + `evidence_hash`). Additive |
 | `2026_11_13_100000_create_incident_learnings_table` | `incident_learnings` (Incident Memory: one row per incident, unique `incident_id`, `version` for concurrent edits). Additive |
 | `2026_11_09_100000_create_metric_rollups_table` | `metric_rollups` (hourly/daily aggregates, unique per server/period/bucket/metric/dimension); nullable `servers.metrics_rolled_up_until` and `servers.cpu_count`. Additive; `migrate:rollback --step=1` drops only the rollups (raw samples are untouched) |
 
@@ -299,3 +300,48 @@ only status code, timing and an error code. The probe forces the SSRF rules
 on (private, loopback, link-local/metadata, reserved addresses and
 non-allowed ports are blocked, also after redirects), makes plain GET
 requests with a 10 s cap, and accepts no inbound connections.
+
+## 11. AI Incident Investigator
+
+Off unless `OPENAI_API_KEY` **and** `SERVERSCOPE_AI_MODEL` are set (the
+model is only named in `.env`). Without them the incident page says that
+AI analysis is unavailable and nothing else changes.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `OPENAI_API_KEY` | – | used only by the backend (`App\Services\Ai\OpenAiProvider`), never sent to browsers |
+| `SERVERSCOPE_AI_MODEL` | – | an OpenAI model that supports Structured Outputs (`json_schema`) |
+| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | API base URL |
+| `SERVERSCOPE_AI_TIMEOUT` / `_MAX_OUTPUT_TOKENS` / `_MAX_INPUT_CHARS` | `45` / `1500` / `24000` | per-request limits |
+| `SERVERSCOPE_AI_AUTO_MIN_SEVERITY` | `high` | automatic analysis for new root incidents of at least this severity (empty = manual only) |
+| `SERVERSCOPE_AI_AUTO_DELAY` | `120` | seconds after opening, so confirmations and samples are in |
+| `SERVERSCOPE_AI_MANUAL_COOLDOWN` | `10` | minutes between manual requests per incident |
+| `SERVERSCOPE_AI_MAX_PER_TEAM_HOUR` | `20` | analyses per team per hour |
+
+**Queue.** Analyses run as queued jobs (`QueueAutomaticIncidentAnalysis`,
+`RunIncidentAnalysis`, 120 s time-out, no automatic retries). The
+scheduler-driven worker handles them; with a supervised worker use
+`--timeout` of at least 130 s. Incident creation and notifications never
+wait for them.
+
+**What is sent.** Only the incident's own team data, built by
+`IncidentEvidence` from Time Machine (timeline, findings, hourly metric
+summaries), Deploy Judge (deployments in the window), Global Pulse probe
+results and Incident Memory (similar earlier incidents and their recorded
+learnings). Text is shortened; credentials, tokens, private keys, e-mail
+and IP addresses are redacted; URLs, configuration and environment values
+are never included. The data is wrapped as untrusted input; the model has
+no tools and cannot change anything. Answers are validated against a
+strict schema; facts without valid evidence references and references to
+incidents outside the evidence are dropped.
+
+**Costs.** One analysis per incident and evidence snapshot (unique key),
+a job that runs twice calls the provider once, manual requests are
+admin-only with a cooldown, and a per-team hourly cap applies. Token usage
+is stored per analysis (`input_tokens`, `output_tokens`). Failures store
+only a kind (timeout, rate_limited, provider_error, invalid_response,
+unavailable, queue_failure); prompts and answers are not logged.
+
+AI output is labelled as hypotheses and never written to Incident Memory;
+people record confirmed causes there themselves.
+

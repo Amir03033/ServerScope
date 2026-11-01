@@ -1,0 +1,53 @@
+<?php
+
+return [
+    'title' => 'AI analysis',
+    'text' => 'An AI-generated analysis of the evidence ServerScope has for this incident. It only reads data and never changes anything.',
+    'run' => 'Analyse with AI',
+    'rerun' => 'New analysis',
+    'queued' => 'The analysis has been queued.',
+    'unchanged' => 'The evidence has not changed since the last analysis.',
+    'unavailable' => 'AI analysis is not available: no AI provider is configured.',
+    'empty' => 'No analysis yet.',
+    'pending' => 'Analysing… this usually takes less than a minute.',
+    'failed' => [
+        'unavailable' => 'The analysis failed: the AI provider is not available or rejected the credentials.',
+        'timeout' => 'The analysis failed: the AI provider did not answer in time.',
+        'rate_limited' => 'The analysis failed: the AI provider is temporarily rate-limiting requests.',
+        'provider_error' => 'The analysis failed: the AI provider returned an error.',
+        'invalid_response' => 'The analysis failed: the AI answer was incomplete or invalid.',
+        'queue_failure' => 'The analysis failed: the background job stopped.',
+    ],
+    'refused' => [
+        'unavailable' => 'AI analysis is not available: no AI provider is configured.',
+        'cooldown' => 'An analysis was requested less than :minutes minutes ago.',
+        'limit' => 'Your team has reached the hourly number of AI analyses.',
+    ],
+    'caveat' => 'AI-generated. The causes below are hypotheses, not confirmed causes; timing alone does not prove a cause. Verify before acting.',
+    'confidence' => 'Confidence',
+    'levels' => [
+        'high' => 'high',
+        'medium' => 'medium',
+        'low' => 'low',
+        'insufficient' => 'insufficient evidence',
+    ],
+    'facts' => 'Observed facts (with evidence)',
+    'causes' => 'Possible causes (most plausible first)',
+    'supporting' => 'Supported by',
+    'contradicting' => 'Contradicted by',
+    'plausibility' => [
+        'high' => 'most plausible',
+        'medium' => 'plausible',
+        'low' => 'less plausible',
+    ],
+    'history' => 'Relevant earlier incidents',
+    'steps' => 'Suggested investigation steps',
+    'missing' => 'Missing information and limitations',
+    'none' => 'None.',
+    'meta' => 'Analysed :time (:trigger).',
+    'triggers' => [
+        'auto' => 'automatic',
+        'manual' => 'on request',
+    ],
+    'record_hint' => 'To keep a cause, record it under Incident memory.',
+];

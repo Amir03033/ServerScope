@@ -22,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // AI provider for features such as the Incident Investigator.
+        $this->app->bind(\App\Services\Ai\AiProvider::class, fn () => new \App\Services\Ai\OpenAiProvider((array) config('serverscope.ai')));
+
         $this->app->singleton(\App\Tenancy\TenantContext::class);
 
         $this->app->singleton(Resolver::class, fn () => new DnsClient(
@@ -137,6 +140,7 @@ class AppServiceProvider extends ServiceProvider
             ->line('Deze link is 60 minuten geldig. Heb je dit niet aangevraagd? Dan hoef je niets te doen.'));
 
         \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\IncidentNotifier::class);
+        \Illuminate\Support\Facades\Event::listen(\App\Events\IncidentOpened::class, \App\Services\Incidents\QueueIncidentAnalysis::class);
 
         // Short, stable type names in polymorphic columns.
         Relation::morphMap([

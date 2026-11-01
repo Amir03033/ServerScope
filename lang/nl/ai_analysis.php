@@ -1,0 +1,53 @@
+<?php
+
+return [
+    'title' => 'AI-analyse',
+    'text' => 'Een door AI gemaakte analyse van het bewijs dat ServerScope voor dit incident heeft. De analyse leest alleen gegevens en wijzigt nooit iets.',
+    'run' => 'Analyseren met AI',
+    'rerun' => 'Nieuwe analyse',
+    'queued' => 'De analyse staat in de wachtrij.',
+    'unchanged' => 'Het bewijs is sinds de vorige analyse niet veranderd.',
+    'unavailable' => 'AI-analyse is niet beschikbaar: er is geen AI-aanbieder ingesteld.',
+    'empty' => 'Nog geen analyse.',
+    'pending' => 'Bezig met analyseren… dit duurt meestal minder dan een minuut.',
+    'failed' => [
+        'unavailable' => 'De analyse is mislukt: de AI-aanbieder is niet beschikbaar of weigerde de inloggegevens.',
+        'timeout' => 'De analyse is mislukt: de AI-aanbieder antwoordde niet op tijd.',
+        'rate_limited' => 'De analyse is mislukt: de AI-aanbieder beperkt tijdelijk het aantal verzoeken.',
+        'provider_error' => 'De analyse is mislukt: de AI-aanbieder gaf een fout.',
+        'invalid_response' => 'De analyse is mislukt: het antwoord van de AI was onvolledig of ongeldig.',
+        'queue_failure' => 'De analyse is mislukt: de achtergrondtaak is gestopt.',
+    ],
+    'refused' => [
+        'unavailable' => 'AI-analyse is niet beschikbaar: er is geen AI-aanbieder ingesteld.',
+        'cooldown' => 'Er is minder dan :minutes minuten geleden al een analyse aangevraagd.',
+        'limit' => 'Je team heeft het maximale aantal AI-analyses per uur bereikt.',
+    ],
+    'caveat' => 'Door AI gemaakt. De oorzaken hieronder zijn vermoedens, geen bevestigde oorzaken; alleen het tijdstip bewijst geen oorzaak. Controleer voordat je handelt.',
+    'confidence' => 'Zekerheid',
+    'levels' => [
+        'high' => 'hoog',
+        'medium' => 'gemiddeld',
+        'low' => 'laag',
+        'insufficient' => 'onvoldoende bewijs',
+    ],
+    'facts' => 'Waargenomen feiten (met bewijs)',
+    'causes' => 'Mogelijke oorzaken (meest aannemelijk eerst)',
+    'supporting' => 'Ondersteund door',
+    'contradicting' => 'Tegengesproken door',
+    'plausibility' => [
+        'high' => 'meest aannemelijk',
+        'medium' => 'aannemelijk',
+        'low' => 'minder aannemelijk',
+    ],
+    'history' => 'Relevante eerdere incidenten',
+    'steps' => 'Voorgestelde onderzoeksstappen',
+    'missing' => 'Ontbrekende informatie en beperkingen',
+    'none' => 'Geen.',
+    'meta' => 'Geanalyseerd :time (:trigger).',
+    'triggers' => [
+        'auto' => 'automatisch',
+        'manual' => 'op verzoek',
+    ],
+    'record_hint' => 'Wil je een oorzaak bewaren, leg die dan vast onder Incidentgeheugen.',
+];
