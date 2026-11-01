@@ -18,6 +18,14 @@ return [
     'deleted' => 'Deleted',
     'deleted_server' => 'Deleted server',
 
+    'actions' => [
+        'menu' => 'Actions for :name',
+        'view' => 'View details',
+        'metrics' => 'Historical metrics',
+        'incidents' => 'Related incidents',
+        'edit' => 'Edit settings',
+        'maintenance' => 'Maintenance window',
+    ],
     'index' => [
         'subtitle' => 'All monitored servers, their status and the latest measurements.',
         'update_all' => 'Update all to :version',
@@ -60,7 +68,12 @@ return [
         'end_maintenance' => 'End maintenance',
         'cancel_maintenance' => 'Cancel scheduled maintenance',
         'maintenance_duration' => 'Maintenance duration',
+        'maintenance_custom_end' => 'Custom end time',
+        'maintenance_invalid_end' => 'Choose an end time at least 5 minutes from now and at most 7 days ahead.',
+        'maintenance_confirm' => 'Start maintenance for :name now? Alerts and incidents for this server are suppressed until the end time.',
+        'maintenance_effect' => 'During maintenance the agent keeps reporting and all metrics are stored, but every alert for this server (including critical ones and agent offline) and its notifications are suppressed. Website checks on this server keep running and alerting.',
         'durations' => [
+            'custom' => 'Custom end time',
             '30' => '30 minutes',
             '60' => '1 hour',
             '240' => '4 hours',

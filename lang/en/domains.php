@@ -14,6 +14,22 @@ return [
     'expired_cap' => 'Expired',
     'days' => ':days d',
 
+    'duplicate_notice' => 'Settings copied from :name. Enter the new domain; its name, path, notes and history are not copied.',
+    'actions' => [
+        'column' => 'Actions',
+        'menu' => 'Actions for :name',
+        'view' => 'View details',
+        'http' => 'HTTP availability',
+        'ssl' => 'SSL certificate',
+        'dns' => 'DNS results',
+        'expiry' => 'Domain expiry',
+        'incidents' => 'Related incidents',
+        'duplicate' => 'Duplicate configuration',
+        'pause' => 'Pause monitoring',
+        'resume' => 'Resume monitoring',
+        'pause_confirm' => 'Pause monitoring for :name? No checks run and no incidents open while paused.',
+        'resume_confirm' => 'Resume monitoring for :name?',
+    ],
     'index' => [
         'subtitle' => 'Availability, certificates, DNS and registration of your domains.',
         'stats_label' => 'Domain statistics',

@@ -1489,3 +1489,15 @@
     .ss-panel, .ss-stat { box-shadow: none; break-inside: avoid; }
     .ss-print main { max-width: none; padding: 0; }
 }
+
+/* Row action menus inside (scrolling) tables open inline instead of floating,
+   so they are never clipped by the table's overflow. */
+@layer components {
+    .ss-row-actions { display: inline-block; text-align: left; }
+    .ss-table .ss-row-actions[open] .ss-menu-panel { position: static; width: min(15rem, calc(100vw - 3rem)); margin-top: .375rem; box-shadow: none; animation: none; }
+    .ss-row-actions .ss-menu-item { min-height: 2.5rem; }
+    .ss-fav { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 8px; color: var(--ss-muted); border: 0; background: transparent; cursor: pointer; }
+    .ss-fav:hover, .ss-fav:focus-visible { color: var(--ss-warn); }
+    .ss-fav[aria-pressed="true"] { color: var(--ss-warn); }
+    .ss-fav svg { width: 1.05rem; height: 1.05rem; }
+}

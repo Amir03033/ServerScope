@@ -18,6 +18,14 @@ return [
     'deleted' => 'Verwijderd',
     'deleted_server' => 'Verwijderde server',
 
+    'actions' => [
+        'menu' => 'Acties voor :name',
+        'view' => 'Details bekijken',
+        'metrics' => 'Historische metingen',
+        'incidents' => 'Gerelateerde incidenten',
+        'edit' => 'Instellingen bewerken',
+        'maintenance' => 'Onderhoudsvenster',
+    ],
     'index' => [
         'subtitle' => 'Alle gemonitorde servers, hun status en de meest recente metingen.',
         'update_all' => 'Alles bijwerken naar :version',
@@ -60,7 +68,12 @@ return [
         'end_maintenance' => 'Onderhoud beëindigen',
         'cancel_maintenance' => 'Gepland onderhoud annuleren',
         'maintenance_duration' => 'Duur onderhoud',
+        'maintenance_custom_end' => 'Eigen eindtijd',
+        'maintenance_invalid_end' => 'Kies een eindtijd van minstens 5 minuten vanaf nu en hoogstens 7 dagen vooruit.',
+        'maintenance_confirm' => 'Onderhoud voor :name nu starten? Meldingen en incidenten voor deze server worden tot de eindtijd onderdrukt.',
+        'maintenance_effect' => 'Tijdens onderhoud blijft de agent rapporteren en worden alle metingen opgeslagen, maar elke melding voor deze server (ook kritieke en agent offline) en de bijbehorende notificaties worden onderdrukt. Websitecontroles op deze server blijven draaien en melden.',
         'durations' => [
+            'custom' => 'Eigen eindtijd',
             '30' => '30 minuten',
             '60' => '1 uur',
             '240' => '4 uur',

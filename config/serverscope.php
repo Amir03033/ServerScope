@@ -510,6 +510,10 @@ return [
         'updater_stale_minutes' => (int) env('SERVERSCOPE_UPDATER_STALE_MINUTES', 30),
     ],
 
+    // Public website and status page, linked from the error pages (empty = hidden).
+    'public_url' => env('SERVERSCOPE_PUBLIC_URL', 'https://serverscope.nl'),
+    'status_url' => env('SERVERSCOPE_STATUS_URL'),
+
     'docs_url' => rtrim((string) env('SERVERSCOPE_DOCS_URL', 'https://info.serverscope.nl/nl/docs'), '/'),
 
 ];

@@ -41,6 +41,14 @@
                         <a class="ov-row" href="{{ route('incidents.show', $incident) }}"><x-status :status="$incident->status" /><span class="ov-main"><strong>#{{ $incident->id }} {{ $incident->title }}</strong><span class="ov-sub">{{ Time::dateTime($incident->opened_at) }}</span></span></a>
                     @endforeach
                 </section>
+                @if ($results['deployments']->isNotEmpty())
+                    <section aria-labelledby="results-deployments">
+                        <h2 id="results-deployments" class="mt-0 mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{{ __('search.deployments', ['count' => $results['deployments']->count()]) }}</h2>
+                        @foreach ($results['deployments'] as $deployment)
+                            <a class="ov-row" href="{{ route('deployments.show', $deployment) }}"><x-status status="info" :label="$deployment->environment" /><span class="ov-main"><strong>{{ $deployment->label() }}</strong><span class="ov-sub">{{ Time::dateTime($deployment->deployed_at) }}</span></span></a>
+                        @endforeach
+                    </section>
+                @endif
             </div>
         @endif
     </section>

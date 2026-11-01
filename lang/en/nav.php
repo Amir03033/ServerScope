@@ -63,6 +63,7 @@ return [
         'hint' => 'Search servers, domains, incidents and more',
         'all_results' => 'All results for ":q"',
         'no_results' => 'No results for ":q".',
+        'error' => 'Search failed. Try again.',
         'loading' => 'Searching…',
         'navigate' => 'choose',
         'select' => 'open',

@@ -85,6 +85,7 @@ class IncidentController extends Controller
         ];
 
         return view('incidents.index', [
+            'aiAvailable' => app(\App\Services\Incidents\IncidentInvestigator::class)->available(),
             'incidents' => $incidents,
             'filters' => $filters,
             'state' => $state,

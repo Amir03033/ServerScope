@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Deployment;
 use App\Models\Domain;
 use App\Models\Incident;
 use App\Models\Server;
 use App\Services\Domains\DomainNormalizer;
+use App\Support\StatusLabel;
 use App\Support\Time;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,10 +33,10 @@ class SearchController extends Controller
         return view('search', ['q' => $q, 'results' => $results]);
     }
 
-    /** @return array{servers: Collection, domains: Collection, incidents: Collection} */
+    /** @return array{servers: Collection, domains: Collection, incidents: Collection, deployments: Collection} */
     private function search(string $q, DomainNormalizer $normalizer): array
     {
-        $results = ['servers' => collect(), 'domains' => collect(), 'incidents' => collect()];
+        $results = ['servers' => collect(), 'domains' => collect(), 'incidents' => collect(), 'deployments' => collect()];
 
         if (mb_strlen($q) >= 2) {
             $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], mb_strtolower($q)).'%';
@@ -48,10 +50,16 @@ class SearchController extends Controller
                 ->where(fn ($w) => $w->where('name', 'like', $like)->when($ascii, fn ($w) => $w->orWhere('name', $ascii)))
                 ->orderBy('name')->limit(10)->get();
 
+            // Grouped so the team scope always applies to both conditions.
             $results['incidents'] = Incident::query()
-                ->where('title', 'like', $like)
-                ->when(ctype_digit(ltrim($q, '#')), fn ($w) => $w->orWhere('id', (int) ltrim($q, '#')))
+                ->where(fn ($w) => $w->where('title', 'like', $like)
+                    ->when(ctype_digit(ltrim($q, '#')), fn ($w) => $w->orWhere('id', (int) ltrim($q, '#'))))
                 ->latest('opened_at')->limit(10)->get();
+
+            $results['deployments'] = Deployment::query()
+                ->where(fn ($w) => $w->where('application', 'like', $like)->orWhere('version', 'like', $like)
+                    ->when(preg_match('/^[0-9a-f]{4,64}$/i', $q), fn ($w) => $w->orWhere('commit_sha', 'like', strtolower($q).'%')))
+                ->latest('deployed_at')->limit(5)->get();
         }
 
         return $results;
@@ -69,7 +77,7 @@ class SearchController extends Controller
             'title' => $title,
             'subtitle' => (string) $subtitle,
             'status' => $status,
-            'status_label' => \App\Support\StatusLabel::for($status),
+            'status_label' => StatusLabel::for($status),
             'url' => $url,
         ];
 
@@ -77,6 +85,7 @@ class SearchController extends Controller
             ...$results['servers']->map(fn (Server $server) => $item('server', $server->name, $server->hostname, $server->displayStatus(), route('servers.show', $server)))->all(),
             ...$results['domains']->map(fn (Domain $domain) => $item('domain', $domain->displayName(), $domain->url(), $domain->displayStatus(), route('domains.show', $domain)))->all(),
             ...$results['incidents']->map(fn (Incident $incident) => $item('incident', '#'.$incident->id.' '.$incident->title, Time::dateTime($incident->opened_at), $incident->status, route('incidents.show', $incident)))->all(),
+            ...$results['deployments']->map(fn (Deployment $d) => $item('deployment', $d->label(), $d->environment.' · '.Time::dateTime($d->deployed_at), 'info', route('deployments.show', $d)))->all(),
         ];
     }
 }

@@ -41,7 +41,7 @@
     </x-slot:actions>
 
     {{-- Status bar with the actions that are possible now (directly under it on mobile). --}}
-    <section class="ss-panel mb-4 grid gap-4">
+    <section class="ss-panel mb-4 grid gap-4" id="actions">
         <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <x-severity :severity="$incident->severity" />
             <ol class="ss-progress min-w-0" aria-label="{{ __('incidents.show.progress_label') }}">
@@ -71,6 +71,8 @@
         </div>
         @endif
     </section>
+
+    <div class="mb-4">@include('incidents._workflow')</div>
 
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div class="grid min-w-0 gap-4">

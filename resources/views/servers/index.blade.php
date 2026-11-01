@@ -73,6 +73,7 @@
                     </select>
                 </div>
             </div>
+            <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="favorites" value="1" @checked(! empty($filters['favorites']))> {{ __('favorites.filter') }}</label>
             <div class="flex gap-2">
                 <button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-search"/></svg> {{ __('servers.index.filter') }}</button>
                 @if (array_filter($filters))
@@ -93,7 +94,7 @@
                 </x-empty-state>
             @else
                 <x-empty-state icon="i-search" :title="__('servers.index.none_found')">
-                    {{ __('servers.index.none_found_text') }}
+                    {{ ! empty($filters['favorites']) ? __('favorites.empty') : __('servers.index.none_found_text') }}
                 </x-empty-state>
             @endif
         @else
@@ -121,6 +122,7 @@
                             @endphp
                             <tr>
                                 <td class="is-primary">
+                                    @unless ($server->trashed())<x-favorite-button type="server" :id="$server->id" :active="in_array($server->id, $favorites, true)" class="float-right" />@endunless
                                     <a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('servers.show', $server) }}">{{ $server->name }}</a>
                                     <span class="block text-xs text-muted [overflow-wrap:anywhere]">{{ $server->hostname }}@if ($server->ip_address) · {{ $server->ip_address }}@endif</span>
                                 </td>
@@ -129,7 +131,7 @@
                                     @if ($state === 'deleted')
                                         <x-status status="closed" :label="__('servers.deleted')" />
                                     @else
-                                        <x-status :status="$state" />
+                                        <x-health :state="\App\Support\Health::server($server, $incidentSeverities[$server->id] ?? null)" />
                                     @endif
                                 </td>
                                 <td data-label="{{ __('servers.index.col_last_contact') }}" class="whitespace-nowrap text-muted" title="{{ Time::format($server->last_seen_at, 'd-m-Y H:i:s') }}">
@@ -138,14 +140,18 @@
                                 <td data-label="{{ __('servers.index.col_cpu') }}" class="num">{{ $sample?->cpu_percent !== null ? Format::percent($sample->cpu_percent, 1) : '—' }}</td>
                                 <td data-label="{{ __('servers.index.col_ram') }}" class="num">{{ $memory !== null ? Format::percent($memory, 1) : '—' }}</td>
                                 <td class="is-actions">
-                                    <div class="flex flex-wrap justify-end gap-1.5">
-                                        <a class="ss-btn ss-btn-secondary ss-btn-sm" href="{{ route('servers.show', $server) }}">{{ __('servers.details') }}</a>
-                                        @can('admin')
-                                            @unless ($server->trashed())
-                                                <a class="ss-btn ss-btn-ghost ss-btn-sm" href="{{ route('servers.edit', $server) }}">{{ __('servers.edit_button') }}</a>
-                                            @endunless
-                                        @endcan
-                                    </div>
+                                    @php
+                                        $actions = [
+                                            [__('servers.actions.view'), route('servers.show', $server), 'i-server'],
+                                            [__('servers.actions.metrics'), route('servers.show', $server).'#metrics', 'i-metrics'],
+                                            [__('servers.actions.incidents'), route('incidents.index', ['server' => $server->id, 'state' => 'all']), 'i-siren'],
+                                        ];
+                                        if (auth()->user()->can('admin') && ! $server->trashed()) {
+                                            $actions[] = [__('servers.actions.edit'), route('servers.edit', $server), 'i-edit'];
+                                            $actions[] = [__('servers.actions.maintenance'), route('servers.show', $server).'#overview', 'i-wrench'];
+                                        }
+                                    @endphp
+                                    <x-row-actions :label="__('servers.actions.menu', ['name' => $server->name])" :links="$actions" />
                                 </td>
                             </tr>
                         @endforeach

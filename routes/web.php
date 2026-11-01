@@ -272,6 +272,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
         ->middleware('throttle:30,1')
         ->name('incidents.comment');
 
+    Route::post('/favorites', [\App\Http\Controllers\FavoriteController::class, 'toggle'])->middleware('throttle:60,1')->name('favorites.toggle');
     Route::get('/deployments', [\App\Http\Controllers\DeploymentController::class, 'index'])->name('deployments.index');
     Route::get('/deployments/{deployment}', [\App\Http\Controllers\DeploymentController::class, 'show'])->name('deployments.show');
 

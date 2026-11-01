@@ -15,6 +15,7 @@
     'search.no_results' => __('nav.search.no_results'),
     'search.all_results' => __('nav.search.all_results'),
     'search.loading' => __('nav.search.loading'),
+    'search.error' => __('nav.search.error'),
     'search.types' => __('search.types'),
     ];
 @endphp

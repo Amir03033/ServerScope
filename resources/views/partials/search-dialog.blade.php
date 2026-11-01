@@ -18,6 +18,9 @@
         <span><kbd class="ss-kbd">↑</kbd> <kbd class="ss-kbd">↓</kbd> {{ __('nav.search.navigate') }}</span>
         <span><kbd class="ss-kbd">↵</kbd> {{ __('nav.search.select') }}</span>
         <span><kbd class="ss-kbd">Esc</kbd> {{ __('nav.search.close') }}</span>
+        @if (config('serverscope.docs_url'))
+            <a class="ml-auto" href="{{ config('serverscope.docs_url') }}" target="_blank" rel="noopener">{{ __('search.types.docs') }}</a>
+        @endif
     </div>
 </dialog>
 @endif

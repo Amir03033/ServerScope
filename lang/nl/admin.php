@@ -59,6 +59,12 @@ return [
     ],
 
     'audit' => [
+        'resource_type' => 'Soort onderdeel',
+        'resource_id' => 'Onderdeel-ID',
+        'from' => 'Vanaf',
+        'to' => 'Tot en met',
+        'clear' => 'Filters wissen',
+        'none_found' => 'Geen regels gevonden met deze filters',
         'title' => 'Auditlog',
         'subtitle' => 'Wie heeft wat gewijzigd. Geheimen (tokens, wachtwoorden) worden nooit vastgelegd.',
         'search' => 'Zoeken',

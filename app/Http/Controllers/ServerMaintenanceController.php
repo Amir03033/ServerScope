@@ -19,13 +19,26 @@ class ServerMaintenanceController extends Controller
         Gate::authorize('admin');
 
         $validated = $request->validate([
-            'duration_minutes' => ['required', 'integer', 'between:5,10080'],
+            // A preset duration, or "custom": an end time in the display timezone.
+            'duration_minutes' => ['required', 'in:30,60,240,1440,custom'],
+            'ends_at' => ['nullable', 'required_if:duration_minutes,custom', 'string', 'max:30'],
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
+        if ($validated['duration_minutes'] === 'custom') {
+            $endsAt = Time::parse($validated['ends_at'] ?? null);
+
+            // Not in the past, not shorter than 5 minutes, at most 7 days.
+            if ($endsAt === null || $endsAt->lt(now()->addMinutes(5)) || $endsAt->gt(now()->addDays(7))) {
+                return back()->withInput()->withErrors(['ends_at' => __('servers.show.maintenance_invalid_end')]);
+            }
+        } else {
+            $endsAt = now()->addMinutes((int) $validated['duration_minutes']);
+        }
+
         $server->forceFill([
             'maintenance_starts_at' => now(),
-            'maintenance_ends_at' => now()->addMinutes((int) $validated['duration_minutes']),
+            'maintenance_ends_at' => $endsAt,
             'maintenance_reason' => $validated['reason'] ?? null,
         ])->save();
 

@@ -10,6 +10,24 @@ return [
     'system' => 'Systeem',
     'unknown' => 'onbekend',
 
+    'actions' => [
+        'column' => 'Acties',
+        'menu' => 'Acties voor incident #:id',
+        'view' => 'Incident bekijken',
+        'time_machine' => 'Time Machine openen',
+        'deployments' => 'Bijbehorende deployments',
+        'memory' => 'Incidentgeheugen',
+        'ai' => 'AI-analyse',
+        'resolve' => 'Oplossen of status bijwerken',
+    ],
+    'workflow' => [
+        'title' => 'Werkwijze',
+        'text' => 'Van onderzoek tot een opgelost en vastgelegd incident.',
+        'steps' => ['investigate' => 'Onderzoeken', 'cause' => 'Waarschijnlijke oorzaak vinden', 'resolve' => 'Oplossen', 'verify' => 'Herstel controleren', 'close' => 'Afsluiten en de les bewaren'],
+        'done' => 'klaar', 'current' => 'volgende stap', 'todo' => 'nog te doen',
+        'links' => ['timeline' => 'Tijdlijn', 'actions' => 'Statusacties', 'resource' => 'Actuele bewaking'],
+        'note' => 'Herstel wordt gecontroleerd met actuele meetresultaten. Een AI-suggestie lost nooit een incident op; een oorzaak telt pas als bevestigd als iemand die zo vastlegt.',
+    ],
     'index' => [
         'subtitle' => 'Storingen en waarschuwingen van servers en domeinen, met hun volledige geschiedenis.',
         'report' => 'Incident melden',

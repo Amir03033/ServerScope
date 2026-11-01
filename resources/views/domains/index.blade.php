@@ -74,6 +74,7 @@
                     @endforeach
                 </select>
             </div>
+            <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="favorites" value="1" @checked(! empty($filters['favorites']))> {{ __('favorites.filter') }}</label>
             <div>
                 <button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-search"/></svg> {{ __('domains.index.filter') }}</button>
             </div>
@@ -102,6 +103,7 @@
                             <th scope="col">{{ __('domains.index.col_certificate') }}</th>
                             <th scope="col">{{ __('domains.index.col_registration') }}</th>
                             <th scope="col">{{ __('domains.index.col_last_check') }}</th>
+                            <th scope="col"><span class="sr-only">{{ __('domains.actions.column') }}</span></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -113,6 +115,7 @@
                             @endphp
                             <tr>
                                 <td class="is-primary">
+                                    @unless ($domain->trashed())<x-favorite-button type="domain" :id="$domain->id" :active="in_array($domain->id, $favorites, true)" class="float-right" />@endunless
                                     <a class="font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('domains.show', $domain) }}">{{ $domain->displayName() }}</a>
                                     <span class="block text-xs text-muted [overflow-wrap:anywhere]">{{ $domain->url() }}</span>
                                 </td>
@@ -120,7 +123,7 @@
                                     @if ($domain->trashed())
                                         <x-status status="closed" :label="__('domains.deleted')" />
                                     @else
-                                        <x-status :status="$domain->displayStatus()" :label="Label::of('domain_status', $domain->displayStatus(), Domain::STATUS_LABELS)" />
+                                        <x-health :state="\App\Support\Health::domain($domain)" />
                                     @endif
                                 </td>
                                 <td data-label="{{ __('domains.index.col_http') }}">
@@ -158,6 +161,26 @@
                                     @endif
                                 </td>
                                 <td data-label="{{ __('domains.index.col_last_check') }}" class="whitespace-nowrap text-muted" title="{{ Time::format($lastCheck, 'd-m-Y H:i:s') }}">{{ Time::relative($lastCheck) }}</td>
+                                <td class="is-actions">
+                                    @unless ($domain->trashed())
+                                        <x-row-actions :label="__('domains.actions.menu', ['name' => $domain->displayName()])" :links="[
+                                            [__('domains.actions.view'), route('domains.show', $domain), 'i-globe'],
+                                            [__('domains.actions.http'), route('domains.show', $domain).'#availability', 'i-pulse'],
+                                            [__('domains.actions.ssl'), route('domains.show', $domain).'#certificate', 'i-lock'],
+                                            [__('domains.actions.dns'), route('domains.show', $domain).'#dns', 'i-dns'],
+                                            [__('domains.actions.expiry'), route('domains.show', $domain).'#certificate', 'i-calendar'],
+                                            [__('domains.actions.incidents'), route('incidents.index', ['domain' => $domain->id, 'state' => 'all']), 'i-siren'],
+                                        ]">
+                                            @can('admin')
+                                                <a class="ss-menu-item" role="menuitem" href="{{ route('domains.create', ['from' => $domain->id]) }}"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg>{{ __('domains.actions.duplicate') }}</a>
+                                                <form method="POST" action="{{ route($domain->is_active ? 'domains.pause' : 'domains.resume', $domain) }}" data-confirm="{{ __($domain->is_active ? 'domains.actions.pause_confirm' : 'domains.actions.resume_confirm', ['name' => $domain->displayName()]) }}">
+                                                    @csrf
+                                                    <button class="ss-menu-item" role="menuitem" type="submit"><svg class="ico" aria-hidden="true"><use href="#{{ $domain->is_active ? 'i-pause' : 'i-play' }}"/></svg>{{ __($domain->is_active ? 'domains.actions.pause' : 'domains.actions.resume') }}</button>
+                                                </form>
+                                            @endcan
+                                        </x-row-actions>
+                                    @endunless
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

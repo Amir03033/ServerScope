@@ -1,0 +1,1 @@
+@include('errors.layout', ['code' => 403, 'tone' => '#fbbf24', 'signal' => __('errors.403.signal'), 'title' => __('errors.403.title'), 'text' => __('errors.403.text'), 'actions' => ['dashboard', 'back']])

@@ -63,6 +63,7 @@ return [
         'hint' => 'Zoek in servers, domeinen, incidenten en meer',
         'all_results' => 'Alle resultaten voor ":q"',
         'no_results' => 'Geen resultaten voor ":q".',
+        'error' => 'Zoeken is mislukt. Probeer het opnieuw.',
         'loading' => 'Zoeken…',
         'navigate' => 'kiezen',
         'select' => 'openen',
