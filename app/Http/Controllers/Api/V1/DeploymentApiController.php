@@ -8,6 +8,7 @@ use App\Services\Dependencies\ResourceCatalog;
 use App\Services\Deployments\DeployJudge;
 use App\Support\Audit;
 use App\Tenancy\Tenant;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -92,7 +93,30 @@ class DeploymentApiController extends Controller
             $refs[$ref['type'].':'.$ref['id']] = ['resource_type' => $ref['type'], 'resource_id' => (int) $ref['id']];
         }
 
-        $deployment = DB::transaction(function () use ($v, $refs, $request) {
+        try {
+            $deployment = $this->create($v, $refs, $request);
+        } catch (UniqueConstraintViolationException $exception) {
+            // A concurrent request with the same external_id won the race
+            // (unique team_id + external_id): answer like a retry. Only the
+            // token's own team is searched.
+            $existing = isset($v['external_id']) ? Deployment::query()->where('external_id', $v['external_id'])->first() : null;
+
+            if ($existing === null) {
+                throw $exception;
+            }
+
+            return response()->json(['data' => $this->present($existing)], 200);
+        }
+
+        Audit::log('deployment.recorded', "Deployment {$deployment->label()} vastgelegd via de API", $deployment);
+
+        return response()->json(['data' => $this->present($deployment)], 201);
+    }
+
+    /** @param  array<string, array{resource_type: string, resource_id: int}>  $refs */
+    private function create(array $v, array $refs, Request $request): Deployment
+    {
+        return DB::transaction(function () use ($v, $refs, $request) {
             $deployment = new Deployment([
                 ...collect($v)->except(['resources', 'deployed_at'])->all(),
                 'environment' => $v['environment'] ?? 'production',
@@ -104,10 +128,6 @@ class DeploymentApiController extends Controller
 
             return $deployment;
         });
-
-        Audit::log('deployment.recorded', "Deployment {$deployment->label()} vastgelegd via de API", $deployment);
-
-        return response()->json(['data' => $this->present($deployment)], 201);
     }
 
     /** @return array<string, mixed> */

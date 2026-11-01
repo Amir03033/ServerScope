@@ -12,6 +12,7 @@ use App\Services\Incidents\IncidentManager;
 use App\Services\Incidents\Signal;
 use App\Services\Incidents\TimeMachine;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -169,6 +170,34 @@ class DeployJudgeTest extends TestCase
         $this->record([...$this->body(['external_id' => 'gh-123']), 'resources' => [['type' => 'server', 'id' => $this->b['server']->id]]], $this->b['plain'])->assertCreated();
 
         $this->assertSame(2, Deployment::query()->withoutGlobalScopes()->where('team_id', $this->a['team']->id)->count());
+    }
+
+    public function test_a_concurrent_request_with_the_same_external_id_gets_the_existing_deployment(): void
+    {
+        // Simulate the race: another request inserts the same external_id
+        // right after this request's "does it exist?" lookup.
+        $raced = null;
+        DB::listen(function ($query) use (&$raced) {
+            if ($raced === null && str_starts_with(strtolower($query->sql), 'select') && str_contains($query->sql, 'deployments') && str_contains($query->sql, 'external_id')) {
+                $raced = DB::table('deployments')->insertGetId(['team_id' => $this->a['team']->id, 'application' => 'shop', 'environment' => 'production', 'deployed_at' => now(), 'external_id' => 'gh-race', 'created_at' => now(), 'updated_at' => now()]);
+            }
+        });
+
+        $this->record($this->body(['external_id' => 'gh-race']))->assertOk()->assertJsonPath('data.id', $raced);
+
+        $this->assertSame(1, Deployment::query()->withoutGlobalScopes()->where('external_id', 'gh-race')->count());
+        $this->assertSame(0, DB::table('deployment_resources')->count(), 'the losing request stored nothing');
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'deployment.recorded']);
+    }
+
+    public function test_other_unique_violations_are_not_swallowed(): void
+    {
+        // Without an external_id there is no existing deployment to return.
+        Deployment::creating(fn () => throw new UniqueConstraintViolationException('sqlite', 'insert', [], new \RuntimeException('UNIQUE constraint failed')));
+
+        $this->withoutExceptionHandling();
+        $this->expectException(UniqueConstraintViolationException::class);
+        $this->record($this->body());
     }
 
     public function test_a_measured_regression_is_reported_with_its_evidence(): void

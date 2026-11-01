@@ -142,6 +142,30 @@ class MetricRollupTest extends TestCase
         $this->assertSame($this->server->team_id, $day->team_id);
     }
 
+    public function test_disk_paths_differing_only_in_case_or_trailing_space_stay_separate(): void
+    {
+        $this->samples($this->server, '2026-11-10 10:00:00', '2026-11-10 11:00:00', values: fn () => [
+            'disks' => [['path' => '/data', 'percent' => 10], ['path' => '/Data', 'percent' => 90], ['path' => '/data ', 'percent' => 50]],
+        ]);
+
+        app(MetricRollups::class)->rollup($this->server);
+
+        $this->assertSame(10.0, $this->rollup('disk_percent', '2026-11-10 10:00:00', '/data')->max);
+        $this->assertSame(90.0, $this->rollup('disk_percent', '2026-11-10 10:00:00', '/Data')->max);
+        $this->assertSame(50.0, $this->rollup('disk_percent', '2026-11-10 10:00:00', '/data ')->max);
+        $this->assertSame(3, MetricRollup::query()->where('period', 'hour')->where('metric', 'disk_percent')->count());
+    }
+
+    public function test_mysql_connections_use_utc_sessions(): void
+    {
+        $config = require config_path('database.php');
+
+        foreach (['mysql', 'mariadb'] as $connection) {
+            $this->assertSame('+00:00', $config['connections'][$connection]['timezone'], $connection);
+        }
+        $this->assertSame('UTC', config('app.timezone'));
+    }
+
     public function test_running_again_or_recomputing_creates_no_duplicates_and_changes_nothing(): void
     {
         $this->samples($this->server, '2026-11-10 08:00:00', '2026-11-10 12:30:00');
