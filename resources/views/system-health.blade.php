@@ -24,4 +24,26 @@
             </table>
         </div>
     </section>
+
+    @php
+        // Probe status (platform infrastructure). Counts: the whole platform
+        // for the platform administrator, otherwise the own team only. No URLs.
+        $probes = \App\Models\Probe::query()->orderBy('id')->get();
+        $probeCounts = \App\Models\ProbeCheck::query()
+            ->when(\Illuminate\Support\Facades\Gate::allows('platform'), fn ($q) => $q->withoutGlobalScopes())
+            ->where('requested_at', '>=', now()->subDay())->whereNotNull('outcome')
+            ->selectRaw('outcome, count(*) as n')->groupBy('outcome')->pluck('n', 'outcome');
+    @endphp
+    @if ($probes->isNotEmpty())
+        <section class="ss-panel mt-4" aria-labelledby="probe-status-title" data-testid="probe-status">
+            <div class="ss-panel-head"><div><h2 id="probe-status-title" class="ss-panel-title">{{ __('probes.title') }}</h2><p class="ss-panel-sub">{{ __('probes.text') }}</p></div></div>
+            @foreach ($probes as $probe)
+                <p class="m-0 mt-2 text-sm"><x-status :status="$probe->isHealthy() ? 'up' : 'down'" :label="$probe->isHealthy() ? __('probes.healthy') : __('probes.unavailable')" />
+                    <strong>{{ $probe->name }}</strong>@if ($probe->location) · {{ $probe->location }}@endif
+                    <span class="block text-xs text-muted">{{ __('probes.last_seen') }}: {{ $probe->last_seen_at ? \App\Support\Time::dateTime($probe->last_seen_at) : __('probes.never') }}</span></p>
+            @endforeach
+            <p class="m-0 mt-3 text-sm">{{ __('probes.last_day') }}:
+                @foreach (\App\Models\ProbeCheck::OUTCOMES as $outcome){{ __('probes.outcome.'.$outcome) }}: {{ $probeCounts[$outcome] ?? 0 }}@if (! $loop->last) · @endif @endforeach</p>
+        </section>
+    @endif
 </x-layouts.app>

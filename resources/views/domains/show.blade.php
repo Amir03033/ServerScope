@@ -370,6 +370,16 @@
                 </section>
 
                 <x-dependencies :resource="$domain" />
+
+                @if (($probeChecks ?? collect())->isNotEmpty())
+                    <section class="ss-panel" aria-labelledby="probe-title" data-testid="probe-checks">
+                        <div class="ss-panel-head"><div><h2 id="probe-title" class="ss-panel-title">{{ __('probes.domain_title') }}</h2><p class="ss-panel-sub">{{ __('probes.domain_text') }}</p></div></div>
+                        @foreach ($probeChecks as $check)
+                            <p class="m-0 mt-2 text-sm"><strong>{{ __('probes.outcome.'.($check->outcome ?? 'pending')) }}</strong>
+                                <span class="block text-xs text-muted">{{ Time::dateTime($check->checked_at ?? $check->requested_at) }} · {{ $check->probe?->name }}@if ($check->http_status_code) · HTTP {{ $check->http_status_code }}@endif @if ($check->response_time_ms !== null) · {{ Format::number($check->response_time_ms, 0) }} ms @endif @if ($check->error_code) · {{ $check->error_code }}@endif</span></p>
+                        @endforeach
+                    </section>
+                @endif
             </div>
 
             @if ($predictions->isNotEmpty())

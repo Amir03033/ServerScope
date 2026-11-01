@@ -238,6 +238,32 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Remote probe (Global Pulse Lite)
+    |--------------------------------------------------------------------------
+    |
+    | Central side: when a website reaches its failure threshold and the
+    | probe (serverscope:probe:create) has polled within stale_after_seconds,
+    | the incident waits up to job_ttl_seconds for the probe's own check.
+    | Without a healthy probe everything works as before.
+    | Probe side (a second installation running serverscope:probe:run):
+    | central_url, key and secret from serverscope:probe:create.
+    |
+    */
+
+    'probe' => [
+        'confirmation_enabled' => (bool) env('SERVERSCOPE_PROBE_CONFIRMATION', true),
+        'job_ttl_seconds' => (int) env('SERVERSCOPE_PROBE_JOB_TTL', 120),
+        'stale_after_seconds' => (int) env('SERVERSCOPE_PROBE_STALE_AFTER', 180),
+        'recheck_minutes' => (int) env('SERVERSCOPE_PROBE_RECHECK_MINUTES', 10),
+        'max_timeout_seconds' => (float) env('SERVERSCOPE_PROBE_MAX_TIMEOUT', 10),
+        'central_url' => env('SERVERSCOPE_PROBE_URL'),
+        'key' => env('SERVERSCOPE_PROBE_KEY'),
+        'secret' => env('SERVERSCOPE_PROBE_SECRET'),
+        'poll_seconds' => (int) env('SERVERSCOPE_PROBE_POLL_SECONDS', 30),
+    ],
+
     'reports' => [
         // Availability target shown in reports (calculated, not contractual).
         'default_target' => (float) env('SERVERSCOPE_REPORT_TARGET', 99.9),

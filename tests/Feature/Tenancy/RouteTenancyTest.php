@@ -53,6 +53,11 @@ class RouteTenancyTest extends TestCase
         'POST api/agent/enroll',
         // Payment provider webhook: signature-verified by the driver, 404 while billing is off.
         'POST api/webhooks/payments',
+        // Remote probe (Global Pulse Lite): HMAC-signed by the platform's
+        // probe, which serves all teams like the main monitor; every query
+        // filters on the probe's own jobs (GlobalPulseTest).
+        'GET|HEAD api/probe/jobs',
+        'POST api/probe/results',
         'GET|HEAD install.sh',
         'GET|HEAD agent/serverscope-agent-{version}.tar.gz',
         'GET|HEAD agent/serverscope-agent-{version}.tar.gz.sha256',

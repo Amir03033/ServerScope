@@ -122,6 +122,8 @@ class DomainController extends Controller
             'daily' => $uptime->dailyBuckets($domain, 30),
             'series' => $uptime->responseSeries($domain, $now->copy()->subDay(), $now),
             // Deployments linked to this domain, as markers on the 48 half-hour buckets.
+            // Remote probe confirmations of this domain (team-scoped).
+            'probeChecks' => \App\Models\ProbeCheck::query()->with('probe:id,name')->where('domain_id', $domain->id)->latest('requested_at')->latest('id')->limit(5)->get(),
             'deployMarkers' => \App\Models\Deployment::query()->forResource($domain)->whereBetween('deployed_at', [$now->copy()->subDay(), $now])->limit(20)->get()
                 ->map(fn ($d) => ['index' => min(47, (int) floor(($d->deployed_at->getTimestamp() - $now->copy()->subDay()->getTimestamp()) / 1800)), 'label' => __('deployments.chart_marker').' '.$d->label()])->all(),
             'checks' => $checks,

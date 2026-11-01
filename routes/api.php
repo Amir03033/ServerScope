@@ -44,6 +44,12 @@ Route::post('/agent/update/report', [\App\Http\Controllers\Api\AgentUpdateContro
     ->middleware([AuthenticateAgent::class, 'throttle:agent-update'])
     ->name('agent.update.report');
 
+// Remote probe (Global Pulse Lite): signed requests, see AuthenticateProbe.
+Route::get('/probe/jobs', [\App\Http\Controllers\Api\ProbeController::class, 'jobs'])
+    ->middleware([\App\Http\Middleware\AuthenticateProbe::class, 'throttle:30,1'])->name('probe.jobs');
+Route::post('/probe/results', [\App\Http\Controllers\Api\ProbeController::class, 'results'])
+    ->middleware([\App\Http\Middleware\AuthenticateProbe::class, 'throttle:30,1'])->name('probe.results');
+
 // Public REST API, authenticated with personal API tokens.
 Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-token')->group(function () {
     Route::middleware(AuthenticateApiToken::class.':read')->group(function () {

@@ -258,3 +258,43 @@ is enabled, or **Beheer → Systeemstatus** shows a queue backlog. Page
 checks are capped at `SERVERSCOPE_PAGE_CHECKS_PER_RUN` (500) per minute in
 total; raise it together with worker capacity.
 
+
+## 10. Remote probe (Global Pulse Lite)
+
+One second monitoring location that re-checks a failing website before an
+HTTP incident is opened. Without a probe nothing changes.
+
+**Central server:** migrate, then register the probe once (prints the
+credentials once; `--rotate` replaces the secret):
+
+```
+php artisan serverscope:probe:create probe-1 --location="Frankfurt"
+```
+
+The scheduler runs `serverscope:probe:expire` every minute.
+
+**Probe host** (a small VPS in another network/region): the same code,
+`composer install --no-dev`, and an `.env` with `APP_KEY` (its own),
+`APP_ENV=production`, `CACHE_STORE=file`, `SERVERSCOPE_PROBE_URL=https://…`,
+`SERVERSCOPE_PROBE_KEY`, `SERVERSCOPE_PROBE_SECRET`. No database, no web
+server and no inbound ports are needed. Run `php artisan serverscope:probe:run`
+as a supervised service (systemd, `Restart=always`); it polls every 30 s.
+Outbound: HTTPS to ServerScope, TCP 80/443 to monitored sites, DNS.
+
+**Behaviour.** At the failure threshold, with a probe that polled in the
+last 3 minutes, a confirmation job is queued (one per website) and the
+incident waits for it: probe fails too → critical incident ("confirmed");
+probe reaches the site → warning incident ("main location only"),
+rechecked every 10 minutes and raised to critical when confirmed; main
+monitor recovered but probe fails → recorded only ("probe only"); no answer
+within 120 s or no healthy probe → critical incident as before
+("unavailable"). Alerts are therefore delayed by at most about two
+minutes, and only while the probe is healthy.
+
+**Security.** Requests are HMAC-SHA256 signed (method, path, timestamp,
+nonce, body hash), refused outside ±5 minutes or with a reused nonce, and
+rate limited. Jobs contain only URL, time-out and redirect setting; results
+only status code, timing and an error code. The probe forces the SSRF rules
+on (private, loopback, link-local/metadata, reserved addresses and
+non-allowed ports are blocked, also after redirects), makes plain GET
+requests with a 10 s cap, and accepts no inbound connections.

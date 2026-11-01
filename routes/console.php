@@ -26,6 +26,11 @@ Schedule::command('serverscope:dispatch-page-checks')
     ->everyMinute()
     ->withoutOverlapping(5);
 
+// Unanswered remote-probe confirmations fall back to a normal incident.
+Schedule::command('serverscope:probe:expire')
+    ->everyMinute()
+    ->withoutOverlapping(5);
+
 Schedule::command('serverscope:escalate-incidents')
     ->everyMinute()
     ->withoutOverlapping(5);
