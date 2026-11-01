@@ -112,6 +112,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php $isAdmin = auth()->user()->can('admin'); /* once per page, not per row */ @endphp
                         @foreach ($servers as $server)
                             @php
                                 $sample = $server->latestMetricSample;
@@ -131,7 +132,7 @@
                                     @if ($state === 'deleted')
                                         <x-status status="closed" :label="__('servers.deleted')" />
                                     @else
-                                        <x-health :state="\App\Support\Health::server($server, $incidentSeverities[$server->id] ?? null)" />
+                                        <x-health :state="\App\Support\Health::server($server, $incidentSeverities[$server->id] ?? null, $offlineWebsites[$server->id] ?? null)" />
                                     @endif
                                 </td>
                                 <td data-label="{{ __('servers.index.col_last_contact') }}" class="whitespace-nowrap text-muted" title="{{ Time::format($server->last_seen_at, 'd-m-Y H:i:s') }}">
@@ -146,7 +147,7 @@
                                             [__('servers.actions.metrics'), route('servers.show', $server).'#metrics', 'i-metrics'],
                                             [__('servers.actions.incidents'), route('incidents.index', ['server' => $server->id, 'state' => 'all']), 'i-siren'],
                                         ];
-                                        if (auth()->user()->can('admin') && ! $server->trashed()) {
+                                        if ($isAdmin && ! $server->trashed()) {
                                             $actions[] = [__('servers.actions.edit'), route('servers.edit', $server), 'i-edit'];
                                             $actions[] = [__('servers.actions.maintenance'), route('servers.show', $server).'#overview', 'i-wrench'];
                                         }

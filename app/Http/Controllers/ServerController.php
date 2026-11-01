@@ -78,8 +78,10 @@ class ServerController extends Controller
 
         $favorites = \App\Models\Favorite::idsFor($request->user(), 'server');
         $incidentSeverities = \App\Support\Health::serverIncidentSeverities($servers->getCollection());
+        // Websites of the silent servers on this page in two queries instead of two per row.
+        $offlineWebsites = app(\App\Services\ServerDiagnosis::class)->websitesFor($servers->getCollection()->filter(fn (Server $s) => ! $s->trashed() && $s->displayStatus() === 'offline')->values());
 
-        return view('servers.index', compact('servers', 'filters', 'counts', 'status', 'favorites', 'incidentSeverities'));
+        return view('servers.index', compact('servers', 'filters', 'counts', 'status', 'favorites', 'incidentSeverities', 'offlineWebsites'));
     }
 
     public function create(): View

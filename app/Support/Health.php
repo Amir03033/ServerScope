@@ -24,13 +24,16 @@ class Health
 {
     public const STATES = ['healthy', 'warning', 'critical', 'unknown', 'offline', 'maintenance', 'paused'];
 
-    /** @param  ?string  $incidentSeverity  highest severity of the server's active root incidents */
-    public static function server(Server $server, ?string $incidentSeverity = null): string
+    /**
+     * @param  ?string  $incidentSeverity  highest severity of the server's active root incidents
+     * @param  ?Collection  $websites  preloaded websites on the server (ServerDiagnosis::websitesFor), to avoid queries per row
+     */
+    public static function server(Server $server, ?string $incidentSeverity = null, ?Collection $websites = null): string
     {
         return match ($server->displayStatus()) {
             'maintenance' => 'maintenance',
             'pending' => 'unknown',
-            'offline' => app(ServerDiagnosis::class)->diagnose($server)['state'] === 'host_unreachable' ? 'offline' : 'unknown',
+            'offline' => ($websites !== null ? ServerDiagnosis::offlineState($websites) : app(ServerDiagnosis::class)->diagnose($server)['state']) === 'host_unreachable' ? 'offline' : 'unknown',
             default => match (true) {
                 $incidentSeverity === 'critical' => 'critical',
                 in_array($incidentSeverity, ['high', 'warning'], true) => 'warning',

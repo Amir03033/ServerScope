@@ -107,6 +107,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php $isAdmin = auth()->user()->can('admin'); /* once per page, not per row */ @endphp
                         @foreach ($domains as $domain)
                             @php
                                 $sslDays = $domain->sslDaysRemaining();
@@ -171,13 +172,13 @@
                                             [__('domains.actions.expiry'), route('domains.show', $domain).'#certificate', 'i-calendar'],
                                             [__('domains.actions.incidents'), route('incidents.index', ['domain' => $domain->id, 'state' => 'all']), 'i-siren'],
                                         ]">
-                                            @can('admin')
+                                            @if ($isAdmin)
                                                 <a class="ss-menu-item" role="menuitem" href="{{ route('domains.create', ['from' => $domain->id]) }}"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg>{{ __('domains.actions.duplicate') }}</a>
                                                 <form method="POST" action="{{ route($domain->is_active ? 'domains.pause' : 'domains.resume', $domain) }}" data-confirm="{{ __($domain->is_active ? 'domains.actions.pause_confirm' : 'domains.actions.resume_confirm', ['name' => $domain->displayName()]) }}">
                                                     @csrf
                                                     <button class="ss-menu-item" role="menuitem" type="submit"><svg class="ico" aria-hidden="true"><use href="#{{ $domain->is_active ? 'i-pause' : 'i-play' }}"/></svg>{{ __($domain->is_active ? 'domains.actions.pause' : 'domains.actions.resume') }}</button>
                                                 </form>
-                                            @endcan
+                                            @endif
                                         </x-row-actions>
                                     @endunless
                                 </td>

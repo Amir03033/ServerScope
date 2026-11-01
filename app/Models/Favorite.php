@@ -18,6 +18,19 @@ class Favorite extends Model
 
     protected $guarded = ['*'];
 
+    /**
+     * Removes every user's favourite of a resource (all users, so without
+     * the tenant scope; limited to that one resource and its team).
+     */
+    public static function forgetResource(Model $resource): int
+    {
+        return self::query()->withoutGlobalScopes()
+            ->where('team_id', $resource->getAttribute('team_id'))
+            ->where('favoritable_type', $resource->getMorphClass())
+            ->where('favoritable_id', $resource->getKey())
+            ->delete();
+    }
+
     /** Ids of the user's favourites of one type within the current team. */
     public static function idsFor(?User $user, string $type): array
     {

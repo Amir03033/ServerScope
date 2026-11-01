@@ -8,10 +8,12 @@ use App\Models\Deployment;
 use App\Models\Domain;
 use App\Models\Favorite;
 use App\Models\MetricSample;
+use App\Models\ResourceDependency;
 use App\Models\Server;
 use App\Services\Incidents\IncidentManager;
 use App\Services\Incidents\IncidentMemory;
 use App\Services\Incidents\Signal;
+use App\Services\ServerDiagnosis;
 use App\Support\Health;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -148,6 +150,34 @@ class UxImprovementsTest extends TestCase
         $this->actingAs($this->a['member'])->get(route('domains.index', ['favorites' => 1]))->assertOk()->assertSee($this->a['domain']->name);
     }
 
+    public function test_favourites_are_removed_when_the_resource_is_permanently_deleted(): void
+    {
+        $fav = fn ($user, $type, $id) => Favorite::query()->withoutGlobalScopes()->insert(['user_id' => $user->id, 'team_id' => $user->current_team_id, 'favoritable_type' => $type, 'favoritable_id' => $id, 'created_at' => now()]);
+        $server = $this->a['server'];
+        $domain = $this->a['domain'];
+        $fav($this->a['admin'], 'server', $server->id);
+        $fav($this->a['member'], 'server', $server->id);
+        $fav($this->a['member'], 'domain', $domain->id);
+        $otherServer = Server::forceCreate(['team_id' => $this->a['team']->id, 'name' => 'blijft', 'hostname' => 'blijft.test']);
+        $fav($this->a['member'], 'server', $otherServer->id);
+        $fav($this->b['admin'], 'server', $this->b['server']->id);
+        $count = fn () => Favorite::query()->withoutGlobalScopes()->count();
+
+        // A soft delete keeps them (a restore brings them back).
+        $this->actingAs($this->a['admin'])->delete(route('servers.destroy', $server));
+        $this->assertSame(5, $count());
+
+        $this->actingAs($this->a['admin'])->delete(route('servers.force-destroy', $server), ['confirm_name' => $server->name])->assertSessionHasNoErrors();
+        $this->assertSame(0, Favorite::query()->withoutGlobalScopes()->where('favoritable_type', 'server')->where('favoritable_id', $server->id)->count());
+
+        $domain->delete();
+        $this->actingAs($this->a['admin'])->delete(route('domains.force-destroy', $domain), ['confirm_name' => $domain->name])->assertSessionHasNoErrors();
+        $this->assertSame(0, Favorite::query()->withoutGlobalScopes()->where('favoritable_type', 'domain')->count());
+
+        // Other resources and other teams are untouched.
+        $this->assertSame([$otherServer->id, $this->b['server']->id], Favorite::query()->withoutGlobalScopes()->orderBy('id')->pluck('favoritable_id')->all());
+    }
+
     // ---------- duplicate configuration ----------
 
     public function test_a_domain_configuration_is_duplicated_without_identity(): void
@@ -199,6 +229,49 @@ class UxImprovementsTest extends TestCase
 
         // The list shows the same state with text and a description.
         $this->actingAs($this->a['member'])->get(route('domains.index'))->assertOk()->assertSee('data-health="paused"', false)->assertSee(trans('health.descriptions.paused', [], 'nl'));
+    }
+
+    public function test_the_server_list_preloads_diagnosis_evidence_with_the_same_result(): void
+    {
+        $diagnosis = app(ServerDiagnosis::class);
+        $make = function (string $name, ?string $http) {
+            $server = Server::forceCreate(['team_id' => $this->a['team']->id, 'name' => $name, 'hostname' => "{$name}.test", 'last_seen_at' => now()->subHour()]);
+
+            if ($http !== null) {
+                $domain = Domain::forceCreate(['team_id' => $this->a['team']->id, 'name' => "{$name}.example.com", 'http_enabled' => true, 'http_status' => $http, 'http_consecutive_failures' => $http === 'down' ? 3 : 0, 'http_last_checked_at' => now()->subMinute()]);
+                ResourceDependency::forceCreate(['team_id' => $this->a['team']->id, 'dependent_type' => 'domain', 'dependent_id' => $domain->id, 'dependency_type' => 'server', 'dependency_id' => $server->id]);
+            }
+
+            return $server;
+        };
+        $servers = collect([$make('down-site', 'down'), $make('up-site', 'up'), $make('no-site', null)]);
+        // An edge into another team never counts as evidence.
+        ResourceDependency::forceCreate(['team_id' => $this->a['team']->id, 'dependent_type' => 'domain', 'dependent_id' => $this->b['domain']->id, 'dependency_type' => 'server', 'dependency_id' => $servers[2]->id]);
+        $this->b['domain']->forceFill(['http_enabled' => true, 'http_status' => 'down', 'http_consecutive_failures' => 3, 'http_last_checked_at' => now()])->save();
+
+        $preloaded = $diagnosis->websitesFor($servers);
+
+        foreach ($servers as $server) {
+            $this->assertSame($diagnosis->diagnose($server)['state'], ServerDiagnosis::offlineState($preloaded[$server->id]), $server->name);
+            $this->assertSame(Health::server($server), Health::server($server, null, $preloaded[$server->id]), $server->name);
+        }
+        $this->assertSame(['offline', 'unknown', 'unknown'], $servers->map(fn ($s) => Health::server($s, null, $preloaded[$s->id]))->all());
+
+        // The list's query count stays the same with more silent servers.
+        $queries = function () {
+            $n = 0;
+            DB::listen(function () use (&$n) {
+                $n++;
+            });
+            $this->actingAs($this->a['member'])->get(route('servers.index'))->assertOk();
+
+            return $n;
+        };
+        $three = $queries();
+        foreach (range(1, 5) as $i) {
+            $make("extra-{$i}", 'down');
+        }
+        $this->assertSame($three, $queries(), 'no per-row queries');
     }
 
     public function test_stale_metrics_are_shown_as_stale_not_as_downtime(): void

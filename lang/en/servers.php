@@ -70,8 +70,8 @@ return [
         'maintenance_duration' => 'Maintenance duration',
         'maintenance_custom_end' => 'Custom end time',
         'maintenance_invalid_end' => 'Choose an end time at least 5 minutes from now and at most 7 days ahead.',
-        'maintenance_confirm' => 'Start maintenance for :name now? Alerts and incidents for this server are suppressed until the end time.',
-        'maintenance_effect' => 'During maintenance the agent keeps reporting and all metrics are stored, but every alert for this server (including critical ones and agent offline) and its notifications are suppressed. Website checks on this server keep running and alerting.',
+        'maintenance_confirm' => 'Start maintenance for :name now? New alerts and incidents for this server are not opened until the end time.',
+        'maintenance_effect' => 'During maintenance no new alerts or incidents are opened for this server\'s resource metrics, agent offline and service checks, at every severity including critical. Metrics keep being collected. Alerts and incidents that were already open continue and can still notify and escalate; capacity forecasts and the website checks on this server keep running and alerting. New alerts are possible again as soon as the window ends.',
         'durations' => [
             'custom' => 'Custom end time',
             '30' => '30 minutes',

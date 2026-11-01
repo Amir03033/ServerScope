@@ -117,7 +117,8 @@ class IncidentInvestigatorTest extends TestCase
         $this->assertSame(['completed', 'manual', 'test-model-2026', 1234, 321, $this->a['team']->id], [$analysis->status, $analysis->trigger, $analysis->model, $analysis->input_tokens, $analysis->output_tokens, $analysis->team_id]);
         $result = $analysis->result;
         // Unsupported references and facts without evidence are dropped.
-        $this->assertSame([['statement' => 'nginx stopped before the onset', 'evidence' => ['E1']]], $result['observed_facts']);
+        // assertEquals: MySQL JSON columns return object keys in another order.
+        $this->assertEquals([['statement' => 'nginx stopped before the onset', 'evidence' => ['E1']]], $result['observed_facts']);
         $this->assertSame(['nginx crashed', 'Disk full'], array_column($result['root_causes'], 'title'), 'ranked by plausibility');
         $this->assertSame([$past->id], array_column($result['historical_references'], 'incident_id'));
 

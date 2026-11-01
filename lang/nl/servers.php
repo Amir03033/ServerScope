@@ -70,8 +70,8 @@ return [
         'maintenance_duration' => 'Duur onderhoud',
         'maintenance_custom_end' => 'Eigen eindtijd',
         'maintenance_invalid_end' => 'Kies een eindtijd van minstens 5 minuten vanaf nu en hoogstens 7 dagen vooruit.',
-        'maintenance_confirm' => 'Onderhoud voor :name nu starten? Meldingen en incidenten voor deze server worden tot de eindtijd onderdrukt.',
-        'maintenance_effect' => 'Tijdens onderhoud blijft de agent rapporteren en worden alle metingen opgeslagen, maar elke melding voor deze server (ook kritieke en agent offline) en de bijbehorende notificaties worden onderdrukt. Websitecontroles op deze server blijven draaien en melden.',
+        'maintenance_confirm' => 'Onderhoud voor :name nu starten? Tot de eindtijd worden voor deze server geen nieuwe meldingen en incidenten geopend.',
+        'maintenance_effect' => 'Tijdens onderhoud worden voor de resourcemetingen, agent offline en servicecontroles van deze server geen nieuwe meldingen of incidenten geopend, bij elke ernst, ook kritiek. Metingen worden gewoon verzameld. Meldingen en incidenten die al open waren lopen door en kunnen nog notificeren en escaleren; capaciteitsprognoses en de websitecontroles op deze server blijven draaien en melden. Zodra het venster afloopt zijn nieuwe meldingen weer mogelijk.',
         'durations' => [
             'custom' => 'Eigen eindtijd',
             '30' => '30 minuten',

@@ -58,6 +58,14 @@ class Server extends Model
     // auto_update_enabled and the updater_* fields are only set with
     // forceFill (by a team administrator, or by the updater check-in).
 
+    protected static function booted(): void
+    {
+        // Personal favourites have no foreign key to the (polymorphic)
+        // resource: remove them when the resource is permanently deleted.
+        // A soft delete keeps them, so a restore brings them back.
+        static::forceDeleted(fn (self $resource) => Favorite::forgetResource($resource));
+    }
+
     protected function casts(): array
     {
         return [
