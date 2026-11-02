@@ -294,6 +294,33 @@ return [
         'max_per_team_per_hour' => (int) env('SERVERSCOPE_AI_MAX_PER_TEAM_HOUR', 20),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | NEXUS Intelligence (deterministic investigations)
+    |--------------------------------------------------------------------------
+    |
+    | Rule-based investigations of incidents from data ServerScope already
+    | stores. No AI and no external service: available on every plan and
+    | without an API key. Runs on the queue (also the scheduler worker,
+    | whose run is limited to about 55 seconds; job_timeout_seconds stays
+    | below that). auto_triggers: incident events that queue a run for a
+    | root incident (opened, reopened, resolved); empty = manual only.
+    |
+    */
+
+    'intelligence' => [
+        'auto_triggers' => array_values(array_filter(array_map('trim', explode(',', (string) env('SERVERSCOPE_INTELLIGENCE_TRIGGERS', 'opened,reopened,resolved'))))),
+        // Waits so grouping, confirmations and the next samples are in.
+        'auto_delay_seconds' => (int) env('SERVERSCOPE_INTELLIGENCE_DELAY', 120),
+        'max_runs_per_team_per_hour' => (int) env('SERVERSCOPE_INTELLIGENCE_MAX_PER_TEAM_HOUR', 60),
+        'manual_cooldown_seconds' => (int) env('SERVERSCOPE_INTELLIGENCE_MANUAL_COOLDOWN', 60),
+        // Bounds of one run; whatever is cut off is reported as truncated.
+        'max_resources' => (int) env('SERVERSCOPE_INTELLIGENCE_MAX_RESOURCES', 150),
+        'max_evidence' => (int) env('SERVERSCOPE_INTELLIGENCE_MAX_EVIDENCE', 300),
+        'impact_depth' => (int) env('SERVERSCOPE_INTELLIGENCE_IMPACT_DEPTH', 4),
+        'job_timeout_seconds' => (int) env('SERVERSCOPE_INTELLIGENCE_JOB_TIMEOUT', 45),
+    ],
+
     'reports' => [
         // Availability target shown in reports (calculated, not contractual).
         'default_target' => (float) env('SERVERSCOPE_REPORT_TARGET', 99.9),
@@ -321,6 +348,11 @@ return [
         'discovery_runs_days' => env('SERVERSCOPE_RETAIN_DISCOVERY_RUNS_DAYS'),
         'service_events_days' => env('SERVERSCOPE_RETAIN_SERVICE_EVENTS_DAYS'),
         'predictions_days' => env('SERVERSCOPE_RETAIN_PREDICTIONS_DAYS'),
+        // Investigation snapshots of incidents that are no longer active.
+        // A snapshot keeps the evidence it was built from (derived values,
+        // names, timestamps) after the monitoring rows themselves were
+        // pruned. Empty or 0 = keep forever.
+        'investigations_days' => env('SERVERSCOPE_RETAIN_INVESTIGATIONS_DAYS', 365),
         // Rollups are small (about 1.5 MB per server per month for hourly
         // rows) and are kept independently of raw samples.
         'metric_rollups_hourly_days' => env('SERVERSCOPE_RETAIN_HOURLY_ROLLUPS_DAYS', 400),

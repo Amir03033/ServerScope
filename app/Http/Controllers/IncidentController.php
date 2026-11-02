@@ -192,6 +192,7 @@ class IncidentController extends Controller
             'aiAvailable' => $investigator->available(),
             'aiPlan' => $investigator::allowedFor((int) $incident->team_id),
             'analysis' => IncidentAnalysis::query()->where('incident_id', $incident->id)->latest('id')->first(),
+            'investigation' => \App\Services\Intelligence\Investigations::latest($incident),
             'learning' => $incident->learning,
             'similar' => $memory->similar($incident),
             'deploymentCandidates' => $memory->deploymentCandidates($incident),

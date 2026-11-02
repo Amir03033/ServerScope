@@ -4,7 +4,7 @@
     "name": "i18n"
   },
   "resources/css/app.css": {
-    "file": "assets/app-DM8ry88T.css",
+    "file": "assets/app-4f_Z0EO7.css",
     "name": "app",
     "names": [
       "app.css"
@@ -48,7 +48,7 @@
     ]
   },
   "resources/js/nexus.js": {
-    "file": "assets/nexus-y0vkQZr_.js",
+    "file": "assets/nexus-zHdzaqLD.js",
     "name": "nexus",
     "src": "resources/js/nexus.js",
     "isEntry": true,

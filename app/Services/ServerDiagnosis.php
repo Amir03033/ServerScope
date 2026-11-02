@@ -200,10 +200,21 @@ class ServerDiagnosis
     {
         [$up, $down] = self::splitWebsites($websites);
 
+        return self::classifyOffline($up->isNotEmpty(), $down->isNotEmpty());
+    }
+
+    /**
+     * Without agent data: websites on the server that answer point to an
+     * unhealthy agent, websites that fail too point to the host, and
+     * without such independent evidence the cause stays unknown. Shared
+     * with NEXUS Intelligence, which applies it to historical checks.
+     */
+    public static function classifyOffline(bool $websitesUp, bool $websitesDown): string
+    {
         return match (true) {
-            $up->isNotEmpty() && $down->isEmpty() => 'agent_unhealthy',
-            $down->isNotEmpty() && $up->isEmpty() => 'host_unreachable',
-            $down->isNotEmpty() => 'agent_offline_mixed',
+            $websitesUp && ! $websitesDown => 'agent_unhealthy',
+            $websitesDown && ! $websitesUp => 'host_unreachable',
+            $websitesDown => 'agent_offline_mixed',
             default => 'agent_offline_unknown',
         };
     }

@@ -101,6 +101,7 @@ return [
             'incidents_other' => ':count actieve incidenten',
             'opened' => 'geopend :time',
             'grouped' => 'gegroepeerd onder een hoofdincident',
+            'investigation' => 'Onderzoek',
             'open' => [
                 'server' => 'Server openen',
                 'service' => 'Server openen',

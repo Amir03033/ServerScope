@@ -264,6 +264,11 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::post('/incidents/{incident}/analysis', [IncidentController::class, 'requestAnalysis'])->middleware('throttle:10,1')->name('incidents.analysis');
     Route::post('/incidents/{incident}/learning', [IncidentController::class, 'saveLearning'])->middleware('throttle:30,1')->name('incidents.learning');
     Route::get('/incidents/{incident}/time-machine', [IncidentController::class, 'timeMachine'])->middleware('throttle:30,1')->name('incidents.time-machine');
+    // NEXUS Intelligence (deterministic investigations).
+    Route::get('/incidents/{incident}/investigation', [\App\Http\Controllers\InvestigationController::class, 'latest'])->middleware('throttle:60,1')->name('incidents.investigation');
+    Route::post('/incidents/{incident}/investigations', [\App\Http\Controllers\InvestigationController::class, 'store'])->middleware('throttle:10,1')->name('investigations.store');
+    Route::get('/investigations/{investigation}', [\App\Http\Controllers\InvestigationController::class, 'show'])->middleware('throttle:60,1')->name('investigations.show');
+    Route::get('/investigations/{investigation}/export', [\App\Http\Controllers\InvestigationController::class, 'export'])->middleware('throttle:20,1')->name('investigations.export');
     Route::post('/incidents/{incident}/status', [IncidentController::class, 'transition'])->name('incidents.transition');
     Route::post('/incidents/{incident}/assign', [IncidentController::class, 'assign'])->name('incidents.assign');
     Route::post('/incidents/{incident}/detach', [IncidentController::class, 'detach'])->name('incidents.detach');

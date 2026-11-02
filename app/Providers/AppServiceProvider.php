@@ -141,6 +141,8 @@ class AppServiceProvider extends ServiceProvider
 
         \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\IncidentNotifier::class);
         \Illuminate\Support\Facades\Event::listen(\App\Events\IncidentOpened::class, \App\Services\Incidents\QueueIncidentAnalysis::class);
+        // NEXUS Intelligence: deterministic investigations (no AI, every plan).
+        \Illuminate\Support\Facades\Event::subscribe(\App\Services\Intelligence\QueueInvestigation::class);
 
         \App\Services\Nexus\TopologyCacheInvalidator::register();
 

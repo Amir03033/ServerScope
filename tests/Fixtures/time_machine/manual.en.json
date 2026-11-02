@@ -1,0 +1,41 @@
+{
+    "window": {
+        "onset": "2026-11-10T12:00:00+00:00",
+        "opened": "2026-11-10T12:00:00+00:00",
+        "end": null,
+        "from": "2026-11-10T06:00:00+00:00",
+        "to": "2026-11-10T12:00:00+00:00",
+        "truncated": false
+    },
+    "resources": [],
+    "events": [
+        {
+            "at": "2026-11-10T12:00:00+00:00",
+            "phase": "during",
+            "category": "incident",
+            "resource": null,
+            "title": "Problem started",
+            "detail": null,
+            "url": null,
+            "problem": true
+        },
+        {
+            "at": "2026-11-10T12:00:00+00:00",
+            "phase": "during",
+            "category": "incident",
+            "resource": null,
+            "title": "Incident opened",
+            "detail": null,
+            "url": null,
+            "problem": false
+        }
+    ],
+    "metrics": [],
+    "findings": [],
+    "explanations": [],
+    "gaps": [
+        "This incident has no monitored resource (for example a manual incident), so only its own timeline is shown.",
+        "No server is involved, so no server metrics are shown.",
+        "No deployments have been recorded for this team; record them with POST /api/v1/deployments to see them here."
+    ]
+}
