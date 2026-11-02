@@ -283,7 +283,10 @@ return [
         'model' => env('SERVERSCOPE_AI_MODEL'),
         'base_url' => rtrim((string) env('OPENAI_BASE_URL', 'https://api.openai.com/v1'), '/'),
         'timeout_seconds' => (int) env('SERVERSCOPE_AI_TIMEOUT', 45),
-        'max_output_tokens' => (int) env('SERVERSCOPE_AI_MAX_OUTPUT_TOKENS', 1500),
+        // Includes the hidden reasoning tokens of reasoning models (gpt-5, o-series).
+        'max_output_tokens' => (int) env('SERVERSCOPE_AI_MAX_OUTPUT_TOKENS', 8000),
+        // Optional: minimal, low, medium or high, only for reasoning models.
+        'reasoning_effort' => env('SERVERSCOPE_AI_REASONING_EFFORT'),
         'max_input_chars' => (int) env('SERVERSCOPE_AI_MAX_INPUT_CHARS', 24000),
         'auto_min_severity' => env('SERVERSCOPE_AI_AUTO_MIN_SEVERITY', 'high'),
         'auto_delay_seconds' => (int) env('SERVERSCOPE_AI_AUTO_DELAY', 120),
