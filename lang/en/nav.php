@@ -20,6 +20,7 @@ return [
         'dashboard' => 'Dashboard',
         'servers' => 'Servers',
         'domains' => 'Domains',
+        'nexus' => 'NEXUS',
         'dependencies' => 'Dependencies',
         'deployments' => 'Deployments',
         'incidents' => 'Incidents',

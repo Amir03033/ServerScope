@@ -280,6 +280,10 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::post('/dependencies', [DependencyController::class, 'store'])->name('dependencies.store');
     Route::delete('/dependencies/{dependency}', [DependencyController::class, 'destroy'])->name('dependencies.destroy');
 
+    // NEXUS infrastructure map (read-only; JSON cached per team).
+    Route::get('/nexus', [\App\Http\Controllers\NexusController::class, 'index'])->name('nexus.index');
+    Route::get('/nexus/graph.json', [\App\Http\Controllers\NexusController::class, 'graph'])->middleware('throttle:60,1')->name('nexus.graph');
+
     Route::get('/alerts', AlertController::class)->name('alerts.index');
     Route::delete('/alerts/{alert}', [AlertController::class, 'destroy'])->name('alerts.destroy');
     Route::delete('/alerts', [AlertController::class, 'clear'])->name('alerts.clear');

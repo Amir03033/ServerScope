@@ -142,6 +142,8 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\IncidentNotifier::class);
         \Illuminate\Support\Facades\Event::listen(\App\Events\IncidentOpened::class, \App\Services\Incidents\QueueIncidentAnalysis::class);
 
+        \App\Services\Nexus\TopologyCacheInvalidator::register();
+
         // Short, stable type names in polymorphic columns.
         Relation::morphMap([
             'server' => \App\Models\Server::class,

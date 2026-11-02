@@ -20,6 +20,7 @@ return [
         'dashboard' => 'Dashboard',
         'servers' => 'Servers',
         'domains' => 'Domeinen',
+        'nexus' => 'NEXUS',
         'dependencies' => 'Afhankelijkheden',
         'deployments' => 'Deployments',
         'incidents' => 'Incidenten',

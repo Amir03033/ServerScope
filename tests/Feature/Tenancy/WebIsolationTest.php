@@ -171,6 +171,8 @@ class WebIsolationTest extends TestCase
             route('alerts.index', ['status' => 'all']),
             route('alert-rules.index'),
             route('dependencies.index'),
+            route('nexus.index'),
+            route('nexus.graph'),
             route('status-pages.index'),
             route('status-pages.create'),
             route('webhooks.index'),
