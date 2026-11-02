@@ -151,3 +151,36 @@ export function locationStates(locations, sites, siteId = null) {
 export function worst(site) {
     return Object.values(site.reach ?? {}).reduce((w, r) => ((RANK[r.state] ?? 1) > (RANK[w] ?? 1) ? r.state : w), 'paused');
 }
+
+/** Great-circle distance in km between two [lat, lon] points. */
+export function distanceKm(a, b) {
+    const rad = Math.PI / 180;
+    const dLat = (b[0] - a[0]) * rad;
+    const dLon = (b[1] - a[1]) * rad;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLon / 2) ** 2;
+
+    return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
+ * Locations that stand (almost) on the same spot share one pin, so their
+ * pins and labels do not overlap. The main location leads its group.
+ *
+ * @returns {Array<{ key: string, lat: number, lon: number, members: Array<object> }>}
+ */
+export function clusters(locations, maxKm = 150) {
+    const out = [];
+    const ordered = [...locations].sort((a, b) => (a.kind === 'main' ? -1 : b.kind === 'main' ? 1 : 0));
+
+    for (const location of ordered) {
+        const group = out.find((g) => distanceKm([g.lat, g.lon], [location.lat, location.lon]) <= maxKm);
+
+        if (group) {
+            group.members.push(location);
+        } else {
+            out.push({ key: location.key, lat: location.lat, lon: location.lon, members: [location] });
+        }
+    }
+
+    return out;
+}

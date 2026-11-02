@@ -46,6 +46,11 @@ class NexusPageTest extends TestCase
 
         $html = $this->actingAs($this->a['member'])->get(route('nexus.index'))->assertOk()->getContent();
         $this->assertMatchesRegularExpression('#href="'.preg_quote(route('nexus.index'), '#').'"\s+class="ss-nav-item"\s+aria-current="page"#', $html);
+
+        // The globe has its own item under NEXUS; on the globe page only that one is current.
+        $html = $this->actingAs($this->a['member'])->get(route('nexus.globe'))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('#href="'.preg_quote(route('nexus.globe'), '#').'"\s+class="ss-nav-item ss-nav-sub"\s+aria-current="page"#', $html);
+        $this->assertMatchesRegularExpression('#href="'.preg_quote(route('nexus.index'), '#').'"\s+class="ss-nav-item"\s*>#', $html);
     }
 
     public function test_guests_cannot_open_the_page(): void

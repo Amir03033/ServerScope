@@ -1,5 +1,15 @@
 # What's new in ServerScope
 
+## 3 November 2026 — A better-looking globe
+
+### Improved
+
+- **Globe**: a new look — a dark ocean with a glowing rim and atmosphere,
+  the continents as fine round dots, glowing pins with a beam of light and
+  card-style labels. Measuring locations on (almost) the same spot share
+  one pin and one label.
+- **Own menu item**: the globe is now in the menu, right below NEXUS.
+
 ## 2 November 2026 — Flows, status page hero and globe
 
 ### New
