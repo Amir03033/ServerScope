@@ -8,6 +8,9 @@
   gloeiende rand en atmosfeer, de continenten als fijne ronde stippen,
   gloeiende spelden met een lichtstraal en labels als kaartjes.
   Meetlocaties op (bijna) dezelfde plek delen één speld met één label.
+- **Stand-by**: een werkende probe die niets te bevestigen had, staat op
+  "Stand-by" in plaats van "Niet gemeten". "Niet gemeten" blijft voor een
+  probe die niet reageert.
 - **Eigen menu-item**: de wereldbol staat nu in het menu, direct onder
   NEXUS.
 

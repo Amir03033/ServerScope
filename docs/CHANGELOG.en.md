@@ -8,6 +8,9 @@
   the continents as fine round dots, glowing pins with a beam of light and
   card-style labels. Measuring locations on (almost) the same spot share
   one pin and one label.
+- **Stand-by**: a working probe that had nothing to confirm shows
+  "Stand-by" instead of "Not measured"; "Not measured" is kept for a probe
+  that does not respond.
 - **Own menu item**: the globe is now in the menu, right below NEXUS.
 
 ## 2 November 2026 — Flows, status page hero and globe

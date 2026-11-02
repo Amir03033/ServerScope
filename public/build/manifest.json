@@ -16,7 +16,7 @@
     "name": "preload-helper"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Dq5Vo16_.css",
+    "file": "assets/app-DvavzMPo.css",
     "name": "app",
     "names": [
       "app.css"
@@ -60,7 +60,7 @@
     ]
   },
   "resources/js/globe.js": {
-    "file": "assets/globe-Bl3hDeDk.js",
+    "file": "assets/globe-CBVDNjEW.js",
     "name": "globe",
     "src": "resources/js/globe.js",
     "isEntry": true,
@@ -74,7 +74,7 @@
     ]
   },
   "resources/js/globe/scene.js": {
-    "file": "assets/scene-CESprXU2.js",
+    "file": "assets/scene-Gg2qkBQh.js",
     "name": "scene",
     "src": "resources/js/globe/scene.js",
     "isDynamicEntry": true,

@@ -115,7 +115,20 @@ export function landDots(allRings, step = 2) {
     return dots;
 }
 
-const RANK = { down: 3, unknown: 1, paused: 0, maintenance: 0, ok: 2 };
+const RANK = { down: 3, unknown: 1, standby: 1, paused: 0, maintenance: 0, ok: 2 };
+
+/**
+ * A website's state at one location. A probe only checks to confirm a
+ * failure, so a working probe without a recent confirmation is on
+ * stand-by (nothing to confirm), not "not measured".
+ */
+export function reachOf(site, location) {
+    const reach = site?.reach?.[location.key];
+
+    if (reach) return reach;
+
+    return { state: location.kind === 'probe' && location.healthy ? 'standby' : 'unknown' };
+}
 
 /**
  * Per location: how many websites were reachable, not reachable or not
@@ -128,20 +141,21 @@ export function locationStates(locations, sites, siteId = null) {
 
     for (const location of locations) {
         if (siteId !== null) {
-            const reach = sites.find((s) => s.id === siteId)?.reach?.[location.key];
-            out.set(location.key, { state: reach?.state ?? 'unknown', ok: 0, down: 0, unknown: 0, at: reach?.at });
+            const reach = reachOf(sites.find((s) => s.id === siteId), location);
+            out.set(location.key, { state: reach.state, ok: 0, down: 0, unknown: 0, standby: 0, at: reach.at });
 
             continue;
         }
 
-        const counts = { ok: 0, down: 0, unknown: 0 };
+        const counts = { ok: 0, down: 0, unknown: 0, standby: 0 };
 
         for (const site of sites) {
-            const state = site.reach?.[location.key]?.state;
-            counts[state === 'ok' ? 'ok' : state === 'down' ? 'down' : 'unknown']++;
+            const state = reachOf(site, location).state;
+            counts[state in counts ? state : 'unknown']++;
         }
 
-        out.set(location.key, { state: counts.down > 0 ? 'down' : counts.ok > 0 ? 'ok' : 'unknown', ...counts });
+        const state = counts.down > 0 ? 'down' : counts.ok > 0 ? 'ok' : counts.standby > 0 ? 'standby' : 'unknown';
+        out.set(location.key, { state, ...counts });
     }
 
     return out;
