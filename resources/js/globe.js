@@ -5,10 +5,10 @@
 import { numberLocale } from './i18n';
 import { append, clear, h, status } from './nexus/dom.js';
 import { translator } from './nexus/model.js';
-import { locationStates, worst } from './globe/geo.js';
+import { locationStates, reachOf, worst } from './globe/geo.js';
 
 const POLL_MS = 60_000;
-const TONE = { ok: 'ok', down: 'bad', unknown: 'muted', paused: 'muted', maintenance: 'info' };
+const TONE = { ok: 'ok', down: 'bad', unknown: 'muted', standby: 'info', paused: 'muted', maintenance: 'info' };
 
 function boot() {
     const root = document.querySelector('[data-globe]');
@@ -44,7 +44,7 @@ function boot() {
                         h('strong', { class: 'block break-words' }, locationName(l)),
                         h('span', { class: 'block text-xs text-muted' }, l.kind === 'main' ? t('kind_main') : t('kind_probe', { state: l.healthy ? t('probe_online') : t('probe_offline') })),
                         selected !== null && s?.at ? h('span', { class: 'block text-xs text-muted' }, t('measured', { time: time(s.at) })) : null,
-                        selected === null ? h('span', { class: 'block text-xs text-muted' }, t('counts', { ok: s.ok, down: s.down, unknown: s.unknown })) : null,
+                        selected === null ? h('span', { class: 'block text-xs text-muted' }, s.state === 'standby' ? t('standby_note', { days: data.meta.window_days }) : t('counts', { ok: s.ok, down: s.down, unknown: s.unknown }) + (s.standby > 0 ? ` · ${t('counts_standby', { count: s.standby })}` : '')) : null,
                     ),
                     status(t(`states.${s.state}`), TONE[s.state] ?? 'muted'),
                 );
@@ -60,9 +60,9 @@ function boot() {
         },
         h('span', { class: 'min-w-0 break-words text-left font-semibold' }, site.name),
         h('span', { class: 'flex flex-wrap justify-end gap-1' }, data.locations.map((l) => {
-            const state = site.reach?.[l.key]?.state ?? 'unknown';
+            const state = reachOf(site, l).state;
 
-            return h('span', { class: `ss-chip ss-chip-${state === 'ok' ? 'ok' : state === 'down' ? 'bad' : 'muted'}`, title: `${locationName(l)}: ${t(`states.${state}`)}` }, `${l.kind === 'main' ? t('short_main') : (l.location ?? l.name)}: ${t(`states.${state}`)}`);
+            return h('span', { class: `ss-chip ss-chip-${state === 'ok' ? 'ok' : state === 'down' ? 'bad' : state === 'standby' ? 'info' : 'muted'}`, title: `${locationName(l)}: ${t(`states.${state}`)}` }, `${l.kind === 'main' ? t('short_main') : (l.location ?? l.name)}: ${t(`states.${state}`)}`);
         })))));
 
         // The select mirrors the list (for small screens and screen readers).

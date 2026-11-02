@@ -1,7 +1,7 @@
 // Run with: npm run test:js (Node's built-in test runner, no dependencies).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { clusters, distanceKm, inside, landDots, locationStates, rings, toVector, worst } from './geo.js';
+import { clusters, distanceKm, inside, landDots, locationStates, reachOf, rings, toVector, worst } from './geo.js';
 
 const close = (a, b) => Math.abs(a - b) < 1e-9;
 
@@ -51,8 +51,8 @@ const sites = [
 test('without a selection a location is down when any website is not reachable from it', () => {
     const s = locationStates(locations, sites);
 
-    assert.deepEqual(s.get('main'), { state: 'down', ok: 1, down: 1, unknown: 1 });
-    assert.deepEqual(s.get('probe:1'), { state: 'ok', ok: 2, down: 0, unknown: 1 });
+    assert.deepEqual(s.get('main'), { state: 'down', ok: 1, down: 1, unknown: 1, standby: 0 });
+    assert.deepEqual(s.get('probe:1'), { state: 'ok', ok: 2, down: 0, unknown: 1, standby: 0 });
 });
 
 test('with a website selected each location shows that website only; no data is unknown', () => {
@@ -95,4 +95,18 @@ test('locations on the same spot share one pin, led by the main location', () =>
 
     assert.deepEqual(groups.map((g) => [g.key, g.members.map((m) => m.key)]), [['main', ['main', 'probe:1']], ['probe:2', ['probe:2']]]);
     assert.ok(Math.abs(distanceKm([52.37, 4.9], [50.11, 8.68]) - 365) < 10, 'Amsterdam–Frankfurt');
+});
+
+test('a working probe with nothing to confirm is on stand-by; an offline one is not measured', () => {
+    const online = { key: 'probe:1', kind: 'probe', healthy: true };
+    const offline = { ...online, healthy: false };
+    const quiet = [{ id: 1, reach: { main: { state: 'ok' } } }, { id: 2, reach: { main: { state: 'ok' } } }];
+
+    assert.equal(reachOf(quiet[0], online).state, 'standby');
+    assert.equal(reachOf(quiet[0], offline).state, 'unknown');
+    assert.equal(reachOf(quiet[0], { key: 'main', kind: 'main', healthy: true }).state, 'ok');
+    assert.deepEqual(locationStates([online], quiet).get('probe:1'), { state: 'standby', ok: 0, down: 0, unknown: 0, standby: 2 });
+    assert.equal(locationStates([offline], quiet).get('probe:1').state, 'unknown');
+    // A real confirmation always wins over stand-by.
+    assert.equal(locationStates([online], [{ id: 1, reach: { 'probe:1': { state: 'down' } } }]).get('probe:1').state, 'down');
 });

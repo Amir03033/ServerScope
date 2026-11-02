@@ -15,7 +15,7 @@ import { clusters, landDots, rings, toVector } from './geo.js';
 
 const R = 5;
 const DISTANCE = 21;
-const RANK = { down: 3, ok: 2, maintenance: 1, unknown: 0, paused: 0 };
+const RANK = { down: 3, ok: 2, maintenance: 1, standby: 1, unknown: 0, paused: 0 };
 
 let dotsCache = null;
 
@@ -129,7 +129,7 @@ export function createGlobe(container, { reducedMotion, t, onSelectLocation }) {
     let dotMaterial = null;
 
     const color = (hex) => new THREE.Color(hex);
-    const tone = (state) => ({ ok: colors.ok, down: colors.bad, maintenance: colors.accent })[state] ?? colors.subtle;
+    const tone = (state) => ({ ok: colors.ok, down: colors.bad, maintenance: colors.accent, standby: colors.accent })[state] ?? colors.subtle;
     const vec = (lat, lon, r = R) => { const p = toVector(lat, lon, r); return new THREE.Vector3(p.x, p.y, p.z); };
     const isDark = () => color(colors.bg).getHSL({ h: 0, s: 0, l: 0 }).l < 0.4;
 

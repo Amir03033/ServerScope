@@ -1618,6 +1618,7 @@
     .ss-globe-site[aria-pressed="true"] { border-color: var(--ss-accent-line); background: var(--ss-accent-soft); }
     .ss-chip-bad { color: var(--ss-bad); border-color: color-mix(in srgb, var(--ss-bad) 40%, var(--ss-line)); }
     .ss-chip-muted { color: var(--ss-muted); }
+    .ss-chip-info { color: var(--ss-accent); border-color: var(--ss-accent-line); }
 
     .ss-nexus-spinner { width: 1rem; height: 1rem; border: 2px solid var(--ss-line-strong); border-top-color: var(--ss-accent); border-radius: 999px; animation: ss-nexus-spin .8s linear infinite; }
     @keyframes ss-nexus-spin { to { transform: rotate(360deg); } }
