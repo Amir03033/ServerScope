@@ -14,6 +14,7 @@
     <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+    <symbol id="i-earth" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M4.5 8.5c2 .5 3 1.8 3 3.5 0 1.5 1.5 2 1.5 3.5S8 18 8.5 20M15 3.5c-.5 1.5 0 3 1.5 3.5s2 2 1 3.5-.5 3 1 3.5h2"/><ellipse cx="12" cy="12" rx="11" ry="3.6" transform="rotate(-20 12 12)" opacity=".55"/></symbol>
     <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></symbol>
     <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
     <symbol id="i-metrics" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m7 15 3-4 3 2 4-5"/></symbol>

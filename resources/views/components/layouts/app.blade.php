@@ -32,7 +32,8 @@
         'monitoring' => [
             ['route' => 'servers.index', 'match' => 'servers.*', 'icon' => 'i-server', 'label' => 'servers'],
             ['route' => 'domains.index', 'match' => ['domains.*', 'websites.*', 'pages.*'], 'icon' => 'i-globe', 'label' => 'domains'],
-            ['route' => 'nexus.index', 'match' => 'nexus.*', 'icon' => 'i-nexus', 'label' => 'nexus'],
+            ['route' => 'nexus.index', 'match' => ['nexus.index', 'nexus.graph'], 'icon' => 'i-nexus', 'label' => 'nexus'],
+            ['route' => 'nexus.globe', 'match' => 'nexus.globe*', 'icon' => 'i-earth', 'label' => 'globe', 'sub' => true],
             ['route' => 'dependencies.index', 'match' => 'dependencies.*', 'icon' => 'i-link', 'label' => 'dependencies'],
             ['route' => 'deployments.index', 'match' => 'deployments.*', 'icon' => 'i-flag', 'label' => 'deployments'],
         ],
@@ -108,7 +109,7 @@
 
                 @foreach ($items as $item)
                     @php $isActive = request()->routeIs(...(array) $item['match']); @endphp
-                    <a href="{{ route($item['route']) }}" class="ss-nav-item" @if ($isActive) aria-current="page" @endif>
+                    <a href="{{ route($item['route']) }}" class="ss-nav-item{{ ($item['sub'] ?? false) ? ' ss-nav-sub' : '' }}" @if ($isActive) aria-current="page" @endif>
                         <svg class="ico"><use href="#{{ $item['icon'] }}"/></svg>
                         <span class="min-w-0 truncate">{{ __('nav.items.'.$item['label']) }}</span>
                         @if (($item['count'] ?? 0) > 0)

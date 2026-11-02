@@ -21,6 +21,7 @@ return [
         'servers' => 'Servers',
         'domains' => 'Domeinen',
         'nexus' => 'NEXUS',
+        'globe' => 'Wereldbol',
         'dependencies' => 'Afhankelijkheden',
         'deployments' => 'Deployments',
         'incidents' => 'Incidenten',

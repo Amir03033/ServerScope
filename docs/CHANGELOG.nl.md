@@ -1,5 +1,16 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — Een mooiere wereldbol
+
+### Verbeterd
+
+- **Wereldbol**: een nieuw uiterlijk — een donkere oceaan met een
+  gloeiende rand en atmosfeer, de continenten als fijne ronde stippen,
+  gloeiende spelden met een lichtstraal en labels als kaartjes.
+  Meetlocaties op (bijna) dezelfde plek delen één speld met één label.
+- **Eigen menu-item**: de wereldbol staat nu in het menu, direct onder
+  NEXUS.
+
 ## 2 november 2026 — Stromen, statuspagina-hero en wereldbol
 
 ### Nieuw

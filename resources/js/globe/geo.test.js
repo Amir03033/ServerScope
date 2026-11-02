@@ -1,7 +1,7 @@
 // Run with: npm run test:js (Node's built-in test runner, no dependencies).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { inside, landDots, locationStates, rings, toVector, worst } from './geo.js';
+import { clusters, distanceKm, inside, landDots, locationStates, rings, toVector, worst } from './geo.js';
 
 const close = (a, b) => Math.abs(a - b) < 1e-9;
 
@@ -84,4 +84,15 @@ test('rings across the 180° meridian are unwrapped and still found', () => {
     assert.ok(inside(175, 5, r));
     assert.ok(inside(-175, 5, r), 'west of the meridian too');
     assert.ok(!inside(0, 5, r), 'not the rest of the world');
+});
+
+test('locations on the same spot share one pin, led by the main location', () => {
+    const groups = clusters([
+        { key: 'probe:1', kind: 'probe', lat: 50.1155, lon: 8.6842 },
+        { key: 'main', kind: 'main', lat: 50.11, lon: 8.68 },
+        { key: 'probe:2', kind: 'probe', lat: 40.71, lon: -74.01 },
+    ]);
+
+    assert.deepEqual(groups.map((g) => [g.key, g.members.map((m) => m.key)]), [['main', ['main', 'probe:1']], ['probe:2', ['probe:2']]]);
+    assert.ok(Math.abs(distanceKm([52.37, 4.9], [50.11, 8.68]) - 365) < 10, 'Amsterdam–Frankfurt');
 });
