@@ -1,5 +1,29 @@
 # Wat is er nieuw in ServerScope
 
+## 2 november 2026 — NEXUS Intelligence: onderzoek zonder AI
+
+### Nieuw
+
+**Onderzoek van incidenten (elk abonnement, geen AI)**
+- ServerScope kan nu een incident onderzoeken: het verzamelt het bewijs
+  eromheen (incidenten, controles, servicewijzigingen, DNS-wijzigingen,
+  deployments, configuratiewijzigingen, agentupdates, metingen, onderhoud)
+  en past vaste regels toe om mogelijke oorzaken voor te stellen.
+- Elke mogelijke oorzaak toont de zekerheid (hoog, gemiddeld, laag of
+  onvoldoende), het ondersteunende bewijs, het tegenstrijdige bewijs en
+  welke informatie ontbreekt. "Oorzaak niet vastgesteld" is een geldig
+  antwoord: ServerScope gokt niet.
+- Mogelijke impact: wat afhangt van de verdachte resource, via welke
+  afhankelijkheid, en of het faalde, in orde was of niet is waargenomen.
+- Vervolgstappen om zelf te controleren. ServerScope wijzigt zelf niets.
+- Een onderzoek start automatisch als een incident opent, heropent of wordt
+  opgelost, en beheerders kunnen het opnieuw uitvoeren. Elke uitvoering
+  blijft ongewijzigd bewaard, zodat je ze kunt vergelijken.
+- Te vinden op de incidentpagina, vanuit Time Machine en vanuit het
+  incidentblok op de NEXUS-kaart ("Tonen op de NEXUS-kaart" laat de impact
+  zien).
+- De AI-analyse (Pro en Premium) is ongewijzigd en blijft apart.
+
 ## 26 oktober 2026 — Websitemonitoring, slimme incidenten en voorspellingen
 
 Deze update maakt van ServerScope meer dan een uptime-monitor: je bewaakt nu

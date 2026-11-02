@@ -378,6 +378,8 @@ class TopologyBuilder
                         'opened_at' => $incident->opened_at?->toIso8601String(),
                         'grouped' => $incident->parent_id !== null,
                         'url' => route('incidents.show', $incident->id),
+                        // NEXUS Intelligence: the incident's latest investigation (or its empty state).
+                        'investigation_url' => route('incidents.investigation', $incident->id),
                     ];
                 }
 

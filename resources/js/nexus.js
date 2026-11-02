@@ -38,6 +38,7 @@ function boot() {
     const state = {
         topology: null, nodes: new Map(), graph: null, structure: null,
         selected: null, impact: false, view: 'map', interacted: false, visible: new Set(),
+        focus: /^[a-z_]+:\d+$/.test(new URLSearchParams(window.location.search).get('focus') ?? '') ? new URLSearchParams(window.location.search).get('focus') : null,
         etag: null, inflight: null, timer: null, failures: 0, lastAttempt: 0, checkedAt: null, stopped: false, paused: false,
         filters: { types: new Set(TYPE_ORDER), health: new Set(HEALTH_ORDER), incidents: false, query: '' },
     };
@@ -608,6 +609,15 @@ function boot() {
             select(null);
         } else {
             renderDetail();
+        }
+
+        // Opened from an investigation (?focus=type:id): select that resource once and show its impact.
+        if (state.focus && state.nodes.has(state.focus)) {
+            const key = state.focus;
+            state.focus = null;
+            state.impact = true;
+            select(key);
+            centerOn(key);
         }
     }
 

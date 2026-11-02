@@ -128,6 +128,7 @@ function incidentBlock(node, context) {
     const severity = node.incidents.max_severity;
     const tone = (SEVERITY[severity] ?? SEVERITY.info).tone;
     const url = primary ? safeUrl(primary.url, context.origin) : null;
+    const investigationUrl = primary?.investigation_url ? safeUrl(primary.investigation_url, context.origin) : null;
 
     return h('div', { class: `ss-alert ss-alert-${tone === 'bad' ? 'error' : tone === 'warn' ? 'warning' : 'info'} mt-4 !animate-none`, role: 'note' },
         icon('i-siren'),
@@ -143,6 +144,7 @@ function incidentBlock(node, context) {
                     primary.opened_at ? ` · ${t('panel.opened', { time: relativeTime(primary.opened_at, t) })}` : '',
                     primary.grouped ? ` · ${t('panel.grouped')}` : '',
                 ].join('')),
+                investigationUrl ? h('a', { class: 'mt-1 inline-block text-xs underline-offset-2 hover:underline', href: investigationUrl }, t('panel.investigation')) : null,
             ) : null,
         ),
     );

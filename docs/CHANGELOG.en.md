@@ -1,5 +1,28 @@
 # What's new in ServerScope
 
+## 2 November 2026 — NEXUS Intelligence: investigations without AI
+
+### New
+
+**Investigations of incidents (every plan, no AI)**
+- ServerScope can now investigate an incident: it collects the evidence
+  around it (incidents, checks, service changes, DNS changes, deployments,
+  configuration changes, agent updates, metrics, maintenance) and applies
+  fixed rules to suggest candidate causes.
+- Each candidate shows its confidence (high, medium, low or insufficient),
+  the evidence that supports it, the evidence that contradicts it and what
+  information is missing. "Cause not determined" is a valid answer:
+  ServerScope does not guess.
+- Possible impact: what depends on the suspected resource, through which
+  dependency, and whether it was failing, healthy or not observed.
+- Read-only next steps to check. ServerScope changes nothing itself.
+- Investigations start automatically when an incident opens, reopens or is
+  resolved, and administrators can run one again. Every run is kept
+  unchanged, so you can compare runs.
+- Find it on the incident page, from Time Machine and from the incident
+  block on the NEXUS map ("Show on NEXUS map" highlights the impact).
+- The AI analysis (Pro and Premium) is unchanged and stays separate.
+
 ## 26 October 2026 — Website monitoring, smarter incidents and forecasts
 
 This update turns ServerScope into more than an uptime monitor. You can now

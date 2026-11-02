@@ -741,3 +741,28 @@ resolutions. Every query filters on the incident's team explicitly
 (`IncidentMemory`), routes are tenant-bound; tested in
 `IncidentMemoryTest`. Not changed: notifications and the REST API.
 
+
+## 10. NEXUS Intelligence, phase 1 (deterministic investigations)
+
+Rule-based investigations of incidents from stored data; no AI, no
+external service, every plan. Branch `feature/nexus-intelligence` from
+`origin/main` `0b4f4fa`. Design, rules, confidence model, configuration,
+retention and operations: [INTELLIGENCE.md](INTELLIGENCE.md).
+
+- Time Machine's evidence collection now lives in shared, code-emitting
+  collectors (`app/Services/Incidents/Evidence`); `TimeMachine::build()`
+  output is frozen by `TimeMachineContractTest` (6 scenarios, en/nl) and
+  unchanged. `IncidentEvidence` and the AI Incident Investigator are
+  unchanged.
+- New table `investigations` (team-owned, immutable snapshots of codes and
+  parameters); reruns add rows, earlier runs become `superseded`.
+- Every collector, impact and guard query filters on the team explicitly;
+  `TeamIntegrityGuard` refuses to store a result that refers outside the
+  team. Manual runs are admin-only and audited.
+- Tests: `tests/Feature/Intelligence` (engine, isolation, access, states,
+  triggers, retention, translations) plus the Time Machine contract.
+
+Not tested / limitations: only local automated tests (SQLite); not run
+against MySQL or in production. Maintenance history is limited to the
+current/last stored window. Hypothesis rules are a first catalog; their
+levels are rules, not calibrated probabilities.

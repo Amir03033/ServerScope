@@ -18,6 +18,7 @@
     <x-slot:subtitle>{{ __('time_machine.subtitle') }}</x-slot:subtitle>
     <x-slot:actions>
         <a href="{{ route('incidents.show', $incident) }}" class="ss-btn ss-btn-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('time_machine.back') }}</a>
+        <a href="{{ route('incidents.investigation', $incident) }}" class="ss-btn ss-btn-ghost">{{ __('investigations.open') }}</a>
     </x-slot:actions>
 
     <section class="ss-panel mb-4 grid gap-3" data-testid="tm-window">

@@ -1,0 +1,530 @@
+{
+    "window": {
+        "onset": "2026-11-10T10:00:00+00:00",
+        "opened": "2026-11-10T12:00:00+00:00",
+        "end": null,
+        "from": "2026-11-10T04:00:00+00:00",
+        "to": "2026-11-10T12:00:00+00:00",
+        "truncated": false
+    },
+    "resources": {
+        "page:1": {
+            "key": "page:1",
+            "type": "page",
+            "model": "page:1",
+            "label": "/alpha-pagina",
+            "relation": "subject",
+            "depth": 0
+        },
+        "domain:1": {
+            "key": "domain:1",
+            "type": "domain",
+            "model": "domain:1",
+            "label": "alpha-shop.example.com",
+            "relation": "upstream",
+            "depth": 1
+        },
+        "server:1": {
+            "key": "server:1",
+            "type": "server",
+            "model": "server:1",
+            "label": "alpha-server",
+            "relation": "upstream",
+            "depth": 2
+        },
+        "service:1": {
+            "key": "service:1",
+            "type": "service",
+            "model": "service:1",
+            "label": "alpha-nginx op alpha-server",
+            "relation": "service",
+            "depth": 3
+        }
+    },
+    "events": [
+        {
+            "at": "2026-11-10T10:00:00+00:00",
+            "phase": "during",
+            "category": "incident",
+            "resource": null,
+            "title": "Probleem begonnen",
+            "detail": "120 min later gedetecteerd en geopend.",
+            "url": null,
+            "problem": true
+        },
+        {
+            "at": "2026-11-10T10:02:00+00:00",
+            "phase": "during",
+            "category": "check",
+            "resource": "/alpha-pagina",
+            "title": "pagina-check faalt",
+            "detail": "Keyword missing",
+            "url": null,
+            "problem": true
+        },
+        {
+            "at": "2026-11-10T10:50:00+00:00",
+            "phase": "during",
+            "category": "recovery",
+            "resource": "/alpha-pagina",
+            "title": "pagina-check slaagt weer",
+            "detail": null,
+            "url": null,
+            "problem": false
+        },
+        {
+            "at": "2026-11-10T12:00:00+00:00",
+            "phase": "during",
+            "category": "incident",
+            "resource": null,
+            "title": "Incident geopend",
+            "detail": null,
+            "url": null,
+            "problem": false
+        },
+        {
+            "at": "2026-11-10T12:00:00+00:00",
+            "phase": "during",
+            "category": "incident",
+            "resource": "alpha-server",
+            "title": "Incident #1 geopend: alpha storing",
+            "detail": null,
+            "url": "http://localhost:8000/incidents/1",
+            "problem": true
+        },
+        {
+            "at": "2026-11-10T12:00:00+00:00",
+            "phase": "during",
+            "category": "change",
+            "resource": "alpha-shop.example.com",
+            "title": "DNS-records A gewijzigd",
+            "detail": null,
+            "url": null,
+            "problem": false
+        },
+        {
+            "at": "2026-11-10T12:00:00+00:00",
+            "phase": "during",
+            "category": "anomaly",
+            "resource": "alpha-server",
+            "title": "Capaciteitsprognose: disk_percent",
+            "detail": "alpha voorspelling",
+            "url": null,
+            "problem": false
+        }
+    ],
+    "metrics": [
+        {
+            "server": "server:1",
+            "label": "alpha-server",
+            "relation": "upstream",
+            "hourly": {
+                "cpu_percent": [
+                    {
+                        "label": "09-11 11:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 12:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 13:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 14:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 15:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 16:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 17:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 18:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 19:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 20:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 21:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 22:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 23:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 00:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 01:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 02:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 03:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 04:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 05:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 06:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 07:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 08:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 09:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 10:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 11:00",
+                        "value": null,
+                        "flag": true
+                    },
+                    {
+                        "label": "10-11 12:00",
+                        "value": null,
+                        "flag": true
+                    }
+                ],
+                "memory_percent": [
+                    {
+                        "label": "09-11 11:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 12:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 13:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 14:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 15:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 16:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 17:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 18:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 19:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 20:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 21:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 22:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 23:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 00:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 01:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 02:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 03:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 04:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 05:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 06:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 07:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 08:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 09:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 10:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 11:00",
+                        "value": null,
+                        "flag": true
+                    },
+                    {
+                        "label": "10-11 12:00",
+                        "value": null,
+                        "flag": true
+                    }
+                ],
+                "load_1": [
+                    {
+                        "label": "09-11 11:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 12:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 13:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 14:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 15:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 16:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 17:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 18:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 19:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 20:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 21:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 22:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "09-11 23:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 00:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 01:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 02:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 03:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 04:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 05:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 06:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 07:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 08:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 09:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 10:00",
+                        "value": null,
+                        "flag": false
+                    },
+                    {
+                        "label": "10-11 11:00",
+                        "value": null,
+                        "flag": true
+                    },
+                    {
+                        "label": "10-11 12:00",
+                        "value": null,
+                        "flag": true
+                    }
+                ]
+            },
+            "markers": [],
+            "detail": [],
+            "shifts": []
+        }
+    ],
+    "findings": [],
+    "explanations": [],
+    "gaps": [
+        "Voor alpha-server zijn in deze periode geen metingen beschikbaar (niet gemeld, of verwijderd door de bewaartermijn).",
+        "Voor dit team zijn geen deployments vastgelegd; leg ze vast met POST /api/v1/deployments om ze hier te zien."
+    ]
+}

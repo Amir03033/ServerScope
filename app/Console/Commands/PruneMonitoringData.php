@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Incident;
+use App\Models\Investigation;
 use App\Models\Team;
 use App\Support\PlanLimits;
 use Illuminate\Console\Command;
@@ -31,6 +33,7 @@ class PruneMonitoringData extends Command
         'page_discovery_runs' => ['discovery_runs_days', 'created_at', null],
         'service_check_events' => ['service_events_days', 'recorded_at', null],
         'predictions' => ['predictions_days', 'resolved_at', 'resolved'],
+        'investigations' => ['investigations_days', 'created_at', 'investigation'],
     ];
 
     public function handle(): int
@@ -51,7 +54,10 @@ class PruneMonitoringData extends Command
             $query = fn () => DB::table($table)->where($column, '<', $cutoff)
                 ->when($constraint === 'read', fn ($q) => $q->whereNotNull('read_at'))
                 // Only resolved findings; active ones are current state.
-                ->when($constraint === 'resolved', fn ($q) => $q->where('status', 'resolved'));
+                ->when($constraint === 'resolved', fn ($q) => $q->where('status', 'resolved'))
+                // Never a pending run, nor any run of an incident that is still active.
+                ->when($constraint === 'investigation', fn ($q) => $q->whereNotIn('status', Investigation::PENDING)
+                    ->whereNotIn('incident_id', fn ($s) => $s->select('id')->from('incidents')->whereIn('status', Incident::ACTIVE_STATUSES)));
 
             if ($dryRun) {
                 $count = $query()->count();

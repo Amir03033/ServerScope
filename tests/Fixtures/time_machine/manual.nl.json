@@ -1,0 +1,41 @@
+{
+    "window": {
+        "onset": "2026-11-10T12:00:00+00:00",
+        "opened": "2026-11-10T12:00:00+00:00",
+        "end": null,
+        "from": "2026-11-10T06:00:00+00:00",
+        "to": "2026-11-10T12:00:00+00:00",
+        "truncated": false
+    },
+    "resources": [],
+    "events": [
+        {
+            "at": "2026-11-10T12:00:00+00:00",
+            "phase": "during",
+            "category": "incident",
+            "resource": null,
+            "title": "Probleem begonnen",
+            "detail": null,
+            "url": null,
+            "problem": true
+        },
+        {
+            "at": "2026-11-10T12:00:00+00:00",
+            "phase": "during",
+            "category": "incident",
+            "resource": null,
+            "title": "Incident geopend",
+            "detail": null,
+            "url": null,
+            "problem": false
+        }
+    ],
+    "metrics": [],
+    "findings": [],
+    "explanations": [],
+    "gaps": [
+        "Dit incident hoort niet bij een bewaakt onderdeel (bijvoorbeeld een handmatig incident), dus alleen de eigen tijdlijn wordt getoond.",
+        "Er is geen server bij betrokken, dus er worden geen servermetingen getoond.",
+        "Voor dit team zijn geen deployments vastgelegd; leg ze vast met POST /api/v1/deployments om ze hier te zien."
+    ]
+}

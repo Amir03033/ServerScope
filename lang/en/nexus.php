@@ -101,6 +101,7 @@ return [
             'incidents_other' => ':count active incidents',
             'opened' => 'opened :time',
             'grouped' => 'grouped under a root incident',
+            'investigation' => 'Investigation',
             'open' => [
                 'server' => 'Open server',
                 'service' => 'Open server',
