@@ -19,6 +19,7 @@
     },
     "dependencies": {
         "chart.js": "^4.5.1",
-        "cytoscape": "^3.34.4"
+        "cytoscape": "^3.34.4",
+        "three": "^0.186.1"
     }
 }

@@ -125,6 +125,7 @@
                     <div class="ml-auto flex flex-wrap items-center gap-1.5">
                         <button type="button" class="ss-btn ss-btn-ghost ss-btn-sm" data-nexus-reset>{{ __('nexus.js.toolbar.reset') }}</button>
                         <button type="button" class="ss-btn ss-btn-secondary ss-btn-sm" data-nexus-fit><svg class="ico"><use href="#i-search"/></svg>{{ __('nexus.js.toolbar.fit') }}</button>
+                        <button type="button" class="ss-btn ss-btn-secondary ss-btn-sm" aria-pressed="false" data-nexus-3d title="{{ __('nexus.js.toolbar.view_3d_hint') }}"><svg class="ico"><use href="#i-nexus"/></svg>{{ __('nexus.js.toolbar.view_3d') }}</button>
                         <button type="button" class="ss-btn ss-btn-secondary ss-btn-sm" aria-pressed="false" data-nexus-view><svg class="ico"><use href="#i-list"/></svg>{{ __('nexus.js.toolbar.list') }}</button>
                     </div>
                 </div>
@@ -146,6 +147,8 @@
                     <div class="absolute inset-0" data-nexus-canvas-wrap>
                         <div class="h-full w-full" data-nexus-canvas role="img" aria-label="{{ __('nexus.js.toolbar.canvas_label') }}"></div>
                     </div>
+                    {{-- 3D view: three.js draws into this element once it is opened. --}}
+                    <div class="ss-nexus-3d absolute inset-0" data-nexus-3d-stage role="img" aria-label="{{ __('nexus.js.toolbar.canvas3d_label') }}" hidden></div>
                     <div class="absolute inset-0 overflow-auto bg-surface p-3" data-nexus-list hidden></div>
                     <div class="ss-nexus-tooltip" data-nexus-tooltip hidden></div>
                     <span class="ss-chip pointer-events-none absolute bottom-3 left-3" data-nexus-visible aria-live="polite"></span>

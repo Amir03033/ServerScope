@@ -1,7 +1,7 @@
 // The detail panel for a selected node. Shows only fields the topology
 // endpoint returns on purpose; every value is rendered as text.
 
-import { bar, clear, h, icon, status } from './dom.js';
+import { append, bar, clear, h, icon, status } from './dom.js';
 import { HEALTH_TONE, SEVERITY, relativeTime, safeUrl, statusTone } from './model.js';
 
 const ICONS = { server: 'i-server', service: 'i-cpu', domain: 'i-globe', page_group: 'i-file', page: 'i-file' };
@@ -108,8 +108,11 @@ export function renderPanel(root, context) {
         )));
     }
 
-    root.append(relations('panel.depends_on', context.edges.filter((e) => e.source === node.key), 'target', context));
-    root.append(relations('panel.used_by', context.edges.filter((e) => e.target === node.key), 'source', context));
+    // relations() returns null without edges; append() from dom.js skips it (Element.append would print "null").
+    append(root, [
+        relations('panel.depends_on', context.edges.filter((e) => e.source === node.key), 'target', context),
+        relations('panel.used_by', context.edges.filter((e) => e.target === node.key), 'source', context),
+    ]);
 
     if (url) {
         root.append(h('div', { class: 'mt-5 border-t border-line pt-4' },

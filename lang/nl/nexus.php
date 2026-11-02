@@ -37,6 +37,9 @@ return [
             'resume' => 'Hervatten',
         ],
         'toolbar' => [
+            'view_3d' => '3D',
+            'view_3d_hint' => 'Bekijk de kaart in 3D: sleep om te draaien, scroll om te zoomen',
+            'canvas3d_label' => '3D-kaart van servers (torens), services (ringen), websites en pagina\'s, met incidenten die zich langs hun afhankelijkheden verspreiden. Gebruik de lijstweergave om met het toetsenbord te navigeren.',
             'search_label' => 'Zoek op naam',
             'search_placeholder' => 'Zoek op naam…',
             'incident_view' => 'Incidentweergave',
@@ -118,6 +121,8 @@ return [
             'direction' => 'Pijlen wijzen naar waar een resource van afhangt; bovenaan staan resources zonder afhankelijkheden.',
         ],
         'states' => [
+            'webgl_title' => '3D is niet beschikbaar.',
+            'webgl_text' => 'Deze browser of dit apparaat ondersteunt geen WebGL; de kaart wordt in 2D getoond.',
             'loading' => 'Kaart laden…',
             'empty_title' => 'Nog niets om te tonen',
             'empty_text' => 'Voeg servers of domeinen toe. Afhankelijkheden tussen resources leg je vast onder Afhankelijkheden.',

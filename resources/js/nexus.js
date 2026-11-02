@@ -3,7 +3,7 @@
 
 import cytoscape from 'cytoscape';
 import { numberLocale } from './i18n';
-import { clear, h, icon, status } from './nexus/dom.js';
+import { append, clear, h, icon, status } from './nexus/dom.js';
 import { dotClass, renderPanel, typeIcon } from './nexus/panel.js';
 import {
     HEALTH_ORDER, HEALTH_TONE, SEVERITY, TYPE_ORDER, adjacency, healthRank, impactOf, layeredPositions,
@@ -30,14 +30,14 @@ function boot() {
     const els = {
         canvas: $('canvas'), list: $('list'), overlay: $('overlay'), notices: $('notices'),
         panel: $('panel'), types: $('types'), health: $('health'), search: $('search'),
-        incidents: $('incidents'), fit: $('fit'), view: $('view'), reset: $('reset'),
+        incidents: $('incidents'), fit: $('fit'), view: $('view'), reset: $('reset'), view3d: $('3d'), stage3d: $('3d-stage'),
         live: $('live'), liveText: $('live-text'), pause: $('pause'), refresh: $('refresh'),
         tooltip: $('tooltip'), visible: $('visible'),
     };
 
     const state = {
         topology: null, nodes: new Map(), graph: null, structure: null,
-        selected: null, impact: false, view: 'map', interacted: false, visible: new Set(),
+        selected: null, impact: false, view: 'map', lastVisual: 'map', interacted: false, visible: new Set(),
         focus: /^[a-z_]+:\d+$/.test(new URLSearchParams(window.location.search).get('focus') ?? '') ? new URLSearchParams(window.location.search).get('focus') : null,
         etag: null, inflight: null, timer: null, failures: 0, lastAttempt: 0, checkedAt: null, stopped: false, paused: false,
         filters: { types: new Set(TYPE_ORDER), health: new Set(HEALTH_ORDER), incidents: false, query: '' },
@@ -168,6 +168,7 @@ function boot() {
         readColors();
         cy.style().fromJson(stylesheet()).update();
         if (state.topology) updateInPlace();
+        render3d();
     };
     new MutationObserver(onThemeChange).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onThemeChange);
@@ -223,11 +224,82 @@ function boot() {
         applyFilters({ relayout: true });
     });
 
-    els.fit.addEventListener('click', () => fit(true));
+    els.fit.addEventListener('click', () => (state.view === '3d' ? scene3d?.fit() : fit(true)));
     els.view.addEventListener('click', () => {
-        state.view = state.view === 'map' ? 'list' : 'map';
+        state.view = state.view === 'list' ? state.lastVisual : 'list';
         renderView();
     });
+    els.view3d.addEventListener('click', () => {
+        state.view = state.view === '3d' ? 'map' : '3d';
+        remember(state.view);
+        renderView();
+    });
+
+    // ---------- 3D view (three.js, loaded the first time it is opened) ----------
+    let scene3d = null;
+    let loading3d = null;
+
+    const storage = (() => { try { return window.localStorage; } catch { return null; } })();
+    const remember = (view) => { try { storage?.setItem('nexus.view', view); } catch { /* private mode */ } };
+
+    const webglAvailable = () => {
+        try {
+            const probe = document.createElement('canvas');
+
+            return Boolean(window.WebGLRenderingContext && (probe.getContext('webgl2') || probe.getContext('webgl')));
+        } catch {
+            return false;
+        }
+    };
+
+    async function ensure3d() {
+        if (scene3d) return scene3d;
+
+        if (!webglAvailable()) {
+            state.view = 'map';
+            remember('map');
+            renderNotices({ title: t('states.webgl_title'), message: t('states.webgl_text') });
+            renderView();
+
+            return null;
+        }
+
+        loading3d ??= import('./nexus/scene3d.js').then(({ createScene3d }) => {
+            scene3d = createScene3d(els.stage3d, {
+                reducedMotion,
+                t,
+                onSelect: (key) => select(key),
+                onHover: (key, hit) => {
+                    const node = key ? state.nodes.get(key) : null;
+
+                    if (!node || !hit) {
+                        hideTooltip();
+
+                        return;
+                    }
+
+                    showTooltip(node, hit.x, hit.y - 14);
+                },
+            });
+
+            return scene3d;
+        }).catch(() => {
+            loading3d = null;
+            state.view = 'map';
+            renderNotices({ title: t('states.webgl_title'), message: t('states.webgl_text') });
+            renderView();
+
+            return null;
+        });
+
+        return loading3d;
+    }
+
+    function render3d() {
+        if (state.view !== '3d' || !scene3d || !state.topology) return;
+
+        scene3d.render(state.topology, { visible: state.visible, graph: state.graph, labelOf, colors, highlight: focusState() });
+    }
     els.refresh.addEventListener('click', () => refresh());
     els.pause.addEventListener('click', () => {
         state.paused = !state.paused;
@@ -298,6 +370,7 @@ function boot() {
             : t('toolbar.visible_some', { visible: visible.size, total: state.topology.nodes.length });
 
         if (state.view === 'list') renderList();
+        render3d();
         if (state.topology.nodes.length > 0) renderOverlay(visible.size === 0 ? 'filtered' : null);
     }
 
@@ -335,19 +408,29 @@ function boot() {
         if (state.view === 'list') renderList();
     }
 
+    /** What the selection brings into focus: itself, what depends on it and (outside impact mode) what it depends on. */
+    function focusState() {
+        if (!state.selected || !state.topology) return { selected: null, focusKeys: new Set(), impact: false };
+
+        const depth = state.topology.meta.max_depth;
+        const focus = new Set([state.selected, ...impactOf(state.selected, state.graph, depth).keys()]);
+
+        if (!state.impact) {
+            for (const key of upstreamOf(state.selected, state.graph, depth).keys()) focus.add(key);
+        }
+
+        return { selected: state.selected, focusKeys: focus, impact: state.impact };
+    }
+
     function highlight() {
+        if (state.view === '3d') scene3d?.highlight(focusState());
+
         cy.batch(() => {
             cy.elements().removeClass('is-faded is-path is-impact');
 
             if (!state.selected) return;
 
-            const depth = state.topology.meta.max_depth;
-            const impact = impactOf(state.selected, state.graph, depth);
-            const focus = new Set([state.selected, ...impact.keys()]);
-
-            if (!state.impact) {
-                for (const key of upstreamOf(state.selected, state.graph, depth).keys()) focus.add(key);
-            }
+            const focus = focusState().focusKeys;
 
             cy.elements().not('.is-hidden').forEach((element) => {
                 const inFocus = element.isNode()
@@ -394,6 +477,12 @@ function boot() {
     }
 
     function centerOn(key) {
+        if (state.view === '3d') {
+            scene3d?.focus(key);
+
+            return;
+        }
+
         const element = cy.getElementById(key);
 
         if (state.view === 'map' && element.nonempty() && element.visible()) {
@@ -415,21 +504,25 @@ function boot() {
     }
 
     // ---------- tooltip ----------
+    function showTooltip(node, x, y) {
+        // append() from dom.js skips null (Element.append would print "null").
+        append(clear(els.tooltip), [
+            h('strong', { class: 'truncate' }, labelOf(node)),
+            h('span', { class: 'text-muted' }, `${t(`types.${node.type}`)} · ${t(`health.${node.health}`)}`),
+            node.incidents.active > 0 ? h('span', { class: 'ss-text-bad' }, t.count('panel.incidents', node.incidents.active)) : null,
+        ]);
+        els.tooltip.style.left = `${x}px`;
+        els.tooltip.style.top = `${y}px`;
+        els.tooltip.hidden = false;
+    }
+
     cy.on('mouseover', 'node', (event) => {
         const node = state.nodes.get(event.target.id());
 
         if (!node) return;
 
         const position = event.target.renderedPosition();
-
-        clear(els.tooltip).append(
-            h('strong', { class: 'truncate' }, labelOf(node)),
-            h('span', { class: 'text-muted' }, `${t(`types.${node.type}`)} · ${t(`health.${node.health}`)}`),
-            node.incidents.active > 0 ? h('span', { class: 'ss-text-bad' }, t.count('panel.incidents', node.incidents.active)) : null,
-        );
-        els.tooltip.style.left = `${position.x}px`;
-        els.tooltip.style.top = `${position.y - ((NODE_SIZE[node.type] ?? 34) / 2) * cy.zoom() - 10}px`;
-        els.tooltip.hidden = false;
+        showTooltip(node, position.x, position.y - ((NODE_SIZE[node.type] ?? 34) / 2) * cy.zoom() - 10);
     });
     cy.on('mouseout', 'node', hideTooltip);
 
@@ -440,14 +533,28 @@ function boot() {
     // ---------- list view (also the keyboard-accessible alternative) ----------
     function renderView() {
         const list = state.view === 'list';
+        const three = state.view === '3d';
 
-        els.canvas.parentElement.hidden = list;
+        if (!list) state.lastVisual = state.view;
+
+        hideTooltip();
+        els.canvas.parentElement.hidden = list || three;
+        els.stage3d.hidden = !three;
         els.list.hidden = !list;
-        clear(els.view).append(icon(list ? 'i-nexus' : 'i-list'), list ? t('toolbar.map') : t('toolbar.list'));
+        clear(els.view).append(icon(list ? 'i-nexus' : 'i-list'), list ? t(state.lastVisual === '3d' ? 'toolbar.view_3d' : 'toolbar.map') : t('toolbar.list'));
         els.view.setAttribute('aria-pressed', list ? 'true' : 'false');
+        els.view3d.setAttribute('aria-pressed', three ? 'true' : 'false');
+        scene3d?.setActive(three);
 
         if (list) {
             renderList();
+        } else if (three) {
+            ensure3d().then((scene) => {
+                if (!scene || state.view !== '3d') return;
+
+                scene.setActive(true);
+                render3d();
+            });
         } else {
             cy.resize();
             fit(false);
@@ -615,8 +722,11 @@ function boot() {
         if (state.focus && state.nodes.has(state.focus)) {
             const key = state.focus;
             state.focus = null;
-            state.impact = true;
             select(key);
+            // After select(), which resets the impact mode.
+            state.impact = true;
+            highlight();
+            renderDetail();
             centerOn(key);
         }
     }
@@ -714,6 +824,14 @@ function boot() {
     });
 
     window.addEventListener('pagehide', () => clearTimeout(state.timer));
+
+    // A viewer who last used the 3D view gets it again (a convenience only).
+    try {
+        if (storage?.getItem('nexus.view') === '3d') {
+            state.view = '3d';
+            renderView();
+        }
+    } catch { /* storage unavailable */ }
 
     els.live.hidden = false;
     els.pause.textContent = t('live.pause');

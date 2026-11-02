@@ -37,6 +37,9 @@ return [
             'resume' => 'Resume',
         ],
         'toolbar' => [
+            'view_3d' => '3D',
+            'view_3d_hint' => 'Explore the map in 3D: drag to rotate, scroll to zoom',
+            'canvas3d_label' => '3D map of servers (towers), services (rings), websites and pages, with incidents spreading along their dependencies. Use the list view to navigate with the keyboard.',
             'search_label' => 'Search by name',
             'search_placeholder' => 'Search by name…',
             'incident_view' => 'Incident view',
@@ -118,6 +121,8 @@ return [
             'direction' => 'Arrows point to what a resource depends on; resources without dependencies are at the top.',
         ],
         'states' => [
+            'webgl_title' => '3D is not available.',
+            'webgl_text' => 'This browser or device does not support WebGL; the map is shown in 2D.',
             'loading' => 'Loading map…',
             'empty_title' => 'Nothing to show yet',
             'empty_text' => 'Add servers or domains. Record dependencies between resources under Dependencies.',

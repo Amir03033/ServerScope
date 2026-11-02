@@ -1,5 +1,21 @@
 # What's new in ServerScope
 
+## 2 November 2026 — NEXUS in 3D
+
+### New
+
+- The NEXUS map has a **3D** view: servers stand as towers, services ring
+  them, websites orbit the server they run on and pages float above their
+  website. Drag to rotate, scroll to zoom, click for details.
+- Active incidents are visible as a pulse at the failing resource and as
+  waves running along the connections to everything that depends on it.
+- Filters, search, impact view and the side panel work as on the 2D map;
+  your choice of view is remembered.
+
+### Fixed
+
+- The NEXUS side panel no longer shows the word "null" for empty parts.
+
 ## 2 November 2026 — Root cause analysis: rules and AI together
 
 ### Improved
