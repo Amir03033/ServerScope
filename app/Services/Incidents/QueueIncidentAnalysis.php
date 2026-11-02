@@ -25,7 +25,8 @@ class QueueIncidentAnalysis
             $incident = $event->incident;
 
             if (! $this->provider->available() || $min === null || $min === '' || $incident->parent_id !== null
-                || Severity::rank($incident->severity) < Severity::rank((string) $min)) {
+                || Severity::rank($incident->severity) < Severity::rank((string) $min)
+                || ! IncidentInvestigator::allowedFor((int) $incident->team_id)) {
                 return;
             }
 

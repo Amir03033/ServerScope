@@ -409,7 +409,7 @@ return [
                 'min_interval_minutes' => 1,
                 'retention_days' => 365,
             ],
-            'features' => ['api_tokens', 'webhooks'],
+            'features' => ['api_tokens', 'webhooks', 'ai_analysis'],
         ],
         'premium' => [
             'limits' => [
@@ -420,7 +420,7 @@ return [
                 'min_interval_minutes' => 1,
                 'retention_days' => null,
             ],
-            'features' => ['api_tokens', 'webhooks'],
+            'features' => ['api_tokens', 'webhooks', 'ai_analysis'],
         ],
     ],
 

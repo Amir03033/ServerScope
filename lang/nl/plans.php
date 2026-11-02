@@ -25,5 +25,6 @@ return [
     'feature' => [
         'api_tokens' => 'API-tokens zitten niet in je huidige abonnement.',
         'webhooks' => 'Webhooks zitten niet in je huidige abonnement.',
+        'ai_analysis' => 'AI-analyse zit niet in je huidige abonnement.',
     ],
 ];

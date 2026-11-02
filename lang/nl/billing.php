@@ -74,5 +74,6 @@ return [
     'features' => [
         'api_tokens' => 'API-tokens',
         'webhooks' => 'Webhooks',
+        'ai_analysis' => 'AI-incidentanalyse',
     ],
 ];

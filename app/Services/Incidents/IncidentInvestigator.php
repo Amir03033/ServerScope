@@ -5,9 +5,11 @@ namespace App\Services\Incidents;
 use App\Jobs\RunIncidentAnalysis;
 use App\Models\Incident;
 use App\Models\IncidentAnalysis;
+use App\Models\Team;
 use App\Models\User;
 use App\Services\Ai\AiException;
 use App\Services\Ai\AiProvider;
+use App\Support\PlanLimits;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -48,9 +50,15 @@ TXT;
         return $this->provider->available();
     }
 
+    /** AI analysis is a Pro and Premium feature (the operator's default team is exempt). */
+    public static function allowedFor(int $teamId): bool
+    {
+        return PlanLimits::allows('ai_analysis', Team::query()->find($teamId));
+    }
+
     /**
      * Queues an analysis unless an identical one exists. Returns the
-     * analysis, or a reason string: unavailable, cooldown, limit.
+     * analysis, or a reason string: unavailable, plan, cooldown, limit.
      */
     public function request(Incident $incident, string $trigger, ?User $user = null): IncidentAnalysis|string
     {
@@ -59,6 +67,12 @@ TXT;
         }
 
         $teamId = (int) $incident->team_id;
+
+        // Checked here, so manual and automatic requests are both covered.
+        if (! self::allowedFor($teamId)) {
+            return 'plan';
+        }
+
         $analyses = fn () => IncidentAnalysis::query()->withoutGlobalScopes()->where('team_id', $teamId);
 
         if ($trigger === 'manual') {

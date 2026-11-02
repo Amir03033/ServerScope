@@ -38,6 +38,10 @@ class IncidentInvestigatorTest extends TestCase
         config(['serverscope.ai.api_key' => 'sk-test-secret-key', 'serverscope.ai.model' => 'test-model', 'serverscope.ai.auto_min_severity' => null]);
         Http::preventStrayRequests();
         $this->createTwoTeams();
+        // AI analysis is a Pro/Premium feature.
+        foreach ([$this->a, $this->b] as $t) {
+            $t['team']->forceFill(['plan' => 'pro', 'plan_status' => 'active'])->save();
+        }
     }
 
     protected function tearDown(): void
@@ -185,6 +189,36 @@ class IncidentInvestigatorTest extends TestCase
         // A truncated answer.
         Http::fake(['api.openai.com/*' => Http::response(['choices' => [['message' => ['content' => '{"summary":'], 'finish_reason' => 'length']]])]);
         $this->assertSame('invalid_response', app(IncidentInvestigator::class)->request($this->websiteIncident($this->a, 'http:len'), 'manual')->fresh()->error_code);
+    }
+
+    public function test_only_pro_and_premium_teams_get_ai_analysis(): void
+    {
+        $this->fakeAi();
+        $investigator = app(IncidentInvestigator::class);
+        $team = $this->a['team'];
+
+        foreach ([['free', 'active', false], ['pro', 'pending_payment', false], ['pro', 'active', true], ['premium', 'active', true]] as $i => [$plan, $status, $allowed]) {
+            $team->forceFill(['plan' => $plan, 'plan_status' => $status])->save();
+            $result = $investigator->request($this->websiteIncident($this->a, "http:plan{$i}"), 'manual');
+            $this->assertSame($allowed, $result instanceof IncidentAnalysis, "{$plan}/{$status}");
+            if (! $allowed) {
+                $this->assertSame('plan', $result);
+            }
+        }
+
+        Http::assertSentCount(2);
+
+        // Free: no button, an upgrade note, and the request is refused.
+        $team->forceFill(['plan' => 'free', 'plan_status' => 'active'])->save();
+        $incident = $this->websiteIncident($this->a, 'http:freeui');
+        $this->actingAs($this->a['admin'])->get(route('incidents.show', $incident))->assertOk()
+            ->assertSee('data-status="plan"', false)->assertSee(__('ai_analysis.plan'))->assertDontSee(route('incidents.analysis', $incident), false);
+        $this->actingAs($this->a['admin'])->post(route('incidents.analysis', $incident))->assertRedirect()->assertSessionHas('error', __('ai_analysis.refused.plan'));
+        $this->assertSame(0, IncidentAnalysis::query()->withoutGlobalScopes()->where('incident_id', $incident->id)->count());
+
+        // The operator's default team is exempt.
+        $team->forceFill(['is_default' => true])->save();
+        $this->assertTrue(IncidentInvestigator::allowedFor($team->id));
     }
 
     public function test_reasoning_models_get_room_and_a_cut_off_answer_is_logged_with_its_reason(): void

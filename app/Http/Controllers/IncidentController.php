@@ -4,15 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Domain;
 use App\Models\Incident;
+use App\Models\IncidentAnalysis;
+use App\Models\IncidentLearning;
 use App\Models\Server;
 use App\Models\User;
 use App\Rules\TeamMember;
-use App\Tenancy\Tenant;
 use App\Services\Incidents\CorrelationEngine;
+use App\Services\Incidents\IncidentInvestigator;
 use App\Services\Incidents\IncidentManager;
+use App\Services\Incidents\IncidentMemory;
 use App\Services\Incidents\IncidentMetrics;
 use App\Services\Incidents\Signal;
+use App\Services\Incidents\StaleLearningException;
+use App\Services\Incidents\TimeMachine;
 use App\Support\Audit;
+use App\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -85,7 +91,7 @@ class IncidentController extends Controller
         ];
 
         return view('incidents.index', [
-            'aiAvailable' => app(\App\Services\Incidents\IncidentInvestigator::class)->available(),
+            'aiAvailable' => app(IncidentInvestigator::class)->available() && IncidentInvestigator::allowedFor((int) Tenant::id()),
             'incidents' => $incidents,
             'filters' => $filters,
             'state' => $state,
@@ -176,15 +182,16 @@ class IncidentController extends Controller
             'reopened' => $incident->reopened_count,
         ];
 
-        $memory = app(\App\Services\Incidents\IncidentMemory::class);
+        $memory = app(IncidentMemory::class);
         $incident->load('learning.deployment', 'learning.recorder:id,name');
 
-        $investigator = app(\App\Services\Incidents\IncidentInvestigator::class);
+        $investigator = app(IncidentInvestigator::class);
 
         return view('incidents.show', [
             'incident' => $incident,
             'aiAvailable' => $investigator->available(),
-            'analysis' => \App\Models\IncidentAnalysis::query()->where('incident_id', $incident->id)->latest('id')->first(),
+            'aiPlan' => $investigator::allowedFor((int) $incident->team_id),
+            'analysis' => IncidentAnalysis::query()->where('incident_id', $incident->id)->latest('id')->first(),
             'learning' => $incident->learning,
             'similar' => $memory->similar($incident),
             'deploymentCandidates' => $memory->deploymentCandidates($incident),
@@ -200,7 +207,7 @@ class IncidentController extends Controller
      * Same access as the incident itself (any member of its team; route
      * model binding already limits incidents to the current team).
      */
-    public function timeMachine(Incident $incident, \App\Services\Incidents\TimeMachine $timeMachine): View
+    public function timeMachine(Incident $incident, TimeMachine $timeMachine): View
     {
         return view('incidents.time-machine', [
             'incident' => $incident,
@@ -212,15 +219,15 @@ class IncidentController extends Controller
      * Incident Memory: record or update what was learned. Any team member
      * may do this, like resolving an incident; the route is tenant-scoped.
      */
-    public function saveLearning(Request $request, Incident $incident, \App\Services\Incidents\IncidentMemory $memory): RedirectResponse
+    public function saveLearning(Request $request, Incident $incident, IncidentMemory $memory): RedirectResponse
     {
         $v = $request->validate([
-            'cause_category' => ['required', Rule::in(\App\Models\IncidentLearning::CATEGORIES)],
-            'cause_status' => ['required', Rule::in(\App\Models\IncidentLearning::CAUSE_STATUSES)],
+            'cause_category' => ['required', Rule::in(IncidentLearning::CATEGORIES)],
+            'cause_status' => ['required', Rule::in(IncidentLearning::CAUSE_STATUSES)],
             'root_cause' => ['required', 'string', 'min:3', 'max:5000'],
             'symptoms' => ['nullable', 'string', 'max:700'],
             'resolution_steps' => ['nullable', 'string', 'max:10000'],
-            'outcome' => ['required', Rule::in(\App\Models\IncidentLearning::OUTCOMES)],
+            'outcome' => ['required', Rule::in(IncidentLearning::OUTCOMES)],
             'deployment_id' => ['nullable', 'integer'],
             'version' => ['nullable', 'integer', 'min:1'],
         ]);
@@ -228,13 +235,13 @@ class IncidentController extends Controller
 
         try {
             $learning = $memory->save($incident, $v, $request->user(), isset($v['version']) ? (int) $v['version'] : null);
-        } catch (\App\Services\Incidents\StaleLearningException) {
+        } catch (StaleLearningException) {
             return back()->withInput()->with('error', __('incident_memory.stale'));
-        } catch (\InvalidArgumentException) {
+        } catch (InvalidArgumentException) {
             return back()->withInput()->withErrors(['deployment_id' => __('incident_memory.unknown_deployment')]);
         }
 
-        \App\Support\Audit::log('incident.learning_saved', "Lessen vastgelegd voor incident #{$incident->id}", $incident, ['version' => $learning->version, 'cause_status' => $learning->cause_status, 'outcome' => $learning->outcome]);
+        Audit::log('incident.learning_saved', "Lessen vastgelegd voor incident #{$incident->id}", $incident, ['version' => $learning->version, 'cause_status' => $learning->cause_status, 'outcome' => $learning->outcome]);
 
         return redirect()->to(route('incidents.show', $incident).'#memory')->with('success', __('incident_memory.saved'));
     }
@@ -243,7 +250,7 @@ class IncidentController extends Controller
      * Requests a new AI analysis (costs money: team administrators only,
      * with a per-incident cooldown and a per-team hourly cap).
      */
-    public function requestAnalysis(Request $request, Incident $incident, \App\Services\Incidents\IncidentInvestigator $investigator): RedirectResponse
+    public function requestAnalysis(Request $request, Incident $incident, IncidentInvestigator $investigator): RedirectResponse
     {
         Gate::authorize('admin');
 
@@ -253,7 +260,7 @@ class IncidentController extends Controller
             return redirect()->to(route('incidents.show', $incident).'#ai-analysis')->with('error', __('ai_analysis.refused.'.$result, ['minutes' => (int) config('serverscope.ai.manual_cooldown_minutes', 10)]));
         }
 
-        \App\Support\Audit::log('incident.ai_analysis_requested', "AI-analyse aangevraagd voor incident #{$incident->id}", $incident, ['analysis' => $result->id]);
+        Audit::log('incident.ai_analysis_requested', "AI-analyse aangevraagd voor incident #{$incident->id}", $incident, ['analysis' => $result->id]);
 
         return redirect()->to(route('incidents.show', $incident).'#ai-analysis')->with('success', __($result->wasRecentlyCreated || $result->status === 'queued' ? 'ai_analysis.queued' : 'ai_analysis.unchanged'));
     }

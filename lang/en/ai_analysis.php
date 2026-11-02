@@ -8,6 +8,8 @@ return [
     'queued' => 'The analysis has been queued.',
     'unchanged' => 'The evidence has not changed since the last analysis.',
     'unavailable' => 'AI analysis is not available: no AI provider is configured.',
+    'plan' => 'AI analysis is included in Pro and Premium.',
+    'plan_link' => 'View plans',
     'empty' => 'No analysis yet.',
     'pending' => 'Analysing… this usually takes less than a minute.',
     'failed' => [
@@ -19,6 +21,7 @@ return [
         'queue_failure' => 'The analysis failed: the background job stopped.',
     ],
     'refused' => [
+        'plan' => 'AI analysis is not included in your current plan (Pro and Premium only).',
         'unavailable' => 'AI analysis is not available: no AI provider is configured.',
         'cooldown' => 'An analysis was requested less than :minutes minutes ago.',
         'limit' => 'Your team has reached the hourly number of AI analyses.',
