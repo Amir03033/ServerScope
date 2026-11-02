@@ -74,6 +74,19 @@ class Investigations
         return Investigation::query()->withoutGlobalScopes()->where('team_id', $incident->team_id)->where('incident_id', $incident->id)->latest('id')->first();
     }
 
+    /** The latest completed or partial run (the current result; superseded runs are older). */
+    public static function latestWithResult(Incident $incident): ?Investigation
+    {
+        return Investigation::query()->withoutGlobalScopes()->where('team_id', $incident->team_id)->where('incident_id', $incident->id)
+            ->whereIn('status', ['completed', 'partial'])->latest('id')->first();
+    }
+
+    /** Whether this lifecycle event of the incident queues an automatic investigation. */
+    public static function automaticFor(Incident $incident, string $trigger): bool
+    {
+        return $incident->subject_type !== null && in_array($trigger, (array) config('serverscope.intelligence.auto_triggers', []), true);
+    }
+
     /** The latest run with a result. */
     public static function latestFinished(Incident $incident): ?Investigation
     {

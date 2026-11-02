@@ -88,7 +88,9 @@ class TimeMachineContractTest extends TestCase
         }
 
         $this->assertFileExists($file);
-        $this->assertSame(json_decode((string) file_get_contents($file), true), json_decode(json_encode($actual), true));
+        // Row ids depend on the database (MySQL keeps auto-increment values
+        // across rolled-back tests); compare with ids numbered by first use.
+        $this->assertSame(self::stableIds((string) file_get_contents($file)), self::stableIds(json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)));
     }
 
     private function website(): Incident
@@ -171,6 +173,23 @@ class TimeMachineContractTest extends TestCase
         foreach (array_chunk($rows, 500) as $chunk) {
             MetricSample::query()->insert($chunk);
         }
+    }
+
+    /** The JSON with every row id replaced by its order of first appearance per kind. */
+    private static function stableIds(string $json): array
+    {
+        $seen = [];
+        $id = function (string $kind, string $value) use (&$seen): string {
+            $seen[$kind] ??= [];
+
+            return $seen[$kind][$value] ??= (string) (count($seen[$kind]) + 1);
+        };
+
+        $json = preg_replace_callback('/\\b(server|domain|page|service):(\\d+)\\b/', fn ($m) => $m[1].':'.$id($m[1], $m[2]), $json);
+        $json = preg_replace_callback('#/(incidents|deployments|servers|domains|pages)/(\\d+)#', fn ($m) => '/'.$m[1].'/'.$id($m[1] === 'deployments' ? 'deployment' : ($m[1] === 'incidents' ? 'incident' : rtrim($m[1], 's')), $m[2]), $json);
+        $json = preg_replace_callback('/#(\\d+)/', fn ($m) => '#'.$id('incident', $m[1]), $json);
+
+        return json_decode($json, true);
     }
 
     private function normalize(mixed $value): mixed

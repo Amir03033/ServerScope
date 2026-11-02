@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Intelligence\InvestigationAiContract;
 use App\Tenancy\BelongsToTeam;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,6 +31,18 @@ class IncidentAnalysis extends Model
     public function incident(): BelongsTo
     {
         return $this->belongsTo(Incident::class);
+    }
+
+    /** The NEXUS Intelligence run this analysis interpreted (new contract only). */
+    public function investigation(): BelongsTo
+    {
+        return $this->belongsTo(Investigation::class);
+    }
+
+    /** Made from a deterministic investigation (nexus.investigation.v1) rather than the legacy evidence. */
+    public function interpretsInvestigation(): bool
+    {
+        return ($this->evidence['contract'] ?? null) === InvestigationAiContract::CONTRACT;
     }
 
     public function isPending(): bool

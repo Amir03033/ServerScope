@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Domain;
 use App\Models\Incident;
+use App\Models\IncidentAnalysis;
 use App\Models\Investigation;
 use App\Models\MonitoredPage;
 use App\Models\Server;
 use App\Models\ServiceCheck;
+use App\Services\Incidents\IncidentInvestigator;
 use App\Services\Intelligence\Investigations;
 use App\Support\Audit;
 use App\Tenancy\Tenant;
@@ -82,6 +84,7 @@ class InvestigationController extends Controller
 
     private function page(Request $request, Incident $incident, ?Investigation $investigation): View
     {
+        $investigator = app(IncidentInvestigator::class);
         $filters = $request->validate([
             'resource' => ['nullable', 'string', 'max:40', 'regex:/^[a-z_]+:\d+$/'],
             'category' => ['nullable', Rule::in(['incident', 'change', 'anomaly', 'service', 'check', 'recovery', 'metric', 'coverage', 'checks', 'maintenance'])],
@@ -97,6 +100,12 @@ class InvestigationController extends Controller
             'history' => $history,
             'filters' => $filters,
             'current' => $investigation?->hasResult() ? $this->currentStatus((int) $incident->team_id, $investigation->result) : [],
+            // The AI layer: the incident's latest analysis, and which runs were interpreted.
+            'analysis' => IncidentAnalysis::query()->where('team_id', $incident->team_id)->where('incident_id', $incident->id)->latest('id')->first(),
+            'aiByRun' => IncidentAnalysis::query()->where('team_id', $incident->team_id)->where('incident_id', $incident->id)->whereNotNull('investigation_id')
+                ->latest('id')->get(['id', 'investigation_id', 'status'])->unique('investigation_id')->keyBy('investigation_id'),
+            'aiAvailable' => $investigator->available(),
+            'aiPlan' => IncidentInvestigator::allowedFor((int) $incident->team_id),
         ]);
     }
 

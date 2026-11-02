@@ -325,6 +325,15 @@ scheduler-driven worker handles them; with a supervised worker use
 `--timeout` of at least 130 s. Incident creation and notifications never
 wait for them.
 
+**With NEXUS Intelligence (phase 2).** When the incident has a finished
+investigation, the analysis interprets that investigation instead (contract
+`nexus.investigation.v1`, see INTELLIGENCE.md): automatic analyses start
+when the investigation of a newly opened incident ends, not on
+`IncidentOpened`; the same severity threshold, plan gating, cooldown,
+hourly cap and deduplication apply, and at most one automatic analysis is
+made per incident. Without an investigation everything below applies
+unchanged.
+
 **What is sent.** Only the incident's own team data, built by
 `IncidentEvidence` from Time Machine (timeline, findings, hourly metric
 summaries), Deploy Judge (deployments in the window), Global Pulse probe

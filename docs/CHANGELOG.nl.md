@@ -1,5 +1,21 @@
 # Wat is er nieuw in ServerScope
 
+## 2 november 2026 — Oorzaakanalyse: regels en AI samen
+
+### Verbeterd
+
+- De incidentpagina heeft nu één sectie **Oorzaakanalyse**: wat is
+  waargenomen, de meest waarschijnlijke verklaring volgens vaste regels, de
+  interpretatie daarvan door AI (Pro en Premium), andere verklaringen, wat
+  onzeker blijft en wat je nu kunt controleren.
+- De AI interpreteert nu het onderzoek zelf. Ze verwijst naar hetzelfde
+  bewijs (E1, E2, …) en dezelfde kandidaten, kan "oorzaak onbekend"
+  antwoorden, en haar zekerheid wordt getoond als inschatting, nooit als
+  kans. Verwijzingen naar bewijs dat niet bestaat worden verwijderd en het
+  aantal wordt getoond.
+- Geen extra AI-gebruik: nog steeds hooguit één automatische analyse per
+  nieuw incident, met dezelfde abonnementen, limieten en wachttijden.
+
 ## 2 november 2026 — NEXUS Intelligence: onderzoek zonder AI
 
 ### Nieuw

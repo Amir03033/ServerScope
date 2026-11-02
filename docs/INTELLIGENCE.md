@@ -20,7 +20,7 @@ affected through recorded dependencies, and suggests read-only next steps.
 
 | Place | What |
 |---|---|
-| Incident page | Compact panel: leading explanation, confidence, limitations, link, (admin) run again |
+| Incident page | One **Root cause analysis** section: what we know, the leading explanation by the rules, the AI interpretation (phase 2), other explanations, what remains uncertain, what to check next, and the status of both layers; links to the full investigation, evidence, Time Machine and NEXUS |
 | `/incidents/{id}/investigation` | The incident's latest investigation, or its empty state |
 | `/investigations/{id}` | One stored run: overview, leading explanation, all candidates and ruled-out ones, timeline, impact, evidence explorer (filter by resource, kind, phase), next steps, limitations, history |
 | `/investigations/{id}/export` | The stored snapshot as JSON (codes, for review and traceability) |
@@ -112,6 +112,75 @@ incident), **healthy** (only successful checks) or **not observed**
 (exposure, not an observed impact). The page also shows the current status
 of each resource, labelled as "now".
 
+## AI interpretation (phase 2)
+
+The AI Incident Investigator (Pro and Premium; see DEPLOYMENT.md §11)
+interprets a finished investigation instead of building its own evidence.
+The deterministic investigation stays the source of facts; the AI result is
+a separate layer that never changes it.
+
+### Two contracts, one investigator
+
+| | Legacy contract | Investigation contract (`nexus.investigation.v1`) |
+|---|---|---|
+| Used when | the incident has no completed/partial investigation (e.g. a manual incident without a resource, or the run failed) | the incident has a completed or partial investigation |
+| Input | `IncidentEvidence` (Time Machine, deployments, probes, Incident Memory) — unchanged | `InvestigationAiContract::input()`: one stored run |
+| Output | `summary`, `observed_facts`, free-text `root_causes`, … — unchanged | `summary`, `observed_facts`, `leading` (candidate or `unknown`), `alternatives`, `confidence`, `uncertainties`, `next_steps`, `limitations`, `historical_references` |
+| Stored in | `incident_analyses` | `incident_analyses`, with `investigation_id` (nullable, set null when the run is pruned) |
+
+Provider (`OpenAiProvider`), plan gating, permissions, cooldown, team limit,
+deduplication and failure handling are the investigator's own and apply to
+both contracts.
+
+### Input (bounded)
+
+- Incident timing, source, severity, failure kind, resource name.
+- Up to 10 deterministic candidates as **C1, C2, …** with code, title,
+  explanation, deterministic confidence and its reasons, supporting and
+  contradicting evidence, missing information and dependency path.
+  "Cause not determined" is not a candidate: the model answers `unknown`.
+- Up to 60 evidence items with the run's own keys **E…** (cited items first,
+  then problems and changes), rendered in English, details scrubbed.
+- Up to 25 impact resources (failing first) with what was observed during
+  the incident and the dependency path.
+- Data gaps, failed sources, limits reached, ruled-out candidates.
+- Up to 5 similar earlier incidents from Incident Memory as **H<incident id>**.
+- Capped at `serverscope.ai.max_input_chars`: uncited evidence, history and
+  impact are dropped first. Only the incident's own team data; credentials,
+  tokens, e-mail and IP addresses are redacted; the data is wrapped in
+  `<investigation>` tags as untrusted input.
+
+### Output validation
+
+- A leading candidate that was not supplied (anything but a supplied C… or
+  `unknown`) rejects the whole answer (`invalid_response`).
+- Unknown evidence ids, unknown or duplicate alternatives and incident
+  references outside the history are removed and **counted**
+  (`removed_references`); the interface says how many were removed.
+- Facts without valid evidence are dropped.
+- The AI's confidence is a qualitative judgement and is shown next to (not
+  instead of) the deterministic confidence, labelled "not a probability".
+
+### When the AI runs
+
+- **Automatic:** when the investigation of a newly opened root incident
+  ends (`IncidentInvestigator::afterInvestigation`), if AI is configured,
+  the team's plan includes AI and the severity reaches
+  `SERVERSCOPE_AI_AUTO_MIN_SEVERITY` (as before). At most one automatic
+  analysis per incident: none if any analysis of the incident exists.
+  Reopen and resolve runs never call the AI. If that run fails, the legacy
+  contract is used instead (as before Phase 2). Incidents that get no
+  automatic investigation (no resource, or `opened` not in
+  `SERVERSCOPE_INTELLIGENCE_TRIGGERS`) still use the legacy listener.
+- **Manual:** team admins, from the root cause section; uses the latest
+  finished investigation when there is one; 10-minute cooldown per
+  incident; the team hourly cap counts both contracts.
+- **No repeated calls:** the hash leaves out the run id and time, so a
+  rerun on the same evidence reuses the existing analysis; a job delivered
+  twice calls the provider once; the job is not retried.
+- **Failures:** provider errors fail only the analysis (stored as a kind);
+  the deterministic result and the page stay as they are.
+
 ## Missing and incomplete evidence
 
 - No metrics, no raw samples, no dependencies, no server, a failed source,
@@ -184,8 +253,9 @@ attempt after twice the timeout; a job that fails for good marks the run
 
 ## Deployment
 
-1. `php artisan migrate` (adds `investigations`; additive, rollback
-   `php artisan migrate:rollback --step=1`).
+1. `php artisan migrate` (adds `investigations`, and in phase 2 the nullable
+   `incident_analyses.investigation_id`; additive, rollback
+   `php artisan migrate:rollback --step=1` per migration).
 2. Deploy the rebuilt assets in `public/build` (NEXUS panel link and focus).
 3. Optional: set the `SERVERSCOPE_INTELLIGENCE_*` and
    `SERVERSCOPE_RETAIN_INVESTIGATIONS_DAYS` variables.
@@ -194,14 +264,14 @@ attempt after twice the timeout; a job that fails for good marks the run
 ## Tests
 
 ```
-php -d memory_limit=1G vendor/bin/phpunit tests/Feature/Intelligence tests/Feature/TimeMachineContractTest.php tests/Feature/TimeMachineTest.php
+php -d memory_limit=1G vendor/bin/phpunit tests/Feature/Intelligence tests/Feature/IncidentInvestigatorTest.php tests/Feature/TimeMachineContractTest.php tests/Feature/TimeMachineTest.php
 ```
 
 The full suite needs more than PHP's default 128 MB (`-d memory_limit=1G`).
 
 ## Not in this phase
 
-AI explanations of investigations, forecasting beyond the existing
+Forecasting beyond the existing
 predictions, simulations ("digital twin"), autonomous remediation, user
 feedback on hypotheses, and the history of earlier maintenance windows (only
 the current/last one is stored).

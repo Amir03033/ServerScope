@@ -47,7 +47,7 @@ class QueueInvestigation
         try {
             // An incident without a monitored resource (e.g. a manual one) has
             // nothing to investigate automatically; it can still be requested by hand.
-            if ($incident->subject_type === null || ! in_array($trigger, (array) config('serverscope.intelligence.auto_triggers', []), true)) {
+            if (! Investigations::automaticFor($incident, $trigger)) {
                 return;
             }
 

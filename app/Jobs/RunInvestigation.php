@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Investigation;
+use App\Services\Incidents\IncidentInvestigator;
 use App\Services\Intelligence\InvestigationRunner;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -48,7 +49,16 @@ class RunInvestigation implements ShouldBeUnique, ShouldQueue
     /** A crashed or timed-out worker leaves the run failed, never stuck. */
     public function failed(?Throwable $exception): void
     {
-        Investigation::query()->withoutGlobalScopes()->whereKey($this->investigationId)->whereIn('status', Investigation::PENDING)
+        $failed = Investigation::query()->withoutGlobalScopes()->whereKey($this->investigationId)->whereIn('status', Investigation::PENDING)
             ->update(['status' => 'failed', 'error_code' => 'queue_failure', 'finished_at' => now(), 'updated_at' => now()]);
+
+        // The automatic AI analysis of a new incident then falls back to the legacy contract.
+        if ($failed === 1) {
+            try {
+                app(IncidentInvestigator::class)->afterInvestigation(Investigation::query()->withoutGlobalScopes()->findOrFail($this->investigationId));
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
     }
 }
