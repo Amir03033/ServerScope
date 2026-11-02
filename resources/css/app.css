@@ -643,8 +643,8 @@
     }
 
     /* Plan and billing page. */
-    .ss-chip-ok { color: var(--ss-ok); border-color: color-mix(in srgb, var(--ss-ok) 40%, var(--ss-line)); }
-    .ss-chip-warn { color: var(--ss-warn); border-color: color-mix(in srgb, var(--ss-warn) 40%, var(--ss-line)); }
+    .ss-chip-ok, .ss-chip.ss-chip-ok { color: var(--ss-ok); border-color: color-mix(in srgb, var(--ss-ok) 40%, var(--ss-line)); }
+    .ss-chip-warn, .ss-chip.ss-chip-warn { color: var(--ss-warn); border-color: color-mix(in srgb, var(--ss-warn) 40%, var(--ss-line)); }
 
     .ss-billing-summary {
         display: flex;
@@ -1619,6 +1619,36 @@
     .ss-chip-bad { color: var(--ss-bad); border-color: color-mix(in srgb, var(--ss-bad) 40%, var(--ss-line)); }
     .ss-chip-muted { color: var(--ss-muted); }
     .ss-chip-info { color: var(--ss-accent); border-color: var(--ss-accent-line); }
+
+    /* NEXUS skyline: a night sky in both themes. */
+    .ss-skyline-stage, :root[data-theme="light"] .ss-skyline-stage { background: linear-gradient(180deg, #050814 0%, #0b1330 60%, #121a3a 100%); }
+    @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .ss-skyline-stage { background: linear-gradient(180deg, #050814 0%, #0b1330 60%, #121a3a 100%); } }
+    .ss-skyline-legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .5rem 1rem; margin: 0; }
+    .ss-skyline-legend dt { font-weight: 600; color: var(--ss-text); }
+    .ss-skyline-legend dd { margin: 0; }
+    .ss-skyline-name { padding: 0; border: 0; background: none; color: var(--ss-text); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+    .ss-skyline-name:hover { text-decoration: underline; }
+    [data-skyline-list] > [data-selected="true"] .ss-skyline-name { color: var(--ss-accent); }
+
+    /* Dashboard heartbeat: one live line per server. */
+    .ss-pulse-list { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+    .ss-pulse-row { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) auto; align-items: center; gap: 1rem; padding: .5rem .75rem; border: 1px solid var(--ss-line); border-radius: 12px; background: color-mix(in srgb, var(--ss-bg) 60%, var(--ss-surface)); }
+    .ss-pulse-row[data-rhythm="chaos"], .ss-pulse-row[data-rhythm="flat"] { border-color: color-mix(in srgb, var(--ss-bad) 45%, var(--ss-line)); background: color-mix(in srgb, var(--ss-bad) 6%, var(--ss-surface)); }
+    .ss-pulse-row[data-rhythm="irregular"] { border-color: color-mix(in srgb, var(--ss-warn) 40%, var(--ss-line)); }
+    .ss-pulse-canvas { display: block; width: 100%; height: 3.25rem; }
+    .ss-pulse-state { display: inline-flex; align-items: center; gap: .35rem; font-size: .75rem; font-weight: 600; color: var(--ss-muted); }
+    .ss-pulse-state::before { content: ""; width: .45rem; height: .45rem; border-radius: 999px; background: currentColor; }
+    [data-rhythm="steady"] .ss-pulse-state { color: var(--ss-ok); }
+    [data-rhythm="irregular"] .ss-pulse-state { color: var(--ss-warn); }
+    [data-rhythm="chaos"] .ss-pulse-state, [data-rhythm="flat"] .ss-pulse-state { color: var(--ss-bad); }
+    .ss-pulse-numbers { display: grid; grid-template-columns: repeat(3, 4.5rem); gap: .25rem; margin: 0; text-align: right; }
+    .ss-pulse-numbers dt { font-size: .6875rem; color: var(--ss-muted); }
+    .ss-pulse-numbers dd { margin: 0; font-size: .875rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ss-text); }
+    @media (max-width: 767px) {
+        .ss-pulse-row { grid-template-columns: minmax(0, 1fr) auto; }
+        .ss-pulse-canvas { grid-column: 1 / -1; grid-row: 2; }
+        .ss-pulse-numbers { grid-template-columns: repeat(3, 3.75rem); }
+    }
 
     .ss-nexus-spinner { width: 1rem; height: 1rem; border: 2px solid var(--ss-line-strong); border-top-color: var(--ss-accent); border-radius: 999px; animation: ss-nexus-spin .8s linear infinite; }
     @keyframes ss-nexus-spin { to { transform: rotate(360deg); } }

@@ -4,12 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\StatusPage;
 use App\Services\Reports\StatusPagePresenter;
-use App\Support\Locale;
 use App\Tenancy\TeamScope;
-use App\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -58,8 +55,6 @@ class PublicStatusPageController extends Controller
 
     private function data(StatusPage $page, StatusPagePresenter $presenter): array
     {
-        // Rendered as the page's own team, so only that team's resources
-        // and incidents can appear.
-        return Cache::remember(Locale::cacheKey("status-page:{$page->id}:{$page->updated_at?->timestamp}"), 30, fn () => Tenant::run($page->team_id, fn () => $presenter->present($page)));
+        return $presenter->cached($page);
     }
 }

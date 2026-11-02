@@ -1,5 +1,26 @@
 # What's new in ServerScope
 
+## 3 November 2026 — Heartbeat, skyline and status badges
+
+### New
+
+- **Heartbeat on the dashboard**: every server gets a live ECG line. The
+  rate follows its CPU, the width of the beat its slowest website. When
+  something fails the line goes haywire; an offline server has no signal.
+  Every row also says the rhythm and the numbers in words.
+- **Skyline** (NEXUS › Skyline): your servers as a city at night. Busier
+  servers stand taller, lit windows are running services, roof lights are
+  the websites. When something fails the lights flicker; when a server
+  stops reporting they go out.
+- **Status badges**: live, animated SVG badges of a public status page
+  (overall or per component) for your README or website, with ready-made
+  Markdown on the edit page. Only the public name and state; light or
+  dark, English or Dutch.
+
+### Improved
+
+- The green "Reachable" chips (globe, billing) are green again.
+
 ## 3 November 2026 — A better-looking globe
 
 ### Improved

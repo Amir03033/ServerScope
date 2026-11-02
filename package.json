@@ -5,7 +5,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test:js": "node --test resources/js/nexus/*.test.js resources/js/status/*.test.js resources/js/globe/*.test.js"
+        "test:js": "node --test resources/js/nexus/*.test.js resources/js/status/*.test.js resources/js/globe/*.test.js resources/js/pulse/*.test.js resources/js/skyline/*.test.js"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

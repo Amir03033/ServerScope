@@ -25,6 +25,14 @@ class NexusController extends Controller
         ]);
     }
 
+    /** The servers as a city at night; the page polls graph() for updates. */
+    public function skyline(TopologyBuilder $topology): View
+    {
+        return view('nexus.skyline', [
+            'topology' => $topology->forTeam($this->teamId()),
+        ]);
+    }
+
     public function graph(Request $request, TopologyBuilder $topology): JsonResponse
     {
         $teamId = $this->teamId();

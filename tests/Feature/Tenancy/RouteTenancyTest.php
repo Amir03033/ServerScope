@@ -46,6 +46,9 @@ class RouteTenancyTest extends TestCase
         // user in users.locale); reads and shows no team data.
         'POST locale',
         // Public status pages render as the page's own team.
+        // Live SVG badges of public status pages: the page's own name and states, nothing else.
+        'GET|HEAD status/{slug}/badge.svg',
+        'GET|HEAD status/{slug}/badge/{component}.svg',
         'GET|HEAD status/{slug}.json',
         'GET|HEAD status/{slug}',
         // install.sh: the team comes only from the one-time enrollment

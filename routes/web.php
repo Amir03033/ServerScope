@@ -93,6 +93,9 @@ Route::get('/agent/releases/{version}/manifest.sig', [\App\Http\Controllers\Agen
 Route::get('/agent/releases/{version}/{file}', [\App\Http\Controllers\AgentDownloadController::class, 'tarball'])->where(['version' => '\d+\.\d+\.\d+', 'file' => 'serverscope-agent-\d+\.\d+\.\d+\.tar\.gz'])->middleware('throttle:30,1')->name('agent.release.tarball');
 
 // Public status pages (no login unless the page is private).
+// Live SVG badges of public status pages (for READMEs and websites).
+Route::get('/status/{slug}/badge.svg', [\App\Http\Controllers\StatusBadgeController::class, 'show'])->where('slug', '[a-z0-9-]+')->middleware('throttle:120,1')->name('status.badge');
+Route::get('/status/{slug}/badge/{component}.svg', [\App\Http\Controllers\StatusBadgeController::class, 'show'])->where(['slug' => '[a-z0-9-]+', 'component' => '[0-9]+'])->middleware('throttle:120,1')->name('status.badge.component');
 Route::get('/status/{slug}.json', [PublicStatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.json');
 Route::get('/status/{slug}', [PublicStatusPageController::class, 'show'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.show');
 
@@ -288,6 +291,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // NEXUS infrastructure map (read-only; JSON cached per team).
     Route::get('/nexus', [\App\Http\Controllers\NexusController::class, 'index'])->name('nexus.index');
     Route::get('/nexus/graph.json', [\App\Http\Controllers\NexusController::class, 'graph'])->middleware('throttle:60,1')->name('nexus.graph');
+    Route::get('/nexus/skyline', [\App\Http\Controllers\NexusController::class, 'skyline'])->name('nexus.skyline');
     Route::get('/nexus/globe', [\App\Http\Controllers\GlobeController::class, 'index'])->name('nexus.globe');
     Route::get('/nexus/globe.json', [\App\Http\Controllers\GlobeController::class, 'data'])->middleware('throttle:60,1')->name('nexus.globe.data');
 

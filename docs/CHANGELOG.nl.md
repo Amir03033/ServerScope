@@ -1,5 +1,26 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — Hartslag, skyline en statusbadges
+
+### Nieuw
+
+- **Hartslag op het dashboard**: elke server krijgt een live ECG-lijn. Het
+  tempo volgt de CPU, de breedte van de slag de traagste website op de
+  server. Bij een storing slaat de lijn op hol; een offline server geeft
+  geen signaal. Elke regel zegt het ritme en de cijfers ook in woorden.
+- **Skyline** (NEXUS › Skyline): je servers als een stad bij nacht.
+  Drukkere servers staan hoger, verlichte ramen zijn draaiende services,
+  daklichten zijn de websites. Faalt er iets, dan knippert het licht; meldt
+  een server zich niet meer, dan gaat het licht uit.
+- **Statusbadges**: live, geanimeerde SVG-badges van een publieke
+  statuspagina (algemeen of per onderdeel) voor je README of website, met
+  kant-en-klare Markdown op de bewerkpagina. Alleen de publieke naam en
+  status; licht of donker, Nederlands of Engels.
+
+### Verbeterd
+
+- De groene "Bereikbaar"-labels (wereldbol, abonnement) zijn weer groen.
+
 ## 3 november 2026 — Een mooiere wereldbol
 
 ### Verbeterd

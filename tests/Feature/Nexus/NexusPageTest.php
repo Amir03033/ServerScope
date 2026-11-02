@@ -153,4 +153,28 @@ class NexusPageTest extends TestCase
             ->assertOk()
             ->assertSee('data-kpi="nodes">0<', false);
     }
+
+    public function test_the_skyline_and_the_heartbeat_show_only_the_teams_own_servers(): void
+    {
+        // Skyline: its own menu item under NEXUS, the team's topology, its own script.
+        $html = $this->actingAs($this->a['member'])->get(route('nexus.skyline'))->assertOk()
+            ->assertSee('id="skyline-config"', false)
+            ->assertSee('alpha-server')
+            ->assertDontSee('bravo')
+            ->getContent();
+        $this->assertMatchesRegularExpression('#href="'.preg_quote(route('nexus.skyline'), '#').'"\s+class="ss-nav-item ss-nav-sub"\s+aria-current="page"#', $html);
+        $this->assertMatchesRegularExpression('#src="[^"]*/build/assets/skyline-[^"]+\.js"#', $html);
+        $this->get(route('nexus.skyline'))->assertOk();
+        auth()->logout();
+        $this->get(route('nexus.skyline'))->assertRedirect(route('login'));
+
+        // Dashboard heartbeat: one row per own server, data from the team's graph.
+        $html = $this->actingAs($this->b['member'])->get(route('dashboard'))->assertOk()
+            ->assertSee('data-pulse-row="server:'.$this->b['server']->id.'"', false)
+            ->assertDontSee('data-pulse-row="server:'.$this->a['server']->id.'"', false)
+            ->assertSee('id="pulse-config"', false)
+            ->getContent();
+        $this->assertMatchesRegularExpression('#src="[^"]*/build/assets/pulse-[^"]+\.js"#', $html);
+        $this->assertStringContainsString(str_replace('/', '\\/', route('nexus.graph')), $html);
+    }
 }

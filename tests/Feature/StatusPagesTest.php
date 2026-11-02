@@ -193,4 +193,70 @@ class StatusPagesTest extends TestCase
 
         $this->getJson(route('status.json', $page->slug))->assertJsonPath('components.1.state', 'maintenance');
     }
+
+    public function test_public_pages_have_live_badges_with_only_the_public_name_and_state(): void
+    {
+        [$page, $server, $domain] = $this->setupPage();
+        $component = $page->components->firstWhere('display_name', 'Webwinkel');
+        auth()->logout();
+
+        $overall = $this->get(route('status.badge', $page->slug).'?lang=en')->assertOk();
+        $this->assertStringStartsWith('image/svg+xml', $overall->headers->get('Content-Type'));
+        $this->assertStringContainsString('max-age=60', $overall->headers->get('Cache-Control'));
+        $this->assertSame("default-src 'none'; style-src 'unsafe-inline'", $overall->headers->get('Content-Security-Policy'));
+        $svg = $overall->getContent();
+        $this->assertStringContainsString('Status Example: Major outage', $svg, 'the database server is offline');
+        $this->assertStringContainsString('@keyframes', $svg);
+        $this->assertStringContainsString('prefers-reduced-motion', $svg);
+
+        $svg = $this->get(route('status.badge.component', [$page->slug, $component->id]).'?lang=nl&theme=dark')->assertOk()->getContent();
+        $this->assertStringContainsString('Webwinkel: Operationeel', $svg);
+        $this->assertStringContainsString('#0d1117', $svg);
+
+        // Never internal names, hosts, addresses or paths; no scripts or external references.
+        foreach ([$svg, $overall->getContent()] as $body) {
+            foreach (['db-prod-01', 'db01.internal', '10.20.30.40', 'shop.example.com', 'secret-health', '<script', 'href=', 'xlink'] as $secret) {
+                $this->assertStringNotContainsString($secret, $body);
+            }
+        }
+
+        // Own label: escaped and shortened.
+        $svg = $this->get(route('status.badge', $page->slug).'?label='.urlencode('<b>"Shop" & co</b>'.str_repeat('x', 80)))->assertOk()->getContent();
+        $this->assertStringContainsString('&lt;b&gt;&quot;Shop&quot; &amp; co', $svg);
+        $this->assertStringNotContainsString('<b>', $svg);
+        $this->assertStringNotContainsString(str_repeat('x', 40), $svg);
+    }
+
+    public function test_badges_do_not_exist_for_private_pages_or_other_pages_components(): void
+    {
+        [$page, , $domain] = $this->setupPage(['is_public' => '0']);
+        $other = $page->replicate();
+        $other->forceFill(['slug' => 'other-page', 'is_public' => true])->save();
+        $foreign = $other->components()->create(['subject_type' => 'domain', 'subject_id' => $domain->id, 'display_name' => 'Elders']);
+
+        // Private: no badge, also not for a signed-in member (a badge is always anonymous).
+        $this->get(route('status.badge', $page->slug))->assertNotFound();
+        $this->actingAs($this->admin)->get(route('status.badge', $page->slug))->assertNotFound();
+        auth()->logout();
+
+        // A component of another page through this page's slug: not found.
+        $page->forceFill(['is_public' => true])->save();
+        $this->get(route('status.badge.component', [$page->slug, $foreign->id]))->assertNotFound();
+        $this->get(route('status.badge.component', [$page->slug, 999999]))->assertNotFound();
+        $this->get('/status/nope/badge.svg')->assertNotFound();
+    }
+
+    public function test_the_edit_page_offers_badge_snippets_for_public_pages(): void
+    {
+        [$page] = $this->setupPage();
+
+        $this->actingAs($this->admin)->get(route('status-pages.edit', $page))->assertOk()
+            ->assertSee(route('status.badge', $page->slug))
+            ->assertSee('data-copy-from="badge-0"', false);
+
+        $page->forceFill(['is_public' => false])->save();
+        $this->actingAs($this->admin)->get(route('status-pages.edit', $page))->assertOk()
+            ->assertDontSee(route('status.badge', $page->slug))
+            ->assertSee(__('status_pages.badges.private'));
+    }
 }

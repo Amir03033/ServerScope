@@ -21,6 +21,7 @@ return [
         'servers' => 'Servers',
         'domains' => 'Domains',
         'nexus' => 'NEXUS',
+        'skyline' => 'Skyline',
         'globe' => 'Globe',
         'dependencies' => 'Dependencies',
         'deployments' => 'Deployments',
