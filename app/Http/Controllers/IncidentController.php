@@ -193,6 +193,7 @@ class IncidentController extends Controller
             'aiPlan' => $investigator::allowedFor((int) $incident->team_id),
             'analysis' => IncidentAnalysis::query()->where('incident_id', $incident->id)->latest('id')->first(),
             'investigation' => \App\Services\Intelligence\Investigations::latest($incident),
+            'finished' => \App\Services\Intelligence\Investigations::latestWithResult($incident),
             'learning' => $incident->learning,
             'similar' => $memory->similar($incident),
             'deploymentCandidates' => $memory->deploymentCandidates($incident),
@@ -255,7 +256,8 @@ class IncidentController extends Controller
     {
         Gate::authorize('admin');
 
-        $result = $investigator->request($incident, 'manual', $request->user());
+        // From the latest finished investigation when there is one (NEXUS Intelligence contract).
+        $result = $investigator->requestBest($incident, 'manual', $request->user());
 
         if (is_string($result)) {
             return redirect()->to(route('incidents.show', $incident).'#ai-analysis')->with('error', __('ai_analysis.refused.'.$result, ['minutes' => (int) config('serverscope.ai.manual_cooldown_minutes', 10)]));

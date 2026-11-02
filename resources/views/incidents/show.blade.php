@@ -110,9 +110,7 @@
                 </dl>
             </section>
 
-            @include('incidents._investigation')
-
-            @include('incidents._ai_analysis')
+            @include('incidents._root_cause')
 
             @include('incidents._memory')
 

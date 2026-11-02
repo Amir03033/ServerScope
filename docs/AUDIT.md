@@ -766,3 +766,23 @@ Not tested / limitations: only local automated tests (SQLite); not run
 against MySQL or in production. Maintenance history is limited to the
 current/last stored window. Hypothesis rules are a first catalog; their
 levels are rules, not calibrated probabilities.
+
+## 11. NEXUS Intelligence, phase 2 (AI interpretation of investigations)
+
+Branch `feature/nexus-intelligence-ai` from `main` `bd962bc`. The AI
+Incident Investigator gains a second, additive contract
+(`nexus.investigation.v1`, `InvestigationAiContract`) for incidents with a
+finished investigation; the legacy contract is unchanged and still used
+without one. New nullable `incident_analyses.investigation_id`. Automatic
+AI analysis moved from `IncidentOpened` to the end of the opened
+investigation (same threshold, plan gating and caps; at most one per
+incident; legacy fallback when the run fails). The incident page has one
+"Root cause analysis" section instead of separate investigation and AI
+panels. Details: [INTELLIGENCE.md](INTELLIGENCE.md).
+
+Tests: `tests/Feature/Intelligence/IntelligenceAiContractTest.php` (input
+and output contract, reference validation, unknown cause, provider
+failures, plan gating, isolation, deduplication, lifecycle, UI states,
+escaping, both languages); `IncidentInvestigatorTest` keeps covering the
+legacy contract (with automatic investigations off). Run on SQLite and on
+MySQL 8.4 locally; not in production.

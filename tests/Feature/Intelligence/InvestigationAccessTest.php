@@ -179,11 +179,12 @@ class InvestigationAccessTest extends TestCase
             ->assertDontSee('<script>alert(1)</script>', false)
             ->assertDontSee('bravo');
 
-        // The incident page shows the compact panel next to (not inside) the AI panel.
+        // The incident page shows one root cause section (rules and AI layer), linking to the full run.
         $this->actingAs($this->a['member'])->get(route('incidents.show', $a))
             ->assertOk()
-            ->assertSee('data-testid="investigation-panel"', false)
-            ->assertSee('data-testid="ai-analysis"', false)
+            ->assertSee('data-testid="root-cause"', false)
+            ->assertSee('data-testid="root-cause-ai"', false)
+            ->assertDontSee('data-testid="ai-analysis"', false)
             ->assertSee(route('investigations.show', $run));
 
         // Evidence filter.

@@ -36,6 +36,9 @@ class IncidentInvestigatorTest extends TestCase
         Carbon::setTestNow('2026-11-10 12:00:00');
         AlertRule::query()->forceDelete();
         config(['serverscope.ai.api_key' => 'sk-test-secret-key', 'serverscope.ai.model' => 'test-model', 'serverscope.ai.auto_min_severity' => null]);
+        // These tests cover the legacy contract (incidents without a NEXUS Intelligence
+        // investigation); IntelligenceAiContractTest covers the investigation contract.
+        config(['serverscope.intelligence.auto_triggers' => []]);
         Http::preventStrayRequests();
         $this->createTwoTeams();
         // AI analysis is a Pro/Premium feature.

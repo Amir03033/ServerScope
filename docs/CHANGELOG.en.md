@@ -1,5 +1,20 @@
 # What's new in ServerScope
 
+## 2 November 2026 — Root cause analysis: rules and AI together
+
+### Improved
+
+- The incident page now has one **Root cause analysis** section: what was
+  observed, the most likely explanation by fixed rules, the AI's
+  interpretation of that result (Pro and Premium), other explanations, what
+  remains uncertain and what to check next.
+- The AI now interprets the investigation itself. It refers to the same
+  evidence (E1, E2, …) and candidates, can answer "cause unknown", and its
+  confidence is shown as a judgement, never as a probability. References to
+  evidence that does not exist are removed and the number is shown.
+- No extra AI usage: still at most one automatic analysis per new incident,
+  with the same plans, limits and cooldowns.
+
 ## 2 November 2026 — NEXUS Intelligence: investigations without AI
 
 ### New

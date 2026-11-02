@@ -6,6 +6,7 @@ use App\Models\Incident;
 use App\Models\Investigation;
 use App\Services\Dependencies\DependencyGraph;
 use App\Services\Dependencies\ResourceCatalog;
+use App\Services\Incidents\IncidentInvestigator;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -93,6 +94,22 @@ class InvestigationRunner
                 ->whereKeyNot($investigation->id)->whereIn('status', ['completed', 'partial'])->where('id', '<', $investigation->id)
                 ->update(['status' => 'superseded', 'updated_at' => now()]);
         });
+
+        $this->afterRun($investigation);
+    }
+
+    /**
+     * The automatic AI analysis that follows the run of a newly opened
+     * incident (IncidentInvestigator decides whether it is due). Never
+     * affects the investigation itself.
+     */
+    private function afterRun(Investigation $investigation): void
+    {
+        try {
+            app(IncidentInvestigator::class)->afterInvestigation($investigation->fresh());
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 
     /** The complete, language-independent result for an incident at $asOf. @return array<string, mixed> */
@@ -175,5 +192,10 @@ class InvestigationRunner
     private function fail(Investigation $investigation, string $code): void
     {
         $investigation->forceFill(['status' => 'failed', 'error_code' => $code, 'finished_at' => now()])->save();
+
+        // Without a result, an automatic analysis falls back to the legacy contract.
+        if ($code !== 'integrity_violation') {
+            $this->afterRun($investigation);
+        }
     }
 }

@@ -121,6 +121,14 @@
                         @endif
                     </section>
 
+                    {{-- AI interpretation of this incident's investigation (separate layer; never changes the result above). --}}
+                    <section class="ss-panel" aria-label="{{ __('investigations.rca.ai') }}">
+                        @include('investigations._ai', ['analysis' => $analysis, 'deterministic' => $primary['code'] !== 'insufficient_evidence' ? $primary : null, 'testid' => 'investigation-ai'])
+                        @if ($analysis?->interpretsInvestigation() && $analysis->investigation_id && $analysis->investigation_id !== $inv->id)
+                            <p class="m-0 mt-2 text-xs text-muted">{{ __('investigations.rca.ai_other_run', ['run' => '#'.$analysis->investigation_id]) }}</p>
+                        @endif
+                    </section>
+
                     {{-- All candidates --}}
                     <section class="ss-panel" aria-labelledby="hypotheses-title" data-testid="investigation-hypotheses">
                         <div class="ss-panel-head"><div><h2 id="hypotheses-title" class="ss-panel-title">{{ __('investigations.hypotheses_title') }}</h2><p class="ss-panel-sub">{{ __('investigations.hypotheses_text') }}</p></div></div>
@@ -297,6 +305,7 @@
                                     <td><span class="ss-status {{ $statusTone($run->status) }}">{{ __('investigations.status.'.$run->status) }}</span></td>
                                     <td class="text-sm">@if ($run->summary){{ __('investigations.hypotheses.'.$run->summary['primary']['code'].'.title', ['resource' => $run->summary['primary']['label'] ?? '—', 'id' => $run->summary['primary']['incident_id'] ?? '—']) }} · {{ __('investigations.confidence.'.$run->summary['primary']['confidence']) }}@else—@endif</td>
                                     <td class="text-xs text-muted">@if ($older && $run->input_digest && $older->input_digest){{ $run->input_digest === $older->input_digest ? __('investigations.history.same_input') : __('investigations.history.changed_input') }}@endif</td>
+                                    <td class="text-xs" data-label="{{ __('investigations.rca.status_ai') }}">@if ($aiRun = $aiByRun->get($run->id)){{ __('investigations.rca.status_ai') }}: {{ __('investigations.rca.ai_state.'.$aiRun->status) }}@else<span class="text-muted">{{ __('investigations.rca.status_ai') }}: —</span>@endif</td>
                                 </tr>
                             @endforeach
                         </tbody>

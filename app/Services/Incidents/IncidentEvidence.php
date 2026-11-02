@@ -187,7 +187,12 @@ class IncidentEvidence
                 'http_status' => $c->http_status_code, 'response_ms' => $c->response_time_ms, 'error' => $c->error_code])->all();
     }
 
-    private function history(Incident $incident): array
+    /**
+     * Similar earlier incidents of the same team and their recorded
+     * learnings (Incident Memory), as H<incident id> items. Also used by
+     * the NEXUS Intelligence contract (InvestigationAiContract).
+     */
+    public function history(Incident $incident): array
     {
         return $this->memory->similar($incident, 5)->map(fn (array $m) => [
             'id' => 'H'.$m['incident']->id,
