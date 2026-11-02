@@ -5,7 +5,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test:js": "node --test resources/js/nexus/*.test.js"
+        "test:js": "node --test resources/js/nexus/*.test.js resources/js/status/*.test.js resources/js/globe/*.test.js"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
@@ -20,6 +20,7 @@
     "dependencies": {
         "chart.js": "^4.5.1",
         "cytoscape": "^3.34.4",
-        "three": "^0.186.1"
+        "three": "^0.186.1",
+        "world-atlas": "^2.0.2"
     }
 }

@@ -38,6 +38,7 @@ return [
         'options' => [
             'is_public' => 'Public (visible without signing in)',
             'show_uptime' => 'Show availability per day (90 days)',
+            'show_3d_hero' => 'Show an animated 3D picture of the components above the status (uses WebGL; about 150 kB extra for visitors)',
             'show_incident_titles' => 'Show incident titles (may contain internal names); otherwise a general description',
         ],
         'components_title' => 'Components',

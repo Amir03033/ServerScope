@@ -30,14 +30,14 @@ function boot() {
     const els = {
         canvas: $('canvas'), list: $('list'), overlay: $('overlay'), notices: $('notices'),
         panel: $('panel'), types: $('types'), health: $('health'), search: $('search'),
-        incidents: $('incidents'), fit: $('fit'), view: $('view'), reset: $('reset'), view3d: $('3d'), stage3d: $('3d-stage'),
+        incidents: $('incidents'), fit: $('fit'), view: $('view'), reset: $('reset'), view3d: $('3d'), stage3d: $('3d-stage'), flows: $('flows'),
         live: $('live'), liveText: $('live-text'), pause: $('pause'), refresh: $('refresh'),
         tooltip: $('tooltip'), visible: $('visible'),
     };
 
     const state = {
         topology: null, nodes: new Map(), graph: null, structure: null,
-        selected: null, impact: false, view: 'map', lastVisual: 'map', interacted: false, visible: new Set(),
+        selected: null, impact: false, view: 'map', lastVisual: 'map', flows: true, interacted: false, visible: new Set(),
         focus: /^[a-z_]+:\d+$/.test(new URLSearchParams(window.location.search).get('focus') ?? '') ? new URLSearchParams(window.location.search).get('focus') : null,
         etag: null, inflight: null, timer: null, failures: 0, lastAttempt: 0, checkedAt: null, stopped: false, paused: false,
         filters: { types: new Set(TYPE_ORDER), health: new Set(HEALTH_ORDER), incidents: false, query: '' },
@@ -233,6 +233,12 @@ function boot() {
         state.view = state.view === '3d' ? 'map' : '3d';
         remember(state.view);
         renderView();
+    });
+
+    els.flows.addEventListener('click', () => {
+        state.flows = !state.flows;
+        els.flows.setAttribute('aria-pressed', state.flows ? 'true' : 'false');
+        scene3d?.setFlows(state.flows);
     });
 
     // ---------- 3D view (three.js, loaded the first time it is opened) ----------
@@ -500,6 +506,13 @@ function boot() {
                 h('li', { class: 'flex items-center gap-2.5' }, h('span', { class: 'ss-nexus-line is-dashed', 'aria-hidden': 'true' }), t('legend.structural')),
             ),
             h('p', { class: 'mt-3 text-xs text-muted' }, t('legend.direction')),
+            state.view === '3d' ? h('div', { class: 'mt-4 grid gap-1.5 text-[13px]' },
+                h('h3', { class: 'ss-nexus-heading !mb-1' }, t('legend.title_3d')),
+                h('p', { class: 'm-0' }, t('legend.flow')),
+                h('p', { class: 'm-0' }, t('legend.jam')),
+                h('p', { class: 'm-0' }, t('legend.wave')),
+                h('p', { class: 'm-0 text-xs text-muted' }, t('legend.flow_note')),
+            ) : null,
         );
     }
 
@@ -544,6 +557,7 @@ function boot() {
         clear(els.view).append(icon(list ? 'i-nexus' : 'i-list'), list ? t(state.lastVisual === '3d' ? 'toolbar.view_3d' : 'toolbar.map') : t('toolbar.list'));
         els.view.setAttribute('aria-pressed', list ? 'true' : 'false');
         els.view3d.setAttribute('aria-pressed', three ? 'true' : 'false');
+        els.flows.hidden = !three;
         scene3d?.setActive(three);
 
         if (list) {
@@ -553,7 +567,9 @@ function boot() {
                 if (!scene || state.view !== '3d') return;
 
                 scene.setActive(true);
+                scene.setFlows(state.flows);
                 render3d();
+                renderDetail();
             });
         } else {
             cy.resize();

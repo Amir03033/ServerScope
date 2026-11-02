@@ -18,7 +18,7 @@ class Probe extends Model
 
     protected function casts(): array
     {
-        return ['secret' => 'encrypted', 'is_active' => 'boolean', 'last_seen_at' => 'datetime'];
+        return ['secret' => 'encrypted', 'is_active' => 'boolean', 'last_seen_at' => 'datetime', 'latitude' => 'float', 'longitude' => 'float'];
     }
 
     public function checks(): HasMany
@@ -31,6 +31,25 @@ class Probe extends Model
     {
         return $this->is_active && $this->last_seen_at !== null
             && $this->last_seen_at->gte(now()->subSeconds((int) config('serverscope.probe.stale_after_seconds', 180)));
+    }
+
+    /** Whether the probe can be placed on the globe. */
+    public function isPlaced(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
+    }
+
+    /** Valid coordinates: latitude -90..90, longitude -180..180 (null when either is missing). */
+    public static function coordinates(mixed $latitude, mixed $longitude): ?array
+    {
+        if ($latitude === null || $latitude === '' || $longitude === null || $longitude === '' || ! is_numeric($latitude) || ! is_numeric($longitude)) {
+            return null;
+        }
+
+        $lat = (float) $latitude;
+        $lon = (float) $longitude;
+
+        return $lat >= -90 && $lat <= 90 && $lon >= -180 && $lon <= 180 ? [round($lat, 5), round($lon, 5)] : null;
     }
 
     public static function healthy(): ?self

@@ -125,6 +125,8 @@
                     <div class="ml-auto flex flex-wrap items-center gap-1.5">
                         <button type="button" class="ss-btn ss-btn-ghost ss-btn-sm" data-nexus-reset>{{ __('nexus.js.toolbar.reset') }}</button>
                         <button type="button" class="ss-btn ss-btn-secondary ss-btn-sm" data-nexus-fit><svg class="ico"><use href="#i-search"/></svg>{{ __('nexus.js.toolbar.fit') }}</button>
+                        <button type="button" class="ss-btn ss-btn-ghost ss-btn-sm" aria-pressed="true" data-nexus-flows title="{{ __('nexus.js.toolbar.flows_hint') }}" hidden>{{ __('nexus.js.toolbar.flows') }}</button>
+                        <a href="{{ route('nexus.globe') }}" class="ss-btn ss-btn-secondary ss-btn-sm"><svg class="ico"><use href="#i-globe"/></svg>{{ __('globe.title') }}</a>
                         <button type="button" class="ss-btn ss-btn-secondary ss-btn-sm" aria-pressed="false" data-nexus-3d title="{{ __('nexus.js.toolbar.view_3d_hint') }}"><svg class="ico"><use href="#i-nexus"/></svg>{{ __('nexus.js.toolbar.view_3d') }}</button>
                         <button type="button" class="ss-btn ss-btn-secondary ss-btn-sm" aria-pressed="false" data-nexus-view><svg class="ico"><use href="#i-list"/></svg>{{ __('nexus.js.toolbar.list') }}</button>
                     </div>

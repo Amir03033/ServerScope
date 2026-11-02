@@ -114,6 +114,7 @@ class StatusPageController extends Controller
             'is_public' => $request->boolean('is_public'),
             'show_incident_titles' => $request->boolean('show_incident_titles'),
             'show_uptime' => $request->boolean('show_uptime'),
+            'show_3d_hero' => $request->boolean('show_3d_hero'),
         ];
     }
 

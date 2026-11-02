@@ -32,6 +32,7 @@ return [
         'rollup' => ['title' => 'Metingen samenvatten per uur en dag', 'when' => 'Foutzoeken: draait normaal elk uur om :12; herhalen kan geen kwaad.'],
         'rollup_backfill' => ['title' => 'Oudere meetgeschiedenis samenvatten', 'when' => 'Eenmalig na de eerste deploy, voor ruwe metingen ouder dan 35 dagen; herhaalbaar.'],
         'probe_create' => ['title' => 'Externe probe registreren', 'when' => 'Eenmalig op de centrale server; toont de gegevens van de probe één keer (--rotate vervangt het geheim).'],
+        'probe_locate' => ['title' => 'Probe op de wereldbol plaatsen', 'when' => 'Als de probe geen of verkeerde coördinaten heeft; --clear verwijdert ze. Verandert verder niets.'],
         'probe_expire' => ['title' => 'Onbeantwoorde probe-controles laten verlopen', 'when' => 'Foutzoeken: draait normaal elke minuut.'],
         'probe_run' => ['title' => 'De externe probe draaien', 'when' => 'Alleen op de probe-host, als bewaakte service.'],
         'analyze' => ['title' => 'Afwijkingen en voorspellingen berekenen', 'when' => 'Foutzoeken: draait normaal elk uur.'],

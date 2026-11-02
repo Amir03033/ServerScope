@@ -1581,6 +1581,35 @@
     .ss-nexus-3d-canvas { display: block; width: 100%; height: 100%; cursor: grab; }
     .ss-nexus-3d-canvas:active { cursor: grabbing; }
 
+    /* Status page 3D hero (opt-in): transparent canvas over a soft glow in the page accent. */
+    .ss-public-hero {
+        position: relative;
+        height: 15rem;
+        margin: 1rem 0 0;
+        overflow: hidden;
+        border-radius: 14px;
+        background: radial-gradient(ellipse at 50% 55%, color-mix(in srgb, var(--sp-brand, var(--ss-accent)) 16%, transparent), transparent 70%);
+    }
+    @media (min-width: 640px) { .ss-public-hero { height: 18rem; } }
+    .ss-public-hero canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
+
+    /* NEXUS globe page. */
+    .ss-globe-stage {
+        position: relative;
+        height: 34rem;
+        background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--ss-accent) 9%, transparent), transparent 62%), var(--ss-surface);
+        touch-action: none;
+    }
+    @media (max-width: 767px) { .ss-globe-stage { height: 24rem; } }
+    .ss-globe-canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+    .ss-globe-row { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; padding: .5rem 0; border-top: 1px solid var(--ss-line); }
+    .ss-globe-row:first-child { border-top: 0; }
+    .ss-globe-site { display: grid; gap: .375rem; width: 100%; padding: .5rem .625rem; border: 1px solid var(--ss-line); border-radius: 10px; background: transparent; color: var(--ss-text); font-size: .8125rem; text-align: left; cursor: pointer; }
+    .ss-globe-site:hover { border-color: var(--ss-subtle); }
+    .ss-globe-site[aria-pressed="true"] { border-color: var(--ss-accent-line); background: var(--ss-accent-soft); }
+    .ss-chip-bad { color: var(--ss-bad); border-color: color-mix(in srgb, var(--ss-bad) 40%, var(--ss-line)); }
+    .ss-chip-muted { color: var(--ss-muted); }
+
     .ss-nexus-spinner { width: 1rem; height: 1rem; border: 2px solid var(--ss-line-strong); border-top-color: var(--ss-accent); border-radius: 999px; animation: ss-nexus-spin .8s linear infinite; }
     @keyframes ss-nexus-spin { to { transform: rotate(360deg); } }
 

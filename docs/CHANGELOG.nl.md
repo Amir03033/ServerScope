@@ -1,5 +1,20 @@
 # Wat is er nieuw in ServerScope
 
+## 2 november 2026 — Stromen, statuspagina-hero en wereldbol
+
+### Nieuw
+
+- **Stromen in de 3D-kaart**: licht stroomt over de verbindingen van wat
+  levert naar wat het gebruikt — drukkere servers sturen meer, snellere
+  websites stromen sneller — en hoopt zich op waar iets faalt. De stromen
+  tonen gemeten belasting (CPU, responstijd), geen gemeten verkeer.
+- **3D-afbeelding op je statuspagina** (optioneel, per statuspagina): je
+  onderdelen rond een kern in de algemene status, met stromend licht als
+  ze werken en een zichtbare opstopping bij een storing. Alleen wat de
+  pagina al toont wordt gebruikt.
+- **Wereldbol** (NEXUS › Wereldbol): vanaf waar ServerScope meet, en per
+  website of hij vanaf elke locatie bereikbaar was.
+
 ## 2 november 2026 — NEXUS in 3D
 
 ### Nieuw

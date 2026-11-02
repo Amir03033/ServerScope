@@ -12,6 +12,14 @@
     // The customer's accent: used as text only where it has enough contrast
     // (otherwise the neutral accent), with a readable text colour on top of it.
     $accent = Contrast::isHex($status['accent']) ? strtolower($status['accent']) : null;
+
+    // Opt-in 3D hero: only the names and states listed on this page.
+    $heroData = [
+        'overall' => $status['overall'],
+        'accent' => $accent,
+        'components' => collect($status['components'])->map(fn ($c) => ['name' => $c['name'], 'state' => $c['state']])->values(),
+        'states' => __('status_page.state'),
+    ];
 @endphp
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
@@ -39,6 +47,13 @@
         <h1 class="m-0 text-[1.75rem] font-semibold tracking-tight">{{ $status['name'] }}</h1>
         @if ($status['description'])<p class="mt-1.5 mb-0 text-muted">{{ $status['description'] }}</p>@endif
     </header>
+
+    @if (($hero ?? false) && $status['components'] !== [])
+        {{-- Opt-in 3D picture (resources/js/status3d.js). Only names and states the list below shows too; hidden without WebGL. --}}
+        <div class="ss-public-hero" data-status-hero role="img" aria-label="{{ __('status_page.hero_label') }}" hidden></div>
+        <script type="application/json" id="status-hero-data">@json($heroData)</script>
+        @vite('resources/js/status3d.js')
+    @endif
 
     <div class="ss-public-banner is-{{ $tones[$status['overall']] ?? 'muted' }}" role="status">
         <span class="ss-dot" aria-hidden="true"></span>{{ $headline }}

@@ -9,11 +9,11 @@ class StatusPage extends Model
 {
     use \App\Tenancy\BelongsToTeam;
 
-    protected $fillable = ['name', 'slug', 'description', 'is_public', 'show_incident_titles', 'show_uptime', 'accent_color', 'created_by'];
+    protected $fillable = ['name', 'slug', 'description', 'is_public', 'show_incident_titles', 'show_uptime', 'show_3d_hero', 'accent_color', 'created_by'];
 
     protected function casts(): array
     {
-        return ['is_public' => 'boolean', 'show_incident_titles' => 'boolean', 'show_uptime' => 'boolean'];
+        return ['is_public' => 'boolean', 'show_incident_titles' => 'boolean', 'show_uptime' => 'boolean', 'show_3d_hero' => 'boolean'];
     }
 
     public function components(): HasMany

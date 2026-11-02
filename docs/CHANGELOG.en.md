@@ -1,5 +1,20 @@
 # What's new in ServerScope
 
+## 2 November 2026 — Flows, status page hero and globe
+
+### New
+
+- **Flows in the 3D map**: light flows along the connections from what
+  serves to what uses it — busier servers send more, quicker websites flow
+  faster — and piles up where something fails. The flows picture measured
+  load (CPU, response time), not measured traffic.
+- **3D picture on your status page** (optional, per status page): your
+  components around a core in the overall status, with flowing light while
+  they work and a visible jam during an outage. Only what the page already
+  shows is used.
+- **Globe** (NEXUS › Globe): where ServerScope measures from, and per
+  website whether it was reachable from each location.
+
 ## 2 November 2026 — NEXUS in 3D
 
 ### New

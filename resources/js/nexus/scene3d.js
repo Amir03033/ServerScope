@@ -12,6 +12,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { arc, bounds, layout3d } from './layout3d.js';
+import { budget, flowFor } from './flows.js';
+import { dispose, labelSprite, pointAt } from './kit3d.js';
 import { HEALTH_TONE, SEVERITY } from './model.js';
 
 const MAX_LABELS = 250;
@@ -45,7 +47,7 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
     const world = new THREE.Group();
     scene.add(world);
 
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
 
@@ -54,6 +56,9 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
     let links = []; // { edge, line, material, points: Vector3[], baseColor }
     let waves = []; // { mesh, points, offset }
     let pulses = []; // { mesh, offset }
+    let flows = []; // { mesh, points, speed, offset, state, source, target }
+    let flowsOn = true;
+    let lastFocus = { selected: null, focusKeys: new Set() };
     let structure = null;
     let active = false;
     let frame = null;
@@ -71,35 +76,6 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
             color: color(hex), emissive: color(hex), emissiveIntensity: emissive, roughness: 0.45, metalness: 0.15,
             transparent: true, opacity,
         });
-    }
-
-    function labelSprite(text, important) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const size = 44;
-        ctx.font = `${important ? 600 : 500} ${size}px Inter, ui-sans-serif, system-ui, sans-serif`;
-        const width = Math.ceil(ctx.measureText(text).width) + 36;
-        canvas.width = width;
-        canvas.height = size + 28;
-        ctx.font = `${important ? 600 : 500} ${size}px Inter, ui-sans-serif, system-ui, sans-serif`;
-        ctx.fillStyle = colors.bg;
-        ctx.globalAlpha = 0.82;
-        ctx.beginPath();
-        ctx.roundRect(0, 0, canvas.width, canvas.height, 14);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = important ? colors.text : colors.muted;
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, 18, canvas.height / 2 + 2);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.colorSpace = THREE.SRGBColorSpace;
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
-        const scale = 0.017;
-        sprite.scale.set(canvas.width * scale, canvas.height * scale, 1);
-        sprite.renderOrder = 10;
-
-        return sprite;
     }
 
     function halo(radius, hex, double) {
@@ -172,7 +148,7 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
 
         if (withLabel) {
             const problem = node.health === 'critical' || node.health === 'warning';
-            label = labelSprite(problem ? `${node.label3d} · ${t(`health.${node.health}`)}` : node.label3d, problem || p.kind === 'tower');
+            label = labelSprite(problem ? `${node.label3d} · ${t(`health.${node.health}`)}` : node.label3d, { important: problem || p.kind === 'tower', colors });
             label.position.y = top + 0.7;
 
             // Service rings sit around a tower: their label goes beside it, not inside.
@@ -204,16 +180,13 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
     }
 
     function clearWorld() {
-        world.traverse((object) => {
-            object.geometry?.dispose?.();
-            const list = Array.isArray(object.material) ? object.material : object.material ? [object.material] : [];
-            list.forEach((m) => { m.map?.dispose?.(); m.dispose?.(); });
-        });
+        dispose(world);
         world.clear();
         objects = new Map();
         links = [];
         waves = [];
         pulses = [];
+        flows = [];
     }
 
     function buildGround(b) {
@@ -302,6 +275,41 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
         }
     }
 
+    /**
+     * Load as flows along the links (see flows.js): beads run from the
+     * dependency to the dependent at a speed from the response time, as
+     * many as the serving server's CPU load; a failing end makes them pile
+     * up at the serving end; unmeasured ends carry none.
+     */
+    function buildFlows(nodesByKey) {
+        const entries = links.map((link) => ({ key: link.edge.key, link, flow: flowFor(link.edge, nodesByKey) }));
+        const beads = budget(entries);
+
+        for (const { key, link, flow } of entries) {
+            const count = beads.get(key) ?? 0;
+            const path = [...link.points].reverse();
+
+            for (let k = 0; k < count; k++) {
+                const jam = flow.state === 'stopped';
+                const bead = new THREE.Mesh(
+                    new THREE.SphereGeometry(jam ? 0.24 : 0.17 + flow.density * 0.03, 12, 8),
+                    new THREE.MeshBasicMaterial({ color: color(jam ? colors.bad : colors.accent), transparent: true, opacity: 0.95, depthWrite: false }),
+                );
+                // A soft glow around each bead.
+                const glow = new THREE.Mesh(
+                    new THREE.SphereGeometry((jam ? 0.24 : 0.17 + flow.density * 0.03) * 2.2, 12, 8),
+                    new THREE.MeshBasicMaterial({ color: color(jam ? colors.bad : colors.accent), transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false }),
+                );
+                bead.add(glow);
+                // A jam: beads stacked close to the serving end. Otherwise spread over the link.
+                const offset = jam ? 0.05 + k * 0.045 : k / count;
+                bead.position.copy(pointAt(path, offset));
+                world.add(bead);
+                flows.push({ mesh: bead, points: path, speed: flow.speed, offset, state: flow.state, source: link.edge.source, target: link.edge.target });
+            }
+        }
+    }
+
     function build(topology, visible, graph, labelOf) {
         clearWorld();
 
@@ -329,6 +337,8 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
         }
 
         buildWaves(nodes, visible, graph, topology.meta.max_depth);
+        buildFlows(new Map(topology.nodes.map((n) => [n.key, n])));
+        applyFlowVisibility();
 
         return b;
     }
@@ -340,8 +350,8 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
         const b = lastBounds;
         resize();
         // Narrow (portrait) screens need more distance to show the same width.
-        const distance = (b.radius * 1.05 + 9) * Math.max(1, 1.25 / (camera.aspect || 1));
-        const to = { position: new THREE.Vector3(distance * 0.72, b.radius * 0.55 + b.top + 3, distance * 0.72), target: new THREE.Vector3(0, b.top * 0.2, 0) };
+        const distance = (b.radius * 0.9 + 6) * Math.max(1, 1.25 / (camera.aspect || 1));
+        const to = { position: new THREE.Vector3(distance * 0.72, b.radius * 0.5 + b.top + 2, distance * 0.72), target: new THREE.Vector3(0, b.top * 0.2, 0) };
         moveCamera(to, animate);
     }
 
@@ -352,9 +362,9 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
 
         const target = object.position.clone();
         const direction = camera.position.clone().sub(controls.target).normalize();
-        const distance = Math.min(camera.position.distanceTo(controls.target), 28);
+        const distance = Math.min(camera.position.distanceTo(controls.target), 16);
         controls.autoRotate = false;
-        moveCamera({ position: target.clone().add(direction.multiplyScalar(Math.max(distance, 14))), target }, true);
+        moveCamera({ position: target.clone().add(direction.multiplyScalar(Math.max(distance, 11))), target }, true);
     }
 
     function moveCamera(to, animate) {
@@ -392,6 +402,17 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
 
         for (const wave of waves) {
             wave.mesh.visible = !selected || (focusKeys.has(wave.source) && focusKeys.has(wave.target));
+        }
+
+        lastFocus = { selected, focusKeys };
+        applyFlowVisibility();
+    }
+
+    function applyFlowVisibility() {
+        const { selected, focusKeys } = lastFocus;
+
+        for (const flow of flows) {
+            flow.mesh.visible = flowsOn && (!selected || (focusKeys.has(flow.source) && focusKeys.has(flow.target)));
         }
     }
 
@@ -450,12 +471,13 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
     const observer = new ResizeObserver(resize);
     observer.observe(container);
 
-    function tick() {
+    function tick(timestamp) {
         frame = null;
 
         if (!active || document.hidden) return;
 
-        const elapsed = clock.getElapsedTime();
+        timer.update(timestamp);
+        const elapsed = timer.getElapsed();
 
         if (tween) {
             const p = Math.min(1, (performance.now() - tween.start) / tween.duration);
@@ -473,6 +495,13 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
                 const f = progress * (wave.points.length - 1) - i;
                 wave.mesh.position.lerpVectors(wave.points[i], wave.points[i + 1], f);
                 wave.mesh.scale.setScalar(0.7 + Math.sin(progress * Math.PI) * 0.6);
+            }
+
+            for (const flow of flows) {
+                if (flow.state !== 'flowing' || !flow.mesh.visible) continue;
+
+                const progress = (elapsed * flow.speed + flow.offset) % 1;
+                flow.mesh.position.copy(pointAt(flow.points, progress));
             }
 
             for (const pulse of pulses) {
@@ -512,6 +541,10 @@ export function createScene3d(container, { onSelect, onHover, reducedMotion, t }
             resize();
         },
         highlight: setHighlight,
+        setFlows(on) {
+            flowsOn = on;
+            applyFlowVisibility();
+        },
         focus,
         fit: () => fit(true),
         resize,
