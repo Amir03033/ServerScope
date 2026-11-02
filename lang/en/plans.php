@@ -25,5 +25,6 @@ return [
     'feature' => [
         'api_tokens' => 'API tokens are not included in your current plan.',
         'webhooks' => 'Webhooks are not included in your current plan.',
+        'ai_analysis' => 'AI analysis is not included in your current plan.',
     ],
 ];

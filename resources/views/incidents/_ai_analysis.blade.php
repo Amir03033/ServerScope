@@ -22,17 +22,20 @@
     };
     $refs = fn (array $ids) => implode(' ', array_map($ref, $ids));
     $isAdmin = auth()->user()->can('admin');
+    $aiPlan ??= true;
 @endphp
-<section class="ss-panel" id="ai-analysis" aria-labelledby="ai-title" data-testid="ai-analysis" data-status="{{ ! $aiAvailable ? 'unavailable' : ($a?->status ?? 'none') }}">
+<section class="ss-panel" id="ai-analysis" aria-labelledby="ai-title" data-testid="ai-analysis" data-status="{{ ! $aiAvailable ? 'unavailable' : (! $aiPlan ? 'plan' : ($a?->status ?? 'none')) }}">
     <div class="ss-panel-head">
         <div><h2 id="ai-title" class="ss-panel-title">{{ __('ai_analysis.title') }}</h2><p class="ss-panel-sub">{{ __('ai_analysis.text') }}</p></div>
-        @if ($aiAvailable && $isAdmin && ! $a?->isPending())
+        @if ($aiAvailable && $aiPlan && $isAdmin && ! $a?->isPending())
             <form method="POST" action="{{ route('incidents.analysis', $incident) }}">@csrf<button class="ss-btn ss-btn-secondary ss-btn-sm" type="submit">{{ $a ? __('ai_analysis.rerun') : __('ai_analysis.run') }}</button></form>
         @endif
     </div>
 
     @if (! $aiAvailable)
         <p class="m-0 text-sm text-muted">{{ __('ai_analysis.unavailable') }}</p>
+    @elseif (! $aiPlan && $a === null)
+        <p class="m-0 text-sm text-muted" data-testid="ai-plan">{{ __('ai_analysis.plan') }} @if ($isAdmin)<a class="underline" href="{{ route('billing.show') }}">{{ __('ai_analysis.plan_link') }}</a>@endif</p>
     @elseif ($a === null)
         <p class="m-0 text-sm text-muted">{{ __('ai_analysis.empty') }}</p>
     @elseif ($a->isPending())

@@ -8,6 +8,8 @@ return [
     'queued' => 'De analyse staat in de wachtrij.',
     'unchanged' => 'Het bewijs is sinds de vorige analyse niet veranderd.',
     'unavailable' => 'AI-analyse is niet beschikbaar: er is geen AI-aanbieder ingesteld.',
+    'plan' => 'AI-analyse zit in Pro en Premium.',
+    'plan_link' => 'Abonnement bekijken',
     'empty' => 'Nog geen analyse.',
     'pending' => 'Bezig met analyseren… dit duurt meestal minder dan een minuut.',
     'failed' => [
@@ -19,6 +21,7 @@ return [
         'queue_failure' => 'De analyse is mislukt: de achtergrondtaak is gestopt.',
     ],
     'refused' => [
+        'plan' => 'AI-analyse zit niet in je huidige abonnement (alleen Pro en Premium).',
         'unavailable' => 'AI-analyse is niet beschikbaar: er is geen AI-aanbieder ingesteld.',
         'cooldown' => 'Er is minder dan :minutes minuten geleden al een analyse aangevraagd.',
         'limit' => 'Je team heeft het maximale aantal AI-analyses per uur bereikt.',
