@@ -98,6 +98,37 @@
         </form>
 
         @if ($editing)
+            {{-- Live badges: the same name and state as the public page. --}}
+            @php
+                $badges = collect([['name' => __('status_pages.badges.overall'), 'url' => route('status.badge', $page->slug)]])
+                    ->concat($page->components->map(fn ($c) => ['name' => $c->display_name, 'url' => route('status.badge.component', [$page->slug, $c->id])]));
+            @endphp
+            <section class="ss-panel" aria-labelledby="badges-title">
+                <div class="ss-panel-head"><div><h2 id="badges-title" class="ss-panel-title">{{ __('status_pages.badges.title') }}</h2><p class="ss-panel-sub">{{ __('status_pages.badges.text') }}</p></div></div>
+                @if (! $page->is_public)
+                    <p class="m-0 text-sm text-muted">{{ __('status_pages.badges.private') }}</p>
+                @else
+                    <div class="grid gap-3">
+                        @foreach ($badges as $i => $b)
+                            @php $markdown = '[!['.str_replace([']', '['], '', $b['name']).']('.$b['url'].')]('.route('status.show', $page->slug).')'; @endphp
+                            <div class="grid gap-2 border-b border-line pb-3 last:border-0">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <strong class="text-sm">{{ $b['name'] }}</strong>
+                                    <img src="{{ $b['url'] }}" alt="{{ $b['name'] }}" height="24" loading="lazy">
+                                    <img src="{{ $b['url'] }}?theme=dark" alt="" height="24" loading="lazy" class="rounded-full">
+                                </div>
+                                <label class="ss-label" for="badge-{{ $i }}">{{ __('status_pages.badges.markdown') }}</label>
+                                <div class="flex gap-2">
+                                    <input id="badge-{{ $i }}" class="ss-input font-mono text-xs" readonly value="{{ $markdown }}">
+                                    <button type="button" class="ss-btn ss-btn-secondary ss-btn-sm shrink-0" data-copy-from="badge-{{ $i }}">{{ __('status_pages.badges.copy') }}</button>
+                                </div>
+                            </div>
+                        @endforeach
+                        <p class="m-0 text-xs text-muted">{{ __('status_pages.badges.options') }}</p>
+                    </div>
+                @endif
+            </section>
+
             <section class="ss-panel ss-panel-danger mt-4" aria-labelledby="delete-title">
                 <h2 id="delete-title" class="ss-panel-title mb-3">{{ __('status_pages.form.delete_title') }}</h2>
                 <form method="POST" action="{{ route('status-pages.destroy', $page) }}" data-confirm="{{ __('status_pages.form.delete_confirm') }}">

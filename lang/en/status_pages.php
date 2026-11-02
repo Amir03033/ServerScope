@@ -63,4 +63,13 @@ return [
         'deleted' => 'Status page deleted.',
         'unknown_subject' => 'Unknown server or domain.',
     ],
+    'badges' => [
+        'title' => 'Badges',
+        'text' => 'Live, animated status badges for your README or website. They show the same name and state as the public page.',
+        'private' => 'Badges only exist for public pages: make this page public to use them.',
+        'overall' => 'Overall status',
+        'markdown' => 'Markdown',
+        'copy' => 'Copy',
+        'options' => 'Options: add ?theme=dark for dark backgrounds, ?lang=nl or ?lang=en for the language, ?label=… for your own text. In HTML: <img src="…" alt="Status">.',
+    ],
 ];

@@ -7,8 +7,11 @@ use App\Models\Incident;
 use App\Models\Server;
 use App\Models\StatusPage;
 use App\Models\StatusPageComponent;
+use App\Support\Locale;
 use App\Support\Time;
+use App\Tenancy\Tenant;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Builds the public view of a status page from live monitoring data.
@@ -32,6 +35,16 @@ class StatusPagePresenter
     ];
 
     public function __construct(private UptimeCalculator $uptime) {}
+
+    /**
+     * present(), cached for 30 seconds per page version and locale. Rendered
+     * as the page's own team, so only that team's resources and incidents
+     * can appear (public routes run without a tenant).
+     */
+    public function cached(StatusPage $page): array
+    {
+        return Cache::remember(Locale::cacheKey("status-page:{$page->id}:{$page->updated_at?->timestamp}"), 30, fn () => Tenant::run($page->team_id, fn () => $this->present($page)));
+    }
 
     public function present(StatusPage $page, int $days = 90): array
     {

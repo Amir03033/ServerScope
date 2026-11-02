@@ -201,4 +201,33 @@ return [
         'disk' => 'Schijf (%)',
         'none' => 'Nog geen recente meetgegevens beschikbaar.',
     ],
+    'pulse' => [
+        'title' => 'Hartslag',
+        'text' => 'Eén live lijn per server: het tempo volgt de CPU, de breedte van de slag de traagste website. Faalt er iets op de server, dan slaat de lijn op hol; een offline server geeft geen signaal.',
+        'cpu' => 'CPU',
+        'response' => 'Traagste site',
+        'rate' => 'Tempo',
+        'more' => 'Nog :count servers staan hier niet bij.',
+        'skyline_link' => 'Bekijk ze allemaal in de skyline.',
+        'js' => [
+            'bpm' => ':bpm slagen/min',
+            'rhythm' => [
+                'steady' => 'Regelmatig',
+                'irregular' => 'Onregelmatig',
+                'chaos' => 'Op hol',
+                'flat' => 'Geen signaal',
+                'unknown' => 'Niet gemeten',
+                'rest' => 'In rust',
+            ],
+            'reason' => [
+                'offline' => 'Server meldt zich niet',
+                'incident' => 'Actief incident',
+                'service_down' => 'Service faalt',
+                'site_down' => 'Website onbereikbaar',
+                'warning' => 'Waarschuwing',
+                'cpu_high' => 'CPU 90% of meer',
+                'slow' => 'Website traag (2 s of meer)',
+            ],
+        ],
+    ],
 ];

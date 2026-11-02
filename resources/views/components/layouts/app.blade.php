@@ -33,6 +33,7 @@
             ['route' => 'servers.index', 'match' => 'servers.*', 'icon' => 'i-server', 'label' => 'servers'],
             ['route' => 'domains.index', 'match' => ['domains.*', 'websites.*', 'pages.*'], 'icon' => 'i-globe', 'label' => 'domains'],
             ['route' => 'nexus.index', 'match' => ['nexus.index', 'nexus.graph'], 'icon' => 'i-nexus', 'label' => 'nexus'],
+            ['route' => 'nexus.skyline', 'match' => 'nexus.skyline', 'icon' => 'i-city', 'label' => 'skyline', 'sub' => true],
             ['route' => 'nexus.globe', 'match' => 'nexus.globe*', 'icon' => 'i-earth', 'label' => 'globe', 'sub' => true],
             ['route' => 'dependencies.index', 'match' => 'dependencies.*', 'icon' => 'i-link', 'label' => 'dependencies'],
             ['route' => 'deployments.index', 'match' => 'deployments.*', 'icon' => 'i-flag', 'label' => 'deployments'],

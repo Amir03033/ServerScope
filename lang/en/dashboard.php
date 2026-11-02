@@ -201,4 +201,33 @@ return [
         'disk' => 'Disk (%)',
         'none' => 'No recent measurements available yet.',
     ],
+    'pulse' => [
+        'title' => 'Heartbeat',
+        'text' => 'One live line per server: the rate follows its CPU, the width of the beat its slowest website. When something on the server fails, the line goes haywire; an offline server has no signal.',
+        'cpu' => 'CPU',
+        'response' => 'Slowest site',
+        'rate' => 'Rate',
+        'more' => ':count more servers are not shown here.',
+        'skyline_link' => 'See all of them in the skyline.',
+        'js' => [
+            'bpm' => ':bpm bpm',
+            'rhythm' => [
+                'steady' => 'Steady',
+                'irregular' => 'Irregular',
+                'chaos' => 'Haywire',
+                'flat' => 'No signal',
+                'unknown' => 'Not measured',
+                'rest' => 'Resting',
+            ],
+            'reason' => [
+                'offline' => 'Server does not report',
+                'incident' => 'Active incident',
+                'service_down' => 'Service failing',
+                'site_down' => 'Website down',
+                'warning' => 'Warning',
+                'cpu_high' => 'CPU 90% or more',
+                'slow' => 'Website slow (2 s or more)',
+            ],
+        ],
+    ],
 ];

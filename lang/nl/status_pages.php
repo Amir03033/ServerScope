@@ -63,4 +63,13 @@ return [
         'deleted' => 'Statuspagina verwijderd.',
         'unknown_subject' => 'Onbekende server of domein.',
     ],
+    'badges' => [
+        'title' => 'Badges',
+        'text' => 'Live, geanimeerde statusbadges voor je README of website. Ze tonen dezelfde naam en status als de publieke pagina.',
+        'private' => 'Badges bestaan alleen voor publieke pagina\'s: maak deze pagina publiek om ze te gebruiken.',
+        'overall' => 'Algemene status',
+        'markdown' => 'Markdown',
+        'copy' => 'Kopiëren',
+        'options' => 'Opties: voeg ?theme=dark toe voor donkere achtergronden, ?lang=nl of ?lang=en voor de taal, ?label=… voor je eigen tekst. In HTML: <img src="…" alt="Status">.',
+    ],
 ];
