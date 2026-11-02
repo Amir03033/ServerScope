@@ -154,7 +154,7 @@ class TopologyBuilder
         $domains = $this->bounded(
             Domain::query()->where('team_id', $teamId)->orderBy('id'),
             'domain', $truncated,
-            ['id', 'team_id', 'name', 'is_active', 'status', 'maintenance_starts_at', 'maintenance_ends_at', 'http_status', 'ssl_status', 'dns_status', 'expiry_status'],
+            ['id', 'team_id', 'name', 'is_active', 'status', 'maintenance_starts_at', 'maintenance_ends_at', 'http_status', 'ssl_status', 'dns_status', 'expiry_status', 'http_last_response_ms', 'http_last_checked_at'],
         );
 
         foreach ($domains as $domain) {
@@ -165,6 +165,8 @@ class TopologyBuilder
                 'ssl_status' => $domain->ssl_status,
                 'dns_status' => $domain->dns_status,
                 'expiry_status' => $domain->expiry_status,
+                // Last measured response time (3D view: flow speed); null when not measured.
+                'response_ms' => $domain->http_last_response_ms !== null ? (int) round($domain->http_last_response_ms) : null,
             ]);
         }
 

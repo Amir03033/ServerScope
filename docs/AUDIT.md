@@ -814,3 +814,44 @@ on it, further links later.
 - Also fixed: the NEXUS side panel and tooltip printed "null" when a part
   was empty (Element.append(null)), and following an investigation's
   "Show on NEXUS map" link did not switch on impact mode.
+
+## 13. Live flows, status page hero and globe
+
+Branch `feature/nexus-visuals` from `main` `98da5f1`.
+
+- **Live flows (NEXUS 3D view).** Beads run along every link from the
+  dependency to the dependent: as many as the serving server's CPU load
+  (1–4), as fast as the website's last response time; a degraded end halves
+  the speed; a failing end or an incident on the serving side makes them
+  pile up at the serving end; unmeasured, paused or maintenance ends carry
+  none. ServerScope does not measure traffic between resources: the legend
+  says the flows show measured load at the resources. Rules in
+  `resources/js/nexus/flows.js` (tested). The topology now includes a
+  website's last response time (`details.response_ms`, null when not
+  measured). A "Flows" button turns them off.
+- **Status page 3D hero (opt-in per page, off by default).** New column
+  `status_pages.show_3d_hero`. A core in the page's overall state with the
+  page's components on a ring and a beam to each (flow while working, a jam
+  during an outage). It receives only the component names and states the
+  page already lists (no ids, internal names, addresses or incident texts;
+  tested). No zoom or pan (scrolling stays scrolling), drawing pauses when
+  off screen; without WebGL the hero stays hidden. Scripts: a 0.6 kB entry
+  (`status3d.js`), the scene and three.js are loaded only when enabled.
+- **Globe (`/nexus/globe`).** The main monitor's location
+  (`SERVERSCOPE_MAIN_LOCATION`, `_LATITUDE`, `_LONGITUDE`) and remote
+  probes with coordinates (new nullable `probes.latitude`/`longitude`, set
+  with `serverscope:probe:create --lat= --lon=` or the new
+  `serverscope:probe:locate`) on a dotted globe (world-atlas 2.0.2, ISC,
+  Natural Earth land data, loaded only on this page). Per website: the main
+  location's state is its current HTTP status; a probe's state is the
+  latest failure confirmation of the last 7 days, otherwise "not measured".
+  Team-scoped data (explicit team filters; tested with two teams and an
+  inconsistent row). Probes without coordinates are counted, not drawn.
+  Limitation: Global Pulse Lite supports one probe, so the globe shows at
+  most two locations today.
+- Shared three.js helpers (`resources/js/nexus/kit3d.js`); `THREE.Clock`
+  (deprecated in 0.186) replaced by `THREE.Timer`.
+
+Checked in Chrome with demo data (desktop and 375 px). Not checked in
+Safari/Firefox or on real phones; with the browser pane in the background
+Chrome throttles WebGL to about one frame per second.

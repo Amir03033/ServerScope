@@ -37,6 +37,8 @@ return [
             'resume' => 'Hervatten',
         ],
         'toolbar' => [
+            'flows' => 'Stromen',
+            'flows_hint' => 'Toon belasting als stromen langs de verbindingen (3D)',
             'view_3d' => '3D',
             'view_3d_hint' => 'Bekijk de kaart in 3D: sleep om te draaien, scroll om te zoomen',
             'canvas3d_label' => '3D-kaart van servers (torens), services (ringen), websites en pagina\'s, met incidenten die zich langs hun afhankelijkheden verspreiden. Gebruik de lijstweergave om met het toetsenbord te navigeren.',
@@ -114,6 +116,11 @@ return [
             ],
         ],
         'legend' => [
+            'title_3d' => 'In 3D',
+            'flow' => 'Blauwe bolletjes: belasting die stroomt van wat levert naar wat het gebruikt. Meer bolletjes: drukkere server; sneller: snellere website.',
+            'jam' => 'Opgestapelde rode bolletjes: de stroom staat vast bij een resource die faalt.',
+            'wave' => 'Rode pulsen en golven: een actief incident dat zich verspreidt naar wat ervan afhangt.',
+            'flow_note' => 'Stromen tonen gemeten belasting bij de resources (CPU, responstijd), geen gemeten verkeer tussen resources.',
             'title' => 'Legenda',
             'incident' => 'Actief incident (kleur = ernst)',
             'confirmed' => 'Bevestigde afhankelijkheid',

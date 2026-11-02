@@ -37,6 +37,8 @@ return [
             'resume' => 'Resume',
         ],
         'toolbar' => [
+            'flows' => 'Flows',
+            'flows_hint' => 'Show load as flows along the links (3D)',
             'view_3d' => '3D',
             'view_3d_hint' => 'Explore the map in 3D: drag to rotate, scroll to zoom',
             'canvas3d_label' => '3D map of servers (towers), services (rings), websites and pages, with incidents spreading along their dependencies. Use the list view to navigate with the keyboard.',
@@ -114,6 +116,11 @@ return [
             ],
         ],
         'legend' => [
+            'title_3d' => 'In 3D',
+            'flow' => 'Blue beads: load flowing from what serves to what uses it. More beads: busier server; faster: quicker website.',
+            'jam' => 'Red beads piled up: the flow is stuck at a failing resource.',
+            'wave' => 'Red pulses and waves: an active incident spreading to what depends on it.',
+            'flow_note' => 'Flows show measured load at the resources (CPU, response time), not measured traffic between them.',
             'title' => 'Legend',
             'incident' => 'Active incident (colour = severity)',
             'confirmed' => 'Confirmed dependency',

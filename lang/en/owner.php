@@ -32,6 +32,7 @@ return [
         'rollup' => ['title' => 'Aggregate metric rollups', 'when' => 'Debugging: normally hourly at :12; safe to repeat.'],
         'rollup_backfill' => ['title' => 'Aggregate older metric history', 'when' => 'Once after the first deploy, to roll up raw samples older than 35 days; repeatable.'],
         'probe_create' => ['title' => 'Register the remote probe', 'when' => 'Once on the central server; prints the probe credentials once (--rotate replaces the secret).'],
+        'probe_locate' => ['title' => 'Place the probe on the globe', 'when' => 'When the probe has no or wrong coordinates; --clear removes them. Changes nothing else.'],
         'probe_expire' => ['title' => 'Expire unanswered probe checks', 'when' => 'Debugging: normally every minute.'],
         'probe_run' => ['title' => 'Run the remote probe', 'when' => 'On the probe host only, as a supervised service.'],
         'analyze' => ['title' => 'Run anomaly and forecast analysis', 'when' => 'Debugging: normally hourly.'],

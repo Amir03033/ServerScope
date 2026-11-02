@@ -86,6 +86,59 @@ class StatusPagesTest extends TestCase
         $this->assertStringNotContainsString('shop.example.com', $json);
     }
 
+    public function test_the_3d_hero_is_off_by_default_and_shows_only_public_data(): void
+    {
+        [$page, $server] = $this->setupPage();
+        app(IncidentManager::class)->trigger(new Signal('agent:hero', 'agent', 'critical', 'db-prod-01 offline', 'Interne notitie', $server));
+        auth()->logout();
+
+        // Off by default: no hero, no script.
+        $this->assertFalse($page->fresh()->show_3d_hero);
+        $html = $this->get(route('status.show', $page->slug))->assertOk()->getContent();
+        $this->assertStringNotContainsString('data-status-hero', $html);
+        $this->assertStringNotContainsString('/build/assets/status3d-', $html);
+
+        // An administrator turns it on in the page settings.
+        $this->actingAs($this->admin)->put(route('status-pages.update', $page), [
+            'name' => 'Status Example', 'slug' => $page->slug, 'accent_color' => '#38bdf8', 'is_public' => '1', 'show_3d_hero' => '1',
+            'components' => $page->components->map(fn ($c) => ['subject' => "{$c->subject_type}:{$c->subject_id}", 'display_name' => $c->display_name, 'description' => $c->description])->all(),
+        ])->assertRedirect();
+        $this->assertTrue($page->fresh()->show_3d_hero);
+        auth()->logout();
+
+        $html = $this->get(route('status.show', $page->slug))->assertOk()
+            ->assertSee('data-status-hero', false)
+            ->assertSee(trans('status_page.hero_label'))
+            ->getContent();
+        $this->assertMatchesRegularExpression('#src="[^"]*/build/assets/status3d-[^"]+\.js"#', $html);
+
+        preg_match('#<script type="application/json" id="status-hero-data">(.*?)</script>#s', $html, $m);
+        $data = json_decode($m[1], true);
+        $this->assertSame('major_outage', $data['overall']);
+        $this->assertSame([['name' => 'Webwinkel', 'state' => 'operational'], ['name' => 'Database', 'state' => 'major_outage']], $data['components']);
+
+        // Never more than the list shows: no internal names, addresses, ids or incident texts.
+        foreach (['db-prod-01', 'db01.internal.example.net', '10.20.30.40', 'shop.example.com', 'secret-health', 'Interne notitie', 'subject', '"id"'] as $secret) {
+            $this->assertStringNotContainsString($secret, $m[1], "{$secret} must not be in the hero data");
+        }
+    }
+
+    public function test_the_3d_hero_needs_components_and_follows_page_access(): void
+    {
+        [$page] = $this->setupPage(['show_3d_hero' => '1']);
+        auth()->logout();
+        $this->get(route('status.show', $page->slug))->assertOk()->assertSee('data-status-hero', false);
+
+        // Without components there is nothing to draw.
+        $page->components()->delete();
+        Cache::flush(); // the public data is cached per page version for 30 seconds
+        $this->get(route('status.show', $page->slug))->assertOk()->assertDontSee('data-status-hero', false);
+
+        // A private page stays private, hero or not.
+        $page->forceFill(['is_public' => false])->save();
+        $this->get(route('status.show', $page->slug))->assertRedirect(route('login'));
+    }
+
     public function test_incident_titles_only_when_enabled(): void
     {
         [$page, $server] = $this->setupPage(['show_incident_titles' => '1']);

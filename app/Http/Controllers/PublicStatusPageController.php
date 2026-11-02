@@ -23,7 +23,8 @@ class PublicStatusPageController extends Controller
             return $page;
         }
 
-        return view('status-pages.public', ['status' => $this->data($page, $presenter)]);
+        // The 3D hero only gets what the page itself shows: component names and their state.
+        return view('status-pages.public', ['status' => $this->data($page, $presenter), 'hero' => (bool) $page->show_3d_hero]);
     }
 
     public function json(Request $request, string $slug, StatusPagePresenter $presenter): JsonResponse|Response

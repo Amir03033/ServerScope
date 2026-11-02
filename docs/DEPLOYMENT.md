@@ -355,6 +355,19 @@ unavailable, queue_failure); prompts and answers are not logged.
 AI output is labelled as hypotheses and never written to Incident Memory;
 people record confirmed causes there themselves.
 
+## 11b. Globe and status page hero
+
+- `php artisan migrate --force` adds `status_pages.show_3d_hero` (off) and
+  `probes.latitude` / `longitude` (nullable); both additive.
+- Optional `.env`: `SERVERSCOPE_MAIN_LOCATION` (e.g. `Amsterdam`),
+  `SERVERSCOPE_MAIN_LATITUDE`, `SERVERSCOPE_MAIN_LONGITUDE` — where the main
+  monitor runs, for the globe. Run `php artisan config:cache` afterwards.
+- Place the remote probe: `php artisan serverscope:probe:locate probe-1
+  --lat=50.11 --lon=8.68` (or `--clear`). New probes:
+  `serverscope:probe:create ... --lat= --lon=`.
+- The 3D hero is turned on per status page by an administrator
+  (Status pages → edit → "Show an animated 3D picture …").
+
 ## 12. Error and maintenance pages
 
 `resources/views/errors/{403,404,419,429,500,503}.blade.php` share one

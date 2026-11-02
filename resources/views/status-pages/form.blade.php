@@ -57,7 +57,7 @@
                     </div>
                     <fieldset class="m-0 grid content-start gap-2.5 border-0 p-0">
                         <legend class="sr-only">{{ __('status_pages.form.page_title') }}</legend>
-                        @foreach (['is_public', 'show_uptime', 'show_incident_titles'] as $key)
+                        @foreach (['is_public', 'show_uptime', 'show_incident_titles', 'show_3d_hero'] as $key)
                             <label class="ss-check items-start"><input type="hidden" name="{{ $key }}" value="0"><input class="mt-0.5" type="checkbox" name="{{ $key }}" value="1" @checked(old($key, $page->{$key}))> <span>{{ __('status_pages.form.options.'.$key) }}</span></label>
                         @endforeach
                     </fieldset>

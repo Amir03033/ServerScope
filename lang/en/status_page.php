@@ -3,6 +3,7 @@
 // Public status page (/status/{slug}). The Dutch state labels must stay
 // identical to StatusPagePresenter::STATE_LABELS (LabelsTest).
 return [
+    'hero_label' => '3D picture of the components and their status. The list below shows the same information.',
     'title_suffix' => 'Status',
     'headline' => [
         'operational' => 'All systems operational',

@@ -38,6 +38,7 @@ return [
         'options' => [
             'is_public' => 'Publiek (zonder inloggen zichtbaar)',
             'show_uptime' => 'Beschikbaarheid per dag tonen (90 dagen)',
+            'show_3d_hero' => 'Toon een geanimeerde 3D-afbeelding van de onderdelen boven de status (gebruikt WebGL; ongeveer 150 kB extra voor bezoekers)',
             'show_incident_titles' => 'Incidenttitels tonen (kunnen interne namen bevatten); anders een algemene omschrijving',
         ],
         'components_title' => 'Onderdelen',

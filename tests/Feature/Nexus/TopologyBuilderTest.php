@@ -399,6 +399,16 @@ class TopologyBuilderTest extends TestCase
         $this->assertNull($this->builder()->build($this->team->id)['nodes'][0]['details']['metrics']['memory_percent'], 'unknown, not 0%');
     }
 
+    public function test_websites_carry_their_last_response_time_or_null(): void
+    {
+        $fast = $this->domain('fast.example.com', ['http_last_response_ms' => 142.6]);
+        $never = $this->domain('never.example.com');
+        $nodes = collect($this->builder()->build($this->team->id)['nodes'])->keyBy('key');
+
+        $this->assertSame(143, $nodes['domain:'.$fast->id]['details']['response_ms']);
+        $this->assertNull($nodes['domain:'.$never->id]['details']['response_ms'], 'not measured, not 0 ms');
+    }
+
     public function test_labels_are_returned_as_plain_text(): void
     {
         $this->server('<script>alert(1)</script>');

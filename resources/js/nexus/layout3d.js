@@ -13,15 +13,15 @@
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 export const LAYOUT = {
-    serverSpacing: 11,
+    serverSpacing: 8,
     towerBase: 2,
     serviceStep: 1.1,
-    orbitRadius: 3.6,
+    orbitRadius: 3.2,
     orbitPerSite: 0.35,
     orbitHeight: 1.4,
     satelliteRise: 1.9,
     satelliteRadius: 1.1,
-    outerGap: 10,
+    outerGap: 6,
 };
 
 const round = (value) => Math.round(value * 1000) / 1000;

@@ -262,6 +262,13 @@ return [
         'key' => env('SERVERSCOPE_PROBE_KEY'),
         'secret' => env('SERVERSCOPE_PROBE_SECRET'),
         'poll_seconds' => (int) env('SERVERSCOPE_PROBE_POLL_SECONDS', 30),
+        // Where the main ServerScope monitor runs, for the NEXUS globe
+        // (optional; without it the globe shows the probes only).
+        'main_location' => [
+            'name' => env('SERVERSCOPE_MAIN_LOCATION'),
+            'latitude' => env('SERVERSCOPE_MAIN_LATITUDE'),
+            'longitude' => env('SERVERSCOPE_MAIN_LONGITUDE'),
+        ],
     ],
 
     /*
