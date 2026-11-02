@@ -1507,3 +1507,97 @@
     .ss-fav[aria-pressed="true"] { color: var(--ss-warn); }
     .ss-fav svg { width: 1.05rem; height: 1.05rem; }
 }
+
+/* NEXUS infrastructure map (nexus/index, resources/js/nexus.js). Built from the
+   same tokens as everything else, so it follows the light and dark theme. */
+@layer components {
+    .ss-nexus-heading { margin: 0 0 .625rem; color: var(--ss-muted); font-size: .6875rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+
+    /* Multi-select filter: a badge that is either on or off. */
+    .ss-nexus-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: .375rem;
+        padding: .25rem .375rem .25rem .625rem;
+        border: 1px solid var(--ss-line-strong);
+        border-radius: 999px;
+        background: var(--ss-surface);
+        color: var(--ss-muted);
+        font-size: .75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        transition: color .2s ease, border-color .2s ease, background-color .2s ease, opacity .2s ease;
+    }
+    .ss-nexus-filter:hover { border-color: var(--ss-subtle); color: var(--ss-text); }
+    .ss-nexus-filter[aria-pressed="true"] { border-color: var(--ss-accent-line); background: var(--ss-accent-soft); color: var(--ss-text); }
+    .ss-nexus-filter[aria-pressed="false"] { opacity: .65; }
+    .ss-nexus-filter[data-nexus-incidents][aria-pressed="false"] { opacity: 1; }
+    .ss-nexus-filter .ico { width: .875rem; height: .875rem; }
+
+    .ss-nexus-stage {
+        position: relative;
+        height: clamp(26rem, calc(100vh - 22rem), 54rem);
+        background:
+            radial-gradient(circle, var(--ss-line) 1px, transparent 1.2px) 0 0 / 22px 22px,
+            var(--ss-surface-2);
+    }
+    @media (max-width: 767px) { .ss-nexus-stage { height: 62vh; min-height: 22rem; } }
+    .ss-nexus-stage [hidden] { display: none !important; }
+
+    .ss-nexus-overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 1.25rem;
+        background: color-mix(in srgb, var(--ss-surface-2) 85%, transparent);
+    }
+    .ss-nexus-overlay .ss-empty { max-width: 28rem; }
+
+    .ss-nexus-tooltip {
+        position: absolute;
+        z-index: 5;
+        display: grid;
+        gap: .125rem;
+        max-width: 16rem;
+        padding: .5rem .625rem;
+        border: 1px solid var(--ss-line-strong);
+        border-radius: 10px;
+        background: var(--ss-surface);
+        box-shadow: var(--ss-shadow-lift);
+        font-size: .75rem;
+        transform: translate(-50%, -100%);
+        pointer-events: none;
+    }
+
+    .ss-nexus-spinner { width: 1rem; height: 1rem; border: 2px solid var(--ss-line-strong); border-top-color: var(--ss-accent); border-radius: 999px; animation: ss-nexus-spin .8s linear infinite; }
+    @keyframes ss-nexus-spin { to { transform: rotate(360deg); } }
+
+    /* Live status: the auto-refresh look, with the state of the polling. */
+    [data-nexus-live][data-state="ok"] .ss-nexus-live-dot { background: var(--ss-ok); }
+    [data-nexus-live][data-state="paused"] .ss-nexus-live-dot,
+    [data-nexus-live][data-state="loading"] .ss-nexus-live-dot { background: var(--ss-line-strong); }
+    [data-nexus-live][data-state="stale"] .ss-nexus-live-dot { background: var(--ss-warn); }
+    [data-nexus-live][data-state="error"] .ss-nexus-live-dot,
+    [data-nexus-live][data-state="stopped"] .ss-nexus-live-dot { background: var(--ss-bad); }
+
+    /* Health tones for icons and legend swatches (as x-status colours them). */
+    .ss-nexus-tone-ok { --c: var(--ss-ok); }
+    .ss-nexus-tone-warn { --c: var(--ss-warn); }
+    .ss-nexus-tone-bad { --c: var(--ss-bad); }
+    .ss-nexus-tone-info { --c: var(--ss-accent); }
+    .ss-nexus-tone-muted { --c: var(--ss-subtle); }
+    .ss-stat-icon[class*="ss-nexus-tone-"] { color: var(--c); }
+
+    /* Legend: the same border styles as the map, so health never depends on colour alone. */
+    .ss-nexus-swatch { width: 1rem; height: 1rem; flex: none; border: 2px solid var(--c, var(--ss-subtle)); border-radius: 5px; background: var(--ss-surface); }
+    .ss-nexus-swatch.is-critical { border-width: 4px; border-style: double; }
+    .ss-nexus-swatch.is-warning { border-width: 3px; }
+    .ss-nexus-swatch.is-unknown { border-style: dashed; }
+    .ss-nexus-swatch.is-maintenance, .ss-nexus-swatch.is-paused { border-style: dotted; }
+    .ss-nexus-swatch.is-incident { border-color: var(--ss-line-strong); outline: 2px solid var(--ss-bad); outline-offset: 2px; }
+    .ss-nexus-line { width: 1.375rem; height: 0; flex: none; border-top: 2px solid var(--ss-subtle); }
+    .ss-nexus-line.is-dashed { border-top-style: dashed; border-top-color: var(--ss-line-strong); }
+
+    [data-nexus-list] tr[aria-selected="true"] td { background: var(--ss-accent-soft); }
+}

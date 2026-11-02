@@ -3,11 +3,12 @@ import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 
 // Fonts are self-hosted from resources/fonts: the build needs no network.
-// charts.js (Chart.js) is only loaded on pages with charts.
+// charts.js (Chart.js) is only loaded on pages with charts, nexus.js
+// (Cytoscape.js) only on the NEXUS map.
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/charts.js', 'resources/fonts/inter-latin-wght.woff2'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/charts.js', 'resources/js/nexus.js', 'resources/fonts/inter-latin-wght.woff2'],
             refresh: true,
         }),
         tailwindcss(),
