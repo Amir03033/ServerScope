@@ -18,6 +18,7 @@ use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Tests\Support\TwoTeams;
 use Tests\TestCase;
@@ -184,6 +185,31 @@ class IncidentInvestigatorTest extends TestCase
         // A truncated answer.
         Http::fake(['api.openai.com/*' => Http::response(['choices' => [['message' => ['content' => '{"summary":'], 'finish_reason' => 'length']]])]);
         $this->assertSame('invalid_response', app(IncidentInvestigator::class)->request($this->websiteIncident($this->a, 'http:len'), 'manual')->fresh()->error_code);
+    }
+
+    public function test_reasoning_models_get_room_and_a_cut_off_answer_is_logged_with_its_reason(): void
+    {
+        // Reasoning used the whole budget: no content, finish_reason length.
+        Log::spy();
+        Http::fake(['api.openai.com/*' => Http::response(['choices' => [['message' => ['content' => ''], 'finish_reason' => 'length']]])]);
+        $analysis = app(IncidentInvestigator::class)->request($this->websiteIncident($this->a, 'http:cut'), 'manual')->fresh();
+
+        $this->assertSame(['failed', 'invalid_response'], [$analysis->status, $analysis->error_code]);
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context) => str_contains($context['reason'] ?? '', 'SERVERSCOPE_AI_MAX_OUTPUT_TOKENS'));
+        Http::assertSent(fn ($request) => $request['max_completion_tokens'] === 8000 && ! isset($request['reasoning_effort']));
+    }
+
+    public function test_a_configured_reasoning_effort_is_sent_and_an_unknown_one_is_not(): void
+    {
+        $this->fakeAi();
+        config(['serverscope.ai.reasoning_effort' => 'low']);
+        app(IncidentInvestigator::class)->request($this->websiteIncident($this->a, 'http:effort'), 'manual');
+        Http::assertSent(fn ($request) => ($request['reasoning_effort'] ?? null) === 'low');
+
+        config(['serverscope.ai.reasoning_effort' => 'extreme']);
+        app(IncidentInvestigator::class)->request($this->websiteIncident($this->a, 'http:effort2'), 'manual');
+        Http::assertSentCount(2);
+        Http::assertNotSent(fn ($request) => ($request['reasoning_effort'] ?? null) === 'extreme');
     }
 
     public function test_duplicates_cooldowns_and_limits_never_cause_extra_charges(): void

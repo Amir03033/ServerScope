@@ -26,19 +26,26 @@ class OpenAiProvider implements AiProvider
             throw new AiException('unavailable');
         }
 
+        $payload = [
+            'model' => $this->config['model'],
+            'messages' => [
+                ['role' => 'system', 'content' => $instructions],
+                ['role' => 'user', 'content' => $input],
+            ],
+            'response_format' => ['type' => 'json_schema', 'json_schema' => ['name' => $schemaName, 'strict' => true, 'schema' => $schema]],
+            // Reasoning models spend part of this on hidden reasoning.
+            'max_completion_tokens' => max(500, (int) ($this->config['max_output_tokens'] ?? 8000)),
+        ];
+
+        if (in_array($this->config['reasoning_effort'] ?? null, ['minimal', 'low', 'medium', 'high'], true)) {
+            $payload['reasoning_effort'] = $this->config['reasoning_effort'];
+        }
+
         try {
             $response = Http::withToken((string) $this->config['api_key'])
                 ->acceptJson()
                 ->timeout(max(5, (int) ($this->config['timeout_seconds'] ?? 45)))
-                ->post(($this->config['base_url'] ?? 'https://api.openai.com/v1').'/chat/completions', [
-                    'model' => $this->config['model'],
-                    'messages' => [
-                        ['role' => 'system', 'content' => $instructions],
-                        ['role' => 'user', 'content' => $input],
-                    ],
-                    'response_format' => ['type' => 'json_schema', 'json_schema' => ['name' => $schemaName, 'strict' => true, 'schema' => $schema]],
-                    'max_completion_tokens' => (int) ($this->config['max_output_tokens'] ?? 1500),
-                ]);
+                ->post(($this->config['base_url'] ?? 'https://api.openai.com/v1').'/chat/completions', $payload);
         } catch (ConnectionException $exception) {
             throw new AiException(str_contains(strtolower($exception->getMessage()), 'timed out') ? 'timeout' : 'provider_error', 'Connection to the AI provider failed.');
         }
@@ -58,8 +65,14 @@ class OpenAiProvider implements AiProvider
         $choice = $response->json('choices.0');
         $content = is_array($choice) ? ($choice['message']['content'] ?? null) : null;
 
-        if (! is_string($content) || ($choice['message']['refusal'] ?? null) || ($choice['finish_reason'] ?? 'stop') !== 'stop') {
-            throw new AiException('invalid_response', 'The AI provider returned no complete answer.');
+        $finish = is_array($choice) ? (string) ($choice['finish_reason'] ?? 'stop') : 'none';
+
+        if ($finish === 'length') {
+            throw new AiException('invalid_response', 'The AI answer was cut off at the output token limit (finish_reason: length); raise SERVERSCOPE_AI_MAX_OUTPUT_TOKENS or lower SERVERSCOPE_AI_REASONING_EFFORT.');
+        }
+
+        if (! is_string($content) || ($choice['message']['refusal'] ?? null) || $finish !== 'stop') {
+            throw new AiException('invalid_response', "The AI provider returned no complete answer (finish_reason: {$finish}).");
         }
 
         $data = json_decode($content, true);

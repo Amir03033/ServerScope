@@ -141,8 +141,8 @@ TXT;
                 'input_tokens' => $response->inputTokens, 'output_tokens' => $response->outputTokens, 'completed_at' => now(), 'error_code' => null,
             ])->save();
         } catch (AiException $exception) {
-            // Only the kind is stored and logged: no prompt, no answer.
-            Log::warning('AI incident analysis failed', ['analysis' => $analysisId, 'kind' => $exception->kind]);
+            // Only the kind is stored; the log adds our own reason text. Never the prompt or the answer.
+            Log::warning('AI incident analysis failed', ['analysis' => $analysisId, 'kind' => $exception->kind, 'reason' => $exception->getMessage()]);
             $analysis->forceFill(['status' => 'failed', 'error_code' => $exception->kind, 'completed_at' => now()])->save();
         }
     }
