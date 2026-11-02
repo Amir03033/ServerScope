@@ -786,3 +786,31 @@ failures, plan gating, isolation, deduplication, lifecycle, UI states,
 escaping, both languages); `IncidentInvestigatorTest` keeps covering the
 legacy contract (with automatic investigations off). Run on SQLite and on
 MySQL 8.4 locally; not in production.
+
+## 12. NEXUS 3D view
+
+Branch `feature/nexus-3d` from `main` `100dc30`. A third view on the NEXUS
+page next to the map and the list: servers as towers (height by number of
+services), services as rings around them, websites orbiting the server they
+depend on (directly or through a service), pages as satellites, curved
+links (dashed for structural ones), and active incidents as a pulse at the
+failing resource plus beads running along every link towards what depends
+on it, further links later.
+
+- Same live topology, filters, search, selection, impact mode, side panel,
+  tooltip, `?focus=` and theme as the 2D map; no backend change.
+- three.js 0.186.1 (MIT) is a separate chunk (`scene3d`, ~146 kB gzipped),
+  fetched the first time the 3D view is opened; the NEXUS page itself grew
+  by ~3 kB. The last chosen view (map/3D) is remembered per browser.
+- Health is never shown by colour alone: halos (one for warning, two for
+  critical), wire shells for unknown/paused/maintenance, and labels with
+  the health word. `prefers-reduced-motion`: no auto-rotation, no moving
+  beads (affected links are coloured instead), no pulsing. Without WebGL the
+  page says so and stays on the 2D map. The list view remains the keyboard
+  alternative.
+- Layout is pure and tested (`resources/js/nexus/layout3d.test.js`); the
+  rendering was checked in a browser (Chrome, dark and light theme, desktop
+  and 375 px), not on other browsers or real mobile GPUs.
+- Also fixed: the NEXUS side panel and tooltip printed "null" when a part
+  was empty (Element.append(null)), and following an investigation's
+  "Show on NEXUS map" link did not switch on impact mode.

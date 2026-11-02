@@ -70,6 +70,24 @@ class NexusPageTest extends TestCase
         }
     }
 
+    public function test_the_3d_view_is_offered_but_only_loaded_on_demand(): void
+    {
+        foreach (['en' => '3D map of servers', 'nl' => '3D-kaart van servers'] as $locale => $label) {
+            $this->a['member']->forceFill(['locale' => $locale])->save();
+            $html = $this->actingAs($this->a['member'])->get(route('nexus.index'))->assertOk()->getContent();
+
+            $this->assertStringContainsString('data-nexus-3d ', $html);
+            $this->assertStringContainsString('data-nexus-3d-stage', $html);
+            $this->assertStringContainsString($label, $html);
+            // three.js is its own chunk, fetched when someone opens the 3D view.
+            $this->assertStringNotContainsString('/build/assets/scene3d-', $html);
+
+            $config = $this->config($html);
+            $this->assertSame(trans('nexus.js.states.webgl_text', [], $locale), $config['texts']['states']['webgl_text']);
+            $this->assertSame('3D', $config['texts']['toolbar']['view_3d']);
+        }
+    }
+
     public function test_the_page_and_its_script_texts_follow_the_language(): void
     {
         foreach (['en' => ['Active incidents', 'Incident view', 'runs on', 'Online', 'Critical'], 'nl' => ['Actieve incidenten', 'Incidentweergave', 'draait op', 'Online', 'Kritiek']] as $locale => [$stat, $toolbar, $relation, $status, $severity]) {

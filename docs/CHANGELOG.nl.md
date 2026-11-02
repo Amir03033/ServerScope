@@ -1,5 +1,22 @@
 # Wat is er nieuw in ServerScope
 
+## 2 november 2026 — NEXUS in 3D
+
+### Nieuw
+
+- De NEXUS-kaart heeft een **3D**-weergave: servers staan als torens,
+  services als ringen eromheen, websites draaien om de server waarop ze
+  draaien en pagina's zweven boven hun website. Sleep om te draaien, scroll
+  om te zoomen, klik voor details.
+- Actieve incidenten zie je als een puls bij de resource die faalt en als
+  golven die over de verbindingen lopen naar alles wat ervan afhangt.
+- Filters, zoeken, de impactweergave en het zijpaneel werken zoals op de
+  2D-kaart; je keuze voor de weergave wordt onthouden.
+
+### Opgelost
+
+- Het NEXUS-zijpaneel toont niet langer het woord "null" bij lege onderdelen.
+
 ## 2 november 2026 — Oorzaakanalyse: regels en AI samen
 
 ### Verbeterd

@@ -4,7 +4,7 @@
     "name": "i18n"
   },
   "resources/css/app.css": {
-    "file": "assets/app-4f_Z0EO7.css",
+    "file": "assets/app-DwierEHj.css",
     "name": "app",
     "names": [
       "app.css"
@@ -48,12 +48,24 @@
     ]
   },
   "resources/js/nexus.js": {
-    "file": "assets/nexus-zHdzaqLD.js",
+    "file": "assets/nexus-CPKAEsif.js",
     "name": "nexus",
     "src": "resources/js/nexus.js",
     "isEntry": true,
     "imports": [
       "_i18n-Bs6GXkQz.js"
+    ],
+    "dynamicImports": [
+      "resources/js/nexus/scene3d.js"
+    ]
+  },
+  "resources/js/nexus/scene3d.js": {
+    "file": "assets/scene3d-B6eOXfE0.js",
+    "name": "scene3d",
+    "src": "resources/js/nexus/scene3d.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/nexus.js"
     ]
   }
 }
