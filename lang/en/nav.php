@@ -22,6 +22,8 @@ return [
         'domains' => 'Domains',
         'nexus' => 'NEXUS',
         'skyline' => 'Skyline',
+        'timelapse' => 'Time travel',
+        'wall' => 'Wall screen',
         'globe' => 'Globe',
         'dependencies' => 'Dependencies',
         'deployments' => 'Deployments',

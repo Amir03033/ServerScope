@@ -292,6 +292,9 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('/nexus', [\App\Http\Controllers\NexusController::class, 'index'])->name('nexus.index');
     Route::get('/nexus/graph.json', [\App\Http\Controllers\NexusController::class, 'graph'])->middleware('throttle:60,1')->name('nexus.graph');
     Route::get('/live/pulse.json', [\App\Http\Controllers\LiveController::class, 'pulse'])->middleware('throttle:120,1')->name('live.pulse');
+    Route::get('/nexus/timelapse', [\App\Http\Controllers\NexusController::class, 'timelapse'])->name('nexus.timelapse');
+    Route::get('/nexus/timelapse.json', [\App\Http\Controllers\NexusController::class, 'timelapseData'])->middleware('throttle:30,1')->name('nexus.timelapse.data');
+    Route::get('/nexus/wall', [\App\Http\Controllers\NexusController::class, 'wall'])->name('nexus.wall');
     Route::get('/nexus/skyline', [\App\Http\Controllers\NexusController::class, 'skyline'])->name('nexus.skyline');
     Route::get('/nexus/globe', [\App\Http\Controllers\GlobeController::class, 'index'])->name('nexus.globe');
     Route::get('/nexus/globe.json', [\App\Http\Controllers\GlobeController::class, 'data'])->middleware('throttle:60,1')->name('nexus.globe.data');

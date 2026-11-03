@@ -63,6 +63,28 @@ function boot() {
         }
     }
 
+    // Screensaver (opt-in on the wall screen page, stored in this browser):
+    // after the chosen idle minutes the wall screen takes over; any key or
+    // mouse movement there returns here. Never while a form has unsaved input.
+    const wall = document.querySelector('meta[name="ss-wall"]')?.content;
+    let minutes = 0;
+    try { minutes = Number(localStorage.getItem('ss-screensaver-minutes') || 0); } catch { minutes = 0; }
+
+    if (wall && minutes > 0 && !location.pathname.startsWith(new URL(wall).pathname)) {
+        let dirty = false;
+        let idle = null;
+        const arm = () => {
+            clearTimeout(idle);
+            idle = setTimeout(() => {
+                if (!dirty) location.href = `${wall}?screensaver=1&return=${encodeURIComponent(location.pathname + location.search)}`;
+            }, minutes * 60_000);
+        };
+
+        document.addEventListener('input', () => { dirty = true; }, true);
+        ['pointermove', 'pointerdown', 'keydown', 'scroll', 'touchstart'].forEach((type) => window.addEventListener(type, arm, { passive: true }));
+        arm();
+    }
+
     // Also while hidden (the browser slows this down): that is when the tab icon matters.
     setInterval(refresh, POLL_MS);
     document.addEventListener('visibilitychange', () => (document.hidden ? render() : beat()));

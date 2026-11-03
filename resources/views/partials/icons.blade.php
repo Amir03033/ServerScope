@@ -16,6 +16,9 @@
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
     <symbol id="i-earth" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M4.5 8.5c2 .5 3 1.8 3 3.5 0 1.5 1.5 2 1.5 3.5S8 18 8.5 20M15 3.5c-.5 1.5 0 3 1.5 3.5s2 2 1 3.5-.5 3 1 3.5h2"/><ellipse cx="12" cy="12" rx="11" ry="3.6" transform="rotate(-20 12 12)" opacity=".55"/></symbol>
     <symbol id="i-city" viewBox="0 0 24 24"><path d="M3 21h18M5 21V9l4-2v14M9 21V4l6 2v15M15 21v-9l4 1.5V21"/><path d="M11.5 9h1M11.5 12h1M11.5 15h1M6.5 12h1M6.5 15h1M16.5 15.5h1" opacity=".7"/></symbol>
+    <symbol id="i-tv" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="M6.5 10h2l1.2-2.5 2 5 1.3-2.5h4.5" opacity=".75"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/><path d="m10.5 9.5 3.5 2.5-3.5 2.5z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 4.5 5-4.5M5 20h14"/></symbol>
     <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/></symbol>
     <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
     <symbol id="i-metrics" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m7 15 3-4 3 2 4-5"/></symbol>

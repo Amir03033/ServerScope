@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Incident;
+use App\Models\Server;
 use App\Monitoring\Dns\Resolver;
 use App\Services\Nexus\TopologyBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,7 +44,7 @@ class LivePulseTest extends TestCase
         $this->assertSame(['critical', 1, 1], [$b['state'], $b['incidents'], $b['critical']]);
 
         // An offline server is critical too.
-        \App\Models\Server::query()->withoutGlobalScopes()->whereKey($this->a['server']->id)->update(['last_seen_at' => now()->subDay(), 'status' => 'offline']);
+        Server::query()->withoutGlobalScopes()->whereKey($this->a['server']->id)->update(['last_seen_at' => now()->subDay(), 'status' => 'offline']);
         TopologyBuilder::forget($this->a['team']->id);
         $a = $this->actingAs($this->a['member'])->getJson(route('live.pulse'))->json('data');
         $this->assertSame(['critical', 1], [$a['state'], $a['offline']]);

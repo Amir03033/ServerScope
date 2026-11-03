@@ -44,6 +44,20 @@ function facade(tower) {
     return texture;
 }
 
+/** Window states as runs ("lit×12,bad×4"): the same pattern at any number of floors compares equal. */
+function windowRuns(windows) {
+    const runs = [];
+
+    for (const state of windows) {
+        const last = runs[runs.length - 1];
+        last && last[0] === state ? last[1]++ : runs.push([state, 1]);
+    }
+
+    const total = windows.length || 1;
+
+    return runs.map(([state, n]) => `${state}:${Math.round((n / total) * 20)}`).join(',');
+}
+
 function glowTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = 64;
@@ -58,8 +72,9 @@ function glowTexture() {
     return new THREE.CanvasTexture(canvas);
 }
 
-export function createSkyline(container, { reducedMotion, t, onSelect }) {
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+export function createSkyline(container, { reducedMotion, t, onSelect, record = false }) {
+    // record: keep the drawn frame so a recorder can copy it (time-travel export).
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: record });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.domElement.classList.add('ss-globe-canvas');
     container.append(renderer.domElement);
@@ -185,13 +200,23 @@ export function createSkyline(container, { reducedMotion, t, onSelect }) {
             seen.add(data.key);
             const old = towers.get(data.key);
             const current = old ? old.current : (reducedMotion ? data.height : 0.2);
+            // What the tower looks like apart from its exact height (the facade is rebuilt
+            // only when its floors change a lot, so a growing tower does not flicker).
+            const look = JSON.stringify([data.name, data.lights, windowRuns(data.windows), Math.round(data.floors / 4), data.beacons, data.x, data.z]);
+
+            // Only the height changed: let the tower grow towards it, nothing to rebuild.
+            if (old && old.look === look) {
+                old.target = data.height;
+                old.data = data;
+                continue;
+            }
 
             if (old) {
                 towersGroup.remove(old.group);
                 dispose(old.group);
             }
 
-            const tower = { ...towerMesh(data), data, current, target: data.height };
+            const tower = { ...towerMesh(data), data, current, target: data.height, look };
             place(tower, current);
             towersGroup.add(tower.group);
             towers.set(data.key, tower);
@@ -285,8 +310,11 @@ export function createSkyline(container, { reducedMotion, t, onSelect }) {
         schedule();
     }
 
+    // Paused scenes (for example a hidden one on the wall screen) draw nothing.
+    let running = true;
+
     function schedule() {
-        if (!frame && !document.hidden) frame = requestAnimationFrame(tick);
+        if (running && !frame && !document.hidden) frame = requestAnimationFrame(tick);
     }
 
     new ResizeObserver(resize).observe(container);
@@ -296,6 +324,15 @@ export function createSkyline(container, { reducedMotion, t, onSelect }) {
 
     return {
         update,
+        canvas: renderer.domElement,
+        pause() { running = false; },
+        /** Back to the whole city, slowly turning. */
+        overview() {
+            touched = false;
+            controls.autoRotate = !reducedMotion;
+            fit();
+        },
+        resume() { running = true; resize(); schedule(); },
         /** Turn the view towards a tower. */
         focus(key) {
             const tower = towers.get(key);

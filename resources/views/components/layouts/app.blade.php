@@ -35,6 +35,8 @@
             ['route' => 'nexus.index', 'match' => ['nexus.index', 'nexus.graph'], 'icon' => 'i-nexus', 'label' => 'nexus'],
             ['route' => 'nexus.skyline', 'match' => 'nexus.skyline', 'icon' => 'i-city', 'label' => 'skyline', 'sub' => true],
             ['route' => 'nexus.globe', 'match' => 'nexus.globe*', 'icon' => 'i-earth', 'label' => 'globe', 'sub' => true],
+            ['route' => 'nexus.timelapse', 'match' => 'nexus.timelapse*', 'icon' => 'i-film', 'label' => 'timelapse', 'sub' => true],
+            ['route' => 'nexus.wall', 'match' => 'nexus.wall', 'icon' => 'i-tv', 'label' => 'wall', 'sub' => true],
             ['route' => 'dependencies.index', 'match' => 'dependencies.*', 'icon' => 'i-link', 'label' => 'dependencies'],
             ['route' => 'deployments.index', 'match' => 'deployments.*', 'icon' => 'i-flag', 'label' => 'deployments'],
         ],
@@ -72,7 +74,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ? $title.' — ServerScope' : 'ServerScope' }}</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml" data-live-icon>
-    @if (Route::has('live.pulse') && \App\Tenancy\Tenant::check())<meta name="ss-live" content="{{ route('live.pulse') }}">@endif
+    @if (Route::has('live.pulse') && \App\Tenancy\Tenant::check())<meta name="ss-live" content="{{ route('live.pulse') }}"><meta name="ss-wall" content="{{ route('nexus.wall') }}">@endif
     {{-- Applies the saved theme before the first paint (no flash). --}}
     <script src="{{ asset('js/theme-init.js') }}?v={{ @filemtime(public_path('js/theme-init.js')) }}"></script>
     @include('partials.vite-assets')

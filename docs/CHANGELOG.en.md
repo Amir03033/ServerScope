@@ -1,5 +1,28 @@
 # What's new in ServerScope
 
+## 3 November 2026 — Time travel, wall screen and live logo
+
+### New
+
+- **Time travel** (NEXUS › Time travel): the last 24 hours or 7 days as a
+  film over the skyline. Towers grow and shrink with the CPU, incidents
+  flash by. The **director's cut** edits itself: quiet hours race by, every
+  incident slows the film down with the camera on its tower and a caption,
+  with an opening title and a summary at the end. Scrub with the slider,
+  play freely at 1–8× and **export a video** (MP4 or WebM, recorded in your
+  own browser).
+- **Wall screen** (NEXUS › Wall screen): a TV mode that directs itself.
+  Calmly through skyline, globe, heartbeat and a summary; on a new incident
+  a large alert and the camera on its cause at once. Full screen, keeps the
+  screen awake, and optionally a **screensaver** after 5–30 idle minutes.
+- **Live logo and tab icon**: the logo and the tab icon beat in your
+  infrastructure's rhythm and turn amber or red on problems; the tab shows
+  the number of active incidents, also in the background.
+
+### Improved
+
+- The heartbeat on phones: name, line and numbers stacked and readable.
+
 ## 3 November 2026 — Heartbeat, skyline and status badges
 
 ### New
