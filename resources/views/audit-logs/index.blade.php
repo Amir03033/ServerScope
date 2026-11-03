@@ -7,7 +7,7 @@
     <x-slot:subtitle>{{ __('admin.audit.subtitle') }}</x-slot:subtitle>
 
     <section class="ss-panel">
-        <form method="GET" action="{{ route('audit-logs.index') }}" class="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-end" role="search">
+        <form method="GET" action="{{ route('audit-logs.index') }}" data-filters-label="{{ __('common.filters') }}" class="ss-filters mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-end" role="search">
             <div>
                 <label class="ss-label" for="q">{{ __('admin.audit.search') }}</label>
                 <input id="q" class="ss-input mt-1.5" type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ __('admin.audit.search_placeholder') }}">

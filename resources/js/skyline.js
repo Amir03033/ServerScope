@@ -38,7 +38,7 @@ function boot() {
                 h('div', { class: 'min-w-0' },
                     h('button', { type: 'button', class: 'ss-skyline-name', onclick: () => choose(tower.key) }, tower.name),
                     h('span', { class: 'block text-xs text-muted' }, t('row', { cpu: percent(tower.cpu), sites: tower.beacons.length + tower.hiddenBeacons, down })),
-                    tower.url ? h('a', { class: 'text-xs', href: tower.url }, t('open')) : null,
+                    tower.url ? h('a', { class: 'ss-hit text-xs', href: tower.url }, t('open')) : null,
                 ),
                 status(t(`lights.${tower.lights}`), TONE[tower.lights] ?? 'muted'),
             );

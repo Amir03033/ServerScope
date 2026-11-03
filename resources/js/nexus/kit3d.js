@@ -53,10 +53,17 @@ export function dispose(object) {
     });
 }
 
-/** The point at progress (0..1) along a polyline of Vector3s. */
+/**
+ * The point at progress (0..1) along a polyline of Vector3s. Progress is
+ * clamped: on the first frame three's Timer can report a tiny negative
+ * elapsed time, which would otherwise index points[-1].
+ */
 export function pointAt(points, progress) {
-    const i = Math.min(points.length - 2, Math.floor(progress * (points.length - 1)));
-    const f = progress * (points.length - 1) - i;
+    if (points.length < 2) return (points[0] ?? new THREE.Vector3()).clone();
+
+    const p = Number.isFinite(progress) ? Math.min(1, Math.max(0, progress)) : 0;
+    const i = Math.min(points.length - 2, Math.floor(p * (points.length - 1)));
+    const f = p * (points.length - 1) - i;
 
     return new THREE.Vector3().lerpVectors(points[i], points[i + 1], f);
 }

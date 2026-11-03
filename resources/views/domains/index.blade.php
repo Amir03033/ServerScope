@@ -60,7 +60,7 @@
             </div>
         </nav>
 
-        <form method="GET" action="{{ route('domains.index') }}" class="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end" role="search">
+        <form method="GET" action="{{ route('domains.index') }}" data-filters-label="{{ __('common.filters') }}" class="ss-filters mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end" role="search">
             @if ($status)<input type="hidden" name="status" value="{{ $status }}">@endif
             <div>
                 <label class="ss-label" for="q">{{ __('domains.index.search') }}</label>
@@ -117,7 +117,7 @@
                             <tr>
                                 <td class="is-primary">
                                     @unless ($domain->trashed())<x-favorite-button type="domain" :id="$domain->id" :active="in_array($domain->id, $favorites, true)" class="float-right" />@endunless
-                                    <a class="font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('domains.show', $domain) }}">{{ $domain->displayName() }}</a>
+                                    <a class="ss-hit font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('domains.show', $domain) }}">{{ $domain->displayName() }}</a>
                                     <span class="block text-xs text-muted [overflow-wrap:anywhere]">{{ $domain->url() }}</span>
                                 </td>
                                 <td data-label="{{ __('domains.index.col_status') }}">

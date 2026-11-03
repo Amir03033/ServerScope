@@ -40,7 +40,7 @@ class IncidentPagesTest extends TestCase
         $this->assertNotEmpty($bar);
         $this->assertSame(5, substr_count($bar[1], '<li'));
         $this->assertSame(1, substr_count($bar[1], 'aria-current="step"'));
-        $this->assertMatchesRegularExpression('/aria-current="step"\s*>Bevestigd</', $bar[1]);
+        $this->assertMatchesRegularExpression('/aria-current="step"\s*><span>Bevestigd</', $bar[1]);
         $this->assertSame(1, substr_count($bar[1], 'is-done'));
 
         // The possible transition and the resolve form are both there.

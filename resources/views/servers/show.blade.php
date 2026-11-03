@@ -51,22 +51,50 @@
                         </button>
                     </form>
                 @else
-                    <form method="POST" action="{{ route('servers.maintenance.start', $server) }}" class="flex flex-wrap items-start gap-2" data-confirm="{{ __('servers.show.maintenance_confirm', ['name' => $server->name]) }}">
-                        @csrf
-                        <label class="sr-only" for="duration_minutes">{{ __('servers.show.maintenance_duration') }}</label>
-                        <select id="duration_minutes" name="duration_minutes" class="ss-input !w-auto !py-2 !text-sm">
-                            @foreach (['30', '60', '240', '1440', 'custom'] as $minutes)
-                                <option value="{{ $minutes }}" @selected(old('duration_minutes', '60') === $minutes)>{{ __('servers.show.durations.'.$minutes) }}</option>
-                            @endforeach
-                        </select>
-                        <label class="sr-only" for="ends_at">{{ __('servers.show.maintenance_custom_end') }}</label>
-                        <input id="ends_at" name="ends_at" type="datetime-local" class="ss-input !w-auto !py-2 !text-sm" value="{{ old('ends_at') }}" title="{{ __('servers.show.maintenance_custom_end') }} ({{ config('serverscope.display_timezone') }})">
-                        <button type="submit" class="ss-btn ss-btn-secondary">
-                            <svg class="ico"><use href="#i-wrench"/></svg> {{ __('servers.show.start_maintenance') }}
-                        </button>
-                        @error('ends_at')<p class="m-0 w-full text-xs text-bad" role="alert">{{ $message }}</p>@enderror
-                        <p class="m-0 w-full max-w-md text-xs text-muted">{{ __('servers.show.maintenance_effect') }}</p>
-                    </form>
+                    {{-- One button in the header; the form lives in a panel (popover:
+                         works without JavaScript, Esc or a click outside closes it). --}}
+                    <button type="button" class="ss-btn ss-btn-secondary" popovertarget="maintenance-panel">
+                        <svg class="ico"><use href="#i-wrench"/></svg> {{ __('servers.show.maintenance_button') }}
+                    </button>
+                    <div id="maintenance-panel" popover class="ss-sheet" role="dialog" aria-labelledby="maintenance-panel-title" @error('ends_at') data-open @enderror>
+                        <form method="POST" action="{{ route('servers.maintenance.start', $server) }}" class="grid gap-4 p-5" data-maintenance-form>
+                            @csrf
+                            <div class="flex items-start gap-3">
+                                <span class="ss-sheet-icon"><svg class="ico h-[18px] w-[18px]"><use href="#i-wrench"/></svg></span>
+                                <div class="min-w-0">
+                                    <h2 id="maintenance-panel-title" class="m-0 text-base font-semibold text-fg">{{ __('servers.show.maintenance_panel_title', ['name' => $server->name]) }}</h2>
+                                    <p class="m-0 mt-1 text-sm text-muted">{{ __('servers.show.maintenance_lead') }}</p>
+                                </div>
+                            </div>
+
+                            <div class="grid gap-3">
+                                <div>
+                                    <label class="ss-label mb-1.5" for="duration_minutes">{{ __('servers.show.maintenance_duration') }}</label>
+                                    <select id="duration_minutes" name="duration_minutes" class="ss-input" data-maintenance-duration autofocus>
+                                        @foreach (['30', '60', '240', '1440', 'custom'] as $minutes)
+                                            <option value="{{ $minutes }}" @selected(old('duration_minutes', '60') === $minutes)>{{ __('servers.show.durations.'.$minutes) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div data-maintenance-custom>
+                                    <label class="ss-label mb-1.5" for="ends_at">{{ __('servers.show.maintenance_custom_end') }}</label>
+                                    <input id="ends_at" name="ends_at" type="datetime-local" class="ss-input" value="{{ old('ends_at') }}" aria-describedby="ends_at_zone">
+                                    <p id="ends_at_zone" class="m-0 mt-1 text-xs text-subtle">{{ config('serverscope.display_timezone') }}</p>
+                                </div>
+                            </div>
+                            @error('ends_at')<p class="m-0 text-sm text-bad" role="alert">{{ $message }}</p>@enderror
+
+                            <details class="ss-sheet-more">
+                                <summary>{{ __('servers.show.maintenance_more') }}</summary>
+                                <p class="m-0 mt-2 text-xs leading-relaxed text-muted">{{ __('servers.show.maintenance_effect') }}</p>
+                            </details>
+
+                            <div class="flex flex-wrap justify-end gap-2">
+                                <button type="button" class="ss-btn ss-btn-secondary" popovertarget="maintenance-panel" popovertargetaction="hide">{{ __('common.cancel') }}</button>
+                                <button type="submit" class="ss-btn ss-btn-primary">{{ __('servers.show.start_maintenance') }}</button>
+                            </div>
+                        </form>
+                    </div>
                 @endif
             @endunless
         @endcan

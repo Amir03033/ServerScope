@@ -43,7 +43,7 @@
                         @endphp
                         <tr>
                             <td class="is-primary">
-                                <a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('servers.show', $server) }}">{{ $server->name }}</a>
+                                <a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ route('servers.show', $server) }}">{{ $server->name }}</a>
                                 <span class="block text-xs text-muted">{{ $server->hostname }}@if ($server->operating_system) · {{ $server->operating_system }}@endif</span>
                             </td>
                             <td data-label="{{ __('dashboard.servers.col_status') }}"><span class="ss-status {{ $statusTone }}">{{ __('dashboard.servers.status.'.$statusKey) }}</span></td>

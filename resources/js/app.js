@@ -625,6 +625,21 @@ document.querySelectorAll('[data-section-nav]').forEach((nav) => {
 
     if (targets.length === 0) return;
 
+    // A pill behind the active link that glides from section to section.
+    const pill = document.createElement('span');
+    pill.className = 'ss-section-pill';
+    pill.setAttribute('aria-hidden', 'true');
+    nav.prepend(pill);
+    nav.classList.add('has-pill');
+
+    const place = (link) => {
+        pill.classList.toggle('is-visible', Boolean(link));
+        if (!link) return;
+        pill.style.width = `${link.offsetWidth}px`;
+        pill.style.height = `${link.offsetHeight}px`;
+        pill.style.transform = `translate(${link.offsetLeft}px, ${link.offsetTop}px)`;
+    };
+
     // The current section is the last one whose top has passed the bar;
     // at the bottom of the page it is the last section.
     const mark = () => {
@@ -638,6 +653,8 @@ document.querySelectorAll('[data-section-nav]').forEach((nav) => {
                 if (target.getBoundingClientRect().top <= line) current = target;
             });
         }
+
+        place(links.find((link) => current !== null && link.hash === `#${current.id}`));
 
         links.forEach((link) => {
             const active = current !== null && link.hash === `#${current.id}`;
@@ -659,7 +676,9 @@ document.querySelectorAll('[data-section-nav]').forEach((nav) => {
         }
     }, { passive: true });
     window.addEventListener('hashchange', () => setTimeout(mark, 50));
+    window.addEventListener('resize', () => requestAnimationFrame(mark), { passive: true });
     mark();
+    requestAnimationFrame(() => nav.classList.add('is-ready'));
 });
 
 /* ------------------------------------------------------------------ */
@@ -763,3 +782,93 @@ document.addEventListener('submit', async (event) => {
     }
 }, true);
 
+
+/* ------------------------------------------------------------------ */
+/* Sheets (popover panels): reopen after a validation error, and the  */
+/* maintenance end time only when "custom" is chosen.                  */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('.ss-sheet[popover][data-open]').forEach((sheet) => sheet.showPopover?.());
+
+document.querySelectorAll('[data-maintenance-form]').forEach((form) => {
+    const duration = form.querySelector('[data-maintenance-duration]');
+    const custom = form.querySelector('[data-maintenance-custom]');
+    const sync = () => { custom.hidden = duration.value !== 'custom'; };
+
+    sync();
+    duration.addEventListener('change', sync);
+});
+
+/* ------------------------------------------------------------------ */
+/* Filters on phones: search stays visible, the rest behind a button.  */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('form.ss-filters').forEach((form, index) => {
+    const fields = [...form.children].filter((child) => !(child instanceof HTMLInputElement && child.type === 'hidden'));
+    const main = fields[0];
+
+    if (!main || fields.length < 2) return;
+
+    // Active: a select away from its first option, or a ticked box (search is visible anyway).
+    const active = [...form.querySelectorAll('select, input[type="checkbox"]')]
+        .filter((field) => !main.contains(field))
+        .filter((field) => (field.type === 'checkbox' ? field.checked : field.selectedIndex > 0)).length;
+
+    const id = form.id || `filters-${index + 1}`;
+    form.id = id;
+    main.dataset.filterMain = '';
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'ss-btn ss-btn-secondary ss-filters-toggle';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', id);
+    toggle.innerHTML = '<svg class="ico"><use href="#i-sliders"/></svg>';
+    toggle.append(` ${form.dataset.filtersLabel || 'Filters'}`);
+
+    if (active) {
+        const count = document.createElement('span');
+        count.className = 'ss-filters-count';
+        count.textContent = String(active);
+        toggle.append(count);
+    }
+
+    toggle.addEventListener('click', () => {
+        const open = form.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', String(open));
+    });
+
+    main.after(toggle);
+    form.classList.add('is-enhanced');
+});
+
+/* ------------------------------------------------------------------ */
+/* Panels further down the page ease in as they scroll into view.      */
+/* Only what starts below the fold; without JavaScript or with reduced */
+/* motion everything is simply there.                                  */
+/* ------------------------------------------------------------------ */
+
+if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const reveal = new IntersectionObserver((entries) => {
+        entries.filter((entry) => entry.isIntersecting).forEach((entry, index) => {
+            const element = entry.target;
+            reveal.unobserve(element);
+            element.style.setProperty('--ss-reveal-delay', `${Math.min(index, 4) * 60}ms`);
+            element.classList.add('is-in');
+            // Hand the element back to its own transitions (hover lifts and so on).
+            setTimeout(() => {
+                element.removeAttribute('data-reveal');
+                element.classList.remove('is-in');
+                element.style.removeProperty('--ss-reveal-delay');
+            }, 900);
+        });
+    }, { rootMargin: '0px 0px -8% 0px' });
+
+    const fold = window.innerHeight;
+
+    document.querySelectorAll('.ss-content :is(.ss-panel, .ss-stat, .ss-table-wrap, .ss-section > *)').forEach((element) => {
+        if (element.closest('[data-reveal]') || element.getBoundingClientRect().top < fold) return;
+        element.setAttribute('data-reveal', '');
+        reveal.observe(element);
+    });
+}

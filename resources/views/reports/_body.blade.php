@@ -46,7 +46,7 @@
                     <tbody>
                         @foreach ($report['domains'] as $row)
                             <tr>
-                                <td class="is-primary"><a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('domains.show', $row['domain']) }}">{{ $row['domain']->displayName() }}</a><span class="block text-xs text-muted">{{ __('reports.checks', ['count' => $row['checks']]) }}</span></td>
+                                <td class="is-primary"><a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ route('domains.show', $row['domain']) }}">{{ $row['domain']->displayName() }}</a><span class="block text-xs text-muted">{{ __('reports.checks', ['count' => $row['checks']]) }}</span></td>
                                 <td data-label="{{ __('reports.col_uptime') }}" class="num">{{ $pct($row['uptime']) }}</td>
                                 <td data-label="{{ __('reports.col_coverage') }}" class="num">{{ $pct($row['coverage'], 1) }}</td>
                                 <td data-label="{{ __('reports.col_downtime') }}" class="num">{{ $minutes($row['downtime_minutes']) }}</td>
@@ -73,7 +73,7 @@
                     <tbody>
                         @foreach ($report['servers'] as $row)
                             <tr>
-                                <td class="is-primary"><a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('servers.show', $row['server']) }}">{{ $row['server']->name }}</a>@if ($row['server']->trashed())<span class="block text-xs text-muted">{{ __('reports.deleted') }}</span>@endif</td>
+                                <td class="is-primary"><a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ route('servers.show', $row['server']) }}">{{ $row['server']->name }}</a>@if ($row['server']->trashed())<span class="block text-xs text-muted">{{ __('reports.deleted') }}</span>@endif</td>
                                 <td data-label="{{ __('reports.col_uptime') }}" class="num">{{ $pct($row['uptime']) }}</td>
                                 <td data-label="{{ __('reports.col_coverage') }}" class="num">{{ $pct($row['coverage'], 1) }}</td>
                                 <td data-label="{{ __('reports.col_downtime') }}" class="num">{{ __('reports.minutes', ['count' => $row['downtime_minutes']]) }}</td>
@@ -99,7 +99,7 @@
                     <tbody>
                         @foreach ($report['pages'] as $row)
                             <tr>
-                                <td class="is-primary"><a class="font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('pages.show', $row['page']) }}">{{ $row['page']->url }}</a><span class="block text-xs text-muted">{{ __('reports.checks', ['count' => $row['checks']]) }}{{ $row['page']->is_active ? '' : __('reports.paused') }}</span></td>
+                                <td class="is-primary"><a class="ss-hit font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('pages.show', $row['page']) }}">{{ $row['page']->url }}</a><span class="block text-xs text-muted">{{ __('reports.checks', ['count' => $row['checks']]) }}{{ $row['page']->is_active ? '' : __('reports.paused') }}</span></td>
                                 <td data-label="{{ __('reports.col_uptime') }}" class="num">{{ $pct($row['uptime']) }}</td>
                                 <td data-label="{{ __('reports.col_coverage') }}" class="num">{{ $pct($row['coverage'], 1) }}</td>
                                 <td data-label="{{ __('reports.col_downtime') }}" class="num">{{ $minutes($row['downtime_minutes']) }}</td>

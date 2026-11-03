@@ -24,7 +24,7 @@
     <div class="ss-panel-head"><div><h2 id="workflow-title" class="ss-panel-title">{{ __('incidents.workflow.title') }}</h2><p class="ss-panel-sub">{{ __('incidents.workflow.text') }}</p></div></div>
     <ol class="m-0 grid list-none gap-3 p-0 sm:grid-cols-5">
         @foreach ($steps as $key => [$done, $links])
-            <li class="rounded-lg border border-line p-3" data-step="{{ $key }}" data-state="{{ $done ? 'done' : ($key === $current ? 'current' : 'todo') }}" @if ($key === $current) aria-current="step" @endif>
+            <li class="ss-wf-step" data-step="{{ $key }}" data-state="{{ $done ? 'done' : ($key === $current ? 'current' : 'todo') }}" @if ($key === $current) aria-current="step" @endif>
                 <p class="m-0 text-xs text-muted">{{ $loop->iteration }} · {{ $done ? __('incidents.workflow.done') : ($key === $current ? __('incidents.workflow.current') : __('incidents.workflow.todo')) }}</p>
                 <p class="m-0 mt-1 text-sm font-semibold">@if ($done)<svg class="ico" aria-hidden="true"><use href="#i-check"/></svg> @endif{{ __('incidents.workflow.steps.'.$key) }}</p>
                 @if ($key === 'cause' && $learning)
@@ -33,9 +33,13 @@
                 @if ($key === 'verify' && $health)
                     <p class="m-0 mt-1 text-xs"><x-health :state="$health" /></p>
                 @endif
-                @foreach ($links as [$text, $href])
-                    <a class="mt-1 block text-xs" href="{{ $href }}">{{ $text }}</a>
-                @endforeach
+                @if ($links !== [])
+                    <div class="mt-2.5 flex flex-wrap gap-1.5">
+                        @foreach ($links as [$text, $href])
+                            <a class="ss-chip-link" href="{{ $href }}">{{ $text }}</a>
+                        @endforeach
+                    </div>
+                @endif
             </li>
         @endforeach
     </ol>

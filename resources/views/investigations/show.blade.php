@@ -301,7 +301,7 @@
                             @foreach ($history as $run)
                                 @php $older = $history->get($loop->index + 1); @endphp
                                 <tr>
-                                    <td class="is-primary"><a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('investigations.show', $run) }}">#{{ $run->id }} · {{ Time::dateTimeSeconds($run->created_at) }}</a>@if ($inv && $run->id === $inv->id) <span class="ss-chip">{{ __('investigations.history.current') }}</span>@endif</td>
+                                    <td class="is-primary"><a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ route('investigations.show', $run) }}">#{{ $run->id }} · {{ Time::dateTimeSeconds($run->created_at) }}</a>@if ($inv && $run->id === $inv->id) <span class="ss-chip">{{ __('investigations.history.current') }}</span>@endif</td>
                                     <td><span class="ss-status {{ $statusTone($run->status) }}">{{ __('investigations.status.'.$run->status) }}</span></td>
                                     <td class="text-sm">@if ($run->summary){{ __('investigations.hypotheses.'.$run->summary['primary']['code'].'.title', ['resource' => $run->summary['primary']['label'] ?? '—', 'id' => $run->summary['primary']['incident_id'] ?? '—']) }} · {{ __('investigations.confidence.'.$run->summary['primary']['confidence']) }}@else—@endif</td>
                                     <td class="text-xs text-muted">@if ($older && $run->input_digest && $older->input_digest){{ $run->input_digest === $older->input_digest ? __('investigations.history.same_input') : __('investigations.history.changed_input') }}@endif</td>

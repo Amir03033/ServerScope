@@ -57,6 +57,7 @@
     </header>
 
     <main class="ss-wall-stage">
+        <h1 class="sr-only">{{ __('wall.title') }}</h1>
         <section class="ss-wall-layer" data-wall-layer="skyline" aria-label="{{ __('skyline.title') }}"><div class="ss-wall-canvas ss-skyline-stage" data-wall-skyline></div></section>
         <section class="ss-wall-layer" data-wall-layer="globe" aria-label="{{ __('globe.title') }}" hidden><div class="ss-wall-canvas ss-globe-stage" data-wall-globe></div></section>
         <section class="ss-wall-layer" data-wall-layer="pulse" aria-label="{{ __('dashboard.pulse.title') }}" hidden><ul class="ss-pulse-list ss-wall-pulse" role="list" data-wall-pulse></ul></section>

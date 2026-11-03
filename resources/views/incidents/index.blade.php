@@ -53,7 +53,7 @@
                 </div>
             </nav>
 
-            <form method="GET" action="{{ route('incidents.index') }}" class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] lg:items-end" role="search">
+            <form method="GET" action="{{ route('incidents.index') }}" data-filters-label="{{ __('common.filters') }}" class="ss-filters mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] lg:items-end" role="search">
                 <input type="hidden" name="state" value="{{ $state }}">
                 @foreach (['server', 'domain'] as $key)
                     @if (! empty($filters[$key]))<input type="hidden" name="{{ $key }}" value="{{ $filters[$key] }}">@endif
@@ -96,7 +96,7 @@
                                 {{-- On phones an open incident can be acknowledged by swiping the row (swipe.js). --}}
                                 <tr @if ($incident->status === 'open' && $incident->canTransitionTo('acknowledged')) data-swipe-ack="{{ route('incidents.transition', $incident) }}" @endif>
                                     <td class="is-primary">
-                                        <a class="font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>
+                                        <a class="ss-hit font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>
                                         <span class="block text-xs text-muted">#{{ $incident->id }} · {{ Label::of('incident_source', $incident->source, Incident::SOURCE_LABELS) }}@if ($incident->occurrence_count > 1){{ __('incidents.index.seen_times', ['count' => $incident->occurrence_count]) }}@endif @if ($incident->reopened_count){{ __('incidents.index.reopened_times', ['count' => $incident->reopened_count]) }}@endif @if ($incident->parent_id){{ __('incidents.index.grouped_under', ['id' => $incident->parent_id]) }}@endif@if ($incident->learning) · {{ __('incident_memory.list_badge.'.$incident->learning->cause_status) }}@endif @if ($incident->children_count){{ __('incidents.index.related_count', ['count' => $incident->children_count]) }}@endif</span>
                                     </td>
                                     <td data-label="{{ __('incidents.index.col_severity') }}"><x-severity :severity="$incident->severity" /></td>
