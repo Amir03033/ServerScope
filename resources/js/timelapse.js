@@ -59,7 +59,7 @@ function boot() {
         if (shot.caption.kind === 'incident') {
             const inc = shot.caption.incident;
 
-            return { tone: inc.severity === 'critical' ? 'bad' : 'warn', kicker: `${clockOf(inc.opened_at)} · ${t(`severity.${inc.severity}`)}`, text: inc.title };
+            return { tone: ['critical', 'high'].includes(inc.severity) ? 'bad' : 'warn', kicker: `${clockOf(inc.opened_at)} · ${t(`severity.${inc.severity}`)}`, text: inc.title };
         }
 
         const p = shot.caption.peak;
@@ -171,9 +171,9 @@ function boot() {
         for (const inc of data.incidents) {
             const a = Math.max(0, (inc.opened_at - data.from) / span) * w;
             const b = Math.min(1, ((inc.resolved_at ?? data.to) - data.from) / span) * w;
-            ctx.fillStyle = inc.severity === 'critical' ? 'rgba(255,77,79,.16)' : 'rgba(245,165,36,.13)';
+            ctx.fillStyle = ['critical', 'high'].includes(inc.severity) ? 'rgba(255,77,79,.16)' : 'rgba(245,165,36,.13)';
             ctx.fillRect(a, 0, Math.max(3, b - a), hh);
-            ctx.fillStyle = inc.severity === 'critical' ? '#ff4d4f' : '#f5a524';
+            ctx.fillStyle = ['critical', 'high'].includes(inc.severity) ? '#ff4d4f' : '#f5a524';
             ctx.fillRect(a, 0, Math.max(3, b - a), 3);
         }
 
@@ -229,7 +229,7 @@ function boot() {
                     h('button', { type: 'button', class: 'ss-skyline-name', onclick: () => jump(inc.opened_at) }, inc.title),
                     h('span', { class: 'block text-xs text-muted' }, `${dayOf(inc.opened_at)} ${clockOf(inc.opened_at)} · ${inc.resolved_at ? t('lasted', { duration: duration(inc.resolved_at - inc.opened_at) }) : t('still_open')}`),
                 ),
-                h('span', { class: `ss-status ss-status-${inc.severity === 'critical' ? 'bad' : 'warn'}` }, t(`severity.${inc.severity}`)),
+                h('span', { class: `ss-status ss-status-${['critical', 'high'].includes(inc.severity) ? 'bad' : 'warn'}` }, t(`severity.${inc.severity}`)),
             )));
     }
 

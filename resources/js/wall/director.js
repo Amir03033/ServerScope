@@ -4,19 +4,22 @@
 // - tour: calmly through the scenes (skyline, globe, heartbeat, summary),
 //   one every cycle;
 // - incident: as soon as an incident appears that was not seen before,
-//   cut to it: a large alert, and the camera on the tower of the server
-//   it concerns; while incidents are active, alternate between their
-//   towers and the heartbeat;
+//   cut to it for a minute: a large alert, and the camera on the tower of
+//   the server it concerns, alternating with the heartbeat (an incident
+//   without a server, e.g. on a page, keeps touring the scenes). Then the
+//   tour continues; active incidents stay in the status and the ticker,
+//   so a long incident never freezes the screen;
 // - resolved: when the last incident is gone, a short "all clear" before
 //   the tour continues.
 
 export const DIRECTOR = {
     cycleMs: 25_000,
     incidentShotMs: 12_000,
+    cutMs: 60_000,
     resolvedMs: 8_000,
 };
 
-const SEVERITY = { critical: 3, warning: 2, info: 1 };
+const SEVERITY = { critical: 4, high: 3, warning: 2, medium: 2, low: 1, info: 1 };
 
 /**
  * Active incidents from the topology, once each, worst and newest first,
@@ -29,7 +32,10 @@ export function incidentsFrom(graph, vitals) {
         if (node.type === 'server') return node.key;
         if (node.type === 'service') return node.parent ?? null;
 
-        return vitals.find((v) => v.sites.some((s) => s.key === node.key))?.key ?? null;
+        // A page belongs to its website, a website to the server it depends on.
+        const site = node.type === 'page' || node.type === 'page_group' ? node.parent : node.key;
+
+        return vitals.find((v) => v.sites.some((s) => s.key === site))?.key ?? null;
     };
     const out = new Map();
 
@@ -66,20 +72,21 @@ export function initialState(now, scenes) {
 export function direct(state, incidents, now, { cycleMs = DIRECTOR.cycleMs } = {}) {
     const ids = incidents.map((i) => i.id);
     const fresh = incidents.filter((i) => !state.seen.includes(i.id));
+    const seen = [...new Set([...state.seen, ...ids])];
 
     // A new incident: cut to it at once.
     if (fresh.length > 0) {
-        return { ...state, mode: 'incident', since: now, seen: [...new Set([...state.seen, ...ids])], shot: 0, alert: fresh[0] };
+        return { ...state, mode: 'incident', since: now, cutStart: now, seen, shot: 0, alert: fresh[0] };
     }
 
     if (state.mode === 'incident') {
         if (incidents.length === 0) return { ...state, mode: 'resolved', since: now, alert: null };
 
-        // Next shot: each incident's tower in turn, with the heartbeat in between.
-        if (now - state.since >= DIRECTOR.incidentShotMs) {
-            const shots = incidents.length * 2;
+        // The cut is over: back to the tour (the incidents stay in the status and ticker).
+        if (now - state.cutStart >= DIRECTOR.cutMs) return { ...state, mode: 'tour', since: now, alert: null };
 
-            return { ...state, since: now, shot: (state.shot + 1) % shots, alert: incidents.find((i) => i.id === state.alert?.id) ?? incidents[0] };
+        if (now - state.since >= DIRECTOR.incidentShotMs) {
+            return { ...state, since: now, shot: state.shot + 1, alert: incidents.find((i) => i.id === state.alert?.id) ?? incidents[0] };
         }
 
         return state;
@@ -91,9 +98,6 @@ export function direct(state, incidents, now, { cycleMs = DIRECTOR.cycleMs } = {
         return state;
     }
 
-    // Tour. Incidents still active (seen before, e.g. after a reload): stay with them.
-    if (incidents.length > 0) return { ...state, mode: 'incident', since: now, shot: 0, alert: incidents[0], seen: [...new Set([...state.seen, ...ids])] };
-
     if (now - state.since >= cycleMs) return { ...state, since: now, index: (state.index + 1) % state.scenes.length };
 
     return state;
@@ -102,9 +106,13 @@ export function direct(state, incidents, now, { cycleMs = DIRECTOR.cycleMs } = {
 /** What to show for a state. */
 export function shotFor(state, incidents) {
     if (state.mode === 'incident' && incidents.length > 0) {
-        const incident = incidents[Math.floor(state.shot / 2) % incidents.length];
+        // Each incident's tower in turn, then the heartbeat; without towers, the scenes in turn.
+        const towers = [...new Set(incidents.map((i) => i.tower).filter(Boolean))];
+        const shots = towers.length
+            ? [...towers.map((tower) => ({ scene: 'skyline', focus: tower })), { scene: 'pulse', focus: null }]
+            : state.scenes.map((scene) => ({ scene, focus: null }));
 
-        return state.shot % 2 === 0 && incident.tower ? { scene: 'skyline', focus: incident.tower } : { scene: 'pulse', focus: incident.tower };
+        return shots[state.shot % shots.length];
     }
 
     if (state.mode === 'resolved') return { scene: 'summary', focus: null };

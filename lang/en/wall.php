@@ -24,8 +24,12 @@ return [
         ],
         'severity' => [
             'critical' => 'Critical incident',
+            'high' => 'Major incident',
+            'medium' => 'Incident',
+            'low' => 'Minor incident',
             'warning' => 'Incident',
             'info' => 'Notice',
+            'other' => 'Incident',
         ],
         'since' => 'since :time',
         'resolved_kicker' => 'All clear',

@@ -25,7 +25,7 @@ return [
         'loading' => 'De geschiedenis wordt geladen…',
         'load_failed' => 'De geschiedenis kon niet worden geladen; probeer het opnieuw.',
         'hint' => 'De regisseursversie raast door rustige uren en vertraagt bij elk incident. Sleep de schuif om elk moment te bekijken.',
-        'severity' => ['critical' => 'Kritiek', 'warning' => 'Waarschuwing', 'info' => 'Melding'],
+        'severity' => ['critical' => 'Kritiek', 'high' => 'Hoog', 'medium' => 'Gemiddeld', 'low' => 'Laag', 'warning' => 'Waarschuwing', 'info' => 'Melding'],
         'peak_kicker' => 'Drukste moment',
         'peak' => ':server op :cpu% CPU',
         'range_title' => ['24h' => 'De afgelopen 24 uur', '7d' => 'De afgelopen 7 dagen'],

@@ -39,7 +39,7 @@
     "name": "vitals"
   },
   "resources/css/app.css": {
-    "file": "assets/app-3qhcLJYq.css",
+    "file": "assets/app-mTK6kcEu.css",
     "name": "app",
     "names": [
       "app.css"
@@ -193,7 +193,7 @@
     ]
   },
   "resources/js/timelapse.js": {
-    "file": "assets/timelapse-sQxE5WR3.js",
+    "file": "assets/timelapse-Db9krQZA.js",
     "name": "timelapse",
     "src": "resources/js/timelapse.js",
     "isEntry": true,
@@ -209,7 +209,7 @@
     ]
   },
   "resources/js/wall.js": {
-    "file": "assets/wall-_W4szBXk.js",
+    "file": "assets/wall-DFjSHKsE.js",
     "name": "wall",
     "src": "resources/js/wall.js",
     "isEntry": true,
