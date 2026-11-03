@@ -1940,9 +1940,12 @@
 
     /* Command palette: results on the left, a preview on the right (wide screens). */
     .ss-palette { width: min(54rem, calc(100vw - 2rem)); max-height: min(36rem, calc(100vh - 6rem)); }
-    .ss-palette[open] { display: flex; flex-direction: column; }
-    .ss-palette-body { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; flex: 1; }
-    .ss-palette-list { min-height: 0; max-height: 26rem; overflow-y: auto; padding: .5rem; }
+    /* Fixed rows (field, results, keys), not flex: a flex item with flex: 1 in a
+       dialog without a set height collapses to 0 in Safari. */
+    .ss-palette[open] { display: grid; grid-template-rows: auto minmax(0, auto) auto; overflow: hidden; }
+    .ss-palette-body { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
+    .ss-palette-list { min-height: 0; max-height: min(26rem, calc(100vh - 14rem)); overflow-y: auto; padding: .5rem; }
+    .ss-palette-preview { max-height: min(26rem, calc(100vh - 14rem)); }
     .ss-palette-group { padding: .6rem .75rem .25rem; font-size: .6875rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ss-muted); }
     .ss-palette-item { display: flex; align-items: center; gap: .75rem; padding: .55rem .75rem; border-radius: 10px; color: var(--ss-text); cursor: pointer; }
     .ss-palette-icon { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; flex: none; border: 1px solid var(--ss-line); border-radius: 8px; background: var(--ss-bg); color: var(--ss-muted); }
@@ -1959,6 +1962,22 @@
         .ss-palette-body { grid-template-columns: minmax(0, 1fr) 22rem; }
         .ss-palette-preview:not([hidden]) { display: block; }
     }
+
+    /* Live lists and micro-animations with meaning: a new row slides in, a
+       changed row lights up (green when it recovered), a row that left fades
+       out, a number that changed pops. Nothing moves with reduced motion. */
+    @keyframes ss-live-new { from { opacity: 0; transform: translateY(-6px); background-color: color-mix(in srgb, var(--ss-accent) 18%, transparent); } to { opacity: 1; transform: none; background-color: transparent; } }
+    @keyframes ss-live-changed { 0% { background-color: color-mix(in srgb, var(--ss-accent) 16%, transparent); } 100% { background-color: transparent; } }
+    @keyframes ss-live-recovered { 0% { background-color: color-mix(in srgb, var(--ss-ok) 22%, transparent); box-shadow: inset 3px 0 0 var(--ss-ok); } 100% { background-color: transparent; box-shadow: inset 3px 0 0 transparent; } }
+    @keyframes ss-live-bump { 0% { transform: scale(1); } 35% { transform: scale(1.18); } 100% { transform: scale(1); } }
+    .ss-table tr.is-new > * { animation: ss-live-new .7s ease-out; }
+    .ss-table tr.is-changed > * { animation: ss-live-changed 1.6s ease-out; }
+    .ss-table tr.is-recovered > * { animation: ss-live-recovered 2.2s ease-out; }
+    @keyframes ss-live-alarm { 0%, 30% { background-color: color-mix(in srgb, var(--ss-bad) 22%, transparent); box-shadow: inset 3px 0 0 var(--ss-bad); } 100% { background-color: transparent; box-shadow: inset 3px 0 0 transparent; } }
+    .ss-table tr.is-alarm > * { animation: ss-live-alarm 2.4s ease-out; }
+    .ss-table tr.is-gone { opacity: 0; transition: opacity .4s ease; }
+    .ss-stat.is-bump .ss-stat-value, .nav-count.is-bump, .ss-count.is-bump { display: inline-block; animation: ss-live-bump .5s ease-out; }
+    @media (prefers-reduced-motion: reduce) { .ss-table tr.is-new > *, .ss-table tr.is-changed > *, .ss-table tr.is-recovered > *, .ss-table tr.is-alarm > *, .is-bump { animation: none !important; } }
 
     /* Dashboard heartbeat: one live line per server. */
     .ss-pulse-list { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }

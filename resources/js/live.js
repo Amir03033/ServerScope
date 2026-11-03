@@ -29,6 +29,34 @@ function boot() {
     let pulse = null;
     let timer = null;
 
+    // The incidents count in the menu follows along (with a small pop when it changes).
+    const incidentsLink = [...document.querySelectorAll('.ss-sidebar a.ss-nav-item')].find((a) => new URL(a.href).pathname.replace(/\/$/, '').endsWith('/incidents'));
+
+    function updateNavCount(count) {
+        if (!incidentsLink) return;
+
+        let badge = incidentsLink.querySelector('.nav-count');
+
+        if (count === 0) {
+            badge?.remove();
+
+            return;
+        }
+
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'nav-count';
+            incidentsLink.append(badge);
+        }
+
+        if (badge.textContent.trim() !== String(count)) {
+            badge.textContent = String(count);
+            badge.classList.remove('is-bump');
+            void badge.offsetWidth;
+            badge.classList.add('is-bump');
+        }
+    }
+
     function render(bright = false) {
         if (pulse) link.href = icon(pulse.state, pulse.incidents, bright);
     }
@@ -49,6 +77,7 @@ function boot() {
         root.dataset.live = next.state;
         root.style.setProperty('--ss-beat', `${(60 / next.bpm).toFixed(2)}s`);
         document.title = next.incidents > 0 ? `(${next.incidents > 9 ? '9+' : next.incidents}) ${baseTitle}` : baseTitle;
+        updateNavCount(next.incidents);
         render();
         beat();
     }

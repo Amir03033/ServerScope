@@ -1,5 +1,20 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — Alles live
+
+### Nieuw
+
+- **Live lijsten**: de lijsten met servers, websites, incidenten en alerts
+  werken zichzelf elke 30 seconden bij, zonder herladen en met je filters en
+  sortering. Nieuwe rijen schuiven in, een rij die herstelt licht groen op,
+  een rij die faalt rood, en de tellers tellen naar hun nieuwe waarde. Het
+  pauzeert als je typt, iets selecteert, een menu open hebt of rijen aanvinkt.
+- **Menu**: het aantal open incidenten in het menu loopt live mee.
+
+### Opgelost
+
+- **Commandopalet**: in Safari klapte het palet in tot een smalle strook.
+
 ## 3 november 2026 — Commandopalet
 
 ### Nieuw

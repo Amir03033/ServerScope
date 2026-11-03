@@ -53,4 +53,13 @@ class PaletteTest extends TestCase
         $this->actingAs($this->a['member'])->get($member['filter:servers_offline']['url'])->assertOk();
         $this->actingAs($this->a['member'])->get($member['filter:incidents_unacknowledged']['url'])->assertOk();
     }
+
+    public function test_the_lists_refresh_themselves_and_other_pages_do_not(): void
+    {
+        foreach (['servers.index', 'domains.index', 'incidents.index', 'alerts.index'] as $route) {
+            $this->actingAs($this->a['member'])->get(route($route))->assertOk()->assertSee('<meta name="ss-live-list" content="30">', false);
+        }
+
+        $this->actingAs($this->a['member'])->get(route('dashboard'))->assertOk()->assertDontSee('name="ss-live-list"', false);
+    }
 }
