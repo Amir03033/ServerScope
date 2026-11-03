@@ -39,7 +39,7 @@
     "name": "vitals"
   },
   "resources/css/app.css": {
-    "file": "assets/app-b6ddrRkj.css",
+    "file": "assets/app-nJpacvsh.css",
     "name": "app",
     "names": [
       "app.css"
@@ -106,6 +106,16 @@
     "imports": [
       "_geo-B2q9ITsa.js",
       "_kit3d-DZRD7q7i.js"
+    ]
+  },
+  "resources/js/mission.js": {
+    "file": "assets/mission--DVu0LCj.js",
+    "name": "mission",
+    "src": "resources/js/mission.js",
+    "isEntry": true,
+    "imports": [
+      "_i18n-Bs6GXkQz.js",
+      "_dom-dHlw0BbA.js"
     ]
   },
   "resources/js/nexus.js": {

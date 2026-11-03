@@ -254,6 +254,8 @@ class DashboardController extends Controller
             ],
 
             'overview' => app(\App\Services\Reports\DashboardOverview::class)->data(),
+            // Mission control on top: one score and what it is made of (read-only).
+            'mission' => \App\Tenancy\Tenant::check() ? app(\App\Services\Live\MissionControl::class)->forTeam((int) \App\Tenancy\Tenant::id()) : null,
             'servers' => $servers,
             'serverCount' => $servers->count(),
             'onlineCount' => $servers->where('display_status', 'online')->count(),
