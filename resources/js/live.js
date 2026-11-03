@@ -33,6 +33,24 @@ function boot() {
     const incidentsLink = [...document.querySelectorAll('.ss-sidebar a.ss-nav-item')].find((a) => new URL(a.href).pathname.replace(/\/$/, '').endsWith('/incidents'));
 
     function updateNavCount(count) {
+        // The phone tab bar shows the same number.
+        const tab = [...document.querySelectorAll('.ss-tabbar .ss-tab')].find((a) => new URL(a.href, location.href).pathname.replace(/\/$/, '').endsWith('/incidents'));
+
+        if (tab) {
+            let tabBadge = tab.querySelector('.ss-tab-badge');
+
+            if (count === 0) {
+                tabBadge?.remove();
+            } else {
+                if (!tabBadge) {
+                    tabBadge = document.createElement('span');
+                    tabBadge.className = 'ss-tab-badge';
+                    tab.querySelector('.ss-tab-icon')?.append(tabBadge);
+                }
+                tabBadge.textContent = count > 9 ? '9+' : String(count);
+            }
+        }
+
         if (!incidentsLink) return;
 
         let badge = incidentsLink.querySelector('.nav-count');

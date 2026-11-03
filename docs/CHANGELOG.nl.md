@@ -1,5 +1,21 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — ServerScope als app
+
+### Nieuw
+
+- **Installeerbaar als app**: zet ServerScope op het beginscherm van je
+  telefoon of installeer hem op je computer. Met eigen icoon, snelle start en
+  een nette offline-pagina. Gegevens worden nooit offline bewaard: alles blijft
+  live.
+- **Tabbalk op je telefoon**: Overzicht, Incidenten (met teller), Servers en
+  Meer (het volledige menu).
+- **Swipen om te bevestigen**: veeg een open incident in de lijst naar links
+  en tik op "Bevestigen".
+- **Pushmeldingen**: zet bij Profiel → Meldingen push aan op dit apparaat en
+  incidenten komen als melding op je telefoon of computer binnen. Push volgt
+  dezelfde voorkeuren als e-mail en in-app; die blijven ongewijzigd.
+
 ## 3 november 2026 — Thema's
 
 ### Nieuw

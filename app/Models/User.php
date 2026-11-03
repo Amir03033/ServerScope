@@ -162,6 +162,11 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
      *
      * @return array<int, string>
      */
+    public function pushSubscriptions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
     public function notificationChannels(): array
     {
         return array_values(array_filter([

@@ -8,6 +8,8 @@ import './live';
 import './peek';
 import './palette';
 import './livelists';
+import './install';
+import './swipe';
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
