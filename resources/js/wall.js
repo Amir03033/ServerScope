@@ -130,9 +130,8 @@ function boot() {
     }
 
     function renderChrome() {
-        const status = $('status');
-        status.textContent = incidents.length ? t(incidents.length === 1 ? 'status.incident' : 'status.incidents', { count: incidents.length }) : t('status.ok');
-        status.dataset.tone = incidents.length ? 'bad' : 'ok';
+        $('status-text').textContent = incidents.length ? t(incidents.length === 1 ? 'status.incident' : 'status.incidents', { count: incidents.length }) : t('status.ok');
+        $('status').dataset.tone = incidents.length ? 'bad' : 'ok';
 
         clear($('incidents'));
         append($('incidents'), incidents.slice(0, 3).map((i) => h('span', { class: 'ss-wall-chip' }, `${i.label ?? ''} · ${i.title}`)));
@@ -157,19 +156,23 @@ function boot() {
         if (shot.scene === 'skyline' && skyline) shot.focus ? skyline.focus(shot.focus) : skyline.overview();
         if (shot.scene === 'globe' && globe) globe.face(globeData.locations.find((l) => l.kind === 'main')?.key ?? globeData.locations[0]?.key);
 
-        $('scene').textContent = t(`scenes.${shot.scene}`);
-        clear($('dots'));
-        append($('dots'), scenes.map((s) => h('li', { class: s === shot.scene ? 'is-active' : null })));
+        // Scene tabs: the one on screen is lit, with its progress underneath.
+        clear($('tabs'));
+        append($('tabs'), scenes.map((s) => h('li', { class: s === shot.scene ? 'is-active' : null }, h('span', {}, t(`scenes.${s}`)), h('i', {}))));
     }
 
     function renderAlert() {
         const alert = $('alert');
 
+        const open = (state.mode === 'incident' && Boolean(state.alert)) || state.mode === 'resolved';
+        skyline?.setShift(open && window.innerWidth >= 768 ? 0.17 : 0);
+
         if (state.mode === 'incident' && state.alert) {
             alert.hidden = false;
             alert.dataset.severity = state.alert.severity;
             $('alert-kicker').textContent = t(`severity.${state.alert.severity}`, {}) || state.alert.severity;
-            $('alert-title').textContent = state.alert.title;
+            // Non-breaking hyphens: "db-01" never splits over two lines.
+            $('alert-title').textContent = state.alert.title.replaceAll('-', '\u2011');
             const since = state.alert.openedAt ? new Date(state.alert.openedAt).toLocaleTimeString(numberLocale(), { hour: '2-digit', minute: '2-digit' }) : '';
             $('alert-meta').textContent = [state.alert.label, since && t('since', { time: since })].filter(Boolean).join(' · ');
         } else if (state.mode === 'resolved') {
@@ -204,7 +207,8 @@ function boot() {
 
     function frame(now) {
         const total = state.mode === 'tour' ? 25_000 : 12_000;
-        $('progress').style.width = `${Math.min(100, ((now - cycleStart) / total) * 100)}%`;
+        const bar = root.querySelector('.ss-wall-tabs .is-active i');
+        if (bar) bar.style.transform = `scaleX(${Math.min(1, (now - cycleStart) / total)})`;
         const dt = last === null ? 0 : Math.min(2, (now - last) / 1000);
         last = now;
 
@@ -252,7 +256,11 @@ function boot() {
 
     // ---------- chrome: clock, controls that hide, full screen, screen awake ----------
     const clock = $('clock');
-    const tickClock = () => { clock.textContent = new Date().toLocaleTimeString(numberLocale(), { hour: '2-digit', minute: '2-digit' }); };
+    const tickClock = () => {
+        const now = new Date();
+        clock.textContent = now.toLocaleTimeString(numberLocale(), { hour: '2-digit', minute: '2-digit' });
+        $('date').textContent = now.toLocaleDateString(numberLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
+    };
     tickClock();
     setInterval(tickClock, 10_000);
 

@@ -27,9 +27,25 @@
             <div class="ss-alert ss-alert-info"><svg class="ico"><use href="#i-alert"/></svg><div>{{ __('timelapse.noscript') }}</div></div>
         </noscript>
 
-        <section class="ss-panel !p-0 overflow-hidden" aria-label="{{ __('timelapse.title') }}">
-            <div class="ss-globe-stage ss-skyline-stage ss-tl-stage" data-tl-stage role="img" aria-label="{{ __('timelapse.canvas_label') }}">
-                <div class="ss-tl-clock" data-tl-clock aria-live="off"></div>
+        <section class="ss-tl" aria-label="{{ __('timelapse.title') }}">
+            <div class="ss-tl-head">
+                <div class="ss-segmented" role="group" aria-label="{{ __('timelapse.mode') }}">
+                    <button type="button" data-tl-mode="cut" aria-pressed="true">{{ __('timelapse.mode_cut') }}</button>
+                    <button type="button" data-tl-mode="free" aria-pressed="false">{{ __('timelapse.mode_free') }}</button>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="sr-only" for="tl-range">{{ __('timelapse.range') }}</label>
+                    <select id="tl-range" class="ss-input ss-tl-select" data-tl-range>
+                        <option value="24h">{{ __('timelapse.range_24h') }}</option>
+                        <option value="7d">{{ __('timelapse.range_7d') }}</option>
+                    </select>
+                    <button type="button" class="ss-btn ss-btn-secondary ss-btn-sm" data-tl-export><svg class="ico"><use href="#i-download"/></svg> <span data-tl-export-label>{{ __('timelapse.export') }}</span></button>
+                </div>
+            </div>
+
+            <div class="ss-skyline-stage ss-tl-stage" data-tl-stage role="img" aria-label="{{ __('timelapse.canvas_label') }}">
+                <div class="ss-tl-letterbox" data-tl-letterbox aria-hidden="true"></div>
+                <div class="ss-tl-stamp" data-tl-stamp aria-hidden="true"><span data-tl-day></span><strong data-tl-time></strong></div>
                 <div class="ss-tl-caption" data-tl-caption hidden></div>
                 <div class="ss-tl-card" data-tl-card hidden></div>
                 <div class="ss-nexus-overlay" data-tl-overlay hidden>
@@ -37,31 +53,21 @@
                 </div>
             </div>
 
-            <div class="ss-tl-bar">
-                <button type="button" class="ss-btn ss-btn-primary ss-btn-icon" data-tl-play aria-label="{{ __('timelapse.play') }}"><svg class="ico"><use href="#i-play"/></svg></button>
+            <div class="ss-tl-player">
+                <button type="button" class="ss-tl-play" data-tl-play aria-label="{{ __('timelapse.play') }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path data-tl-play-icon d="M8 5.5v13l11-6.5z"/></svg></button>
+                <span class="ss-tl-time" data-tl-now>--:--</span>
                 <div class="ss-tl-track">
-                    <div class="ss-tl-marks" data-tl-marks aria-hidden="true"></div>
+                    <canvas class="ss-tl-strip" data-tl-strip aria-hidden="true"></canvas>
                     <label class="sr-only" for="tl-scrub">{{ __('timelapse.scrub') }}</label>
                     <input id="tl-scrub" type="range" min="0" max="0" step="1" value="0" class="ss-tl-scrub" data-tl-scrub>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <div class="ss-segmented" role="group" aria-label="{{ __('timelapse.mode') }}">
-                        <button type="button" class="ss-segment" data-tl-mode="cut" aria-pressed="true">{{ __('timelapse.mode_cut') }}</button>
-                        <button type="button" class="ss-segment" data-tl-mode="free" aria-pressed="false">{{ __('timelapse.mode_free') }}</button>
-                    </div>
-                    <label class="sr-only" for="tl-range">{{ __('timelapse.range') }}</label>
-                    <select id="tl-range" class="ss-input ss-tl-select" data-tl-range>
-                        <option value="24h">{{ __('timelapse.range_24h') }}</option>
-                        <option value="7d">{{ __('timelapse.range_7d') }}</option>
-                    </select>
-                    <label class="sr-only" for="tl-speed">{{ __('timelapse.speed') }}</label>
-                    <select id="tl-speed" class="ss-input ss-tl-select" data-tl-speed hidden>
-                        @foreach ([1, 2, 4, 8] as $s)<option value="{{ $s }}">{{ $s }}×</option>@endforeach
-                    </select>
-                    <button type="button" class="ss-btn ss-btn-secondary" data-tl-export><svg class="ico"><use href="#i-download"/></svg> <span data-tl-export-label>{{ __('timelapse.export') }}</span></button>
-                </div>
+                <span class="ss-tl-time is-end" data-tl-end>--:--</span>
+                <label class="sr-only" for="tl-speed">{{ __('timelapse.speed') }}</label>
+                <select id="tl-speed" class="ss-input ss-tl-select ss-tl-speed" data-tl-speed hidden>
+                    @foreach ([1, 2, 4, 8] as $s)<option value="{{ $s }}">{{ $s }}×</option>@endforeach
+                </select>
             </div>
-            <p class="m-0 border-t border-line px-4 py-2.5 text-xs text-muted" data-tl-status aria-live="polite">{{ __('timelapse.hint') }}</p>
+            <p class="ss-tl-status" data-tl-status aria-live="polite">{{ __('timelapse.hint') }}</p>
         </section>
 
         <section class="ss-panel" aria-labelledby="tl-incidents-title">

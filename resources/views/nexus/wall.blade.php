@@ -34,16 +34,15 @@
     <script type="application/json" id="wall-config">@json($config)</script>
 
     <header class="ss-wall-top">
-        <div class="flex min-w-0 items-center gap-3">
+        <div class="ss-wall-brand">
             <svg class="ico ss-live-logo h-7 w-7 text-accent [stroke-width:2]" aria-hidden="true"><use class="base" href="#i-pulse"/><use class="beat" href="#i-pulse"/></svg>
             <div class="min-w-0">
-                <div class="truncate text-lg font-semibold">{{ $team ?? 'ServerScope' }}</div>
-                <div class="ss-wall-status" data-wall-status role="status" aria-live="polite">{{ __('wall.js.status.loading') }}</div>
+                <div class="ss-wall-product">ServerScope</div>
+                <div class="ss-wall-team">{{ $team ?? 'ServerScope' }}</div>
             </div>
         </div>
-        <div class="flex items-center gap-4">
-            <div class="ss-wall-scene" data-wall-scene aria-live="polite"></div>
-            <time class="ss-wall-clock" data-wall-clock></time>
+        <div class="ss-wall-status" data-wall-status data-tone="ok" role="status" aria-live="polite"><span class="ss-wall-status-dot" aria-hidden="true"></span><span data-wall-status-text>{{ __('wall.js.status.loading') }}</span></div>
+        <div class="ss-wall-right">
             <div class="ss-wall-controls" data-wall-controls>
                 <label class="sr-only" for="wall-saver">{{ __('wall.screensaver') }}</label>
                 <select id="wall-saver" class="ss-input ss-wall-select" data-wall-saver title="{{ __('wall.screensaver_hint') }}">
@@ -53,6 +52,7 @@
                 <button type="button" class="ss-btn ss-btn-ghost ss-btn-sm" data-wall-fullscreen>{{ __('wall.fullscreen') }}</button>
                 <a class="ss-btn ss-btn-ghost ss-btn-sm" href="{{ route('dashboard') }}" data-wall-exit>{{ __('wall.exit') }}</a>
             </div>
+            <div class="ss-wall-when"><time class="ss-wall-clock" data-wall-clock></time><span class="ss-wall-date" data-wall-date></span></div>
         </div>
     </header>
 
@@ -70,8 +70,7 @@
     </main>
 
     <footer class="ss-wall-bottom">
-        <ol class="ss-wall-dots" data-wall-dots aria-hidden="true"></ol>
-        <div class="ss-wall-progress" aria-hidden="true"><span data-wall-progress></span></div>
+        <ol class="ss-wall-tabs" data-wall-tabs aria-hidden="true"></ol>
         <div class="ss-wall-incidents" data-wall-incidents></div>
     </footer>
 </div>

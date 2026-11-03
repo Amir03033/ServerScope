@@ -72,7 +72,9 @@ function glowTexture() {
     return new THREE.CanvasTexture(canvas);
 }
 
-export function createSkyline(container, { reducedMotion, t, onSelect, record = false }) {
+// label: optional (tower) => text for the label above a tower (default: name and lights).
+// zoom: < 1 brings the camera closer for a small city (the time-travel film).
+export function createSkyline(container, { reducedMotion, t, onSelect, record = false, label: labelText = null, zoom = 1 }) {
     // record: keep the drawn frame so a recorder can copy it (time-travel export).
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: record });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -178,7 +180,7 @@ export function createSkyline(container, { reducedMotion, t, onSelect, record = 
         });
         group.add(top);
 
-        const label = labelSprite(`${data.name} · ${t(`lights.${data.lights}`)}`, { important: true, colors: NIGHT, scale: 0.011 });
+        const label = labelSprite(labelText ? labelText(data) : `${data.name} · ${t(`lights.${data.lights}`)}`, { important: true, colors: NIGHT, scale: 0.011 });
         group.add(label);
 
         return { group, body, edges, side, top, beacons, label, pool };
@@ -208,6 +210,20 @@ export function createSkyline(container, { reducedMotion, t, onSelect, record = 
             if (old && old.look === look) {
                 old.target = data.height;
                 old.data = data;
+
+                // A custom label (e.g. the load in the film) changes on its own: swap only the label.
+                const text = labelText ? labelText(data) : null;
+
+                if (text !== null && text !== old.text) {
+                    const fresh = labelSprite(text, { important: true, colors: NIGHT, scale: 0.011 });
+                    fresh.position.copy(old.label.position);
+                    old.group.remove(old.label);
+                    dispose(old.label);
+                    old.group.add(fresh);
+                    old.label = fresh;
+                    old.text = text;
+                }
+
                 continue;
             }
 
@@ -216,7 +232,7 @@ export function createSkyline(container, { reducedMotion, t, onSelect, record = 
                 dispose(old.group);
             }
 
-            const tower = { ...towerMesh(data), data, current, target: data.height, look };
+            const tower = { ...towerMesh(data), data, current, target: data.height, look, text: labelText ? labelText(data) : null };
             place(tower, current);
             towersGroup.add(tower.group);
             towers.set(data.key, tower);
@@ -240,9 +256,10 @@ export function createSkyline(container, { reducedMotion, t, onSelect, record = 
     function fit() {
         if (touched) return;
 
-        const distance = Math.max(24, reach * 2.6) * Math.max(1, 1.2 / camera.aspect);
+        // Wide enough for the whole city and for the tallest possible tower.
+        const distance = Math.max(24, reach * 2.6, CITY.maxHeight * 2.4) * zoom * Math.max(1, 1.2 / camera.aspect);
         camera.position.set(distance * 0.75, distance * 0.55, distance * 0.75);
-        controls.target.set(0, 3.5, 0);
+        controls.target.set(0, CITY.maxHeight * 0.36, 0);
         controls.update();
     }
 
@@ -265,6 +282,20 @@ export function createSkyline(container, { reducedMotion, t, onSelect, record = 
     });
 
     // ---------- loop ----------
+    // Shift the picture sideways (fraction of the width, + = right) so a panel
+    // on one side does not cover what the camera looks at (the wall screen alert).
+    let shift = 0;
+
+    function applyShift() {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+
+        if (!w || !h) return;
+
+        shift ? camera.setViewOffset(w, h, -shift * w, 0, w, h) : camera.clearViewOffset();
+        camera.updateProjectionMatrix();
+    }
+
     function resize() {
         const w = container.clientWidth;
         const h = container.clientHeight;
@@ -274,6 +305,7 @@ export function createSkyline(container, { reducedMotion, t, onSelect, record = 
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
+        applyShift();
         fit();
     }
 
@@ -326,6 +358,7 @@ export function createSkyline(container, { reducedMotion, t, onSelect, record = 
         update,
         canvas: renderer.domElement,
         pause() { running = false; },
+        setShift(value) { shift = value; applyShift(); },
         /** Back to the whole city, slowly turning. */
         overview() {
             touched = false;
@@ -341,10 +374,17 @@ export function createSkyline(container, { reducedMotion, t, onSelect, record = 
 
             controls.autoRotate = false;
             touched = true;
-            const target = new THREE.Vector3(tower.data.x, tower.current / 2, tower.data.z);
-            const offset = camera.position.clone().sub(controls.target).setLength(Math.max(22, tower.current * 2.6));
+            // Look at the whole tower from above the roofs around it, from the side
+            // the camera is on now, so nearer towers do not hide it.
+            const height = Math.max(tower.current, tower.target);
+            const target = new THREE.Vector3(tower.data.x, height * 0.45, tower.data.z);
+            const across = camera.position.clone().sub(controls.target).setY(0);
+            if (across.lengthSq() < 0.01) across.set(1, 0, 1);
+            across.normalize();
+            const distance = Math.max(20, height * 2.8);
+            const elevation = THREE.MathUtils.degToRad(34);
             controls.target.copy(target);
-            camera.position.copy(target.clone().add(offset));
+            camera.position.copy(target.clone().addScaledVector(across, distance * Math.cos(elevation)).add(new THREE.Vector3(0, distance * Math.sin(elevation), 0)));
             controls.update();
         },
     };
