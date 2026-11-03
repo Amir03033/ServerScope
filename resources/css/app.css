@@ -560,6 +560,20 @@
 
     .ss-table tbody tr { transition: background-color .15s ease; }
     .ss-table tbody tr:hover { background: var(--ss-surface-2); }
+
+    /* A table in a card runs edge to edge: the header band and a hovered row
+       fill the card, and the last row follows the card's rounded corners.
+       Cards with their own padding (!p-…) keep the table inside. */
+    :is(.ss-panel:not([class*="!p"]) > .ss-table-wrap, .ss-details:not([class*="!p"]) > * > .ss-table-wrap) {
+        width: auto;
+        margin-inline: calc(-1 * var(--ss-panel-pad));
+    }
+    :is(.ss-panel:not([class*="!p"]) > .ss-table-wrap, .ss-details:not([class*="!p"]) > * > .ss-table-wrap) :is(th, td):first-child { padding-left: var(--ss-panel-pad); }
+    :is(.ss-panel:not([class*="!p"]) > .ss-table-wrap, .ss-details:not([class*="!p"]) > * > .ss-table-wrap) :is(th, td):last-child { padding-right: var(--ss-panel-pad); }
+    :is(.ss-panel:not([class*="!p"]) > .ss-table-wrap:last-child, .ss-details:not([class*="!p"]) > :last-child > .ss-table-wrap:last-child) {
+        margin-bottom: calc(-1 * var(--ss-panel-pad));
+        border-radius: 0 0 13px 13px;
+    }
     .ss-table tbody tr:last-child td { border-bottom: 0; }
     .ss-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
@@ -1081,8 +1095,9 @@
     .ss-status-muted { --c: var(--ss-muted); }
 
     .ss-panel {
+        --ss-panel-pad: 1.25rem;
         min-width: 0;
-        padding: 1.25rem;
+        padding: var(--ss-panel-pad);
         border: 1px solid var(--ss-line);
         border-radius: 14px;
         background: var(--ss-surface);
@@ -1289,6 +1304,7 @@
         .ss-table-cards td.is-primary { display: block; text-align: left; }
         .ss-table-cards td.is-primary::before { content: none; }
         .ss-table-cards .num { text-align: right; }
+        :is(.ss-panel:not([class*="!p"]) > .ss-table-wrap, .ss-details:not([class*="!p"]) > * > .ss-table-wrap) .ss-table-cards td { padding-inline: var(--ss-panel-pad); }
     }
 
     /* Segmented filters that scroll sideways on small screens. */
