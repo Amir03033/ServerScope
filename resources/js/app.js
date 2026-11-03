@@ -5,6 +5,7 @@
  */
 import { numberLocale, t } from './i18n';
 import './live';
+import './peek';
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 

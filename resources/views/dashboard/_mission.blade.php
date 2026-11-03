@@ -76,8 +76,3 @@
         @if ($m['timeline']['events'] === [])<p class="mt-2 mb-0 text-xs text-muted" data-mission-timeline-empty>{{ __('mission.timeline_empty') }}</p>@endif
     </div>
 </section>
-
-<div class="ss-mission-details-head" data-dashboard-details-head>
-    <h2 class="ss-section-title m-0">{{ __('mission.details') }}</h2>
-    <p class="m-0 text-xs text-muted">{{ __('mission.details_text') }}</p>
-</div>

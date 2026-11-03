@@ -1,5 +1,17 @@
 # What's new in ServerScope
 
+## 3 November 2026 — Quick look
+
+### New
+
+- **Side panel**: click a server, website or incident and a panel slides in
+  from the right with status, key numbers, a small chart, services and open
+  incidents. Your list stays where it was. Shift-, Cmd- or Ctrl-click opens
+  the page as always.
+- **Hover cards**: rest the mouse on a server, website or incident for a
+  mini card with status, numbers and a small chart.
+- **Heartbeat** now sits right below mission control, above the details.
+
 ## 3 November 2026 — Mission control
 
 ### New

@@ -291,6 +291,10 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // NEXUS infrastructure map (read-only; JSON cached per team).
     Route::get('/nexus', [\App\Http\Controllers\NexusController::class, 'index'])->name('nexus.index');
     Route::get('/nexus/graph.json', [\App\Http\Controllers\NexusController::class, 'graph'])->middleware('throttle:60,1')->name('nexus.graph');
+    // Side panel and hover cards: a short, read-only look (tenant-scoped bindings).
+    Route::get('/peek/server/{server}', [\App\Http\Controllers\PeekController::class, 'server'])->middleware('throttle:120,1')->name('peek.server');
+    Route::get('/peek/domain/{domain}', [\App\Http\Controllers\PeekController::class, 'domain'])->middleware('throttle:120,1')->name('peek.domain');
+    Route::get('/peek/incident/{incident}', [\App\Http\Controllers\PeekController::class, 'incident'])->middleware('throttle:120,1')->name('peek.incident');
     Route::get('/dashboard/mission.json', [\App\Http\Controllers\LiveController::class, 'mission'])->middleware('throttle:60,1')->name('dashboard.mission');
     Route::get('/live/pulse.json', [\App\Http\Controllers\LiveController::class, 'pulse'])->middleware('throttle:120,1')->name('live.pulse');
     Route::get('/nexus/timelapse', [\App\Http\Controllers\NexusController::class, 'timelapse'])->name('nexus.timelapse');

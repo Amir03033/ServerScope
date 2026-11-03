@@ -1,5 +1,17 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — Snel bekijken
+
+### Nieuw
+
+- **Zijpaneel**: klik op een server, website of incident en er schuift een
+  paneel van rechts in met status, kerncijfers, een grafiekje, services en
+  open incidenten. Je lijst blijft staan. Shift-, Cmd- of Ctrl-klik opent de
+  pagina zoals altijd.
+- **Hover-kaarten**: houd de muis even op een server, website of incident en
+  je ziet een mini-kaart met status, cijfers en grafiekje.
+- **Hartslag** staat nu direct onder mission control, boven de details.
+
 ## 3 november 2026 — Mission control
 
 ### Nieuw

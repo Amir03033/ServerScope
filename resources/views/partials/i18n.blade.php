@@ -17,6 +17,12 @@
     'search.loading' => __('nav.search.loading'),
     'search.error' => __('nav.search.error'),
     'search.types' => __('search.types'),
+    'peek.open' => __('peek.open'),
+    'peek.close' => __('peek.close'),
+    'peek.loading' => __('peek.loading'),
+    'peek.failed' => __('peek.failed'),
+    'peek.panel' => __('peek.panel'),
+    'peek.hint' => __('peek.hint'),
     ];
 @endphp
 <script type="application/json" id="ss-i18n">@json($ssI18n)</script>
