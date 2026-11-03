@@ -1792,7 +1792,7 @@
     .ss-mission[data-grade="fair"] { background: radial-gradient(ellipse 70% 120% at 0% 0%, color-mix(in srgb, var(--ss-warn) 11%, transparent), transparent 60%), var(--ss-surface); }
     .ss-mission[data-grade="poor"] { background: radial-gradient(ellipse 70% 120% at 0% 0%, color-mix(in srgb, var(--ss-bad) 12%, transparent), transparent 60%), var(--ss-surface); }
     .ss-mission-hero { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: clamp(1rem, 2.5vw, 2rem); }
-    .ss-mission-score { position: relative; width: clamp(6.5rem, 12vw, 8.5rem); aspect-ratio: 1; }
+    .ss-mission-score { position: relative; width: clamp(6rem, 10vw, 7.5rem); aspect-ratio: 1; }
     .ss-mission-score svg { width: 100%; height: 100%; transform: rotate(-90deg); }
     .ss-mission-score circle { fill: none; stroke-width: 9; }
     .ss-mission-score .track { stroke: var(--ss-line); }
@@ -1818,7 +1818,7 @@
     .ss-mission-calm { display: grid; justify-items: center; gap: .35rem; margin-top: 1.5rem; padding: 2.5rem 1rem; border: 1px dashed var(--ss-line-strong); border-radius: 16px; text-align: center; }
     .ss-mission-calm strong { font-size: 1.25rem; }
     .ss-mission-calm span { max-width: 28rem; font-size: .875rem; color: var(--ss-muted); }
-    .ss-mission-block { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--ss-line); }
+    .ss-mission-block { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--ss-line); }
     .ss-mission-subtitle { margin: 0 0 .75rem; font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ss-muted); }
     .ss-mission-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .5rem; }
     .ss-mtile { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .5rem; padding: .55rem .7rem; border: 1px solid var(--ss-line); border-radius: 12px; background: var(--ss-bg); color: var(--ss-text); font-size: .8125rem; text-decoration: none; transition: border-color .3s ease, background-color .3s ease, transform .15s ease; }
@@ -1830,6 +1830,23 @@
     .ss-mtile[data-health="critical"] { border-color: color-mix(in srgb, var(--ss-bad) 55%, var(--ss-line)); background: color-mix(in srgb, var(--ss-bad) 8%, var(--ss-bg)); }
     .ss-mtile[data-health="critical"] .ss-mtile-dot { background: var(--ss-bad); animation: ss-mtile-alarm .9s ease-out infinite; }
     .ss-mtile[data-health="maintenance"] .ss-mtile-dot { background: var(--ss-accent); }
+    /* Two rows at first; the rest behind "+N more" (focus shows all problems anyway). */
+    .ss-mission-tiles:not(.is-all) > .ss-mtile.is-extra { display: none; }
+    .ss-mission.is-focus .ss-mission-tiles > .ss-mtile.is-extra:not(:is([data-health="ok"], [data-health="paused"], [data-health="maintenance"])) { display: grid; }
+    .ss-mission-more { margin-top: .5rem; padding: .25rem .6rem; border: 0; border-radius: 999px; background: transparent; color: var(--ss-accent); font-size: .8125rem; font-weight: 600; cursor: pointer; }
+    .ss-mission-more:hover { background: var(--ss-accent-soft); }
+    /* The heartbeat inside mission control: compact lines. */
+    .ss-pulse-list.is-compact { gap: .35rem; }
+    .ss-pulse-list.is-compact .ss-pulse-row { grid-template-columns: minmax(0, 10rem) minmax(0, 1fr) auto; gap: .75rem; padding: .3rem .6rem; border-radius: 10px; }
+    .ss-pulse-list.is-compact .ss-pulse-row > .min-w-0 { display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: start; gap: 0 .5rem; }
+    .ss-pulse-list.is-compact .ss-pulse-row > .min-w-0 > a { font-size: .8125rem; }
+    .ss-pulse-list.is-compact .ss-pulse-reason { display: none; }
+    .ss-pulse-list.is-compact .ss-pulse-canvas { height: 1.9rem; }
+    .ss-pulse-list.is-compact .ss-pulse-numbers { grid-template-columns: repeat(3, 3.75rem); }
+    .ss-pulse-list.is-compact .ss-pulse-numbers dt { font-size: .625rem; }
+    .ss-pulse-list.is-compact .ss-pulse-numbers dd { font-size: .8125rem; }
+    .ss-pulse-compact .ss-mission-subtitle { display: flex; align-items: center; gap: .4rem; }
+
     /* Focus: only the tiles that need attention. */
     .ss-mission.is-focus .ss-mtile:is([data-health="ok"], [data-health="paused"], [data-health="maintenance"]) { display: none; }
     .ss-mtile-name { overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
@@ -1846,7 +1863,7 @@
     .ss-mission-legend .is-incident::before { background: var(--ss-bad); }
     .ss-mission-legend .is-deploy::before { border-radius: 999px; background: var(--ss-accent); }
     .ss-mission-legend .is-dns::before { transform: rotate(45deg); background: var(--ss-muted); }
-    .ss-mission-timeline { position: relative; height: 3.25rem; margin-bottom: 1.25rem; border-radius: 10px; background: linear-gradient(90deg, var(--ss-line) 1px, transparent 1px) 0 0 / calc(100% / 24) 100%, var(--ss-bg); border: 1px solid var(--ss-line); }
+    .ss-mission-timeline { position: relative; height: 2.5rem; margin-bottom: 1.25rem; border-radius: 10px; background: linear-gradient(90deg, var(--ss-line) 1px, transparent 1px) 0 0 / calc(100% / 24) 100%, var(--ss-bg); border: 1px solid var(--ss-line); }
     .ss-mevent { position: absolute; top: 50%; transform: translateY(-50%); }
     .ss-mevent.is-incident { height: 1.25rem; min-width: 6px; border-radius: 5px; background: color-mix(in srgb, var(--ss-warn) 70%, transparent); }
     .ss-mevent.is-incident.tone-bad { background: color-mix(in srgb, var(--ss-bad) 75%, transparent); box-shadow: 0 0 10px color-mix(in srgb, var(--ss-bad) 40%, transparent); }
@@ -1920,6 +1937,28 @@
     @keyframes ss-peek-pop { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) { .ss-peek { transition: none; } .ss-peek-card { animation: none; } }
     @media (max-width: 639px) { .ss-peek { top: auto; left: .5rem; right: .5rem; bottom: .5rem; width: auto; max-height: 85vh; transform: translateY(calc(100% + 1rem)); } .ss-peek.is-open { transform: none; } }
+
+    /* Command palette: results on the left, a preview on the right (wide screens). */
+    .ss-palette { width: min(54rem, calc(100vw - 2rem)); max-height: min(36rem, calc(100vh - 6rem)); }
+    .ss-palette[open] { display: flex; flex-direction: column; }
+    .ss-palette-body { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; flex: 1; }
+    .ss-palette-list { min-height: 0; max-height: 26rem; overflow-y: auto; padding: .5rem; }
+    .ss-palette-group { padding: .6rem .75rem .25rem; font-size: .6875rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ss-muted); }
+    .ss-palette-item { display: flex; align-items: center; gap: .75rem; padding: .55rem .75rem; border-radius: 10px; color: var(--ss-text); cursor: pointer; }
+    .ss-palette-icon { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; flex: none; border: 1px solid var(--ss-line); border-radius: 8px; background: var(--ss-bg); color: var(--ss-muted); }
+    .ss-palette-icon svg { width: 1rem; height: 1rem; }
+    .ss-palette-icon.is-large { width: 3rem; height: 3rem; border-radius: 14px; color: var(--ss-accent); }
+    .ss-palette-icon.is-large svg { width: 1.5rem; height: 1.5rem; }
+    .ss-palette-item[aria-selected="true"] .ss-palette-icon { border-color: var(--ss-accent-line); color: var(--ss-accent); }
+    .ss-palette-preview { display: none; min-height: 0; overflow-y: auto; padding: 1.1rem 1.25rem; border-left: 1px solid var(--ss-line); background: color-mix(in srgb, var(--ss-bg) 55%, var(--ss-surface)); }
+    .ss-palette-preview .ss-peek-head { padding-right: 0; }
+    .ss-palette-preview-cmd { display: grid; justify-items: start; gap: .6rem; padding-top: .5rem; }
+    .ss-palette-preview-cmd strong { font-size: 1.05rem; color: var(--ss-text); }
+    .ss-palette-preview-cmd span:last-child { font-size: .8125rem; color: var(--ss-muted); overflow-wrap: anywhere; }
+    @media (min-width: 900px) {
+        .ss-palette-body { grid-template-columns: minmax(0, 1fr) 22rem; }
+        .ss-palette-preview:not([hidden]) { display: block; }
+    }
 
     /* Dashboard heartbeat: one live line per server. */
     .ss-pulse-list { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }

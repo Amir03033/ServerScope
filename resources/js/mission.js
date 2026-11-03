@@ -87,7 +87,28 @@ function boot() {
         for (const [key, el] of existing) {
             if (!keep.has(key)) el.remove();
         }
+
+        // Two rows at first (problems come first); the rest behind "+N more".
+        const limit = Number(box.dataset.limit || 8);
+        const order = data.tiles.map((tile) => tile.key);
+        [...box.querySelectorAll('[data-key]')]
+            .sort((a, b) => order.indexOf(a.dataset.key) - order.indexOf(b.dataset.key))
+            .forEach((el, i) => { box.append(el); el.classList.toggle('is-extra', i >= limit); });
+
+        const more = $('more');
+        if (more) {
+            more.hidden = data.tiles.length <= limit;
+            more.dataset.more = more.dataset.more.replace(/\d+/, String(Math.max(0, data.tiles.length - limit)));
+            more.textContent = box.classList.contains('is-all') ? more.dataset.less : more.dataset.more;
+        }
     }
+
+    $('more')?.addEventListener('click', () => {
+        const box = $('tiles');
+        const all = box.classList.toggle('is-all');
+        $('more').setAttribute('aria-expanded', String(all));
+        $('more').textContent = all ? $('more').dataset.less : $('more').dataset.more;
+    });
 
     // ---------- timeline ----------
     function renderTimeline() {

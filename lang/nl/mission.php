@@ -33,4 +33,6 @@ return [
     'focus_calm_text' => 'Alles draait zoals het hoort. Zet focus uit om alle details te zien.',
     'details' => 'Details',
     'details_text' => 'Alles hieronder is het dashboard zoals je het kent.',
+    'more' => '+:count meer',
+    'less' => 'Minder tonen',
 ];

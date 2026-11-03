@@ -17,10 +17,13 @@ const CACHE_MS = 20_000;
 const cache = new Map();
 
 /** [type, id] of a link that can be peeked, or null. */
-function target(link) {
-    if (!link || link.closest('[data-no-peek], .ss-sidebar, .ss-peek, .ss-peek-card, form') || link.target || link.hasAttribute('download')) return null;
+export function target(link) {
+    if (!link) return null;
 
-    const url = new URL(link.href, location.href);
+    // A plain URL string (the command palette): only the path matters.
+    if (typeof link !== 'string' && (link.closest('[data-no-peek], .ss-sidebar, .ss-peek, .ss-peek-card, form') || link.target || link.hasAttribute('download'))) return null;
+
+    const url = new URL(typeof link === 'string' ? link : link.href, location.href);
 
     if (url.origin !== location.origin || url.search || url.hash) return null;
 
@@ -77,7 +80,7 @@ function spark(values, max) {
     return svg;
 }
 
-function render(data, { compact = false } = {}) {
+export function render(data, { compact = false } = {}) {
     const frag = document.createDocumentFragment();
     const head = el('div', 'ss-peek-head');
     const status = el('span', `ss-status ss-status-${data.status.tone}`, data.status.label);
@@ -122,6 +125,13 @@ function render(data, { compact = false } = {}) {
     }
 
     return frag;
+}
+
+/** The quick look of a server, website or incident (for the command palette preview). */
+export function peek(type, id) {
+    const base = document.querySelector('meta[name="ss-peek"]')?.content;
+
+    return base ? load(base, type, id) : Promise.reject(new Error('no peek'));
 }
 
 function boot() {
