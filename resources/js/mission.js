@@ -132,6 +132,7 @@ function boot() {
 
         if (details) details.hidden = focus;
         if (detailsHead) detailsHead.hidden = focus;
+        document.querySelectorAll('[data-focus-hide]').forEach((el) => { el.hidden = focus; });
     }
 
     $('focus').addEventListener('click', () => {

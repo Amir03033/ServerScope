@@ -76,7 +76,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ? $title.' — ServerScope' : 'ServerScope' }}</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml" data-live-icon>
-    @if (Route::has('live.pulse') && \App\Tenancy\Tenant::check())<meta name="ss-live" content="{{ route('live.pulse') }}"><meta name="ss-wall" content="{{ route('nexus.wall') }}">@endif
+    @if (Route::has('live.pulse') && \App\Tenancy\Tenant::check())<meta name="ss-live" content="{{ route('live.pulse') }}"><meta name="ss-wall" content="{{ route('nexus.wall') }}"><meta name="ss-peek" content="{{ url('/peek') }}">@endif
     {{-- Applies the saved theme before the first paint (no flash). --}}
     <script src="{{ asset('js/theme-init.js') }}?v={{ @filemtime(public_path('js/theme-init.js')) }}"></script>
     @include('partials.vite-assets')
