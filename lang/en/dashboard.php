@@ -82,6 +82,7 @@ return [
         'expired' => 'expired',
         'days' => ':count d',
         'nothing_expiring' => 'Nothing expires soon',
+        'more_expiring' => '+:count more',
         'nothing_expiring_text' => 'No monitored certificates or registrations expire in the next 60 days.',
         'dns_changes' => 'Recent DNS changes',
         'newest_first' => 'Newest first.',

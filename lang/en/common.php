@@ -12,6 +12,7 @@ return [
     'copy' => 'Copy',
     'copied' => 'Copied',
     'close' => 'Close',
+    'filters' => 'Filters',
     'previous' => 'Previous',
     'next' => 'Next',
     'no_team_access' => 'You no longer have access to this team. Sign in again or contact your administrator.',

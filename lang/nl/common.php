@@ -12,6 +12,7 @@ return [
     'copy' => 'Kopiëren',
     'copied' => 'Gekopieerd',
     'close' => 'Sluiten',
+    'filters' => 'Filters',
     'previous' => 'Vorige',
     'next' => 'Volgende',
     'no_team_access' => 'Je hebt geen toegang (meer) tot dit team. Log opnieuw in of neem contact op met je beheerder.',

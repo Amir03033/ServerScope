@@ -304,7 +304,7 @@
                             @foreach ($incidents as $incident)
                                 <tr>
                                     <td class="is-primary">
-                                        @if (Route::has('incidents.show'))<a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>@else{{ $incident->title }}@endif
+                                        @if (Route::has('incidents.show'))<a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ route('incidents.show', $incident) }}">{{ $incident->title }}</a>@else{{ $incident->title }}@endif
                                         <span class="block text-xs text-muted">{{ Label::of('incident_source', $incident->source, \App\Models\Incident::SOURCE_LABELS) }}</span>
                                     </td>
                                     <td data-label="{{ __('domains.show.col_severity') }}"><x-severity :severity="$incident->severity" /></td>

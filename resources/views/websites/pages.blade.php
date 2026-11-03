@@ -232,7 +232,7 @@
                                     <tr>
                                         @if ($isAdmin)<td class="is-actions"><label class="ss-check"><input id="page-{{ $page->id }}" type="checkbox" name="ids[]" value="{{ $page->id }}" data-row-select><span class="sr-only">{{ __('websites.pages.select', ['url' => $page->url]) }}</span></label></td>@endif
                                         <td class="is-primary">
-                                            <a class="font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('pages.show', $page) }}">{{ $page->displayName() }}</a>
+                                            <a class="ss-hit font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('pages.show', $page) }}">{{ $page->displayName() }}</a>
                                             <span class="block text-xs text-muted">{{ $page->title ?? '—' }} · {{ Label::of('page_source', $page->source, MonitoredPage::SOURCES) }} · {{ __('websites.pages.every', ['minutes' => $page->check_interval_minutes]) }}</span>
                                         </td>
                                         <td data-label="{{ __('websites.pages.col_status') }}">
