@@ -18,7 +18,9 @@ function boot() {
 
     const config = JSON.parse(configElement.textContent);
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const $ = (name) => root.querySelector(`[data-mission-${name}]`);
+    // The mission widgets (health, tiles, timeline) can stand anywhere on the dashboard.
+    const $ = (name) => document.querySelector(`[data-mission-${name}]`);
+    const widgets = document.querySelector('[data-widgets]');
     const details = document.querySelector('[data-dashboard-details]');
     const detailsHead = document.querySelector('[data-dashboard-details-head]');
     const locale = numberLocale();
@@ -144,16 +146,17 @@ function boot() {
 
     // ---------- focus: only what needs attention ----------
     function applyFocus() {
+        // Focus: only the health widget and the tiles that need attention; "Nothing to do" when all is well.
         const calm = focus && data.issues.length === 0;
         root.classList.toggle('is-focus', focus);
+        widgets?.classList.toggle('is-focus', focus);
         $('focus').setAttribute('aria-pressed', String(focus));
         $('calm').hidden = !calm;
-        $('timeline-block').hidden = focus;
-        $('tiles-block').hidden = calm;
+        const tiles = $('tiles-block')?.closest('[data-widget]');
+        if (tiles) tiles.classList.toggle('is-calm', calm);
 
         if (details) details.hidden = focus;
         if (detailsHead) detailsHead.hidden = focus;
-        document.querySelectorAll('[data-focus-hide]').forEach((el) => { el.hidden = focus; });
     }
 
     $('focus').addEventListener('click', () => {

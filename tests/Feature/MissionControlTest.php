@@ -78,12 +78,11 @@ class MissionControlTest extends TestCase
     {
         $html = $this->actingAs($this->a['member'])->get(route('dashboard'))->assertOk()
             ->assertSee('data-mission', false)
-            ->assertSee('data-dashboard-details', false)
-            ->assertSee(__('mission.details'))
+            ->assertSee('data-widgets', false)
             ->assertSee('alpha-server')
             ->getContent();
 
         $this->assertMatchesRegularExpression('#src="[^"]*/build/assets/mission-[^"]+\.js"#', $html);
-        $this->assertLessThan(strpos($html, 'data-dashboard-details'), strpos($html, 'data-mission'), 'mission control comes first');
+        $this->assertLessThan(strpos($html, 'data-widget="attention"'), strpos($html, 'data-widget="health"'), 'mission control comes first, the dashboard as before follows');
     }
 }

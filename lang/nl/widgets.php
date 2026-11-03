@@ -1,0 +1,40 @@
+<?php
+
+// Dashboardwidgets (App\Support\DashboardWidgets, resources/js/widgets.js).
+return [
+    'edit' => 'Indelen',
+    'names' => [
+        'health' => 'Gezondheidsscore',
+        'tiles' => 'Alles in één oogopslag',
+        'timeline' => 'Afgelopen 24 uur',
+        'pulse' => 'Hartslag',
+        'attention' => 'Aandacht nodig',
+        'kpis' => 'Kerncijfers',
+        'incidents' => 'Actieve incidenten',
+        'expiring' => 'Verloopt binnenkort',
+        'dns' => 'DNS-wijzigingen',
+        'response' => 'Responstijd',
+        'uptime' => 'Uptime per dag',
+        'performance' => 'Serverprestaties',
+        'servers' => 'Servers',
+        'samples' => 'Recente metingen',
+    ],
+    'js' => [
+        'title' => 'Je dashboard indelen',
+        'hint' => 'Sleep een widget aan zijn greep (of gebruik daar de pijltjestoetsen), kies S, M of L, of verberg wat je niet nodig hebt. Alleen jij ziet jouw indeling.',
+        'hidden' => 'Verborgen:',
+        'preset' => 'Begin met een indeling…',
+        'presets' => ['developer' => 'Ontwikkelaar', 'manager' => 'Manager', 'noc' => 'NOC'],
+        'reset' => 'Standaardindeling',
+        'reset_done' => 'Terug naar de standaardindeling.',
+        'cancel' => 'Annuleren',
+        'done' => 'Klaar',
+        'saved' => 'Je indeling is opgeslagen.',
+        'failed' => 'Dat lukte niet. Probeer het opnieuw.',
+        'move' => ':name verplaatsen',
+        'move_hint' => 'Slepen, of gebruik de pijltjestoetsen',
+        'hide' => ':name verbergen',
+        'size' => 'Grootte van :name',
+        'sizes' => ['s' => 'Klein (een derde)', 'm' => 'Middel (half)', 'l' => 'Groot (volle breedte)'],
+    ],
+];

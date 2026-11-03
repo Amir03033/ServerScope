@@ -37,6 +37,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'is_platform_admin' => 'boolean',
             'current_team_id' => 'integer',
             'notify_email' => 'boolean',
+            'dashboard_layout' => 'array',
             'notify_in_app' => 'boolean',
             'notify_resolved' => 'boolean',
             'notify_dns_changes' => 'boolean',

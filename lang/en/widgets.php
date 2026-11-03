@@ -1,0 +1,40 @@
+<?php
+
+// Dashboard widgets (App\Support\DashboardWidgets, resources/js/widgets.js).
+return [
+    'edit' => 'Arrange',
+    'names' => [
+        'health' => 'Health score',
+        'tiles' => 'Everything at a glance',
+        'timeline' => 'Last 24 hours',
+        'pulse' => 'Heartbeat',
+        'attention' => 'Needs attention',
+        'kpis' => 'Key figures',
+        'incidents' => 'Active incidents',
+        'expiring' => 'Expiring soon',
+        'dns' => 'DNS changes',
+        'response' => 'Response time',
+        'uptime' => 'Uptime per day',
+        'performance' => 'Server performance',
+        'servers' => 'Servers',
+        'samples' => 'Recent measurements',
+    ],
+    'js' => [
+        'title' => 'Arrange your dashboard',
+        'hint' => 'Drag a widget by its handle (or use the arrow keys on it), choose S, M or L, or hide what you do not need. Only you see your layout.',
+        'hidden' => 'Hidden:',
+        'preset' => 'Start from a layout…',
+        'presets' => ['developer' => 'Developer', 'manager' => 'Manager', 'noc' => 'NOC'],
+        'reset' => 'Standard layout',
+        'reset_done' => 'Back to the standard layout.',
+        'cancel' => 'Cancel',
+        'done' => 'Done',
+        'saved' => 'Your layout is saved.',
+        'failed' => 'That did not work. Try again.',
+        'move' => 'Move :name',
+        'move_hint' => 'Drag, or use the arrow keys',
+        'hide' => 'Hide :name',
+        'size' => 'Size of :name',
+        'sizes' => ['s' => 'Small (a third)', 'm' => 'Medium (half)', 'l' => 'Large (full width)'],
+    ],
+];

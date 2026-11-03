@@ -10,6 +10,7 @@ import './palette';
 import './livelists';
 import './install';
 import './swipe';
+import './widgets';
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 

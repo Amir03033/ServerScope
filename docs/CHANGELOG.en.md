@@ -1,5 +1,15 @@
 # What's new in ServerScope
 
+## 3 November 2026 — Your own dashboard
+
+### New
+
+- **Arrange your dashboard**: with "Arrange" you put the widgets in your own
+  order (drag, also by touch or the arrow keys), pick a size per widget (S, M,
+  L) and hide what you do not need. Optionally start from a ready-made layout
+  (Developer, Manager, NOC). Everyone has their own layout; the standard
+  layout is the dashboard as you knew it.
+
 ## 3 November 2026 — ServerScope as an app
 
 ### New
