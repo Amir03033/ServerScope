@@ -91,7 +91,7 @@ function boot() {
 
     window.addEventListener('resize', () => rows.forEach((r) => r.monitor.resize()));
     const onTheme = () => rows.forEach((r) => r.monitor.theme());
-    new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-variant'] });
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onTheme);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 

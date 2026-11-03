@@ -416,7 +416,7 @@ function render() {
 }
 
 // Redraw when the theme changes (switch or system setting).
-new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-variant'] });
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
 
 if (document.readyState === 'loading') {

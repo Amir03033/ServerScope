@@ -173,7 +173,7 @@ export function createHero(container, data, { reducedMotion }) {
 
     // Follow the theme switch, like the rest of the page.
     const rebuild = () => { build(); schedule(); };
-    new MutationObserver(rebuild).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(rebuild).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-variant'] });
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', rebuild);
 
     schedule();

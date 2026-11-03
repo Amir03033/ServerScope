@@ -1,5 +1,16 @@
 # What's new in ServerScope
 
+## 3 November 2026 — Themes
+
+### New
+
+- **Extra themes**: besides light and dark (the default, or as your system is
+  set) you can now explicitly choose **Midnight** (deep blue with a neon
+  glow), **Terminal** (green on black, monospace) or **High contrast**
+  (maximum contrast, strong outlines and focus). Choose under Profile →
+  Appearance or via Ctrl/⌘ K ("theme"). The theme switch at the top cycles
+  system, light and dark as always and takes you back to the defaults.
+
 ## 3 November 2026 — Everything live
 
 ### New

@@ -36,6 +36,9 @@
 
     // View only: nothing is saved on the server.
     $paletteCommands[] = ['id' => 'view:theme', 'group' => 'view', 'label' => __('palette.theme'), 'keywords' => __('palette.keywords.theme'), 'action' => 'theme', 'icon' => 'i-monitor'];
+    foreach (['system', 'light', 'dark', 'midnight', 'terminal', 'contrast'] as $themeChoice) {
+        $paletteCommands[] = ['id' => 'theme:'.$themeChoice, 'group' => 'theme', 'label' => __('themes.palette', ['name' => __('themes.names.'.$themeChoice)]), 'keywords' => __('palette.keywords.theme').' '.$themeChoice.' '.__('themes.descriptions.'.$themeChoice), 'action' => 'theme:'.$themeChoice, 'icon' => 'i-monitor'];
+    }
     $paletteCommands[] = ['id' => 'view:focus', 'group' => 'view', 'label' => __('palette.focus'), 'keywords' => __('palette.keywords.focus'), 'action' => 'focus', 'icon' => 'i-target'];
 
     $paletteConfig = ['commands' => $paletteCommands, 'texts' => __('palette.js')];

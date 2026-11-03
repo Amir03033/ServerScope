@@ -123,6 +123,87 @@
     --ss-grid: rgb(255 255 255 / 4%);
 }
 
+/*
+ * Extra themes, only when chosen explicitly (Profile → Appearance or the
+ * command palette): <html data-variant="…">, on top of data-theme="dark"
+ * (midnight, terminal) or "light" (contrast), so every light/dark rule
+ * still applies. All text pairs meet WCAG AA, most AAA.
+ */
+:root[data-variant="midnight"] {
+    color-scheme: dark;
+    --ss-bg: #050a1a;
+    --ss-surface: #0b1228;
+    --ss-surface-2: #111a35;
+    --ss-line: #1a2547;
+    --ss-line-strong: #26355f;
+    --ss-text: #e6ecff;
+    --ss-muted: #a3afd6;      /* 9.1:1 on bg */
+    --ss-subtle: #8d99c4;     /* 6.1:1 on surface-2 */
+    --ss-accent: #4cc9ff;     /* 10.4:1 on bg */
+    --ss-accent-hover: #7dd9ff;
+    --ss-on-accent: #04101c;
+    --ss-accent-soft: #0b2236;
+    --ss-accent-line: #1b4a6b;
+    --ss-ok: #34f5a0;
+    --ss-warn: #ffcc4d;
+    --ss-bad: #ff6b85;
+    --ss-code-bg: #070e22;
+    --ss-code-text: #dbe4ff;
+    --ss-shadow: 0 0 0 1px rgb(76 201 255 / 6%), 0 8px 24px -12px rgb(76 201 255 / 22%);
+    --ss-shadow-lift: 0 0 0 1px rgb(76 201 255 / 10%), 0 18px 40px -16px rgb(76 201 255 / 30%);
+    --ss-grid: rgb(76 201 255 / 5%);
+}
+
+:root[data-variant="terminal"] {
+    color-scheme: dark;
+    --ss-bg: #030703;
+    --ss-surface: #081008;
+    --ss-surface-2: #0d180d;
+    --ss-line: #143014;
+    --ss-line-strong: #1e451f;
+    --ss-text: #c8facc;
+    --ss-muted: #86dc90;      /* 12.2:1 on bg */
+    --ss-subtle: #6cc276;     /* 8.3:1 on surface-2 */
+    --ss-accent: #39ff6a;     /* 15.2:1 on bg */
+    --ss-accent-hover: #7dff9c;
+    --ss-on-accent: #001a06;
+    --ss-accent-soft: #0b1f0f;
+    --ss-accent-line: #1a4d24;
+    --ss-ok: #39ff6a;
+    --ss-warn: #ffd23f;
+    --ss-bad: #ff6b61;
+    --ss-code-bg: #020502;
+    --ss-code-text: #b8f5bd;
+    --ss-shadow: 0 0 0 1px rgb(57 255 106 / 7%);
+    --ss-shadow-lift: 0 0 0 1px rgb(57 255 106 / 12%), 0 0 24px -8px rgb(57 255 106 / 25%);
+    --ss-grid: rgb(57 255 106 / 6%);
+}
+
+:root[data-variant="contrast"] {
+    color-scheme: light;
+    --ss-bg: #ffffff;
+    --ss-surface: #ffffff;
+    --ss-surface-2: #f0f0f0;
+    --ss-line: #595959;
+    --ss-line-strong: #000000;
+    --ss-text: #000000;
+    --ss-muted: #1f1f1f;
+    --ss-subtle: #2b2b2b;
+    --ss-accent: #0033cc;     /* 9:1 on bg */
+    --ss-accent-hover: #002699;
+    --ss-on-accent: #ffffff;
+    --ss-accent-soft: #e6ecff;
+    --ss-accent-line: #0033cc;
+    --ss-ok: #005a1e;
+    --ss-warn: #6b3600;
+    --ss-bad: #9b0000;
+    --ss-code-bg: #f0f0f0;
+    --ss-code-text: #000000;
+    --ss-shadow: none;
+    --ss-shadow-lift: 0 0 0 2px #000000;
+    --ss-grid: rgb(0 0 0 / 12%);
+}
+
 @theme inline {
     --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -1978,6 +2059,41 @@
     .ss-table tr.is-gone { opacity: 0; transition: opacity .4s ease; }
     .ss-stat.is-bump .ss-stat-value, .nav-count.is-bump, .ss-count.is-bump { display: inline-block; animation: ss-live-bump .5s ease-out; }
     @media (prefers-reduced-motion: reduce) { .ss-table tr.is-new > *, .ss-table tr.is-changed > *, .ss-table tr.is-recovered > *, .ss-table tr.is-alarm > *, .is-bump { animation: none !important; } }
+
+    /* Theme details beyond the colours. */
+    :root[data-variant="midnight"] body { background: radial-gradient(ellipse 70% 50% at 70% -10%, rgb(76 201 255 / 9%), transparent 60%), radial-gradient(ellipse 50% 40% at 0% 100%, rgb(124 92 255 / 8%), transparent 60%), var(--ss-bg); background-attachment: fixed; }
+    :root[data-variant="midnight"] .ss-nav-item[aria-current="page"] { box-shadow: inset 2px 0 0 var(--ss-accent), 0 0 18px -6px rgb(76 201 255 / 45%); }
+    :root[data-variant="midnight"] .ss-btn-primary { box-shadow: 0 0 18px -4px rgb(76 201 255 / 55%); }
+    :root[data-variant="terminal"] body { font-family: var(--font-mono); letter-spacing: -.01em; }
+    :root[data-variant="terminal"] :is(.ss-panel, .ss-stat, .ss-mission, .ss-table-wrap, .ss-dialog, .ss-peek) { border-radius: 4px; }
+    :root[data-variant="terminal"] ::selection { background: var(--ss-accent); color: var(--ss-on-accent); }
+    :root[data-variant="contrast"] a:not(.ss-btn):not(.ss-nav-item):not(.ss-mtile) { text-decoration: underline; text-underline-offset: 2px; }
+    :root[data-variant="contrast"] :focus-visible { outline: 3px solid #000000 !important; outline-offset: 2px !important; box-shadow: 0 0 0 5px #ffd400 !important; }
+    :root[data-variant="contrast"] :is(.ss-panel, .ss-stat, .ss-mission, .ss-table-wrap, .ss-btn, .ss-input) { border-width: 2px; }
+
+    /* Theme picker (Profile → Appearance): cards with a small preview. */
+    .ss-theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .75rem; }
+    .ss-theme-card { position: relative; display: grid; gap: .5rem; padding: .6rem; border: 1px solid var(--ss-line); border-radius: 14px; background: var(--ss-surface); cursor: pointer; transition: border-color .2s ease, transform .15s ease; }
+    .ss-theme-card:hover { transform: translateY(-1px); border-color: var(--ss-line-strong); }
+    .ss-theme-card:has(input:checked) { border-color: var(--ss-accent); box-shadow: 0 0 0 3px var(--ss-accent-soft); }
+    .ss-theme-card:has(input:focus-visible) { outline: 2px solid var(--ss-accent); outline-offset: 2px; }
+    .ss-theme-card input { position: absolute; opacity: 0; pointer-events: none; }
+    .ss-theme-swatch { display: grid; grid-template-columns: 1.6rem 1fr; gap: 4px; height: 4.25rem; padding: 6px; border-radius: 9px; border: 1px solid rgb(127 127 127 / 25%); }
+    .ss-theme-swatch i { border-radius: 4px; }
+    .ss-theme-swatch i:first-child { grid-row: span 3; }
+    /* Preview colours per theme: background, surface, accent, text, surface. */
+    .ss-theme-swatch i:nth-child(1), .ss-theme-swatch i:nth-child(4) { background: var(--sw-surface); }
+    .ss-theme-swatch i:nth-child(2) { background: var(--sw-accent); }
+    .ss-theme-swatch i:nth-child(3) { background: var(--sw-text); opacity: .8; }
+    .ss-theme-swatch { background: var(--sw-bg); }
+    .ss-theme-swatch.is-system { --sw-bg: linear-gradient(135deg, #fafafa 50%, #0a0a0b 50%); --sw-surface: #ffffff; --sw-accent: #2f5fd0; --sw-text: #18181b; }
+    .ss-theme-swatch.is-light { --sw-bg: #fafafa; --sw-surface: #ffffff; --sw-accent: #2f5fd0; --sw-text: #18181b; }
+    .ss-theme-swatch.is-dark { --sw-bg: #0a0a0b; --sw-surface: #18181b; --sw-accent: #7aa2f7; --sw-text: #ededef; }
+    .ss-theme-swatch.is-midnight { --sw-bg: #050a1a; --sw-surface: #111a35; --sw-accent: #4cc9ff; --sw-text: #e6ecff; }
+    .ss-theme-swatch.is-terminal { --sw-bg: #030703; --sw-surface: #0d180d; --sw-accent: #39ff6a; --sw-text: #c8facc; }
+    .ss-theme-swatch.is-contrast { --sw-bg: #ffffff; --sw-surface: #f0f0f0; --sw-accent: #0033cc; --sw-text: #000000; }
+    .ss-theme-name { font-size: .875rem; font-weight: 700; color: var(--ss-text); }
+    .ss-theme-desc { font-size: .75rem; color: var(--ss-muted); }
 
     /* Dashboard heartbeat: one live line per server. */
     .ss-pulse-list { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }

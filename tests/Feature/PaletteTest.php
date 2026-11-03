@@ -62,4 +62,18 @@ class PaletteTest extends TestCase
 
         $this->actingAs($this->a['member'])->get(route('dashboard'))->assertOk()->assertDontSee('name="ss-live-list"', false);
     }
+
+    public function test_extra_themes_are_offered_but_light_and_dark_stay_the_default(): void
+    {
+        $html = $this->actingAs($this->a['member'])->get(route('profile.edit'))->assertOk()->getContent();
+
+        foreach (['system', 'light', 'dark', 'midnight', 'terminal', 'contrast'] as $choice) {
+            $this->assertMatchesRegularExpression('#<input type="radio" name="ss-theme-choice" value="'.$choice.'" data-theme-choice#', $html);
+        }
+
+        // Nothing is chosen on the server: the browser keeps the choice, "system" is the default.
+        $this->assertMatchesRegularExpression('#value="system" data-theme-choice\s+checked#', $html);
+        $this->assertStringNotContainsString('data-variant=', $html);
+        $this->assertArrayHasKey('theme:midnight', $this->commands($this->a['member']));
+    }
 }
