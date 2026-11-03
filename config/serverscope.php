@@ -252,6 +252,14 @@ return [
     |
     */
 
+    // Web push (phone and desktop notifications). Off until the VAPID keys are
+    // set: php artisan serverscope:push:keys prints a fresh pair for .env.
+    'push' => [
+        'public_key' => env('PUSH_VAPID_PUBLIC_KEY'),
+        'private_key' => env('PUSH_VAPID_PRIVATE_KEY'),
+        'subject' => env('PUSH_VAPID_SUBJECT', 'mailto:'.env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+    ],
+
     'probe' => [
         'confirmation_enabled' => (bool) env('SERVERSCOPE_PROBE_CONFIRMATION', true),
         'job_ttl_seconds' => (int) env('SERVERSCOPE_PROBE_JOB_TTL', 120),

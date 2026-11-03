@@ -17,6 +17,7 @@
     'search.loading' => __('nav.search.loading'),
     'search.error' => __('nav.search.error'),
     'search.types' => __('search.types'),
+    'swipe.acknowledge' => __('mobile.acknowledge'),
     'peek.open' => __('peek.open'),
     'peek.close' => __('peek.close'),
     'peek.loading' => __('peek.loading'),

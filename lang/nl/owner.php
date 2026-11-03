@@ -35,6 +35,7 @@ return [
         'probe_locate' => ['title' => 'Probe op de wereldbol plaatsen', 'when' => 'Als de probe geen of verkeerde coördinaten heeft; --clear verwijdert ze. Verandert verder niets.'],
         'probe_expire' => ['title' => 'Onbeantwoorde probe-controles laten verlopen', 'when' => 'Foutzoeken: draait normaal elke minuut.'],
         'probe_run' => ['title' => 'De externe probe draaien', 'when' => 'Alleen op de probe-host, als bewaakte service.'],
+        'push_keys' => ['title' => 'Sleutels voor pushmeldingen maken', 'when' => 'Eén keer, om push aan te zetten: zet de geprinte regels in .env en draai daarna config:cache. Nieuwe sleutels betekenen dat elk apparaat push opnieuw aanzet.'],
         'analyze' => ['title' => 'Afwijkingen en voorspellingen berekenen', 'when' => 'Foutzoeken: draait normaal elk uur.'],
         'escalate' => ['title' => 'Onbevestigde incidenten escaleren', 'when' => 'Foutzoeken: draait normaal ingepland.'],
         'prune_dry' => ['title' => 'Tonen wat opschonen zou verwijderen', 'when' => 'Doe dit altijd eerst. Verwijdert niets.'],

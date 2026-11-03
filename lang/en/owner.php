@@ -35,6 +35,7 @@ return [
         'probe_locate' => ['title' => 'Place the probe on the globe', 'when' => 'When the probe has no or wrong coordinates; --clear removes them. Changes nothing else.'],
         'probe_expire' => ['title' => 'Expire unanswered probe checks', 'when' => 'Debugging: normally every minute.'],
         'probe_run' => ['title' => 'Run the remote probe', 'when' => 'On the probe host only, as a supervised service.'],
+        'push_keys' => ['title' => 'Create the keys for push notifications', 'when' => 'Once, to turn push on: put the printed lines in .env, then config:cache. New keys mean every device turns push on again.'],
         'analyze' => ['title' => 'Run anomaly and forecast analysis', 'when' => 'Debugging: normally hourly.'],
         'escalate' => ['title' => 'Escalate unacknowledged incidents', 'when' => 'Debugging: normally scheduled.'],
         'prune_dry' => ['title' => 'Show what clean-up would delete', 'when' => 'Always do this first. Deletes nothing.'],

@@ -76,6 +76,13 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ? $title.' — ServerScope' : 'ServerScope' }}</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml" data-live-icon>
+    {{-- Installable app (manifest, service worker in resources/js/install.js). --}}
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ServerScope">
     @if (Route::has('live.pulse') && \App\Tenancy\Tenant::check())<meta name="ss-live" content="{{ route('live.pulse') }}"><meta name="ss-wall" content="{{ route('nexus.wall') }}"><meta name="ss-peek" content="{{ url('/peek') }}">@endif
     @if (request()->routeIs('servers.index', 'domains.index', 'incidents.index', 'alerts.index'))<meta name="ss-live-list" content="30">@endif
     {{-- Applies the saved theme before the first paint (no flash). --}}
@@ -329,6 +336,22 @@
         </main>
     </div>
 </div>
+
+{{-- Phones: a tab bar at the bottom (the menu stays under "More"). --}}
+@if (Route::has('incidents.index') && Route::has('servers.index'))
+<nav class="ss-tabbar" aria-label="{{ __('mobile.tabbar') }}">
+    @foreach ([['dashboard', 'dashboard', 'i-home', 'overview'], ['incidents.index', 'incidents.*', 'i-siren', 'incidents'], ['servers.index', 'servers.*', 'i-server', 'servers']] as [$tabRoute, $tabMatch, $tabIcon, $tabLabel])
+        <a href="{{ route($tabRoute) }}" class="ss-tab" @if (request()->routeIs($tabMatch)) aria-current="page" @endif>
+            <span class="ss-tab-icon"><svg class="ico" aria-hidden="true"><use href="#{{ $tabIcon }}"/></svg>@if ($tabLabel === 'incidents' && ($sidebarOpenIncidents ?? 0) > 0)<span class="ss-tab-badge">{{ $sidebarOpenIncidents > 9 ? '9+' : $sidebarOpenIncidents }}</span>@endif</span>
+            <span>{{ __('mobile.tabs.'.$tabLabel) }}</span>
+        </a>
+    @endforeach
+    <a href="#sidebar" class="ss-tab" data-sidebar-open aria-controls="sidebar" aria-expanded="false">
+        <span class="ss-tab-icon"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg></span>
+        <span>{{ __('mobile.tabs.more') }}</span>
+    </a>
+</nav>
+@endif
 
 @include('partials.search-dialog')
 @include('partials.confirm-dialog')

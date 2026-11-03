@@ -1,5 +1,20 @@
 # What's new in ServerScope
 
+## 3 November 2026 — ServerScope as an app
+
+### New
+
+- **Installable app**: add ServerScope to your phone's home screen or install
+  it on your computer, with its own icon, a fast start and a proper offline
+  page. No data is kept offline: everything stays live.
+- **Tab bar on phones**: Overview, Incidents (with count), Servers and More
+  (the full menu).
+- **Swipe to acknowledge**: swipe an open incident in the list to the left
+  and tap "Acknowledge".
+- **Push notifications**: turn push on for this device under Profile →
+  Notifications and incidents arrive as phone or desktop notifications. Push
+  follows the same preferences as e-mail and in-app, which stay unchanged.
+
 ## 3 November 2026 — Themes
 
 ### New

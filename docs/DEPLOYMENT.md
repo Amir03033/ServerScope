@@ -389,3 +389,25 @@ Without `--retry` the page says that no return time has been announced; it
 never shows a countdown. Production must keep `APP_DEBUG=false` so that the
 500 page (and no exception details) is shown.
 
+
+## 11c. Mobile app and push notifications
+
+ServerScope can be installed on a phone or desktop (Add to Home Screen /
+Install app) and send push notifications as an extra channel next to e-mail
+and in-app. Push is off until the keys are set:
+
+```
+composer install --no-dev            # adds minishlink/web-push
+php artisan migrate --force          # adds push_subscriptions
+php artisan serverscope:push:keys    # prints a key pair
+```
+
+Put the printed `PUSH_VAPID_PUBLIC_KEY`, `PUSH_VAPID_PRIVATE_KEY` and
+`PUSH_VAPID_SUBJECT` in `.env`, then `php artisan config:cache` and
+`php artisan queue:restart` (pushes are sent by the queue). Keep the private
+key secret; new keys mean every device has to turn push on again.
+
+Each person turns push on per device under Profile → Notifications. Push
+follows the same recipients and preferences as e-mail and in-app. On an
+iPhone, push works only after adding ServerScope to the home screen
+(iOS 16.4 or later). Requires HTTPS.

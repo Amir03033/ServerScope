@@ -8,6 +8,7 @@ use App\Models\Incident;
 use App\Models\MonitoredPage;
 use App\Models\PageChange;
 use App\Models\NotificationLog;
+use App\Services\Push\PushSender;
 use App\Models\User;
 use App\Notifications\DnsChangeNotification;
 use App\Notifications\IncidentNotification;
@@ -204,6 +205,15 @@ class NotificationDispatcher
         }
 
         $user->notify($notification);
+
+        // Web push next to the channels above, on the browsers where this
+        // user turned it on (same recipient, same moment); logged like them.
+        $push = app(PushSender::class);
+
+        if ($push->willSend($user)) {
+            $this->log($notification, $user, null, $incident, $kind, 'push', $teamId);
+            $push->send($user, $notification, $notification->id);
+        }
     }
 
     private function log(BaseNotification $notification, ?User $user, ?string $recipient, ?Incident $incident, string $kind, string $channel, ?int $teamId = null): void

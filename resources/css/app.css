@@ -2095,6 +2095,26 @@
     .ss-theme-name { font-size: .875rem; font-weight: 700; color: var(--ss-text); }
     .ss-theme-desc { font-size: .75rem; color: var(--ss-muted); }
 
+    /* Phones: a tab bar at the bottom (Overview, Incidents, Servers, More). */
+    .ss-tabbar { display: none; }
+    @media (max-width: 767px) {
+        .ss-tabbar { position: fixed; z-index: 45; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); padding: .35rem .5rem calc(.35rem + env(safe-area-inset-bottom)); border-top: 1px solid var(--ss-line); background: color-mix(in srgb, var(--ss-surface) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .ss-tab { display: grid; justify-items: center; gap: .15rem; padding: .3rem 0; border-radius: 10px; color: var(--ss-muted); font-size: .6875rem; font-weight: 600; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+        .ss-tab[aria-current="page"] { color: var(--ss-accent); }
+        .ss-tab:active { background: var(--ss-surface-2); }
+        .ss-tab-icon { position: relative; display: grid; place-items: center; }
+        .ss-tab-icon svg { width: 1.375rem; height: 1.375rem; }
+        .ss-tab-badge { position: absolute; top: -.35rem; right: -.65rem; min-width: 1.1rem; height: 1.1rem; padding: 0 .25rem; border-radius: 999px; background: var(--ss-bad); color: #fff; font-size: .625rem; font-weight: 700; line-height: 1.1rem; text-align: center; }
+        .ss-content { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+        .ss-peek { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+    }
+
+    /* Swipe to acknowledge (phones): the action waits just off the right edge of the row. */
+    .ss-swipe-row { position: relative; transition: transform .22s cubic-bezier(.2, .8, .2, 1); touch-action: pan-y; }
+    .ss-swipe-action { position: absolute; top: 0; bottom: 0; right: -112px; width: 104px; display: grid; place-items: center; border: 0; border-radius: 12px; background: var(--ss-accent); color: var(--ss-on-accent); font-size: .8125rem; font-weight: 700; }
+    .ss-table-wrap:has(.ss-swipe-row) { overflow-x: hidden; }
+    @media (prefers-reduced-motion: reduce) { .ss-swipe-row { transition: none; } }
+
     /* Dashboard heartbeat: one live line per server. */
     .ss-pulse-list { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
     .ss-pulse-row { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) auto; align-items: center; gap: 1rem; padding: .5rem .75rem; border: 1px solid var(--ss-line); border-radius: 12px; background: color-mix(in srgb, var(--ss-bg) 60%, var(--ss-surface)); }

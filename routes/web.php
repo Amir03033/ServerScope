@@ -125,6 +125,8 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'password'])->middleware('throttle:6,1')->name('profile.password');
     Route::put('/profile/notifications', [ProfileController::class, 'notifications'])->name('profile.notifications');
+    Route::post('/profile/push', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])->middleware('throttle:20,1')->name('push.subscribe');
+    Route::delete('/profile/push', [\App\Http\Controllers\PushSubscriptionController::class, 'destroy'])->middleware('throttle:20,1')->name('push.unsubscribe');
     Route::post('/profile/notifications/test', [ProfileController::class, 'testNotification'])->name('profile.notifications.test');
 
     Route::post('/profile/two-factor', [TwoFactorController::class, 'enable'])->name('two-factor.enable');

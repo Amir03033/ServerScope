@@ -127,6 +127,19 @@
                 @csrf
                 <button class="ss-btn ss-btn-ghost ss-btn-sm" type="submit"><svg class="ico"><use href="#i-bell"/></svg> {{ __('profile.send_test') }}</button>
             </form>
+
+            {{-- Push on this device: an extra channel next to e-mail and in-app (same preferences). --}}
+            <div class="ss-push-box" data-push data-push-state="unknown"
+                 data-subscribe-url="{{ route('push.subscribe') }}"
+                 data-public-key="{{ \App\Services\Push\PushSender::enabled() ? config('serverscope.push.public_key') : '' }}"
+                 data-texts='@json(__('push.js'))'>
+                <div class="min-w-0">
+                    <strong class="block">{{ __('push.title') }}</strong>
+                    <span class="ss-help block !mt-0.5" data-push-text>{{ \App\Services\Push\PushSender::enabled() ? __('push.js.checking') : __('push.not_configured') }}</span>
+                    <span class="ss-help block !mt-0.5">{{ trans_choice('push.devices', $user->pushSubscriptions()->count(), ['count' => $user->pushSubscriptions()->count()]) }}</span>
+                </div>
+                <button type="button" class="ss-btn ss-btn-secondary ss-btn-sm" data-push-toggle hidden></button>
+            </div>
         </section>
     </div>
 </x-layouts.app>
