@@ -164,20 +164,25 @@ function boot() {
     function renderAlert() {
         const alert = $('alert');
 
+        // Beside a focused tower the alert is a panel on the left (the city moves
+        // right); over any other scene a band along the bottom.
         const open = (state.mode === 'incident' && Boolean(state.alert)) || state.mode === 'resolved';
-        skyline?.setShift(open && window.innerWidth >= 768 ? 0.17 : 0);
+        const side = open && shown?.startsWith('skyline|server:') && window.innerWidth >= 768;
+        alert.dataset.layout = side ? 'side' : 'bottom';
+        skyline?.setShift(side ? 0.17 : 0);
 
         if (state.mode === 'incident' && state.alert) {
+            const severity = state.alert.severity;
             alert.hidden = false;
-            alert.dataset.severity = state.alert.severity;
-            $('alert-kicker').textContent = t(`severity.${state.alert.severity}`, {}) || state.alert.severity;
+            alert.dataset.tone = ['critical', 'high'].includes(severity) ? 'bad' : 'warn';
+            $('alert-kicker').textContent = t(`severity.${severity}`) === `severity.${severity}` ? t('severity.other') : t(`severity.${severity}`);
             // Non-breaking hyphens: "db-01" never splits over two lines.
             $('alert-title').textContent = state.alert.title.replaceAll('-', '\u2011');
             const since = state.alert.openedAt ? new Date(state.alert.openedAt).toLocaleTimeString(numberLocale(), { hour: '2-digit', minute: '2-digit' }) : '';
             $('alert-meta').textContent = [state.alert.label, since && t('since', { time: since })].filter(Boolean).join(' · ');
         } else if (state.mode === 'resolved') {
             alert.hidden = false;
-            alert.dataset.severity = 'resolved';
+            alert.dataset.tone = 'ok';
             $('alert-kicker').textContent = t('resolved_kicker');
             $('alert-title').textContent = t('resolved');
             $('alert-meta').textContent = '';

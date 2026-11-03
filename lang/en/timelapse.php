@@ -25,7 +25,7 @@ return [
         'loading' => 'Loading the history…',
         'load_failed' => 'The history could not be loaded; try again.',
         'hint' => "The director's cut races through quiet hours and slows down at every incident. Drag the slider to look at any moment.",
-        'severity' => ['critical' => 'Critical', 'warning' => 'Warning', 'info' => 'Notice'],
+        'severity' => ['critical' => 'Critical', 'high' => 'High', 'medium' => 'Medium', 'low' => 'Low', 'warning' => 'Warning', 'info' => 'Notice'],
         'peak_kicker' => 'Busiest moment',
         'peak' => ':server at :cpu% CPU',
         'range_title' => ['24h' => 'The last 24 hours', '7d' => 'The last 7 days'],
