@@ -15,17 +15,19 @@ test('the tour moves on every cycle', () => {
     assert.equal(shotFor(s, []).scene, 'globe');
 });
 
-test('a new incident cuts in at once and focuses its tower, then the heartbeat', () => {
+test('a new incident cuts in at once and focuses its tower, then the other scenes', () => {
     let s = direct(initialState(0, SCENES), [], 5000);
     s = direct(s, [incident(1)], 6000);
 
     assert.equal(s.mode, 'incident');
     assert.equal(s.alert.id, 1);
     assert.deepEqual(shotFor(s, [incident(1)]), { scene: 'skyline', focus: 'server:1' });
-    s = direct(s, [incident(1)], 6000 + DIRECTOR.incidentShotMs);
-    assert.equal(shotFor(s, [incident(1)]).scene, 'pulse');
-    s = direct(s, [incident(1)], 6000 + DIRECTOR.incidentShotMs * 2);
-    assert.equal(shotFor(s, [incident(1)]).scene, 'skyline');
+    const seen = [];
+    for (let k = 1; k <= 4; k++) {
+        s = direct(s, [incident(1)], 6000 + DIRECTOR.incidentShotMs * k);
+        seen.push(shotFor(s, [incident(1)]).scene);
+    }
+    assert.deepEqual(seen, ['globe', 'pulse', 'summary', 'skyline'], 'globe and summary are not skipped');
 
     // A second, new incident becomes the alert.
     s = direct(s, [incident(2), incident(1)], 40_000);

@@ -39,7 +39,7 @@
     "name": "vitals"
   },
   "resources/css/app.css": {
-    "file": "assets/app-mTK6kcEu.css",
+    "file": "assets/app-b6ddrRkj.css",
     "name": "app",
     "names": [
       "app.css"
@@ -65,7 +65,7 @@
     "src": "resources/fonts/jetbrains-mono-latin-wght.woff2"
   },
   "resources/js/app.js": {
-    "file": "assets/app-D59161aF.js",
+    "file": "assets/app-BrWtogtt.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -209,7 +209,7 @@
     ]
   },
   "resources/js/wall.js": {
-    "file": "assets/wall-DFjSHKsE.js",
+    "file": "assets/wall-C_cckH2A.js",
     "name": "wall",
     "src": "resources/js/wall.js",
     "isEntry": true,

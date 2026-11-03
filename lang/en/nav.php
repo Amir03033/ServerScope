@@ -95,4 +95,5 @@ return [
     ],
 
     'footer' => 'ServerScope · Infrastructure monitoring',
+    'toggle' => "Show or hide the pages of :name",
 ];

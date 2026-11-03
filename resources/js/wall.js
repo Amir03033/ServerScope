@@ -61,7 +61,17 @@ function boot() {
     state.scenes = scenes;
 
     // ---------- scenes ----------
-    async function ensure(scene) {
+    // One build per scene, also when the director asks again while it loads.
+    const building = new Map();
+
+    function ensure(scene) {
+        // Not built (e.g. the globe had no locations yet): try again next time.
+        if (!building.has(scene)) building.set(scene, build(scene).catch(() => {}).finally(() => { if (!(scene === 'skyline' ? skyline : scene === 'globe' ? globe : true)) building.delete(scene); }));
+
+        return building.get(scene);
+    }
+
+    async function build(scene) {
         if (scene === 'skyline' && !skyline && webgl) {
             const { createSkyline } = await import('./skyline/scene.js');
             skyline = createSkyline($('skyline'), { reducedMotion, t: tSkyline });

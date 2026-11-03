@@ -512,6 +512,21 @@ document.querySelectorAll('[data-secret-toggle]').forEach((button) => {
     });
 });
 
+/* Folded menu parts (NEXUS): the toggle remembers open/closed in this browser. */
+document.querySelectorAll('[data-nav-toggle]').forEach((button) => {
+    const key = button.dataset.navToggle;
+    const children = document.getElementById(button.getAttribute('aria-controls'));
+    const sync = () => button.setAttribute('aria-expanded', String(getComputedStyle(children).display !== 'none'));
+
+    sync();
+    button.addEventListener('click', () => {
+        const open = getComputedStyle(children).display === 'none';
+        document.documentElement.setAttribute(`data-nav-${key}`, open ? 'open' : 'closed');
+        try { localStorage.setItem(`ss-nav-${key}`, open ? 'open' : 'closed'); } catch { /* not remembered */ }
+        sync();
+    });
+});
+
 document.querySelectorAll('[data-copy-from]').forEach((button) => {
     const input = document.getElementById(button.dataset.copyFrom);
 
