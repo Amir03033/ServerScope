@@ -6,7 +6,7 @@
     <x-slot:subtitle>{{ __('deployments.subtitle') }}</x-slot:subtitle>
 
     <section class="ss-panel">
-        <form method="GET" action="{{ route('deployments.index') }}" class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] lg:items-end" role="search">
+        <form method="GET" action="{{ route('deployments.index') }}" data-filters-label="{{ __('common.filters') }}" class="ss-filters mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] lg:items-end" role="search">
             <div>
                 <label class="ss-label" for="application">{{ __('deployments.application') }}</label>
                 <select id="application" class="ss-input mt-1.5" name="application"><option value="">{{ __('deployments.all') }}</option>
@@ -30,7 +30,7 @@
                         @foreach ($deployments as $deployment)
                             <tr>
                                 <td class="is-primary">
-                                    <a class="font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('deployments.show', $deployment) }}">{{ $deployment->application }}</a>
+                                    <a class="ss-hit font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('deployments.show', $deployment) }}">{{ $deployment->application }}</a>
                                     <span class="block text-xs text-muted">#{{ $deployment->id }}@if ($deployment->version) · {{ $deployment->version }}@endif @if ($deployment->actor) · {{ $deployment->actor }}@endif</span>
                                 </td>
                                 <td data-label="{{ __('deployments.environment') }}">{{ $deployment->environment }}</td>

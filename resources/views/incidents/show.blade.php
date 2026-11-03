@@ -42,11 +42,11 @@
 
     {{-- Status bar with the actions that are possible now (directly under it on mobile). --}}
     <section class="ss-panel mb-4 grid gap-4" id="actions">
-        <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+        <div class="flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:items-center">
             <x-severity :severity="$incident->severity" />
             <ol class="ss-progress min-w-0" aria-label="{{ __('incidents.show.progress_label') }}">
                 @foreach ($steps as $index => $step)
-                    <li @class(['is-done' => $current !== false && $index < $current]) @if ($index === $current) aria-current="step" @endif>{{ StatusLabel::for($step) }}</li>
+                    <li @class(['is-done' => $current !== false && $index < $current]) @if ($index === $current) aria-current="step" @endif><span>{{ StatusLabel::for($step) }}</span></li>
                 @endforeach
             </ol>
         </div>
@@ -147,7 +147,7 @@
                             <tbody>
                                 @foreach ($incident->children as $child)
                                     <tr>
-                                        <td class="is-primary"><a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('incidents.show', $child) }}">#{{ $child->id }} {{ $child->title }}</a><span class="block text-xs text-muted">{{ $child->correlation['reason'] ?? '' }}</span></td>
+                                        <td class="is-primary"><a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ route('incidents.show', $child) }}">#{{ $child->id }} {{ $child->title }}</a><span class="block text-xs text-muted">{{ $child->correlation['reason'] ?? '' }}</span></td>
                                         <td data-label="{{ __('incidents.show.col_subject') }}">{{ $child->subjectName() }}</td>
                                         <td data-label="{{ __('incidents.show.col_status') }}"><x-status :status="$child->status" /></td>
                                         <td data-label="{{ __('incidents.show.col_opened') }}" class="whitespace-nowrap">{{ Time::dateTime($child->opened_at) }}</td>
@@ -171,7 +171,7 @@
                                     @php $impactUrl = ResourceCatalog::url($impact->resource); @endphp
                                     <tr>
                                         <td class="is-primary">
-                                            @if ($impactUrl)<a class="font-semibold text-fg no-underline hover:text-accent" href="{{ $impactUrl }}">{{ ResourceCatalog::name($impact->resource) }}</a>@else{{ ResourceCatalog::name($impact->resource) }}@endif
+                                            @if ($impactUrl)<a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ $impactUrl }}">{{ ResourceCatalog::name($impact->resource) }}</a>@else{{ ResourceCatalog::name($impact->resource) }}@endif
                                             <span class="block text-xs text-muted">{{ $typeLabel($impact->resource_type) }}@if ($impact->message) · {{ $impact->message }}@endif</span>
                                         </td>
                                         <td data-label="{{ __('incidents.show.col_role') }}">{{ $impact->role === 'cause' ? __('incidents.show.role_cause') : __('incidents.show.role_affected') }}</td>

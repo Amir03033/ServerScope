@@ -61,7 +61,7 @@
                             @foreach ($dependencies as $dependency)
                                 <tr>
                                     <td class="is-primary">
-                                        @if ($url = ResourceCatalog::url($dependency->dependent))<a class="font-semibold text-fg no-underline hover:text-accent" href="{{ $url }}">{{ ResourceCatalog::name($dependency->dependent) }}</a>@else{{ ResourceCatalog::name($dependency->dependent) }}@endif
+                                        @if ($url = ResourceCatalog::url($dependency->dependent))<a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ $url }}">{{ ResourceCatalog::name($dependency->dependent) }}</a>@else{{ ResourceCatalog::name($dependency->dependent) }}@endif
                                         <span class="block text-xs text-muted">{{ $typeLabel($dependency->dependent_type) }}</span>
                                     </td>
                                     <td class="is-actions text-muted" aria-hidden="true">→</td>

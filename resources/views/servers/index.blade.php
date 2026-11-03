@@ -46,7 +46,7 @@
             </div>
         </nav>
 
-        <form method="GET" action="{{ route('servers.index') }}" class="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-end" role="search">
+        <form method="GET" action="{{ route('servers.index') }}" data-filters-label="{{ __('common.filters') }}" class="ss-filters mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:items-end" role="search">
             @if ($status)
                 <input type="hidden" name="status" value="{{ $status }}">
             @endif
@@ -124,7 +124,7 @@
                             <tr>
                                 <td class="is-primary">
                                     @unless ($server->trashed())<x-favorite-button type="server" :id="$server->id" :active="in_array($server->id, $favorites, true)" class="float-right" />@endunless
-                                    <a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('servers.show', $server) }}">{{ $server->name }}</a>
+                                    <a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ route('servers.show', $server) }}">{{ $server->name }}</a>
                                     <span class="block text-xs text-muted [overflow-wrap:anywhere]">{{ $server->hostname }}@if ($server->ip_address) · {{ $server->ip_address }}@endif</span>
                                 </td>
                                 <td data-label="{{ __('servers.index.col_environment') }}"><span class="ss-chip">{{ Label::of('server_environment', $server->environment, Server::ENVIRONMENTS) }}</span></td>

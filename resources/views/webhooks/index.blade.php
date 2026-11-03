@@ -20,7 +20,7 @@
                     <tbody>
                         @foreach ($endpoints as $endpoint)
                             <tr>
-                                <td class="is-primary"><a class="font-semibold text-fg no-underline hover:text-accent" href="{{ route('webhooks.show', $endpoint) }}">{{ $endpoint->name }}</a><span class="block text-xs text-muted">{{ parse_url($endpoint->url, PHP_URL_HOST) }}</span></td>
+                                <td class="is-primary"><a class="ss-hit font-semibold text-fg no-underline hover:text-accent" href="{{ route('webhooks.show', $endpoint) }}">{{ $endpoint->name }}</a><span class="block text-xs text-muted">{{ parse_url($endpoint->url, PHP_URL_HOST) }}</span></td>
                                 <td data-label="{{ __('webhooks.col_type') }}" class="text-sm">{{ $endpoint->isDiscord() ? __('webhooks.type_discord') : __('webhooks.type_generic') }}</td>
                                 <td data-label="{{ __('webhooks.col_events') }}" class="text-sm">{{ __('webhooks.events_selected', ['count' => count($endpoint->events)]) }}</td>
                                 <td data-label="{{ __('webhooks.col_status') }}">
