@@ -21,6 +21,11 @@
 
 ### Improved
 
+- **Menu**: NEXUS folds; Skyline, Globe, Time travel and Wall screen show on a
+  NEXUS page or when you open it (remembered per browser).
+- **Wall screen**: during an incident every scene is shown (also Globe and
+  Summary), not only the tower and the heartbeat.
+
 - The heartbeat on phones: name, line and numbers stacked and readable.
 
 ## 3 November 2026 — Heartbeat, skyline and status badges

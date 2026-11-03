@@ -737,6 +737,20 @@
     }
 
     .ss-nav-item > svg { width: 1.125rem; height: 1.125rem; }
+    /* A menu item with pages under it (NEXUS): folded unless you are on one of
+       them, or as last chosen (html[data-nav-nexus], set before first paint). */
+    .ss-nav-tree-row { display: flex; align-items: center; gap: .125rem; }
+    .ss-nav-tree-row > .ss-nav-item { flex: 1; min-width: 0; }
+    .ss-nav-toggle { display: grid; place-items: center; width: 2rem; height: 2rem; flex: none; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--ss-muted); cursor: pointer; }
+    .ss-nav-toggle:hover { background: var(--ss-surface-2); color: var(--ss-text); }
+    .ss-nav-toggle:focus-visible { outline: 2px solid var(--ss-accent); outline-offset: -2px; }
+    .ss-nav-toggle svg { width: 1rem; height: 1rem; transition: transform .2s ease; }
+    .ss-nav-children { display: none; gap: .125rem; padding: .125rem 0 .25rem; }
+    .ss-nav-tree.is-active .ss-nav-children, :root[data-nav-nexus="open"] [data-nav-tree="nexus"] .ss-nav-children { display: grid; }
+    :root[data-nav-nexus="closed"] [data-nav-tree="nexus"] .ss-nav-children { display: none; }
+    .ss-nav-tree.is-active .ss-nav-toggle svg, :root[data-nav-nexus="open"] [data-nav-tree="nexus"] .ss-nav-toggle svg { transform: rotate(180deg); }
+    :root[data-nav-nexus="closed"] [data-nav-tree="nexus"] .ss-nav-toggle svg { transform: none; }
+
     /* A page that belongs to the item above it (NEXUS › Globe). */
     .ss-nav-sub { margin-left: 1.1rem; min-height: 2rem; padding-left: .7rem; border-left: 1px solid var(--ss-line); border-radius: 0 8px 8px 0; font-size: .8125rem; }
     .ss-nav-sub > svg { width: 1rem; height: 1rem; }

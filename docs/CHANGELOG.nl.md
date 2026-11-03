@@ -22,6 +22,11 @@
 
 ### Verbeterd
 
+- **Menu**: NEXUS klapt in; je ziet Skyline, Wereldbol, Tijdreis en Wandscherm
+  als je op een NEXUS-pagina bent of hem openklapt (onthouden per browser).
+- **Wandscherm**: bij een incident komen alle scènes aan bod (ook Wereldbol en
+  Samenvatting), niet alleen de toren en de hartslag.
+
 - De hartslag op telefoons: naam, lijn en cijfers onder elkaar, leesbaar.
 
 ## 3 november 2026 — Hartslag, skyline en statusbadges

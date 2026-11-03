@@ -4,9 +4,9 @@
 // - tour: calmly through the scenes (skyline, globe, heartbeat, summary),
 //   one every cycle;
 // - incident: as soon as an incident appears that was not seen before,
-//   cut to it for a minute: a large alert, and the camera on the tower of
-//   the server it concerns, alternating with the heartbeat (an incident
-//   without a server, e.g. on a page, keeps touring the scenes). Then the
+//   cut to it for a minute: a large alert, the camera on the tower of the
+//   server it concerns, then the other scenes in turn (an incident without
+//   a server, e.g. on a page, tours all scenes). Then the
 //   tour continues; active incidents stay in the status and the ticker,
 //   so a long incident never freezes the screen;
 // - resolved: when the last incident is gone, a short "all clear" before
@@ -106,11 +106,12 @@ export function direct(state, incidents, now, { cycleMs = DIRECTOR.cycleMs } = {
 /** What to show for a state. */
 export function shotFor(state, incidents) {
     if (state.mode === 'incident' && incidents.length > 0) {
-        // Each incident's tower in turn, then the heartbeat; without towers, the scenes in turn.
+        // Each incident's tower first, then every other scene: nothing is skipped.
         const towers = [...new Set(incidents.map((i) => i.tower).filter(Boolean))];
-        const shots = towers.length
-            ? [...towers.map((tower) => ({ scene: 'skyline', focus: tower })), { scene: 'pulse', focus: null }]
-            : state.scenes.map((scene) => ({ scene, focus: null }));
+        const shots = [
+            ...towers.map((tower) => ({ scene: 'skyline', focus: tower })),
+            ...state.scenes.filter((scene) => !(towers.length && scene === 'skyline')).map((scene) => ({ scene, focus: null })),
+        ];
 
         return shots[state.shot % shots.length];
     }

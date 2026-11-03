@@ -32,11 +32,13 @@
         'monitoring' => [
             ['route' => 'servers.index', 'match' => 'servers.*', 'icon' => 'i-server', 'label' => 'servers'],
             ['route' => 'domains.index', 'match' => ['domains.*', 'websites.*', 'pages.*'], 'icon' => 'i-globe', 'label' => 'domains'],
-            ['route' => 'nexus.index', 'match' => ['nexus.index', 'nexus.graph'], 'icon' => 'i-nexus', 'label' => 'nexus'],
-            ['route' => 'nexus.skyline', 'match' => 'nexus.skyline', 'icon' => 'i-city', 'label' => 'skyline', 'sub' => true],
-            ['route' => 'nexus.globe', 'match' => 'nexus.globe*', 'icon' => 'i-earth', 'label' => 'globe', 'sub' => true],
-            ['route' => 'nexus.timelapse', 'match' => 'nexus.timelapse*', 'icon' => 'i-film', 'label' => 'timelapse', 'sub' => true],
-            ['route' => 'nexus.wall', 'match' => 'nexus.wall', 'icon' => 'i-tv', 'label' => 'wall', 'sub' => true],
+            // NEXUS with its views, folded in the menu (see the toggle below).
+            ['route' => 'nexus.index', 'match' => ['nexus.index', 'nexus.graph'], 'icon' => 'i-nexus', 'label' => 'nexus', 'tree' => 'nexus', 'children' => [
+                ['route' => 'nexus.skyline', 'match' => 'nexus.skyline', 'icon' => 'i-city', 'label' => 'skyline', 'sub' => true],
+                ['route' => 'nexus.globe', 'match' => 'nexus.globe*', 'icon' => 'i-earth', 'label' => 'globe', 'sub' => true],
+                ['route' => 'nexus.timelapse', 'match' => 'nexus.timelapse*', 'icon' => 'i-film', 'label' => 'timelapse', 'sub' => true],
+                ['route' => 'nexus.wall', 'match' => 'nexus.wall', 'icon' => 'i-tv', 'label' => 'wall', 'sub' => true],
+            ]],
             ['route' => 'dependencies.index', 'match' => 'dependencies.*', 'icon' => 'i-link', 'label' => 'dependencies'],
             ['route' => 'deployments.index', 'match' => 'deployments.*', 'icon' => 'i-flag', 'label' => 'deployments'],
         ],
@@ -113,7 +115,12 @@
                 @endif
 
                 @foreach ($items as $item)
-                    @php $isActive = request()->routeIs(...(array) $item['match']); @endphp
+                    @php
+                        $isActive = request()->routeIs(...(array) $item['match']);
+                        $children = array_values(array_filter($item['children'] ?? [], fn ($child) => Route::has($child['route'])));
+                        $inTree = $isActive || collect($children)->contains(fn ($child) => request()->routeIs(...(array) $child['match']));
+                    @endphp
+                    @if ($children !== [])<div class="ss-nav-tree{{ $inTree ? ' is-active' : '' }}" data-nav-tree="{{ $item['tree'] }}"><div class="ss-nav-tree-row">@endif
                     <a href="{{ route($item['route']) }}" class="ss-nav-item{{ ($item['sub'] ?? false) ? ' ss-nav-sub' : '' }}" @if ($isActive) aria-current="page" @endif>
                         <svg class="ico"><use href="#{{ $item['icon'] }}"/></svg>
                         <span class="min-w-0 truncate">{{ __('nav.items.'.$item['label']) }}</span>
@@ -121,6 +128,20 @@
                             <span class="nav-count {{ $item['countClass'] ?? '' }}">{{ $item['count'] }}</span>
                         @endif
                     </a>
+                    @if ($children !== [])
+                        <button type="button" class="ss-nav-toggle" data-nav-toggle="{{ $item['tree'] }}" aria-controls="nav-tree-{{ $item['tree'] }}" aria-expanded="{{ $inTree ? 'true' : 'false' }}" aria-label="{{ __('nav.toggle', ['name' => __('nav.items.'.$item['label'])]) }}"><svg class="ico" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+                        </div>
+                        <div class="ss-nav-children" id="nav-tree-{{ $item['tree'] }}">
+                            @foreach ($children as $child)
+                                @php $childActive = request()->routeIs(...(array) $child['match']); @endphp
+                                <a href="{{ route($child['route']) }}" class="ss-nav-item ss-nav-sub" @if ($childActive) aria-current="page" @endif>
+                                    <svg class="ico"><use href="#{{ $child['icon'] }}"/></svg>
+                                    <span class="min-w-0 truncate">{{ __('nav.items.'.$child['label']) }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
                 @endforeach
 
                 @if ($group !== '')

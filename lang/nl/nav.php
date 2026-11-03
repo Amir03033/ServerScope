@@ -95,4 +95,5 @@ return [
     ],
 
     'footer' => 'ServerScope · Infrastructure monitoring',
+    'toggle' => "Pagina's van :name tonen of verbergen",
 ];
