@@ -12,7 +12,9 @@ import './livelists';
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 /* ------------------------------------------------------------------ */
-/* Theme: system (default), light or dark. Stored only in this browser. */
+/* Theme: system (default), light or dark; optionally an extra theme     */
+/* (midnight, terminal, contrast) on top, only when chosen explicitly    */
+/* (Profile → Appearance, or the command palette). Stored in this browser. */
 /* ------------------------------------------------------------------ */
 
 const themeButton = document.querySelector('[data-theme-toggle]');
@@ -25,32 +27,88 @@ function storedTheme() {
     }
 }
 
+const VARIANTS = { midnight: 'dark', terminal: 'dark', contrast: 'light' };
+
+function storedVariant() {
+    try {
+        const v = localStorage.getItem('ss-theme-variant');
+
+        return v in VARIANTS ? v : null;
+    } catch {
+        return null;
+    }
+}
+
 function applyTheme(theme) {
-    if (theme === 'light' || theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', theme);
+    const variant = storedVariant();
+    const base = variant ? VARIANTS[variant] : theme;
+
+    if (variant) {
+        document.documentElement.setAttribute('data-variant', variant);
+    } else {
+        document.documentElement.removeAttribute('data-variant');
+    }
+
+    if (base === 'light' || base === 'dark') {
+        document.documentElement.setAttribute('data-theme', base);
     } else {
         document.documentElement.removeAttribute('data-theme');
     }
+
+    document.querySelectorAll('[data-theme-choice]').forEach((input) => {
+        input.checked = input.value === (variant ?? theme);
+    });
 
     if (themeButton) {
         const labels = JSON.parse(themeButton.dataset.labels || '{}');
         themeButton.setAttribute('aria-label', `${themeButton.dataset.labelPrefix}: ${labels[theme] || theme}`);
         themeButton.title = themeButton.getAttribute('aria-label');
         themeButton.querySelectorAll('[data-theme-icon]').forEach((icon) => {
-            icon.toggleAttribute('hidden', icon.dataset.themeIcon !== theme);
+            icon.toggleAttribute('hidden', icon.dataset.themeIcon !== (variant ? VARIANTS[variant] : theme));
         });
+
+        if (variant) {
+            const names = JSON.parse(themeButton.dataset.variants || '{}');
+            themeButton.setAttribute('aria-label', `${themeButton.dataset.labelPrefix}: ${names[variant] || variant}`);
+            themeButton.title = themeButton.getAttribute('aria-label');
+        }
     }
 }
+
+/** Choose a theme: system, light, dark, or an extra theme (midnight, terminal, contrast). */
+function chooseTheme(choice) {
+    try {
+        if (choice in VARIANTS) {
+            localStorage.setItem('ss-theme-variant', choice);
+        } else {
+            localStorage.removeItem('ss-theme-variant');
+            choice === 'system' ? localStorage.removeItem('ss-theme') : localStorage.setItem('ss-theme', choice);
+        }
+    } catch {
+        // Storage blocked: the choice still applies to this page.
+    }
+
+    applyTheme(choice in VARIANTS ? storedTheme() : choice);
+}
+
+// The picker on the profile page and the command palette use this event.
+document.addEventListener('ss:theme', (event) => chooseTheme(event.detail));
+document.querySelectorAll('[data-theme-choice]').forEach((input) => {
+    input.addEventListener('change', () => chooseTheme(input.value));
+});
+applyTheme(storedTheme());
 
 if (themeButton) {
     themeButton.hidden = false;
     applyTheme(storedTheme());
 
     themeButton.addEventListener('click', () => {
+        // The switch cycles the default themes; it also leaves an extra theme.
         const order = ['system', 'light', 'dark'];
-        const next = order[(order.indexOf(storedTheme()) + 1) % order.length];
+        const next = storedVariant() ? storedTheme() : order[(order.indexOf(storedTheme()) + 1) % order.length];
 
         try {
+            localStorage.removeItem('ss-theme-variant');
             if (next === 'system') {
                 localStorage.removeItem('ss-theme');
             } else {

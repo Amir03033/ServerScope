@@ -1,5 +1,16 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — Thema's
+
+### Nieuw
+
+- **Extra thema's**: naast licht en donker (de standaard, of volgens je
+  systeem) kun je nu expliciet kiezen voor **Midnight** (diep blauw met een
+  neongloed), **Terminal** (groen op zwart, monospace) of **Hoog contrast**
+  (maximaal contrast, duidelijke randen en focus). Kies bij Profiel → Weergave
+  of via Ctrl/⌘ K ("thema"). De themaknop bovenin wisselt zoals altijd tussen
+  systeem, licht en donker en zet je terug naar de standaard.
+
 ## 3 november 2026 — Alles live
 
 ### Nieuw

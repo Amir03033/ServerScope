@@ -73,6 +73,29 @@
             @endif
         </div>
 
+        {{-- Appearance: light/dark by default; extra themes only when chosen here. --}}
+        <section class="ss-panel" aria-labelledby="appearance-title">
+            <h2 id="appearance-title" class="ss-panel-title">{{ __('themes.title') }}</h2>
+            <p class="ss-panel-sub mb-4">{{ __('themes.text') }}</p>
+            <noscript><p class="m-0 text-sm text-muted">{{ __('themes.noscript') }}</p></noscript>
+            <fieldset class="m-0 border-0 p-0" data-theme-picker>
+                <legend class="sr-only">{{ __('themes.title') }}</legend>
+                @foreach (['default' => ['system', 'light', 'dark'], 'extra' => ['midnight', 'terminal', 'contrast']] as $group => $choices)
+                    <h3 class="mb-2 mt-1 text-xs font-semibold uppercase tracking-wide text-muted {{ $group === 'extra' ? 'mt-5' : '' }}">{{ __('themes.'.$group) }}</h3>
+                    <div class="ss-theme-grid">
+                        @foreach ($choices as $choice)
+                            <label class="ss-theme-card">
+                                <input type="radio" name="ss-theme-choice" value="{{ $choice }}" data-theme-choice @checked($choice === 'system')>
+                                <span class="ss-theme-swatch is-{{ $choice }}" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                                <span class="ss-theme-name">{{ __('themes.names.'.$choice) }}</span>
+                                <span class="ss-theme-desc">{{ __('themes.descriptions.'.$choice) }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                @endforeach
+            </fieldset>
+        </section>
+
         <section class="ss-panel" aria-labelledby="notifications-title">
             <h2 id="notifications-title" class="ss-panel-title">{{ __('profile.notifications_title') }}</h2>
             <p class="ss-panel-sub mb-4">{{ __('profile.notifications_text') }}</p>

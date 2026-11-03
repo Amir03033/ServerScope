@@ -441,7 +441,7 @@ export function createGlobe(container, { reducedMotion, t, onSelectLocation }) {
     document.addEventListener('visibilitychange', schedule);
 
     const onTheme = () => { colors = themeColors(); buildEarth(); buildMarkers(); };
-    new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-variant'] });
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onTheme);
 
     buildEarth();

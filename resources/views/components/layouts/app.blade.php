@@ -206,7 +206,8 @@
                 <button type="button" class="ss-icon-btn" data-theme-toggle hidden
                         aria-label="{{ __('nav.theme.label') }}: {{ __('nav.theme.system') }}"
                         data-label-prefix="{{ __('nav.theme.label') }}"
-                        data-labels='@json(['system' => __('nav.theme.system'), 'light' => __('nav.theme.light'), 'dark' => __('nav.theme.dark')])'>
+                        data-labels='@json(['system' => __('nav.theme.system'), 'light' => __('nav.theme.light'), 'dark' => __('nav.theme.dark')])'
+                        data-variants='@json(['midnight' => __('themes.names.midnight'), 'terminal' => __('themes.names.terminal'), 'contrast' => __('themes.names.contrast')])'>
                     <svg class="ico" data-theme-icon="system"><use href="#i-monitor"/></svg>
                     <svg class="ico" data-theme-icon="light" hidden><use href="#i-sun"/></svg>
                     <svg class="ico" data-theme-icon="dark" hidden><use href="#i-moon"/></svg>

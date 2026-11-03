@@ -230,6 +230,13 @@ function boot() {
 
     // ---------- running a choice ----------
     function run(item) {
+        if (item.action?.startsWith('theme:')) {
+            dialog.close();
+            document.dispatchEvent(new CustomEvent('ss:theme', { detail: item.action.slice(6) }));
+
+            return;
+        }
+
         if (item.action === 'theme') {
             dialog.close();
             document.querySelector('[data-theme-toggle]')?.click();

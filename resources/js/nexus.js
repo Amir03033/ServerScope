@@ -170,7 +170,7 @@ function boot() {
         if (state.topology) updateInPlace();
         render3d();
     };
-    new MutationObserver(onThemeChange).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(onThemeChange).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-variant'] });
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onThemeChange);
 
     // ---------- filters ----------
