@@ -7,6 +7,7 @@ import { numberLocale, t } from './i18n';
 import './live';
 import './peek';
 import './palette';
+import './livelists';
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
@@ -141,14 +142,15 @@ if (sidebar) {
     });
 }
 
-/* Menus (<details>): close on Escape and on a click outside. */
-document.querySelectorAll('[data-menu]').forEach((menu) => {
-    menu.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && menu.open) {
-            menu.open = false;
-            menu.querySelector('summary')?.focus();
-        }
-    });
+/* Menus (<details>): close on Escape and on a click outside. Delegated, so
+   menus in rows that live lists replace keep working. */
+document.addEventListener('keydown', (event) => {
+    const menu = event.target.closest?.('[data-menu]');
+
+    if (event.key === 'Escape' && menu?.open) {
+        menu.open = false;
+        menu.querySelector('summary')?.focus();
+    }
 });
 
 document.addEventListener('click', (event) => {
@@ -667,32 +669,36 @@ document.querySelectorAll('[data-enroll-status]').forEach((box) => {
     });
 })();
 
-/* Favourites: toggle in place (the form still works without JavaScript). */
-document.querySelectorAll('[data-favorite-form]').forEach((form) => {
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const button = form.querySelector('button');
-        if (button.disabled) return;
-        button.disabled = true;
+/* Favourites: toggle in place (the form still works without JavaScript).
+   Delegated in the capture phase (before the confirm/loading handler), so
+   rows that live lists replace keep working. */
+document.addEventListener('submit', async (event) => {
+    const form = event.target.closest?.('[data-favorite-form]');
 
-        try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                headers: { Accept: 'application/json' },
-                credentials: 'same-origin',
-                body: new FormData(form),
-            });
-            if (!response.ok) throw new Error(String(response.status));
-            const data = await response.json();
-            button.setAttribute('aria-pressed', data.favorite ? 'true' : 'false');
-            button.setAttribute('aria-label', data.label);
-            button.title = data.label;
-            button.querySelector('svg')?.setAttribute('fill', data.favorite ? 'currentColor' : 'none');
-        } catch {
-            form.submit();
-        } finally {
-            button.disabled = false;
-        }
-    });
-});
+    if (!form) return;
+
+    event.preventDefault();
+    const button = form.querySelector('button');
+    if (button.disabled) return;
+    button.disabled = true;
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+            body: new FormData(form),
+        });
+        if (!response.ok) throw new Error(String(response.status));
+        const data = await response.json();
+        button.setAttribute('aria-pressed', data.favorite ? 'true' : 'false');
+        button.setAttribute('aria-label', data.label);
+        button.title = data.label;
+        button.querySelector('svg')?.setAttribute('fill', data.favorite ? 'currentColor' : 'none');
+    } catch {
+        form.submit();
+    } finally {
+        button.disabled = false;
+    }
+}, true);
 
