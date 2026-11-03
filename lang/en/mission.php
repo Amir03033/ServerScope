@@ -33,4 +33,6 @@ return [
     'focus_calm_text' => 'Everything is running as it should. Turn off focus to see all details.',
     'details' => 'Details',
     'details_text' => 'Everything below is the dashboard as before.',
+    'more' => '+:count more',
+    'less' => 'Show less',
 ];

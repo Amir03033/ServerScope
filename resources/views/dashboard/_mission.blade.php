@@ -44,9 +44,9 @@
 
     <div class="ss-mission-block" data-mission-tiles-block>
         <h3 class="ss-mission-subtitle">{{ __('mission.tiles_title') }}</h3>
-        <div class="ss-mission-tiles" data-mission-tiles>
+        <div class="ss-mission-tiles" data-mission-tiles data-limit="8">
             @forelse ($m['tiles'] as $tile)
-                <a class="ss-mtile" href="{{ $tile['url'] }}" data-health="{{ $tile['health'] }}" data-key="{{ $tile['key'] }}" title="{{ $tile['name'] }}">
+                <a class="ss-mtile{{ $loop->index >= 8 ? ' is-extra' : '' }}" href="{{ $tile['url'] }}" data-health="{{ $tile['health'] }}" data-key="{{ $tile['key'] }}" title="{{ $tile['name'] }}">
                     <span class="ss-mtile-dot" aria-hidden="true"></span>
                     <span class="ss-mtile-name">{{ $tile['name'] }}</span>
                     <span class="ss-mtile-value">{{ $tile['value'] === null ? '' : ($tile['type'] === 'server' ? round($tile['value']).'%' : round($tile['value']).' ms') }}</span>
@@ -55,6 +55,9 @@
                 <p class="m-0 text-sm text-muted">{{ __('mission.tiles_empty') }}</p>
             @endforelse
         </div>
+        @if (count($m['tiles']) > 8)
+            <button type="button" class="ss-mission-more" data-mission-more aria-expanded="false" data-more="{{ __('mission.more', ['count' => count($m['tiles']) - 8]) }}" data-less="{{ __('mission.less') }}">{{ __('mission.more', ['count' => count($m['tiles']) - 8]) }}</button>
+        @endif
     </div>
 
     <div class="ss-mission-block" data-mission-timeline-block>
@@ -75,4 +78,6 @@
         </div>
         @if ($m['timeline']['events'] === [])<p class="mt-2 mb-0 text-xs text-muted" data-mission-timeline-empty>{{ __('mission.timeline_empty') }}</p>@endif
     </div>
+
+    @include('dashboard._pulse', ['compact' => true])
 </section>

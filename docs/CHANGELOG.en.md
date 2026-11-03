@@ -1,5 +1,21 @@
 # What's new in ServerScope
 
+## 3 November 2026 — Command palette
+
+### New
+
+- **Command palette** (Ctrl/⌘ K): besides search, commands. Go to any page,
+  quick filters ("servers offline", "slow websites", "unacknowledged
+  incidents"), switch theme and focus mode. An empty query shows what you
+  viewed recently. The selected result gets a live preview on the right.
+  Commands change only the view, never data.
+
+### Improved
+
+- **Dashboard**: the heartbeat now sits inside mission control, right under
+  the last 24 hours, and is more compact, so it is in view when you open the
+  app. Tiles show problems first, then "+N more".
+
 ## 3 November 2026 — Quick look
 
 ### New

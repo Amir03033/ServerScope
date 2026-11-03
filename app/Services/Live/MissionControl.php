@@ -100,7 +100,8 @@ class MissionControl
                 default => __('mission.headline.attention', ['issue' => Str::lcfirst($first)]),
             },
             'issues' => $issues,
-            'tiles' => $servers->concat($sites)->take(self::MAX_TILES)->map(fn (array $n) => [
+            // Problems first, so the first rows always show what matters.
+            'tiles' => $servers->concat($sites)->sortBy(fn (array $n) => [['critical' => 0, 'warning' => 1, 'unknown' => 2, 'maintenance' => 3, 'paused' => 3][$n['health']] ?? 4, $n['type'] === 'server' ? 0 : 1, $n['label']])->take(self::MAX_TILES)->map(fn (array $n) => [
                 'key' => $n['key'],
                 'type' => $n['type'],
                 'name' => $n['label'],

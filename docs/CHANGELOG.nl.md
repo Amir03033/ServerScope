@@ -1,5 +1,21 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — Commandopalet
+
+### Nieuw
+
+- **Commandopalet** (Ctrl/⌘ K): naast zoeken nu ook opdrachten. Ga naar elke
+  pagina, snelle filters ("servers offline", "trage websites", "onbevestigde
+  incidenten"), thema wisselen en focusmodus. Met een lege zoekvraag zie je
+  wat je recent bekeek. Het gekozen resultaat krijgt rechts een live preview.
+  Opdrachten veranderen alleen de weergave, nooit gegevens.
+
+### Verbeterd
+
+- **Dashboard**: de hartslag staat nu ín mission control, direct onder de
+  afgelopen 24 uur, en is compacter, zodat je hem ziet zodra je de app opent.
+  De tegels tonen eerst de problemen en daarna "+N meer".
+
 ## 3 november 2026 — Snel bekijken
 
 ### Nieuw
