@@ -100,6 +100,7 @@
 <x-layouts.app :title="__('dashboard.title')">
     <x-slot:head>
         @vite('resources/js/charts.js')
+        @if ($mission)@vite('resources/js/mission.js')@endif
         @if ($servers->isNotEmpty() && Route::has('nexus.graph'))@vite('resources/js/pulse.js')@endif
     </x-slot:head>
 
@@ -126,6 +127,12 @@
         @endcan
     </x-slot:actions>
 
+    {{-- Mission control on top; the dashboard as before follows as "Details". --}}
+    @if ($mission)
+        @include('dashboard._mission')
+    @endif
+
+    <div data-dashboard-details>
     {{-- Needs attention --}}
     <section class="mb-6" aria-labelledby="attention-title">
         <h2 id="attention-title" class="ss-section-title mb-3">{{ __('dashboard.attention.title') }}</h2>
@@ -482,4 +489,5 @@
     </details>
 
     <script type="application/json" id="chart-data">@json($chartData)</script>
+    </div>
 </x-layouts.app>

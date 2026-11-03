@@ -1,5 +1,17 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — Mission control
+
+### Nieuw
+
+- **Mission control** bovenaan het dashboard: één gezondheidsscore (0–100)
+  met een zin die zegt wat er speelt, levende tegels voor elke server en
+  website, en een tijdlijn van de afgelopen 24 uur met incidenten, deploys en
+  DNS-wijzigingen. Elk probleem dat punten kost staat erbij, met een link.
+  Het dashboard zoals je het kende staat eronder als "Details".
+- **Focusmodus**: toont alleen wat aandacht nodig heeft, of "Niets te doen"
+  (onthouden per browser).
+
 ## 3 november 2026 — Tijdreis, wandscherm en levend logo
 
 ### Nieuw

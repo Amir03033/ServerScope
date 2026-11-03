@@ -1,5 +1,17 @@
 # What's new in ServerScope
 
+## 3 November 2026 — Mission control
+
+### New
+
+- **Mission control** at the top of the dashboard: one health score (0–100)
+  with a sentence that says what is going on, live tiles for every server and
+  website, and a timeline of the last 24 hours with incidents, deployments
+  and DNS changes. Every problem that costs points is listed, with a link.
+  The dashboard as you knew it follows as "Details".
+- **Focus mode**: only what needs attention, or "Nothing to do" (remembered
+  per browser).
+
 ## 3 November 2026 — Time travel, wall screen and live logo
 
 ### New

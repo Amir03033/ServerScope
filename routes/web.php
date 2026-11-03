@@ -291,6 +291,7 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     // NEXUS infrastructure map (read-only; JSON cached per team).
     Route::get('/nexus', [\App\Http\Controllers\NexusController::class, 'index'])->name('nexus.index');
     Route::get('/nexus/graph.json', [\App\Http\Controllers\NexusController::class, 'graph'])->middleware('throttle:60,1')->name('nexus.graph');
+    Route::get('/dashboard/mission.json', [\App\Http\Controllers\LiveController::class, 'mission'])->middleware('throttle:60,1')->name('dashboard.mission');
     Route::get('/live/pulse.json', [\App\Http\Controllers\LiveController::class, 'pulse'])->middleware('throttle:120,1')->name('live.pulse');
     Route::get('/nexus/timelapse', [\App\Http\Controllers\NexusController::class, 'timelapse'])->name('nexus.timelapse');
     Route::get('/nexus/timelapse.json', [\App\Http\Controllers\NexusController::class, 'timelapseData'])->middleware('throttle:30,1')->name('nexus.timelapse.data');
