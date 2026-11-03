@@ -82,6 +82,7 @@ return [
         'expired' => 'verlopen',
         'days' => ':count d',
         'nothing_expiring' => 'Niets verloopt binnenkort',
+        'more_expiring' => '+:count meer',
         'nothing_expiring_text' => 'Er verlopen de komende 60 dagen geen gecontroleerde certificaten of registraties.',
         'dns_changes' => 'Recente DNS-wijzigingen',
         'newest_first' => 'Nieuwste eerst.',

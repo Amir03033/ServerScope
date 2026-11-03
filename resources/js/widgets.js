@@ -141,6 +141,10 @@ function boot() {
         grid.insertBefore(ghost, w);
         Object.assign(w.style, { position: 'fixed', left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, margin: '0' });
         w.classList.add('is-dragging');
+        // If an ancestor has a transform, "fixed" is relative to it: measure and correct.
+        const placed = w.getBoundingClientRect();
+        const shift = { x: placed.left - rect.left, y: placed.top - rect.top };
+        if (shift.x || shift.y) Object.assign(w.style, { left: `${rect.left - shift.x}px`, top: `${rect.top - shift.y}px` });
         let scroll = 0;
         let lastMove = 0;
 
@@ -167,8 +171,8 @@ function boot() {
 
         const move = (ev) => {
             pointer = { x: ev.clientX, y: ev.clientY };
-            w.style.left = `${ev.clientX - offset.x}px`;
-            w.style.top = `${ev.clientY - offset.y}px`;
+            w.style.left = `${ev.clientX - offset.x - shift.x}px`;
+            w.style.top = `${ev.clientY - offset.y - shift.y}px`;
             scroll = ev.clientY < 80 ? -12 : ev.clientY > window.innerHeight - 80 ? 12 : 0;
 
             const now = performance.now();

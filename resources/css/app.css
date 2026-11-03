@@ -698,7 +698,8 @@
         to { opacity: 1; transform: none; }
     }
 
-    .ss-rise { animation: ss-rise .45s cubic-bezier(.2, .7, .2, 1) both; }
+    /* backwards, not both: a transform left behind would make fixed children (a dragged widget) position against this wrapper. */
+    .ss-rise { animation: ss-rise .45s cubic-bezier(.2, .7, .2, 1) backwards; }
 
     /* ---------------------------------------------------------------- */
     /* Application shell                                                 */
@@ -1112,6 +1113,9 @@
         gap: .5rem 1rem;
         margin-bottom: 1rem;
     }
+
+    /* The title block takes the room; a small action next to it stays on the same line. */
+    .ss-panel-head > div:first-child { flex: 1 1 12rem; min-width: 0; }
 
     .ss-panel-title { margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.35; }
     .ss-panel-sub { margin: .1875rem 0 0; color: var(--ss-muted); font-size: .8125rem; }
@@ -2217,11 +2221,20 @@
     /* Dashboard widgets: a 12-column grid; s = a third, m = half, l = full
        width (wide screens). Edit mode: lift, drag, resize, hide, presets. */
     .ss-widgets-bar { display: flex; justify-content: flex-end; margin: -.5rem 0 .75rem; }
-    .ss-widgets { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+    /* Cards side by side share one height; content sits at the top, an empty state fills the card. */
+    .ss-widgets { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; }
     .ss-widget { grid-column: span 12; min-width: 0; position: relative; }
     @media (min-width: 1024px) { .ss-widget[data-size="s"], .ss-widget[data-size="m"] { grid-column: span 6; } }
     @media (min-width: 1280px) { .ss-widget[data-size="s"] { grid-column: span 4; } }
     .ss-widget > :is(section, details, .ss-panel) { margin: 0; height: 100%; }
+    .ss-widgets:not(.is-editing) .ss-widget > section.ss-panel { display: flex; flex-direction: column; }
+    .ss-widgets:not(.is-editing) .ss-widget > section.ss-panel > .ss-empty:last-child { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; }
+    .ss-panel-more {
+        display: flex; align-items: center; justify-content: center; min-height: 2.25rem;
+        margin: auto -.5rem 0; padding-top: .5rem; border-top: 1px solid var(--ss-line);
+        color: var(--ss-muted); font-size: .8125rem; font-weight: 500; text-decoration: none;
+    }
+    .ss-panel-more:hover { color: var(--ss-text); }
     .ss-widget-panel { padding: clamp(1rem, 2vw, 1.25rem); }
     .ss-widget-panel .ss-mission-subtitle { margin-bottom: .75rem; }
     .ss-widget.is-calm { display: none; }
