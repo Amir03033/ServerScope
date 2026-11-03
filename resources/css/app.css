@@ -2128,42 +2128,55 @@
     .ss-widget.is-calm { display: none; }
     .ss-widgets.is-focus > .ss-widget:not([data-focus-keep]) { display: none; }
 
-    /* Edit mode */
-    .ss-widgets.is-editing { gap: 1.25rem; }
-    .ss-widgets.is-editing > .ss-widget { border-radius: 18px; outline: 1px dashed color-mix(in srgb, var(--ss-accent) 45%, transparent); outline-offset: 6px; animation: ss-widget-edit-in .35s ease both; }
-    .ss-widgets.is-editing > .ss-widget > :not(.ss-widget-tools) { pointer-events: none; user-select: none; filter: saturate(.85); opacity: .92; }
+    /* Edit mode: every widget becomes a tidy card. A toolbar of its own on
+       top (handle, name, size, hide), under it a short, fading preview of
+       the content, so the whole dashboard fits in view while arranging. */
+    .ss-widgets.is-editing { gap: .875rem; }
+    .ss-widgets.is-editing > .ss-widget { display: grid; gap: .5rem; padding: .5rem; border: 1px solid var(--ss-line-strong); border-radius: 16px; background: var(--ss-surface); box-shadow: var(--ss-shadow); animation: ss-widget-edit-in .28s cubic-bezier(.2, .8, .2, 1) both; transition: border-color .2s ease, box-shadow .2s ease; }
+    .ss-widgets.is-editing > .ss-widget:hover { border-color: var(--ss-accent-line); }
     .ss-widgets.is-editing > .ss-widget[hidden] { display: none; }
-    @keyframes ss-widget-edit-in { from { outline-offset: 0; } to { outline-offset: 6px; } }
-    .ss-widget-tools { position: absolute; z-index: 5; top: -14px; left: 12px; right: 12px; display: flex; align-items: center; gap: .5rem; padding: .3rem .4rem .3rem .3rem; border: 1px solid var(--ss-line-strong); border-radius: 12px; background: var(--ss-surface); box-shadow: var(--ss-shadow-lift); }
-    .ss-widget-handle { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border: 0; border-radius: 8px; background: var(--ss-surface-2); color: var(--ss-muted); cursor: grab; touch-action: none; }
+    .ss-widgets.is-editing > .ss-widget > :not(.ss-widget-tools) { max-height: 9.5rem; overflow: hidden; border-radius: 12px; pointer-events: none; user-select: none; -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+    @keyframes ss-widget-edit-in { from { opacity: .6; transform: scale(.985); } to { opacity: 1; transform: none; } }
+    .ss-widget-tools { display: flex; align-items: center; gap: .5rem; min-height: 2.5rem; padding: .25rem .25rem .25rem .25rem; border-radius: 11px; background: var(--ss-surface-2); }
+    .ss-widget-handle { display: grid; place-items: center; width: 2rem; height: 2rem; flex: none; border: 0; border-radius: 8px; background: transparent; color: var(--ss-muted); cursor: grab; touch-action: none; }
+    .ss-widget-handle:hover { background: var(--ss-surface); color: var(--ss-text); }
     .ss-widget-handle:active { cursor: grabbing; }
+    .ss-widget-handle:focus-visible, .ss-widget-icon-btn:focus-visible, .ss-widget-sizes button:focus-visible { outline: 2px solid var(--ss-accent); outline-offset: 1px; }
     .ss-widget-handle svg { width: 1rem; height: 1rem; }
-    .ss-widget-name { flex: 1; min-width: 0; overflow: hidden; font-size: .8125rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; color: var(--ss-text); }
-    .ss-widget-sizes { display: inline-flex; padding: 2px; border: 1px solid var(--ss-line); border-radius: 8px; }
-    .ss-widget-sizes button { min-width: 1.75rem; padding: .15rem .4rem; border: 0; border-radius: 6px; background: transparent; color: var(--ss-muted); font-size: .75rem; font-weight: 700; cursor: pointer; }
+    .ss-widget-name { flex: 1; min-width: 0; overflow: hidden; font-size: .8125rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; color: var(--ss-text); }
+    .ss-widget-sizes { display: inline-flex; flex: none; padding: 2px; border-radius: 8px; background: var(--ss-surface); }
+    .ss-widget-sizes button { min-width: 1.85rem; height: 1.6rem; padding: 0 .4rem; border: 0; border-radius: 6px; background: transparent; color: var(--ss-muted); font-size: .75rem; font-weight: 700; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+    .ss-widget-sizes button:hover { color: var(--ss-text); }
     .ss-widget-sizes button[aria-pressed="true"] { background: var(--ss-accent); color: var(--ss-on-accent); }
-    .ss-widget-icon-btn { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border: 0; border-radius: 8px; background: transparent; color: var(--ss-muted); cursor: pointer; }
-    .ss-widget-icon-btn:hover { background: var(--ss-surface-2); color: var(--ss-text); }
+    .ss-widget-icon-btn { display: grid; place-items: center; width: 2rem; height: 2rem; flex: none; border: 0; border-radius: 8px; background: transparent; color: var(--ss-muted); cursor: pointer; }
+    .ss-widget-icon-btn:hover { background: var(--ss-surface); color: var(--ss-text); }
     .ss-widget-icon-btn svg { width: 1rem; height: 1rem; }
-    .ss-widget.is-dragging { z-index: 20; opacity: .96; box-shadow: 0 30px 60px -20px rgb(0 0 0 / .45); transform-origin: center; cursor: grabbing; }
-    .ss-widget.is-dragging > :not(.ss-widget-tools) { opacity: .75; }
-    .ss-widget-ghost { grid-column: span 12; border: 2px dashed var(--ss-accent-line); border-radius: 18px; background: var(--ss-accent-soft); }
-    .ss-widget-ghost[data-size="s"], .ss-widget-ghost[data-size="m"] { grid-column: span 12; }
+    .ss-widget.is-dragging { z-index: 20; border-color: var(--ss-accent) !important; box-shadow: 0 24px 48px -18px rgb(0 0 0 / .45), 0 0 0 4px var(--ss-accent-soft) !important; cursor: grabbing; }
+    .ss-widget-ghost { grid-column: span 12; border: 2px dashed var(--ss-accent-line); border-radius: 16px; background: var(--ss-accent-soft); }
     @media (min-width: 1024px) { .ss-widget-ghost[data-size="s"], .ss-widget-ghost[data-size="m"] { grid-column: span 6; } }
     @media (min-width: 1280px) { .ss-widget-ghost[data-size="s"] { grid-column: span 4; } }
 
-    /* The edit panel: presets, hidden widgets, done / reset. */
-    .ss-widgets-editor { position: sticky; z-index: 30; top: 4.25rem; display: grid; gap: .75rem; margin-bottom: 1.25rem; padding: .875rem 1rem; border: 1px solid var(--ss-accent-line); border-radius: 16px; background: color-mix(in srgb, var(--ss-surface) 92%, transparent); box-shadow: var(--ss-shadow-lift); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); animation: ss-editor-in .3s cubic-bezier(.2, .8, .2, 1) both; }
-    @keyframes ss-editor-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-    .ss-widgets-editor-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
-    .ss-widgets-editor-title { margin-right: auto; font-size: .9375rem; font-weight: 700; }
-    .ss-widgets-editor-hint { font-size: .75rem; color: var(--ss-muted); }
-    .ss-widgets-hidden { display: flex; flex-wrap: wrap; gap: .4rem; }
-    .ss-widgets-hidden button { display: inline-flex; align-items: center; gap: .3rem; padding: .25rem .6rem; border: 1px dashed var(--ss-line-strong); border-radius: 999px; background: transparent; color: var(--ss-text); font-size: .8125rem; font-weight: 600; cursor: pointer; animation: ss-chip-in .25s ease both; }
-    .ss-widgets-hidden button:hover { border-style: solid; border-color: var(--ss-accent); color: var(--ss-accent); }
-    @keyframes ss-chip-in { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+    /* The arrange panel: solid, compact; presets, hidden widgets, done / reset. */
+    .ss-widgets-editor { z-index: 30; display: grid; grid-template-columns: minmax(0, 1fr); gap: .625rem; margin-bottom: 1rem; padding: .875rem 1rem; border: 1px solid var(--ss-line-strong); border-radius: 16px; background: var(--ss-surface); box-shadow: var(--ss-shadow-lift); animation: ss-editor-in .28s cubic-bezier(.2, .8, .2, 1) both; }
+    @media (min-width: 768px) { .ss-widgets-editor { position: sticky; top: 4.5rem; } }
+    @keyframes ss-editor-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    .ss-widgets-editor-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+    .ss-widgets-editor-title { margin-right: auto; font-size: .9375rem; font-weight: 700; color: var(--ss-text); }
+    .ss-widgets-editor-hint { margin: 0; font-size: .75rem; line-height: 1.5; color: var(--ss-muted); }
+    .ss-widgets-editor [data-preset] { width: auto; min-height: 2rem; padding-block: .25rem; font-size: .8125rem; }
+    .ss-widgets-editor [data-hidden-row] { flex-wrap: nowrap; padding-top: .625rem; border-top: 1px solid var(--ss-line); }
+    .ss-widgets-editor [data-hidden-row] > .ss-widgets-editor-hint { flex: none; font-weight: 600; }
+    .ss-widgets-hidden { display: flex; gap: .375rem; min-width: 0; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent); mask-image: linear-gradient(90deg, #000 90%, transparent); }
+    .ss-widgets-hidden::-webkit-scrollbar { display: none; }
+    .ss-widgets-hidden button { display: inline-flex; flex: none; align-items: center; gap: .3rem; padding: .2rem .6rem; border: 1px solid var(--ss-line-strong); border-radius: 999px; background: var(--ss-surface-2); color: var(--ss-text); font-size: .75rem; font-weight: 600; white-space: nowrap; cursor: pointer; animation: ss-chip-in .22s ease both; transition: border-color .15s ease, color .15s ease; }
+    .ss-widgets-hidden button:hover { border-color: var(--ss-accent); color: var(--ss-accent); }
+    @keyframes ss-chip-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) { .ss-widgets.is-editing > .ss-widget, .ss-widgets-editor, .ss-widgets-hidden button { animation: none; } }
-    @media (max-width: 767px) { .ss-widgets-editor { top: .5rem; } .ss-widget-sizes { display: none; } }
+    @media (max-width: 767px) {
+        .ss-widget-sizes { display: none; }
+        .ss-widgets-editor-title { flex-basis: 100%; }
+        .ss-widgets-editor [data-preset] { flex: 1; }
+    }
 
     /* A short confirmation at the bottom of the screen. */
     .ss-toast { position: fixed; z-index: 80; left: 50%; bottom: calc(1.25rem + env(safe-area-inset-bottom)); transform: translateX(-50%); padding: .6rem 1rem; border-radius: 12px; background: var(--ss-text); color: var(--ss-bg); font-size: .875rem; font-weight: 600; box-shadow: var(--ss-shadow-lift); animation: ss-toast-in .3s cubic-bezier(.2, .8, .2, 1) both; }
