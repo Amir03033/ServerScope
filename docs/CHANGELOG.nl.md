@@ -1,5 +1,15 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — Je eigen dashboard
+
+### Nieuw
+
+- **Dashboard indelen**: met "Indelen" zet je de widgets in je eigen volgorde
+  (slepen, ook met touch of de pijltjestoetsen), kies je per widget de grootte
+  (S, M, L) en verberg je wat je niet nodig hebt. Begin eventueel met een
+  kant-en-klare indeling (Ontwikkelaar, Manager, NOC). Elke persoon heeft een
+  eigen indeling; de standaardindeling is het dashboard zoals je het kende.
+
 ## 3 november 2026 — ServerScope als app
 
 ### Nieuw

@@ -59,6 +59,6 @@ class PeekTest extends TestCase
 
         $this->assertStringContainsString('<meta name="ss-peek" content="'.url('/peek').'">', $html);
         $this->assertLessThan(strpos($html, 'data-pulse '), strpos($html, 'data-mission '), 'mission control first');
-        $this->assertLessThan(strpos($html, 'data-dashboard-details>'), strpos($html, 'data-pulse '), 'the heartbeat above the details');
+        $this->assertLessThan(strpos($html, 'data-widget="attention"'), strpos($html, 'data-pulse '), 'the heartbeat above the details');
     }
 }

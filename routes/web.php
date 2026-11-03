@@ -297,6 +297,8 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('/peek/server/{server}', [\App\Http\Controllers\PeekController::class, 'server'])->middleware('throttle:120,1')->name('peek.server');
     Route::get('/peek/domain/{domain}', [\App\Http\Controllers\PeekController::class, 'domain'])->middleware('throttle:120,1')->name('peek.domain');
     Route::get('/peek/incident/{incident}', [\App\Http\Controllers\PeekController::class, 'incident'])->middleware('throttle:120,1')->name('peek.incident');
+    Route::put('/dashboard/layout', [\App\Http\Controllers\DashboardLayoutController::class, 'update'])->middleware('throttle:30,1')->name('dashboard.layout');
+    Route::delete('/dashboard/layout', [\App\Http\Controllers\DashboardLayoutController::class, 'destroy'])->middleware('throttle:30,1')->name('dashboard.layout.reset');
     Route::get('/dashboard/mission.json', [\App\Http\Controllers\LiveController::class, 'mission'])->middleware('throttle:60,1')->name('dashboard.mission');
     Route::get('/live/pulse.json', [\App\Http\Controllers\LiveController::class, 'pulse'])->middleware('throttle:120,1')->name('live.pulse');
     Route::get('/nexus/timelapse', [\App\Http\Controllers\NexusController::class, 'timelapse'])->name('nexus.timelapse');

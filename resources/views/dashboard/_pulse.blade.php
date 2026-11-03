@@ -1,7 +1,7 @@
 {{-- Heartbeat: one live line per server (rate: CPU, width: slowest website).
      Compact inside mission control, right under the last 24 hours. --}}
 @if ($servers->isNotEmpty() && Route::has('nexus.graph'))
-        <section class="{{ $compact ? 'ss-mission-block ss-pulse-compact' : 'ss-panel mb-6' }}" data-pulse data-focus-hide aria-labelledby="pulse-title">
+        <section class="{{ $compact ? 'ss-panel ss-pulse-compact' : 'ss-panel mb-6' }}" data-pulse data-focus-hide aria-labelledby="pulse-title">
             <script type="application/json" id="pulse-config">@json(['urls' => ['graph' => route('nexus.graph')], 'texts' => __('dashboard.pulse.js')])</script>
             @if ($compact)
                 <h3 id="pulse-title" class="ss-mission-subtitle">{{ __('dashboard.pulse.title') }}</h3>
