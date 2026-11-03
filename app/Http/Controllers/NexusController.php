@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Team;
+use App\Services\Nexus\GlobeData;
+use App\Services\Nexus\TimelapseData;
 use App\Services\Nexus\TopologyBuilder;
 use App\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +26,37 @@ class NexusController extends Controller
         return view('nexus.index', [
             'topology' => $topology->forTeam($this->teamId()),
         ]);
+    }
+
+    /**
+     * Wall screen: a full-screen show of skyline, globe and heartbeat for a
+     * TV, that cuts to an incident as soon as one opens. Also the screensaver.
+     */
+    public function wall(TopologyBuilder $topology, GlobeData $globe): View
+    {
+        $teamId = $this->teamId();
+
+        return view('nexus.wall', [
+            'topology' => $topology->forTeam($teamId),
+            'globe' => $globe->forTeam($teamId),
+            'team' => Team::query()->find($teamId)?->name,
+        ]);
+    }
+
+    /** Time travel: a film of the last 24 hours or 7 days over the skyline. */
+    public function timelapse(TimelapseData $timelapse): View
+    {
+        return view('nexus.timelapse', [
+            'timelapse' => $timelapse->forTeam($this->teamId(), '24h'),
+            'team' => Team::query()->find($this->teamId())?->name,
+        ]);
+    }
+
+    public function timelapseData(Request $request, TimelapseData $timelapse): JsonResponse
+    {
+        $range = (string) $request->query('range', '24h');
+
+        return response()->json(['data' => $timelapse->forTeam($this->teamId(), $range)])->setPrivate();
     }
 
     /** The servers as a city at night; the page polls graph() for updates. */

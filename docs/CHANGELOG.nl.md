@@ -1,5 +1,29 @@
 # Wat is er nieuw in ServerScope
 
+## 3 november 2026 — Tijdreis, wandscherm en levend logo
+
+### Nieuw
+
+- **Tijdreis** (NEXUS › Tijdreis): de afgelopen 24 uur of 7 dagen als film
+  over de skyline. Torens groeien en krimpen met de CPU, incidenten flitsen
+  voorbij. De **regisseursversie** monteert zichzelf: rustige uren razen
+  voorbij, bij elk incident vertraagt de film met de camera op de getroffen
+  toren en een bijschrift, met een openingstitel en een samenvatting aan het
+  eind. Scrubben met de schuif, vrij afspelen op 1–8× en **video
+  exporteren** (MP4 of WebM, opgenomen in je eigen browser).
+- **Wandscherm** (NEXUS › Wandscherm): een tv-modus die zelf regisseert.
+  Rustig door skyline, wereldbol, hartslag en een samenvatting; bij een nieuw
+  incident direct een grote melding en de camera op de oorzaak. Volledig
+  scherm, scherm blijft aan, en optioneel als **schermbeveiliging** na 5–30
+  minuten niets doen.
+- **Levend logo en tabblad-icoon**: het logo en het icoon kloppen in het
+  ritme van je infrastructuur en worden oranje of rood bij problemen; het
+  tabblad toont het aantal actieve incidenten, ook op de achtergrond.
+
+### Verbeterd
+
+- De hartslag op telefoons: naam, lijn en cijfers onder elkaar, leesbaar.
+
 ## 3 november 2026 — Hartslag, skyline en statusbadges
 
 ### Nieuw

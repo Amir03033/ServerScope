@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Nexus;
 
+use App\Models\Incident;
+use App\Models\MetricSample;
 use App\Models\Team;
 use App\Monitoring\Dns\Resolver;
 use App\Services\Nexus\TopologyBuilder;
@@ -176,5 +178,45 @@ class NexusPageTest extends TestCase
             ->getContent();
         $this->assertMatchesRegularExpression('#src="[^"]*/build/assets/pulse-[^"]+\.js"#', $html);
         $this->assertStringContainsString(str_replace('/', '\\/', route('nexus.graph')), $html);
+    }
+
+    public function test_time_travel_shows_only_the_teams_own_history(): void
+    {
+        Incident::query()->withoutGlobalScopes()->update(['opened_at' => now()->subHours(3), 'resolved_at' => now()->subHours(2)]);
+        MetricSample::create(['server_id' => $this->a['server']->id, 'cpu_percent' => 77, 'collected_at' => now()->subHours(5)]);
+
+        $json = $this->actingAs($this->a['member'])->getJson(route('nexus.timelapse.data', ['range' => '24h']))->assertOk()->json('data');
+
+        $this->assertSame('24h', $json['range']);
+        $this->assertCount(96, $json['frames']);
+        $this->assertSame(['server:'.$this->a['server']->id], array_column($json['servers'], 'key'));
+        $this->assertContains(77.0, array_map('floatval', array_filter($json['servers'][0]['cpu'], fn ($v) => $v !== null)));
+        $this->assertSame([$this->a['incident']->id], array_column($json['incidents'], 'id'));
+        $this->assertSame('server:'.$this->a['server']->id, $json['incidents'][0]['tower']);
+        $this->assertStringNotContainsString('bravo', json_encode($json));
+
+        $week = $this->actingAs($this->a['member'])->getJson(route('nexus.timelapse.data', ['range' => '7d']))->json('data');
+        $this->assertCount(168, $week['frames']);
+        $this->assertSame('24h', $this->actingAs($this->a['member'])->getJson(route('nexus.timelapse.data', ['range' => 'nope']))->json('data.range'));
+
+        $html = $this->actingAs($this->b['member'])->get(route('nexus.timelapse'))->assertOk()->assertSee('id="timelapse-config"', false)->assertDontSee('alpha')->getContent();
+        $this->assertMatchesRegularExpression('#src="[^"]*/build/assets/timelapse-[^"]+\.js"#', $html);
+    }
+
+    public function test_the_wall_screen_is_the_teams_own_and_full_screen(): void
+    {
+        $html = $this->actingAs($this->a['member'])->get(route('nexus.wall'))->assertOk()
+            ->assertSee('id="wall-config"', false)
+            ->assertSee('data-theme="dark"', false)
+            ->assertSee('alpha-server')
+            ->assertDontSee('bravo')
+            ->assertDontSee('ss-sidebar', false)
+            ->getContent();
+        $this->assertMatchesRegularExpression('#src="[^"]*/build/assets/wall-[^"]+\.js"#', $html);
+
+        // Every other page knows where the screensaver goes.
+        $this->actingAs($this->a['member'])->get(route('dashboard'))->assertSee('<meta name="ss-wall" content="'.route('nexus.wall').'">', false);
+        auth()->logout();
+        $this->get(route('nexus.wall'))->assertRedirect(route('login'));
     }
 }

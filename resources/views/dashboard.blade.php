@@ -187,7 +187,7 @@
                         <div class="min-w-0">
                             <a class="block truncate font-semibold text-fg no-underline hover:underline" href="{{ route('servers.show', $server) }}">{{ $server->name }}</a>
                             <span class="ss-pulse-state" data-pulse-state>{{ __('dashboard.pulse.js.rhythm.unknown') }}</span>
-                            <span class="block truncate text-xs text-muted" data-pulse-reason></span>
+                            <span class="ss-pulse-reason" data-pulse-reason></span>
                         </div>
                         <canvas class="ss-pulse-canvas" data-pulse-canvas aria-hidden="true"></canvas>
                         <dl class="ss-pulse-numbers">

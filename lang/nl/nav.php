@@ -22,6 +22,8 @@ return [
         'domains' => 'Domeinen',
         'nexus' => 'NEXUS',
         'skyline' => 'Skyline',
+        'timelapse' => 'Tijdreis',
+        'wall' => 'Wandscherm',
         'globe' => 'Wereldbol',
         'dependencies' => 'Afhankelijkheden',
         'deployments' => 'Deployments',

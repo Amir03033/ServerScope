@@ -430,8 +430,11 @@ export function createGlobe(container, { reducedMotion, t, onSelectLocation }) {
         schedule();
     }
 
+    // Paused scenes (for example a hidden one on the wall screen) draw nothing.
+    let running = true;
+
     function schedule() {
-        if (!frame && !document.hidden) frame = requestAnimationFrame(tick);
+        if (running && !frame && !document.hidden) frame = requestAnimationFrame(tick);
     }
 
     new ResizeObserver(resize).observe(container);
@@ -446,6 +449,8 @@ export function createGlobe(container, { reducedMotion, t, onSelectLocation }) {
     schedule();
 
     return {
+        pause() { running = false; },
+        resume() { running = true; resize(); schedule(); },
         /** New data (locations, sites, per-location states). */
         update(next, states, selected) {
             const structure = next.locations.map((l) => `${l.key}@${l.lat},${l.lon}`).join('|');
