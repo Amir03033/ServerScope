@@ -4,6 +4,7 @@
  * Texts come from the page (resources/js/i18n.js).
  */
 import { numberLocale, t } from './i18n';
+import './live';
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 

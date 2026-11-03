@@ -71,6 +71,8 @@
     <meta name="theme-color" content="#0a0a0b" media="(prefers-color-scheme: dark)">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ? $title.' — ServerScope' : 'ServerScope' }}</title>
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml" data-live-icon>
+    @if (Route::has('live.pulse') && \App\Tenancy\Tenant::check())<meta name="ss-live" content="{{ route('live.pulse') }}">@endif
     {{-- Applies the saved theme before the first paint (no flash). --}}
     <script src="{{ asset('js/theme-init.js') }}?v={{ @filemtime(public_path('js/theme-init.js')) }}"></script>
     @include('partials.vite-assets')
@@ -85,7 +87,7 @@
     <aside class="ss-sidebar" id="sidebar" data-sidebar aria-label="{{ __('nav.main') }}">
         <div class="flex h-[3.75rem] shrink-0 items-center justify-between gap-2 border-b border-line px-4">
             <a href="{{ route('dashboard') }}" class="flex min-w-0 items-center gap-2.5 text-fg no-underline">
-                <svg class="ico h-6 w-6 text-accent [stroke-width:2]"><use href="#i-pulse"/></svg>
+                <svg class="ico ss-live-logo h-6 w-6 text-accent [stroke-width:2]" aria-hidden="true"><use class="base" href="#i-pulse"/><use class="beat" href="#i-pulse"/></svg>
                 <span class="min-w-0">
                     <span class="block text-[15px] font-semibold leading-tight tracking-tight">ServerScope</span>
                     <span class="block truncate text-xs text-muted">{{ __('nav.brand_caption') }}</span>
@@ -161,7 +163,7 @@
         <header class="ss-topbar">
             <a href="#sidebar" class="ss-icon-btn lg:hidden" data-sidebar-open aria-controls="sidebar" aria-expanded="false" aria-label="{{ __('nav.open_menu') }}"><svg class="ico"><use href="#i-menu"/></svg></a>
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2 text-fg no-underline lg:hidden" aria-label="ServerScope">
-                <svg class="ico h-5 w-5 text-accent [stroke-width:2]"><use href="#i-pulse"/></svg>
+                <svg class="ico ss-live-logo h-5 w-5 text-accent [stroke-width:2]" aria-hidden="true"><use class="base" href="#i-pulse"/><use class="beat" href="#i-pulse"/></svg>
                 <span class="text-[15px] font-semibold tracking-tight">ServerScope</span>
             </a>
 
