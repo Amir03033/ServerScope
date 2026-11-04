@@ -31,7 +31,12 @@
         @include('auth._password', ['id' => 'password', 'label' => __('auth.fields.password'), 'autocomplete' => 'new-password', 'meter' => true])
         @include('auth._password', ['id' => 'password_confirmation', 'label' => __('auth.fields.password_confirmation'), 'autocomplete' => 'new-password'])
         <div class="ss-auth-field">@include('auth._terms')</div>
-        <button type="submit" class="ss-btn ss-btn-primary ss-auth-submit"><span>{{ __('auth.register.title') }}</span></button>
+        <button type="submit" class="ss-btn ss-btn-primary ss-auth-submit"><span>{{ __('auth.register.submit') }}</span></button>
+        <ul class="ss-auth-perks">
+            @foreach (__('auth.register.perks') as $perk)
+                <li><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg>{{ $perk }}</li>
+            @endforeach
+        </ul>
     </form>
     <p class="ss-auth-alt"><a class="ss-auth-link" href="{{ route('login') }}">{{ __('auth.register.have_account') }}</a></p>
 </x-layouts.guest>

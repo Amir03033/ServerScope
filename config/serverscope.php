@@ -46,6 +46,19 @@ return [
     'scheduler_ping_url' => env('SERVERSCOPE_SCHEDULER_PING_URL'),
 
     /*
+    | Self-checks (App\Services\SelfPings\SelfPings): every minute ServerScope
+    | checks its database, queue worker and cache and calls the ping URL of a
+    | scheduled job for each; on a failure it calls URL/fail. Leave empty to
+    | skip a check. Kept in .env: the URL is the credential.
+    */
+
+    'self_pings' => [
+        'database' => env('SERVERSCOPE_DB_PING_URL'),
+        'queue' => env('SERVERSCOPE_QUEUE_PING_URL'),
+        'cache' => env('SERVERSCOPE_CACHE_PING_URL'),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Display timezone
     |--------------------------------------------------------------------------

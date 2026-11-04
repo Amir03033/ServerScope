@@ -29,8 +29,8 @@ return [
     ],
 
     'showcase' => [
-        'title' => 'Every server, website and incident at a glance.',
-        'text' => 'ServerScope watches your infrastructure every minute, explains what went wrong and tells your team where they are.',
+        'title' => 'Know before your customers do.',
+        'text' => 'ServerScope watches your servers, websites and scheduled jobs every minute, finds the likely cause and tells your team right away.',
         'points' => ['Live monitoring of servers, websites, cron jobs and logs', 'Root cause analysis with an AI interpretation', 'Alerts by e-mail, push, Slack, Teams, Telegram and Discord'],
         'cards' => [
             'online' => 'online',
@@ -44,23 +44,26 @@ return [
     'password_show' => 'Show password',
     'password_hide' => 'Hide password',
     'strength' => ['label' => 'Password strength', 'weak' => 'Weak', 'fair' => 'Fair', 'good' => 'Good', 'strong' => 'Strong'],
+    'ghost' => 'Getting your dashboard ready…',
     'login' => [
         'title' => 'Log in',
         'heading' => 'Welcome back',
-        'intro' => 'Log in to see your servers and monitoring data.',
+        'intro' => 'Log in and see right away how your servers, websites and jobs are doing.',
         'remember' => 'Remember me',
         'submit' => 'Log in',
         'forgot' => 'Forgot your password?',
         'or' => 'or',
         'demo' => 'Explore the live demo',
-        'demo_text' => 'No account needed, read only.',
+        'demo_text' => 'Click around a real setup, no account needed.',
         'new_here' => 'New to ServerScope?',
         'create' => 'Create an account',
     ],
 
     'register' => [
         'title' => 'Create account',
-        'intro' => 'You get your own team. Only members of your team see your servers and domains.',
+        'intro' => 'Ready in two minutes: create your account, install the agent with one command, and ServerScope keeps watch from then on.',
+        'submit' => 'Create account',
+        'perks' => ['Your own team: only your members see your data', 'Install the agent with a single command', 'Alerts where you want them: email, push or chat'],
         'sent_title' => 'Check your email',
         'sent_body' => 'If this address can be used, we have sent you an email. Follow the link in it to continue. Nothing is available until the address is verified.',
         'have_account' => 'I already have an account',
@@ -81,10 +84,16 @@ return [
 
     'two_factor' => [
         'title' => 'Two-factor authentication',
-        'intro' => 'Enter the 6-digit code from your authenticator app, or use a recovery code.',
+        'heading' => 'One more step',
+        'intro' => 'Open your authenticator app and enter the 6-digit code for ServerScope.',
         'code' => 'Verification code',
-        'recovery_code' => 'or recovery code',
+        'digit' => 'Digit :n of 6',
+        'refresh' => 'New code in :seconds s',
+        'recovery_toggle' => 'No access to your app? Use a recovery code',
+        'recovery_code' => 'Recovery code',
         'submit' => 'Verify',
+        'secure' => 'Your account is protected with two-factor authentication',
+        'back' => 'Back to log in',
     ],
 
     'messages' => [

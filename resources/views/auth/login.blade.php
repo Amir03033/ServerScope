@@ -4,7 +4,7 @@
 
     @include('auth._messages')
 
-    <form method="POST" action="{{ route('login') }}" class="ss-auth-form" data-auth-form>
+    <form method="POST" action="{{ route('login') }}" class="ss-auth-form" data-auth-form data-auth-ghost>
         @csrf
 
         <div class="ss-auth-field">

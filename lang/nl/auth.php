@@ -24,8 +24,8 @@ return [
     ],
 
     'showcase' => [
-        'title' => 'Al je servers, websites en incidenten in één oogopslag.',
-        'text' => 'ServerScope bewaakt je infrastructuur elke minuut, legt uit wat er misging en laat je team weten waar ze staan.',
+        'title' => 'Weet het eerder dan je klanten.',
+        'text' => 'ServerScope kijkt elke minuut naar je servers, websites en geplande taken, vindt de waarschijnlijke oorzaak en brengt je team meteen op de hoogte.',
         'points' => ['Live bewaking van servers, websites, cron-taken en logs', 'Oorzaakanalyse met een AI-interpretatie', 'Meldingen via e-mail, push, Slack, Teams, Telegram en Discord'],
         'cards' => [
             'online' => 'online',
@@ -39,23 +39,26 @@ return [
     'password_show' => 'Wachtwoord tonen',
     'password_hide' => 'Wachtwoord verbergen',
     'strength' => ['label' => 'Sterkte van het wachtwoord', 'weak' => 'Zwak', 'fair' => 'Redelijk', 'good' => 'Goed', 'strong' => 'Sterk'],
+    'ghost' => 'Je dashboard wordt klaargezet…',
     'login' => [
         'title' => 'Inloggen',
         'heading' => 'Welkom terug',
-        'intro' => 'Log in om je servers en monitoringgegevens te bekijken.',
+        'intro' => 'Log in en zie meteen hoe je servers, websites en taken ervoor staan.',
         'remember' => 'Onthoud mij',
         'submit' => 'Inloggen',
         'forgot' => 'Wachtwoord vergeten?',
         'or' => 'of',
         'demo' => 'Bekijk de live demo',
-        'demo_text' => 'Geen account nodig, alleen lezen.',
+        'demo_text' => 'Klik rond in een echte omgeving, zonder account.',
         'new_here' => 'Nieuw bij ServerScope?',
         'create' => 'Account aanmaken',
     ],
 
     'register' => [
         'title' => 'Account aanmaken',
-        'intro' => 'Je krijgt een eigen team. Alleen leden van je team zien je servers en domeinen.',
+        'intro' => 'In twee minuten klaar: account aanmaken, de agent met één commando installeren, en ServerScope houdt vanaf dan de wacht.',
+        'submit' => 'Account aanmaken',
+        'perks' => ['Een eigen team: alleen jouw leden zien je gegevens', 'De agent installeer je met één commando', 'Meldingen waar jij ze wilt: mail, push of chat'],
         'sent_title' => 'Controleer je e-mail',
         'sent_body' => 'Als dit adres gebruikt kan worden, hebben we je een e-mail gestuurd. Volg de link daarin om verder te gaan. Er is niets beschikbaar zolang het adres niet is bevestigd.',
         'have_account' => 'Ik heb al een account',
@@ -76,10 +79,16 @@ return [
 
     'two_factor' => [
         'title' => 'Tweestapsverificatie',
-        'intro' => 'Voer de 6-cijferige code uit je authenticator-app in, of gebruik een herstelcode.',
+        'heading' => 'Nog één stap',
+        'intro' => 'Open je authenticator-app en vul de 6-cijferige code voor ServerScope in.',
         'code' => 'Verificatiecode',
-        'recovery_code' => 'of herstelcode',
+        'digit' => 'Cijfer :n van 6',
+        'refresh' => 'Nieuwe code over :seconds s',
+        'recovery_toggle' => 'Geen toegang tot je app? Gebruik een herstelcode',
+        'recovery_code' => 'Herstelcode',
         'submit' => 'Verifiëren',
+        'secure' => 'Je account is beveiligd met tweestapsverificatie',
+        'back' => 'Terug naar inloggen',
     ],
 
     'messages' => [
