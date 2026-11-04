@@ -14,12 +14,16 @@ class AlertRule extends Model
 
     public const METRIC_AGENT_OFFLINE = 'agent_offline';
 
+    /** Error and critical log lines of the server in the 5 minutes up to a sample. */
+    public const METRIC_LOG_ERRORS = 'log_errors';
+
     /** @var array<string, string> */
     public const METRIC_LABELS = [
         'cpu_percent' => 'CPU-gebruik',
         'memory_percent' => 'RAM-gebruik',
         'disk_percent' => 'Schijfgebruik',
         self::METRIC_AGENT_OFFLINE => 'Agent offline',
+        self::METRIC_LOG_ERRORS => 'Log-fouten per 5 min',
     ];
 
     public static function metricLabel(string $metric): string

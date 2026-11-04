@@ -56,6 +56,12 @@ class RouteTenancyTest extends TestCase
         'POST api/agent/enroll',
         // Payment provider webhook: signature-verified by the driver, 404 while billing is off.
         'POST api/webhooks/payments',
+        // GitHub webhook: HMAC-signed with the connection's own secret; runs as
+        // that connection's team (AutomaticDeploymentsTest).
+        'POST api/webhooks/github/{uuid}',
+        // Shared postmortem: the 48-character token is the credential; renders
+        // as the postmortem's own team, read-only, revocable (PostmortemTest).
+        'GET|HEAD postmortems/{token}',
         // Remote probe (Global Pulse Lite): HMAC-signed by the platform's
         // probe, which serves all teams like the main monitor; every query
         // filters on the probe's own jobs (GlobalPulseTest).

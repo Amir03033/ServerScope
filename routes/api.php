@@ -18,10 +18,21 @@ Route::post('/agent/metrics', [
     ])
     ->name('agent.metrics.store');
 
+// Error and warning lines from log files the agent follows (SERVERSCOPE_LOG_FILES).
+Route::post('/agent/logs', \App\Http\Controllers\Api\LogIngestController::class)
+    ->middleware([AuthenticateAgent::class, 'throttle:30,1'])
+    ->name('agent.logs.store');
+
 // Payment provider webhook: 404 unless billing is enabled; the driver verifies the signature.
 Route::post('/webhooks/payments', \App\Http\Controllers\Api\PaymentWebhookController::class)
     ->middleware('throttle:120,1')
     ->name('webhooks.payments');
+
+// GitHub webhook of a connected repository; the controller checks the signature.
+Route::post('/webhooks/github/{uuid}', \App\Http\Controllers\Api\GithubWebhookController::class)
+    ->whereUuid('uuid')
+    ->middleware('throttle:120,1')
+    ->name('webhooks.github');
 
 // One-command install (install.sh): exchange a one-time enrollment token
 // for an agent credential, check the first sample, revoke on uninstall.

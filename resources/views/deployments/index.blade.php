@@ -4,6 +4,9 @@
     <x-slot:breadcrumb><span>›</span> {{ __('deployments.title') }}</x-slot:breadcrumb>
     <x-slot:pageTitle>{{ __('deployments.title') }}</x-slot:pageTitle>
     <x-slot:subtitle>{{ __('deployments.subtitle') }}</x-slot:subtitle>
+    <x-slot:actions>
+        <a href="{{ route('deploy-sources.index') }}" class="ss-btn ss-btn-secondary"><svg class="ico"><use href="#i-refresh"/></svg> {{ __('deployments.sources_button') }}</a>
+    </x-slot:actions>
 
     <section class="ss-panel">
         <form method="GET" action="{{ route('deployments.index') }}" data-filters-label="{{ __('common.filters') }}" class="ss-filters mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] lg:items-end" role="search">
@@ -21,7 +24,10 @@
         </form>
 
         @if ($deployments->isEmpty())
-            <x-empty-state icon="i-flag" :title="__('deployments.empty_title')">{{ __('deployments.empty_text') }}</x-empty-state>
+            <x-empty-state icon="i-flag" :title="__('deployments.empty_title')">
+                {{ __('deployments.empty_text') }}
+                <x-slot:actions><a class="ss-btn ss-btn-primary" href="{{ route('deploy-sources.index') }}">{{ __('deployments.sources_button') }}</a></x-slot:actions>
+            </x-empty-state>
         @else
             <div class="ss-table-wrap">
                 <table class="ss-table ss-table-cards">
@@ -31,7 +37,8 @@
                             <tr>
                                 <td class="is-primary">
                                     <a class="ss-hit font-semibold text-fg no-underline hover:text-accent [overflow-wrap:anywhere]" href="{{ route('deployments.show', $deployment) }}">{{ $deployment->application }}</a>
-                                    <span class="block text-xs text-muted">#{{ $deployment->id }}@if ($deployment->version) · {{ $deployment->version }}@endif @if ($deployment->actor) · {{ $deployment->actor }}@endif</span>
+                                    @if ($deployment->title)<span class="block text-sm text-fg [overflow-wrap:anywhere]">{{ $deployment->title }}</span>@endif
+                                    <span class="block text-xs text-muted">#{{ $deployment->id }}@if ($deployment->version) · {{ $deployment->version }}@endif @if ($deployment->actor) · {{ $deployment->actor }}@endif @if ($deployment->source) · {{ Lang::has('deployments.sources.'.$deployment->source) ? __('deployments.sources.'.$deployment->source) : $deployment->source }}@endif</span>
                                 </td>
                                 <td data-label="{{ __('deployments.environment') }}">{{ $deployment->environment }}</td>
                                 <td data-label="{{ __('deployments.col_commit') }}" class="font-mono text-xs">{{ $deployment->commit_sha ? substr($deployment->commit_sha, 0, 12) : '—' }}</td>

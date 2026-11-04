@@ -99,6 +99,9 @@ Route::get('/status/{slug}/badge/{component}.svg', [\App\Http\Controllers\Status
 Route::get('/status/{slug}.json', [PublicStatusPageController::class, 'json'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.json');
 Route::get('/status/{slug}', [PublicStatusPageController::class, 'show'])->where('slug', '[a-z0-9-]+')->middleware('throttle:60,1')->name('status.show');
 
+// Shared postmortems (read-only; a revoked or unknown link is a 404).
+Route::get('/postmortems/{token}', [\App\Http\Controllers\PostmortemController::class, 'public'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:60,1')->name('postmortems.public');
+
 // Signed in but not necessarily verified: the verification screens and sign-out.
 Route::middleware('auth')->group(function () {
     Route::get('/email/verify', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'notice'])->name('verification.notice');
@@ -268,6 +271,12 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::get('/incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
     Route::post('/incidents/{incident}/analysis', [IncidentController::class, 'requestAnalysis'])->middleware('throttle:10,1')->name('incidents.analysis');
     Route::post('/incidents/{incident}/learning', [IncidentController::class, 'saveLearning'])->middleware('throttle:30,1')->name('incidents.learning');
+    // Postmortem: written review of an incident; shareable read-only link.
+    Route::get('/incidents/{incident}/postmortem', [\App\Http\Controllers\PostmortemController::class, 'show'])->name('incidents.postmortem');
+    Route::put('/incidents/{incident}/postmortem', [\App\Http\Controllers\PostmortemController::class, 'update'])->middleware('throttle:30,1')->name('incidents.postmortem.update');
+    Route::get('/incidents/{incident}/postmortem.md', [\App\Http\Controllers\PostmortemController::class, 'markdown'])->middleware('throttle:30,1')->name('incidents.postmortem.markdown');
+    Route::post('/incidents/{incident}/postmortem/share', [\App\Http\Controllers\PostmortemController::class, 'share'])->middleware('throttle:20,1')->name('incidents.postmortem.share');
+    Route::delete('/incidents/{incident}/postmortem/share', [\App\Http\Controllers\PostmortemController::class, 'unshare'])->name('incidents.postmortem.unshare');
     Route::get('/incidents/{incident}/time-machine', [IncidentController::class, 'timeMachine'])->middleware('throttle:30,1')->name('incidents.time-machine');
     // NEXUS Intelligence (deterministic investigations).
     Route::get('/incidents/{incident}/investigation', [\App\Http\Controllers\InvestigationController::class, 'latest'])->middleware('throttle:60,1')->name('incidents.investigation');
@@ -284,6 +293,12 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
 
     Route::post('/favorites', [\App\Http\Controllers\FavoriteController::class, 'toggle'])->middleware('throttle:60,1')->name('favorites.toggle');
     Route::get('/deployments', [\App\Http\Controllers\DeploymentController::class, 'index'])->name('deployments.index');
+    Route::get('/logs', [\App\Http\Controllers\LogController::class, 'index'])->middleware('throttle:60,1')->name('logs.index');
+    // Automatic deployments: watched checkouts and GitHub repositories (before {deployment}).
+    Route::get('/deployments/sources', [\App\Http\Controllers\DeploySourceController::class, 'index'])->name('deploy-sources.index');
+    Route::post('/deployments/sources/github', [\App\Http\Controllers\DeploySourceController::class, 'store'])->middleware('throttle:20,1')->name('deploy-sources.github.store');
+    Route::post('/deployments/sources/github/{connection}/secret', [\App\Http\Controllers\DeploySourceController::class, 'renew'])->middleware('throttle:20,1')->name('deploy-sources.github.renew');
+    Route::delete('/deployments/sources/github/{connection}', [\App\Http\Controllers\DeploySourceController::class, 'destroy'])->name('deploy-sources.github.destroy');
     Route::get('/deployments/{deployment}', [\App\Http\Controllers\DeploymentController::class, 'show'])->name('deployments.show');
 
     Route::get('/dependencies', [DependencyController::class, 'index'])->name('dependencies.index');

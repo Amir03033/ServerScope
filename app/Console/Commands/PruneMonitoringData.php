@@ -32,6 +32,7 @@ class PruneMonitoringData extends Command
         'page_changes' => ['page_changes_days', 'detected_at', null],
         'page_discovery_runs' => ['discovery_runs_days', 'created_at', null],
         'service_check_events' => ['service_events_days', 'recorded_at', null],
+        'log_entries' => ['log_entries_days', 'occurred_at', null],
         'predictions' => ['predictions_days', 'resolved_at', 'resolved'],
         'investigations' => ['investigations_days', 'created_at', 'investigation'],
     ];

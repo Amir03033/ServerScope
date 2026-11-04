@@ -201,7 +201,33 @@ class IncidentController extends Controller
             'related' => $related,
             'checks' => $checks,
             'users' => TeamMember::options($incident->team_id),
+            'logs' => $this->logsAround($incident),
         ]);
+    }
+
+    /**
+     * The most frequent log problems on the incident's servers around it
+     * (null when no agent sends log lines for this team yet).
+     *
+     * @return array{issues: \Illuminate\Support\Collection, total: int}|null
+     */
+    private function logsAround(Incident $incident): ?array
+    {
+        if (! \App\Models\LogEntry::query()->exists()) {
+            return null;
+        }
+
+        $scope = app(\App\Services\Logs\IncidentLogs::class);
+        $servers = $scope->servers($incident);
+
+        if ($servers === []) {
+            return ['issues' => collect(), 'total' => 0];
+        }
+
+        [$from, $to] = $scope->window($incident);
+        $base = app(\App\Services\Logs\LogQuery::class)->base(['servers' => $servers], $from, $to);
+
+        return ['issues' => app(\App\Services\Logs\LogQuery::class)->issues($base, 5), 'total' => (clone $base)->count()];
     }
 
     /**

@@ -8,7 +8,10 @@
     $reasonText = fn (string $r) => __('incident_memory.reasons.'.$r);
 @endphp
 <section class="ss-panel" id="memory" aria-labelledby="memory-title" data-testid="incident-memory">
-    <div class="ss-panel-head"><div><h2 id="memory-title" class="ss-panel-title">{{ __('incident_memory.title') }}</h2><p class="ss-panel-sub">{{ __('incident_memory.text') }}</p></div></div>
+    <div class="ss-panel-head">
+        <div><h2 id="memory-title" class="ss-panel-title">{{ __('incident_memory.title') }}</h2><p class="ss-panel-sub">{{ __('incident_memory.text') }}</p></div>
+        <a class="ss-btn ss-btn-secondary ss-btn-sm" href="{{ route('incidents.postmortem', $incident) }}" title="{{ __('postmortems.open_hint') }}"><svg class="ico"><use href="#i-file"/></svg> {{ __('postmortems.open') }}</a>
+    </div>
 
     @if ($l)
         <dl class="ss-dl">

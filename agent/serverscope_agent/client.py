@@ -111,3 +111,27 @@ class ServerScopeClient:
             )
 
         return result
+
+    def send_logs(self, entries: list, dropped: int = 0) -> dict:
+        """Send error and warning lines from the followed log files."""
+
+        try:
+            response = self.session.post(
+                f"{self.base_url}/api/agent/logs",
+                json={"entries": entries, "dropped": dropped},
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+        except requests.HTTPError:
+            raise SubmissionError(_safe_reason(response)) from None
+        except requests.Timeout:
+            raise SubmissionError("time-out") from None
+        except requests.RequestException:
+            raise SubmissionError("connection failed (DNS, TLS or network)") from None
+
+        try:
+            result = response.json()
+        except requests.exceptions.JSONDecodeError:
+            return {}
+
+        return result if isinstance(result, dict) else {}

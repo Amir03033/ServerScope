@@ -212,3 +212,19 @@ def test_client_user_agent_names_the_running_agent_version():
     from serverscope_agent.collector import AGENT_VERSION
 
     assert create_client().session.headers["User-Agent"] == f"ServerScope-Agent/{AGENT_VERSION}"
+
+
+def test_send_logs_posts_entries_and_dropped_count():
+    from unittest.mock import MagicMock
+
+    from serverscope_agent.client import ServerScopeClient
+
+    client = ServerScopeClient(base_url="https://serverscope.example", token="t" * 64)
+    response = MagicMock(status_code=201)
+    response.json.return_value = {"accepted": 1}
+    client.session.post = MagicMock(return_value=response)
+
+    assert client.send_logs([{"source": "app", "level": "error", "message": "x", "occurred_at": "2026-11-03T10:00:00+00:00"}], 3) == {"accepted": 1}
+    url = client.session.post.call_args.args[0]
+    assert url == "https://serverscope.example/api/agent/logs"
+    assert client.session.post.call_args.kwargs["json"]["dropped"] == 3

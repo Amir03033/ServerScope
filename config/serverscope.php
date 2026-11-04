@@ -362,6 +362,8 @@ return [
         'page_changes_days' => env('SERVERSCOPE_RETAIN_PAGE_CHANGES_DAYS'),
         'discovery_runs_days' => env('SERVERSCOPE_RETAIN_DISCOVERY_RUNS_DAYS'),
         'service_events_days' => env('SERVERSCOPE_RETAIN_SERVICE_EVENTS_DAYS'),
+        // Log lines from the agent (errors and warnings only).
+        'log_entries_days' => env('SERVERSCOPE_RETAIN_LOG_ENTRIES_DAYS', 14),
         'predictions_days' => env('SERVERSCOPE_RETAIN_PREDICTIONS_DAYS'),
         // Investigation snapshots of incidents that are no longer active.
         // A snapshot keeps the evidence it was built from (derived values,

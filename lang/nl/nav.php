@@ -27,6 +27,7 @@ return [
         'globe' => 'Wereldbol',
         'dependencies' => 'Afhankelijkheden',
         'deployments' => 'Deployments',
+        'logs' => 'Logs',
         'incidents' => 'Incidenten',
         'alerts' => 'Alerts',
         'reports' => 'Rapporten',
