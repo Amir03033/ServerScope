@@ -101,7 +101,7 @@
     <aside class="ss-sidebar" id="sidebar" data-sidebar aria-label="{{ __('nav.main') }}">
         <div class="flex h-[3.75rem] shrink-0 items-center justify-between gap-2 border-b border-line px-4">
             <a href="{{ route('dashboard') }}" class="flex min-w-0 items-center gap-2.5 text-fg no-underline">
-                <svg class="ico ss-live-logo h-6 w-6 text-accent [stroke-width:2]" aria-hidden="true"><use class="base" href="#i-pulse"/><use class="beat" href="#i-pulse"/></svg>
+                <x-live-logo class="h-6 w-6" />
                 <span class="min-w-0">
                     <span class="block text-[15px] font-semibold leading-tight tracking-tight">ServerScope</span>
                     <span class="block truncate text-xs text-muted">{{ __('nav.brand_caption') }}</span>
@@ -196,7 +196,7 @@
         <header class="ss-topbar">
             <a href="#sidebar" class="ss-icon-btn lg:hidden" data-sidebar-open aria-controls="sidebar" aria-expanded="false" aria-label="{{ __('nav.open_menu') }}"><svg class="ico"><use href="#i-menu"/></svg></a>
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2 text-fg no-underline lg:hidden" aria-label="ServerScope">
-                <svg class="ico ss-live-logo h-5 w-5 text-accent [stroke-width:2]" aria-hidden="true"><use class="base" href="#i-pulse"/><use class="beat" href="#i-pulse"/></svg>
+                <x-live-logo class="h-5 w-5" />
                 <span class="text-[15px] font-semibold tracking-tight">ServerScope</span>
             </a>
 

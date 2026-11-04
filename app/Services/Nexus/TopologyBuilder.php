@@ -3,6 +3,7 @@
 namespace App\Services\Nexus;
 
 use App\Models\Domain;
+use App\Models\Heartbeat;
 use App\Models\Incident;
 use App\Models\IncidentImpact;
 use App\Models\MonitoredPage;
@@ -55,6 +56,7 @@ class TopologyBuilder
         'server' => 1000,
         'domain' => 1000,
         'service' => 2000,
+        'heartbeat' => 1000,
         'page' => 500,
         'dependency' => 5000,
         'incident' => 500,
@@ -68,6 +70,9 @@ class TopologyBuilder
     private const DOMAIN_HEALTH = ['healthy' => 'ok', 'warning' => 'warning', 'critical' => 'critical', 'unknown' => 'unknown', 'paused' => 'paused', 'maintenance' => 'maintenance'];
 
     private const SERVICE_HEALTH = ['running' => 'ok', 'starting' => 'warning', 'stopped' => 'critical', 'failed' => 'critical', 'not_found' => 'critical', 'stale' => 'unknown', 'unknown' => 'unknown', 'paused' => 'paused'];
+
+    // Scheduled jobs are drawn like services (rings around their server); their status codes are prefixed.
+    private const JOB_HEALTH = ['job_up' => 'ok', 'job_down' => 'critical', 'job_new' => 'unknown', 'job_paused' => 'paused'];
 
     private const PAGE_HEALTH = ['up' => 'ok', 'degraded' => 'warning', 'down' => 'critical', 'unknown' => 'unknown', 'paused' => 'paused'];
 
@@ -148,6 +153,28 @@ class TopologyBuilder
                 'kind' => $service->kind,
             ]);
             $this->edge($edges, "service:{$service->id}", $serverKey, 'structural', null, relation: 'runs_on');
+        }
+
+        // 3b. Scheduled jobs that run on one of those servers, next to its services.
+        $jobs = $this->bounded(
+            Heartbeat::query()->where('team_id', $teamId)->whereIn('server_id', $serverIds())->orderBy('id'),
+            'heartbeat', $truncated,
+            ['id', 'team_id', 'server_id', 'name', 'status'],
+        );
+
+        foreach ($jobs as $job) {
+            $serverKey = "server:{$job->server_id}";
+
+            if (! isset($nodes[$serverKey])) {
+                continue;
+            }
+
+            $key = "heartbeat:{$job->id}";
+            $status = 'job_'.$job->status;
+            $nodes[$key] = $this->node($key, 'service', $job->id, $job->name, $status, self::JOB_HEALTH[$status] ?? 'unknown', route('heartbeats.show', $job->id), $serverKey, [
+                'kind' => 'scheduled_job',
+            ]);
+            $this->edge($edges, $key, $serverKey, 'structural', null, relation: 'runs_on');
         }
 
         // 4. Domains (not deleted).
@@ -534,7 +561,8 @@ class TopologyBuilder
      */
     private function bounded(Builder $query, string $kind, array &$truncated, array $columns): Collection
     {
-        $limit = static::LIMITS[$kind];
+        // A subclass may set only some limits; the rest keep the defaults.
+        $limit = static::LIMITS[$kind] ?? self::LIMITS[$kind];
         $rows = $query->limit($limit + 1)->get($columns);
 
         if ($rows->count() > $limit) {

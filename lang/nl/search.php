@@ -20,6 +20,7 @@ return [
         'deployment' => 'Deployment',
         'docs' => 'Documentatie',
         'incident' => 'Incident',
+        'heartbeat' => 'Geplande taak',
     ],
     'deployments' => 'Deployments (:count)',
 ];

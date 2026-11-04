@@ -40,6 +40,7 @@ class TopologyCacheInvalidator
         Domain::class => ['name', 'is_active', 'maintenance_starts_at', 'maintenance_ends_at'],
         MonitoredPage::class => ['domain_id', 'approval_status', 'is_active', 'title', 'url'],
         ServiceCheck::class => ['server_id', 'name', 'display_name', 'is_enabled'],
+        \App\Models\Heartbeat::class => ['server_id', 'name', 'status'],
     ];
 
     public static function register(): void

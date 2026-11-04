@@ -4,7 +4,7 @@
 import cytoscape from 'cytoscape';
 import { numberLocale } from './i18n';
 import { append, clear, h, icon, status } from './nexus/dom.js';
-import { dotClass, renderPanel, typeIcon } from './nexus/panel.js';
+import { dotClass, renderPanel, typeIcon, typeLabel } from './nexus/panel.js';
 import {
     HEALTH_ORDER, HEALTH_TONE, SEVERITY, TYPE_ORDER, adjacency, healthRank, impactOf, layeredPositions,
     structureKey, summarize, translator, upstreamOf, visibleKeys,
@@ -521,7 +521,7 @@ function boot() {
         // append() from dom.js skips null (Element.append would print "null").
         append(clear(els.tooltip), [
             h('strong', { class: 'truncate' }, labelOf(node)),
-            h('span', { class: 'text-muted' }, `${t(`types.${node.type}`)} · ${t(`health.${node.health}`)}`),
+            h('span', { class: 'text-muted' }, `${typeLabel(node, config, t)} · ${t(`health.${node.health}`)}`),
             node.incidents.active > 0 ? h('span', { class: 'ss-text-bad' }, t.count('panel.incidents', node.incidents.active)) : null,
         ]);
         els.tooltip.style.left = `${x}px`;
@@ -592,7 +592,7 @@ function boot() {
                 return h('tr', { 'aria-selected': node.key === state.selected ? 'true' : null },
                     h('td', {},
                         h('button', { type: 'button', class: 'inline-flex items-center gap-2 text-left font-semibold hover:text-accent', onclick: () => select(node.key) }, icon(typeIcon(node.type)), labelOf(node)),
-                        h('div', { class: 'text-xs text-muted' }, t(`types.${node.type}`)),
+                        h('div', { class: 'text-xs text-muted' }, typeLabel(node, config, t)),
                     ),
                     h('td', {}, status(t(`health.${node.health}`), HEALTH_TONE[node.health] ?? 'muted')),
                     h('td', {}, node.incidents.active > 0

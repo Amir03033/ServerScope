@@ -19,6 +19,11 @@ export function typeIcon(type) {
     return ICONS[type] ?? 'i-list';
 }
 
+/** The kind of resource in words; a scheduled job is drawn as a service but named as itself. */
+export function typeLabel(node, config, t) {
+    return node.details?.kind === 'scheduled_job' ? (config.labels.service_kind?.scheduled_job ?? t(`types.${node.type}`)) : t(`types.${node.type}`);
+}
+
 /** Label of a status code for a node type, from the lang files. */
 export function statusLabel(config, type, code) {
     return config.labels.status[type]?.[code] ?? config.labels.status.common?.[code] ?? code;
@@ -44,7 +49,7 @@ export function renderPanel(root, context) {
                 h('span', { class: `ss-stat-icon ss-nexus-tone-${tone}` }, icon(typeIcon(node.type))),
                 h('div', { class: 'min-w-0' },
                     h('h2', { class: 'ss-panel-title break-words' }, context.labelOf(node)),
-                    h('p', { class: 'ss-panel-sub' }, t(`types.${node.type}`)),
+                    h('p', { class: 'ss-panel-sub' }, typeLabel(node, config, t)),
                 ),
             ),
             h('button', { type: 'button', class: 'ss-icon-btn', 'aria-label': t('panel.close'), title: t('panel.close'), onclick: context.onClose }, icon('i-x')),
@@ -187,7 +192,7 @@ function relations(titleKey, edges, end, context) {
                 h('span', { class: dotClass(tone), title: t(`health.${other.health}`) }),
                 h('span', { class: 'ss-row-main' },
                     h('strong', {}, context.labelOf(other)),
-                    h('span', { class: 'ss-row-sub' }, [t(`types.${other.type}`), relation].filter(Boolean).join(' · ')),
+                    h('span', { class: 'ss-row-sub' }, [typeLabel(other, context.config, t), relation].filter(Boolean).join(' · ')),
                 ),
             ),
             h('span', { class: 'ss-chip' }, edge.origin === 'confirmed' ? t('panel.confirmed') : t('panel.structural')),
