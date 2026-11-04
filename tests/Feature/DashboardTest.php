@@ -27,8 +27,10 @@ class DashboardTest extends TestCase
             ->get('/dashboard')
             ->assertOk()
             ->assertSee('Servers')
-            ->assertSee('Nog geen servers geregistreerd')
-            ->assertSee('Totaal servers');
+            // A new account gets three first steps instead of empty widgets.
+            ->assertSee('Aan de slag')
+            ->assertSee(__('dashboard.getting_started.after'))
+            ->assertDontSee('Totaal servers');
     }
 
     public function test_dashboard_displays_server_and_latest_metrics(): void

@@ -1019,3 +1019,76 @@ if (document.documentElement.hasAttribute('data-demo')) {
     // Forms that appear later (live lists, sheets) are marked too.
     new MutationObserver((changes) => changes.forEach((c) => c.addedNodes.forEach((n) => n.nodeType === 1 && mark(n)))).observe(document.body, { childList: true, subtree: true });
 }
+
+/* ------------------------------------------------------------------ */
+/* Sign-in and registration: show password, strength, sending state.  */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-password-toggle]').forEach((button) => {
+    const input = document.getElementById(button.getAttribute('aria-controls'));
+    button.addEventListener('click', () => {
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(show));
+        button.setAttribute('aria-label', show ? button.dataset.labelHide : button.dataset.labelShow);
+        button.querySelector('[data-eye="show"]').hidden = show;
+        button.querySelector('[data-eye="hide"]').hidden = !show;
+        input.focus();
+    });
+});
+
+document.querySelectorAll('input[data-strength]').forEach((input) => {
+    const meter = input.closest('.ss-auth-field')?.querySelector('[data-strength-meter]');
+    if (!meter) return;
+    const labels = JSON.parse(meter.dataset.labels || '{}');
+    const text = meter.querySelector('.ss-strength-text');
+
+    // A rough guide only (the server checks the real rules): length and variety.
+    const score = (v) => {
+        if (!v) return 0;
+        let s = v.length >= 12 ? 2 : v.length >= 8 ? 1 : 0;
+        s += [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((r) => r.test(v)).length >= 3 ? 1 : 0;
+        s += v.length >= 16 ? 1 : 0;
+
+        return Math.max(1, Math.min(4, s));
+    };
+
+    input.addEventListener('input', () => {
+        const s = score(input.value);
+        meter.dataset.score = String(s);
+        text.textContent = s ? labels[['', 'weak', 'fair', 'good', 'strong'][s]] : '';
+    });
+});
+
+document.querySelectorAll('form[data-auth-form]').forEach((form) => {
+    form.addEventListener('submit', () => {
+        const button = form.querySelector('.ss-auth-submit');
+        if (button) {
+            button.classList.add('is-loading');
+            button.setAttribute('aria-busy', 'true');
+        }
+    });
+});
+
+/* Heartbeats: a template fills in the add form; a name the user typed is kept. */
+document.querySelectorAll('[data-hb-template]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const form = button.closest('form');
+        const t = JSON.parse(button.dataset.hbTemplate);
+        const set = (name, value) => {
+            const field = form.elements[name];
+            if (field && value !== undefined) field.value = String(value);
+        };
+        const name = form.elements.name;
+        if (!name.value.trim() || name.dataset.fromTemplate === name.value) {
+            name.value = t.name;
+            name.dataset.fromTemplate = t.name;
+        }
+        form.querySelector(`input[name="schedule_type"][value="${t.schedule_type}"]`).checked = true;
+        set('period_minutes', t.period_minutes);
+        set('cron_expression', t.cron_expression);
+        set('grace_minutes', t.grace_minutes);
+        set('severity', t.severity);
+        form.querySelectorAll('[data-hb-template]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+    });
+});

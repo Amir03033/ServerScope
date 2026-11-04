@@ -83,6 +83,30 @@ class DemoTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_a_visitor_whose_session_ran_out_goes_back_into_the_demo_instead_of_to_the_login(): void
+    {
+        $this->seedDemo();
+
+        $this->get('/demo')->assertCookie(Demo::COOKIE);
+
+        // The session is gone (expired, or the demo was rebuilt), the cookie is still there.
+        $this->flushSession();
+        auth()->logout();
+        $this->withCookie(Demo::COOKIE, '1')->get(route('incidents.index'))->assertRedirect(route('demo.enter', ['next' => '/incidents']));
+        $this->get(route('demo.enter', ['next' => '/incidents']))->assertRedirect('/incidents');
+        $this->assertAuthenticatedAs($this->visitor);
+
+        // Only paths on this site; anything else lands on the dashboard.
+        foreach (['//evil.example', 'https://evil.example', '/demo/leave'] as $next) {
+            $this->get(route('demo.enter', ['next' => $next]))->assertRedirect(route('dashboard'));
+        }
+
+        // Without the cookie a guest still goes to the login page.
+        auth()->logout();
+        $this->defaultCookies = [];
+        $this->get(route('incidents.index'))->assertRedirect(route('login'));
+    }
+
     public function test_every_kind_of_change_is_refused(): void
     {
         $this->seedDemo();

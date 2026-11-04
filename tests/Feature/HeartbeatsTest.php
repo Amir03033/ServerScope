@@ -63,6 +63,20 @@ class HeartbeatsTest extends TestCase
             ->assertSessionHasErrors('cron_expression');
     }
 
+    public function test_the_add_form_offers_templates_that_are_valid_jobs(): void
+    {
+        $page = $this->actingAs($this->a['admin'])->get(route('heartbeats.create'))->assertOk();
+
+        foreach (Heartbeat::TEMPLATES as $key => $template) {
+            $page->assertSee(__("heartbeats.templates.items.{$key}.name"));
+            // Every template, posted as is, is accepted.
+            $this->post(route('heartbeats.store'), ['name' => $key, 'timezone' => 'Europe/Amsterdam', ...array_diff_key($template, ['icon' => true])])->assertSessionHasNoErrors();
+        }
+
+        $this->assertSame(count(Heartbeat::TEMPLATES), Heartbeat::query()->withoutGlobalScopes()->where('team_id', $this->a['team']->id)->count());
+        $this->get(route('heartbeats.edit', Heartbeat::query()->withoutGlobalScopes()->where('team_id', $this->a['team']->id)->first()))->assertDontSee(__('heartbeats.templates.title'));
+    }
+
     public function test_a_ping_records_the_run_and_sets_the_next_expected_time(): void
     {
         $heartbeat = $this->job();

@@ -59,6 +59,8 @@ class AuthenticatedSessionController extends Controller
         }
 
         Auth::login($user, $request->boolean('remember'));
+        // Signing in with a real account ends any earlier demo visit in this browser.
+        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget(\App\Support\Demo::COOKIE));
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'));
@@ -66,6 +68,7 @@ class AuthenticatedSessionController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
+        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget(\App\Support\Demo::COOKIE));
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

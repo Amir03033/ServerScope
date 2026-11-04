@@ -11,6 +11,7 @@
         'cron' => "0 3 * * * /usr/local/bin/backup.sh && {$curl} {$url}",
         'full' => "{$curl} {$url}/start\noutput=\$(/usr/local/bin/backup.sh 2>&1); code=\$?\n{$curl} --data-raw \"\$(printf '%s' \"\$output\" | tail -c 2000)\" {$url}/\$code",
         'laravel' => "Schedule::command('backup:run')->daily()\n    ->pingBefore('{$url}/start')\n    ->pingOnSuccess('{$url}')\n    ->pingOnFailure('{$url}/fail');",
+        'database' => "# Database check, every 5 minutes (MySQL / MariaDB):\n*/5 * * * * mysqladmin ping --silent && {$curl} {$url}\n# PostgreSQL: */5 * * * * pg_isready -q && {$curl} {$url}\n\n# Or a nightly backup:\n0 3 * * * mysqldump --single-transaction --all-databases | gzip > /var/backups/db-\$(date +\\%F).sql.gz && {$curl} {$url}",
         'fail' => "{$curl} {$url}/fail",
     ];
 @endphp

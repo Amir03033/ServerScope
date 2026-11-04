@@ -37,7 +37,9 @@ class DemoController extends Controller
         $request->session()->regenerate();
         $request->session()->put(Locale::SESSION_KEY, $locale);
 
-        return redirect()->route('dashboard')->withHeaders(['X-Robots-Tag' => 'noindex, nofollow']);
+        return redirect()->to($this->next($request))
+            ->withCookie(cookie(Demo::COOKIE, '1', 60 * 24))
+            ->withHeaders(['X-Robots-Tag' => 'noindex, nofollow']);
     }
 
     public function leave(Request $request): RedirectResponse
@@ -48,7 +50,17 @@ class DemoController extends Controller
             $request->session()->regenerateToken();
         }
 
-        return $request->query('to') === 'register' ? redirect()->route('register') : redirect()->route('login');
+        $to = $request->query('to') === 'register' ? redirect()->route('register') : redirect()->route('login');
+
+        return $to->withCookie(cookie()->forget(Demo::COOKIE));
+    }
+
+    /** Where to go after entering: the page asked for (a path on this site), otherwise the dashboard. */
+    private function next(Request $request): string
+    {
+        $next = (string) $request->query('next', '');
+
+        return preg_match('#^/(?!/)[A-Za-z0-9/_.\-]*$#', $next) === 1 && ! str_starts_with($next, '/demo') ? url($next) : route('dashboard');
     }
 
     /** The visitor's language: a choice made earlier, otherwise the browser's. */

@@ -46,6 +46,19 @@ return [
         'step3' => 'Done: you are alerted as soon as it is late.',
     ],
 
+    'templates' => [
+        'title' => 'Quick start',
+        'text' => 'Pick a common job; the form fills itself in and you can still change everything.',
+        'items' => [
+            'db_backup' => ['name' => 'Database backup', 'text' => 'Every night at 03:00'],
+            'db_check' => ['name' => 'Database reachable', 'text' => 'A check every 5 minutes'],
+            'scheduler' => ['name' => 'Laravel scheduler', 'text' => 'Every minute'],
+            'queue' => ['name' => 'Queue worker', 'text' => 'Every 5 minutes'],
+            'certificates' => ['name' => 'Renew certificates', 'text' => 'Every day (certbot)'],
+            'cleanup' => ['name' => 'Clean up logs', 'text' => 'Every Sunday night'],
+        ],
+    ],
+
     'form' => [
         'title_create' => 'Add a scheduled job',
         'title_edit' => 'Edit job',
@@ -81,6 +94,8 @@ return [
             'cron_text' => 'Checks in only when the command succeeds (&&).',
             'full' => 'Start, result and output',
             'full_text' => 'Measures the duration, reports the exit code and sends the last lines of output.',
+            'database' => 'Database',
+            'database_text' => 'Pick the line that fits this job: check every 5 minutes that the database answers, or check in after the nightly backup. One job per line.',
             'fail' => 'Report a failure',
             'fail_text' => 'From your own script or code; opens an incident straight away.',
             'laravel' => 'Laravel scheduler',

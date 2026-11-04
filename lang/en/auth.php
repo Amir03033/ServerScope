@@ -28,6 +28,22 @@ return [
         'password_confirmation' => 'Repeat password',
     ],
 
+    'showcase' => [
+        'title' => 'Every server, website and incident at a glance.',
+        'text' => 'ServerScope watches your infrastructure every minute, explains what went wrong and tells your team where they are.',
+        'points' => ['Live monitoring of servers, websites, cron jobs and logs', 'Root cause analysis with an AI interpretation', 'Alerts by e-mail, push, Slack, Teams, Telegram and Discord'],
+        'cards' => [
+            'online' => 'online',
+            'ssl' => 'SSL valid',
+            'cause' => 'Likely cause found',
+            'cause_text' => 'Deploy 2.14.0, 2 min before',
+            'resolved' => 'Incident resolved',
+            'resolved_text' => 'in 4 minutes',
+        ],
+    ],
+    'password_show' => 'Show password',
+    'password_hide' => 'Hide password',
+    'strength' => ['label' => 'Password strength', 'weak' => 'Weak', 'fair' => 'Fair', 'good' => 'Good', 'strong' => 'Strong'],
     'login' => [
         'title' => 'Log in',
         'heading' => 'Welcome back',
@@ -35,6 +51,11 @@ return [
         'remember' => 'Remember me',
         'submit' => 'Log in',
         'forgot' => 'Forgot your password?',
+        'or' => 'or',
+        'demo' => 'Explore the live demo',
+        'demo_text' => 'No account needed, read only.',
+        'new_here' => 'New to ServerScope?',
+        'create' => 'Create an account',
     ],
 
     'register' => [

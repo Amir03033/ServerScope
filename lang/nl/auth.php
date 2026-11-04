@@ -23,6 +23,22 @@ return [
         'password_confirmation' => 'Herhaal wachtwoord',
     ],
 
+    'showcase' => [
+        'title' => 'Al je servers, websites en incidenten in één oogopslag.',
+        'text' => 'ServerScope bewaakt je infrastructuur elke minuut, legt uit wat er misging en laat je team weten waar ze staan.',
+        'points' => ['Live bewaking van servers, websites, cron-taken en logs', 'Oorzaakanalyse met een AI-interpretatie', 'Meldingen via e-mail, push, Slack, Teams, Telegram en Discord'],
+        'cards' => [
+            'online' => 'online',
+            'ssl' => 'SSL geldig',
+            'cause' => 'Waarschijnlijke oorzaak gevonden',
+            'cause_text' => 'Deploy 2.14.0, 2 min eerder',
+            'resolved' => 'Incident opgelost',
+            'resolved_text' => 'in 4 minuten',
+        ],
+    ],
+    'password_show' => 'Wachtwoord tonen',
+    'password_hide' => 'Wachtwoord verbergen',
+    'strength' => ['label' => 'Sterkte van het wachtwoord', 'weak' => 'Zwak', 'fair' => 'Redelijk', 'good' => 'Goed', 'strong' => 'Sterk'],
     'login' => [
         'title' => 'Inloggen',
         'heading' => 'Welkom terug',
@@ -30,6 +46,11 @@ return [
         'remember' => 'Onthoud mij',
         'submit' => 'Inloggen',
         'forgot' => 'Wachtwoord vergeten?',
+        'or' => 'of',
+        'demo' => 'Bekijk de live demo',
+        'demo_text' => 'Geen account nodig, alleen lezen.',
+        'new_here' => 'Nieuw bij ServerScope?',
+        'create' => 'Account aanmaken',
     ],
 
     'register' => [
