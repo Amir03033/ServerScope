@@ -47,6 +47,7 @@ class Incident extends Model
         'service' => 'Service',
         'predictive' => 'Voorspelling',
         'anomaly' => 'Afwijking',
+        'heartbeat' => 'Geplande taak',
     ];
 
     protected $fillable = [

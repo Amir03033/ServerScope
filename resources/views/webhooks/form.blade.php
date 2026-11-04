@@ -4,12 +4,19 @@
     use App\Support\Severity;
 
     $editing = $endpoint->exists;
-    $discord = $endpoint->isDiscord();
+    $chat = $endpoint->isChat();
+    $telegram = $endpoint->type === WebhookEndpoint::TYPE_TELEGRAM;
+    $channel = WebhookEndpoint::TYPES[$endpoint->type] ?? '';
+    $placeholders = [
+        WebhookEndpoint::TYPE_DISCORD => 'https://discord.com/api/webhooks/…',
+        WebhookEndpoint::TYPE_SLACK => 'https://hooks.slack.com/services/…',
+        WebhookEndpoint::TYPE_TEAMS => 'https://….logic.azure.com/workflows/…',
+    ];
     $docs = config('serverscope.docs_url');
     $field = fn (string $name) => $errors->has($name) ? 'aria-invalid=true aria-describedby='.$name.'-error' : '';
 @endphp
 
-<x-layouts.app :title="$editing ? __('webhooks.form.title_edit') : ($discord ? __('webhooks.form.title_discord') : __('webhooks.form.title_create'))">
+<x-layouts.app :title="$editing ? __('webhooks.form.title_edit') : ($chat ? __('webhooks.form.title_chat', ['channel' => $channel]) : __('webhooks.form.title_create'))">
     <x-slot:breadcrumb><span>›</span> <a href="{{ route('webhooks.index') }}">{{ __('webhooks.title') }}</a> <span>›</span> {{ $editing ? $endpoint->name : __('webhooks.new') }}</x-slot:breadcrumb>
     <x-slot:actions><a class="ss-btn ss-btn-ghost" href="{{ $editing ? route('webhooks.show', $endpoint) : route('webhooks.index') }}"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('webhooks.back') }}</a></x-slot:actions>
 
@@ -23,15 +30,29 @@
                     <input id="name" class="ss-input mt-1.5" name="name" maxlength="100" required value="{{ old('name', $endpoint->name) }}" {{ $field('name') }}>
                     @error('name')<p id="name-error" class="ss-error">{{ $message }}</p>@enderror
                 </div>
-                @if ($discord)
-                    {{-- The Discord URL is a credential: never echoed back into the page. --}}
+                @if ($telegram)
+                    {{-- The bot token is a credential: never echoed back into the page. --}}
                     <div>
-                        <label class="ss-label" for="url">{{ __('webhooks.form.discord_url') }}</label>
-                        <input id="url" class="ss-input mt-1.5" name="url" type="password" maxlength="2048" autocomplete="off" spellcheck="false" @unless ($editing) required @endunless placeholder="{{ $editing ? __('webhooks.form.keep_url') : 'https://discord.com/api/webhooks/…' }}" {{ $field('url') }}>
+                        <label class="ss-label" for="token">{{ __('webhooks.form.telegram_token') }}</label>
+                        <input id="token" class="ss-input mt-1.5 font-mono" name="token" type="password" maxlength="100" autocomplete="off" spellcheck="false" @unless ($editing) required @endunless placeholder="{{ $editing ? __('webhooks.form.keep_token') : '123456789:AA…' }}" {{ $field('token') }}>
+                        <p class="ss-help">{{ __('webhooks.form.telegram_token_help') }}</p>
+                        @error('token')<p id="token-error" class="ss-error">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="ss-label" for="target">{{ __('webhooks.form.telegram_chat') }}</label>
+                        <input id="target" class="ss-input mt-1.5 font-mono" name="target" maxlength="40" required autocomplete="off" spellcheck="false" value="{{ old('target', $endpoint->target) }}" placeholder="-1001234567890" {{ $field('target') }}>
+                        <p class="ss-help">{{ __('webhooks.form.telegram_chat_help') }}</p>
+                        @error('target')<p id="target-error" class="ss-error">{{ $message }}</p>@enderror
+                    </div>
+                @elseif ($chat)
+                    {{-- The webhook address is a credential: never echoed back into the page. --}}
+                    <div>
+                        <label class="ss-label" for="url">{{ __('webhooks.form.chat_url', ['channel' => $channel]) }}</label>
+                        <input id="url" class="ss-input mt-1.5" name="url" type="password" maxlength="2048" autocomplete="off" spellcheck="false" @unless ($editing) required @endunless placeholder="{{ $editing ? __('webhooks.form.keep_url') : $placeholders[$endpoint->type] }}" {{ $field('url') }}>
                         <p class="ss-help">
-                            {{ __('webhooks.form.discord_help') }}
+                            {{ __('webhooks.form.'.$endpoint->type.'_help') }}
                             @if ($editing) {!! __('webhooks.form.current', ['url' => '<code>'.e($endpoint->url).'</code>']) !!} @endif
-                            @if ($docs) <a class="text-accent" href="{{ $docs }}/discord-notifications" target="_blank" rel="noopener">{{ __('webhooks.form.guide') }}</a> @endif
+                            @if ($docs) <a class="text-accent" href="{{ $docs }}/{{ $endpoint->type }}-notifications" target="_blank" rel="noopener">{{ __('webhooks.form.guide') }}</a> @endif
                         </p>
                         @error('url')<p id="url-error" class="ss-error">{{ $message }}</p>@enderror
                     </div>
@@ -67,7 +88,7 @@
                     <label class="ss-check"><input type="hidden" name="is_active" value="0"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $endpoint->is_active ?? true))> {{ __('webhooks.form.active') }}</label>
                 </div>
             </div>
-            <div class="mt-6 border-t border-line pt-5"><button class="ss-btn ss-btn-primary" type="submit">{{ $editing ? __('webhooks.form.save') : ($discord ? __('webhooks.form.create_discord') : __('webhooks.form.create')) }}</button></div>
+            <div class="mt-6 border-t border-line pt-5"><button class="ss-btn ss-btn-primary" type="submit">{{ $editing ? __('webhooks.form.save') : ($chat ? __('webhooks.form.create_chat', ['channel' => $channel]) : __('webhooks.form.create')) }}</button></div>
         </form>
     </section>
 </x-layouts.app>

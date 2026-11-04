@@ -20,6 +20,13 @@ return [
         'ai' => 'AI analysis',
         'resolve' => 'Resolve or update status',
     ],
+    'acknowledge' => [
+        'title' => 'Acknowledge incident #:id',
+        'kicker' => 'Confirm you are on it',
+        'opened' => 'opened :time',
+        'text' => 'Your team then sees someone is handling it, and the incident no longer escalates for lack of a response.',
+        'view' => 'View incident',
+    ],
     'workflow' => [
         'title' => 'Workflow',
         'text' => 'From investigation to a resolved, documented incident.',

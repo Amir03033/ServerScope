@@ -50,8 +50,16 @@ return [
         'in_app' => 'Testmelding: in-app meldingen werken.',
         'webhook' => 'Testlevering vanuit ServerScope.',
     ],
+    'chat' => [
+        'view_incident' => 'Bekijk incident #:id',
+        'acknowledge' => 'Bevestigen',
+        'view_domain' => 'Bekijk domein',
+        'open' => 'Open ServerScope',
+        'test_text' => 'De koppeling met ServerScope werkt. Meldingen voor de gekozen gebeurtenissen verschijnen hier.',
+    ],
     'discord' => [
         'titles' => [
+            'heartbeat' => ['Geplande taak meldt een probleem', 'Geplande taak weer in orde'],
             'agent' => ['Server offline', 'Server weer online'],
             'alert' => ['Monitoring-alert geactiveerd', 'Monitoring-alert opgelost'],
             'http' => ['Website onbereikbaar', 'Website weer bereikbaar'],

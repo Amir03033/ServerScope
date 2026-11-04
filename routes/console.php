@@ -31,6 +31,10 @@ Schedule::command('serverscope:probe:expire')
     ->everyMinute()
     ->withoutOverlapping(5);
 
+Schedule::command('serverscope:check-heartbeats')
+    ->everyMinute()
+    ->withoutOverlapping(5);
+
 Schedule::command('serverscope:escalate-incidents')
     ->everyMinute()
     ->withoutOverlapping(5);

@@ -20,6 +20,13 @@ return [
         'ai' => 'AI-analyse',
         'resolve' => 'Oplossen of status bijwerken',
     ],
+    'acknowledge' => [
+        'title' => 'Incident #:id bevestigen',
+        'kicker' => 'Bevestig dat je ermee bezig bent',
+        'opened' => 'geopend :time',
+        'text' => 'Je team ziet dan dat iemand het oppakt, en het incident escaleert niet meer omdat niemand reageert.',
+        'view' => 'Bekijk incident',
+    ],
     'workflow' => [
         'title' => 'Werkwijze',
         'text' => 'Van onderzoek tot een opgelost en vastgelegd incident.',

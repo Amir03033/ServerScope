@@ -101,3 +101,9 @@ Route::prefix('v1')->name('api.v1.')->middleware('throttle:api-token')->group(fu
         Route::post('/incidents/{incident}/comments', [ApiController::class, 'comment'])->name('incidents.comment');
     });
 });
+
+// Ping URL of a scheduled job (cron monitoring); the token is the credential.
+Route::match(['get', 'post', 'head'], '/ping/{token}/{action?}', \App\Http\Controllers\Api\HeartbeatPingController::class)
+    ->where(['token' => '[a-f0-9]{32}', 'action' => 'start|fail|\d{1,3}'])
+    ->middleware('throttle:120,1')
+    ->name('heartbeats.ping');

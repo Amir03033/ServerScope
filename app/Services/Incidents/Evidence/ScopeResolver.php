@@ -61,13 +61,21 @@ class ScopeResolver
      */
     public function resources(Incident $incident): array
     {
-        if ($incident->subject_type === null || ! ResourceCatalog::supports($incident->subject_type)) {
+        [$type, $id] = [$incident->subject_type, $incident->subject_id];
+
+        // A scheduled job is investigated through the server it runs on.
+        if ($type === 'heartbeat') {
+            $serverId = \App\Models\Heartbeat::query()->withoutGlobalScopes()->whereKey($id)->value('server_id');
+            [$type, $id] = $serverId ? ['server', $serverId] : [null, null];
+        }
+
+        if ($type === null || ! ResourceCatalog::supports($type)) {
             return [];
         }
 
         $teamId = (int) $incident->team_id;
         $resources = [];
-        $ancestors = $this->graph->ancestors($incident->subject_type, (int) $incident->subject_id, self::UPSTREAM_DEPTH, $teamId);
+        $ancestors = $this->graph->ancestors($type, (int) $id, self::UPSTREAM_DEPTH, $teamId);
 
         foreach ($ancestors as $key => $node) {
             $model = ResourceCatalog::find($node['type'], $node['id'], $teamId);

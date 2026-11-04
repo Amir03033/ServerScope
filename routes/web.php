@@ -294,6 +294,18 @@ Route::middleware(['auth', 'verified', 'tenant'])->group(function () {
     Route::post('/favorites', [\App\Http\Controllers\FavoriteController::class, 'toggle'])->middleware('throttle:60,1')->name('favorites.toggle');
     Route::get('/deployments', [\App\Http\Controllers\DeploymentController::class, 'index'])->name('deployments.index');
     Route::get('/logs', [\App\Http\Controllers\LogController::class, 'index'])->middleware('throttle:60,1')->name('logs.index');
+    // Cron monitoring: scheduled jobs that report in on their own ping URL.
+    Route::get('/heartbeats', [\App\Http\Controllers\HeartbeatController::class, 'index'])->name('heartbeats.index');
+    Route::get('/heartbeats/create', [\App\Http\Controllers\HeartbeatController::class, 'create'])->name('heartbeats.create');
+    Route::post('/heartbeats', [\App\Http\Controllers\HeartbeatController::class, 'store'])->middleware('throttle:30,1')->name('heartbeats.store');
+    Route::get('/heartbeats/{heartbeat}', [\App\Http\Controllers\HeartbeatController::class, 'show'])->name('heartbeats.show');
+    Route::get('/heartbeats/{heartbeat}/edit', [\App\Http\Controllers\HeartbeatController::class, 'edit'])->name('heartbeats.edit');
+    Route::put('/heartbeats/{heartbeat}', [\App\Http\Controllers\HeartbeatController::class, 'update'])->name('heartbeats.update');
+    Route::delete('/heartbeats/{heartbeat}', [\App\Http\Controllers\HeartbeatController::class, 'destroy'])->name('heartbeats.destroy');
+    Route::post('/heartbeats/{heartbeat}/pause', [\App\Http\Controllers\HeartbeatController::class, 'pause'])->name('heartbeats.pause');
+    Route::post('/heartbeats/{heartbeat}/token', [\App\Http\Controllers\HeartbeatController::class, 'rotate'])->middleware('throttle:10,1')->name('heartbeats.rotate');
+    // Acknowledge from a chat message: a confirmation page, the change itself is a POST.
+    Route::get('/incidents/{incident}/acknowledge', [IncidentController::class, 'acknowledgeForm'])->name('incidents.acknowledge');
     // Automatic deployments: watched checkouts and GitHub repositories (before {deployment}).
     Route::get('/deployments/sources', [\App\Http\Controllers\DeploySourceController::class, 'index'])->name('deploy-sources.index');
     Route::post('/deployments/sources/github', [\App\Http\Controllers\DeploySourceController::class, 'store'])->middleware('throttle:20,1')->name('deploy-sources.github.store');

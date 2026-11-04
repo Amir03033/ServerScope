@@ -50,8 +50,16 @@ return [
         'in_app' => 'Test notification: in-app notifications work.',
         'webhook' => 'Test delivery from ServerScope.',
     ],
+    'chat' => [
+        'view_incident' => 'View incident #:id',
+        'acknowledge' => 'Acknowledge',
+        'view_domain' => 'View domain',
+        'open' => 'Open ServerScope',
+        'test_text' => 'The connection with ServerScope works. Notifications for the chosen events appear here.',
+    ],
     'discord' => [
         'titles' => [
+            'heartbeat' => ['Scheduled job reports a problem', 'Scheduled job back to normal'],
             'agent' => ['Server offline', 'Server back online'],
             'alert' => ['Monitoring alert triggered', 'Monitoring alert resolved'],
             'http' => ['Website down', 'Website reachable again'],

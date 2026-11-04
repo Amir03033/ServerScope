@@ -97,6 +97,7 @@ class ResourceCatalog
             'domain' => route('domains.show', $resource),
             'page' => Route::has('pages.show') ? route('pages.show', $resource) : null,
             'service' => route('servers.show', $resource->getAttribute('server_id')),
+            'heartbeat' => route('heartbeats.show', $resource),
             default => null,
         };
     }

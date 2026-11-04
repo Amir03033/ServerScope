@@ -10,7 +10,7 @@
     <x-slot:pageTitle>{{ $endpoint->name }}</x-slot:pageTitle>
     <x-slot:subtitle>{{ $endpoint->url }}</x-slot:subtitle>
     <x-slot:actions>
-        <form method="POST" action="{{ route('webhooks.test', $endpoint) }}">@csrf<button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-play"/></svg> {{ $endpoint->isDiscord() ? __('webhooks.show.test_discord') : __('webhooks.show.test') }}</button></form>
+        <form method="POST" action="{{ route('webhooks.test', $endpoint) }}">@csrf<button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-play"/></svg> {{ $endpoint->isChat() ? __('webhooks.show.test_chat', ['channel' => WebhookEndpoint::TYPES[$endpoint->type]]) : __('webhooks.show.test') }}</button></form>
         <a class="ss-btn ss-btn-secondary" href="{{ route('webhooks.edit', $endpoint) }}"><svg class="ico"><use href="#i-edit"/></svg> {{ __('webhooks.show.edit') }}</a>
     </x-slot:actions>
 
@@ -32,8 +32,8 @@
                     <dt>{{ __('webhooks.show.last_delivery') }}</dt><dd>{{ $endpoint->last_delivery_at ? Time::dateTime($endpoint->last_delivery_at) : '—' }}</dd>
                 </dl>
                 <div class="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
-                    @if ($endpoint->isDiscord())
-                        <a class="ss-btn ss-btn-secondary" href="{{ route('webhooks.edit', $endpoint) }}"><svg class="ico"><use href="#i-refresh"/></svg> {{ __('webhooks.show.replace_discord') }}</a>
+                    @if ($endpoint->isChat())
+                        <a class="ss-btn ss-btn-secondary" href="{{ route('webhooks.edit', $endpoint) }}"><svg class="ico"><use href="#i-refresh"/></svg> {{ $endpoint->type === WebhookEndpoint::TYPE_TELEGRAM ? __('webhooks.show.replace_telegram') : __('webhooks.show.replace_chat') }}</a>
                     @else
                         <form method="POST" action="{{ route('webhooks.secret', $endpoint) }}" data-confirm="{{ __('webhooks.show.rotate_confirm') }}">@csrf<button class="ss-btn ss-btn-secondary" type="submit"><svg class="ico"><use href="#i-key"/></svg> {{ __('webhooks.show.rotate') }}</button></form>
                     @endif

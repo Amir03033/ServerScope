@@ -62,6 +62,9 @@ class RouteTenancyTest extends TestCase
         // Shared postmortem: the 48-character token is the credential; renders
         // as the postmortem's own team, read-only, revocable (PostmortemTest).
         'GET|HEAD postmortems/{token}',
+        // Ping URL of a scheduled job: the 32-character token is the credential;
+        // it only records a check-in for that job's own team (HeartbeatsTest).
+        'GET|POST|HEAD api/ping/{token}/{action?}',
         // Remote probe (Global Pulse Lite): HMAC-signed by the platform's
         // probe, which serves all teams like the main monitor; every query
         // filters on the probe's own jobs (GlobalPulseTest).

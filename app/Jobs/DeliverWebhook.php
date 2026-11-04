@@ -6,6 +6,8 @@ use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
 use App\Monitoring\Net\HttpResult;
 use App\Monitoring\Net\SafeHttpClient;
+use App\Services\Notifications\ChatChannel;
+use App\Services\Notifications\ChatMessage;
 use App\Services\Notifications\DiscordMessage;
 use App\Support\Locale;
 use App\Support\Audit;
@@ -53,14 +55,14 @@ class DeliverWebhook implements ShouldQueue
             return;
         }
 
-        $result = $endpoint->isDiscord()
-            ? $this->postToDiscord($http, $endpoint, $delivery)
+        $result = $endpoint->isChat()
+            ? $this->postToChat($http, $endpoint, $delivery)
             : $this->postSigned($http, $endpoint, $delivery);
 
         $delivery->attempts++;
         $delivery->duration_ms = $result->durationMs;
         $delivery->response_status = $result->status;
-        $delivery->response_body = $result->body !== '' ? mb_substr((string) DiscordMessage::redact($result->body), 0, 1000) : null;
+        $delivery->response_body = $result->body !== '' ? mb_substr((string) ChatChannel::redact($result->body), 0, 1000) : null;
 
         if (! $result->failed() && $result->status >= 200 && $result->status < 300) {
             $delivery->fill(['status' => 'success', 'error' => null, 'delivered_at' => now()])->save();
@@ -78,8 +80,8 @@ class DeliverWebhook implements ShouldQueue
         // the request that triggered the event, so give up immediately.
         $canRetry = $retryable && $this->attempts() < $this->tries && ! $this->job instanceof SyncJob;
 
-        // Transport errors can echo the request URL; never store a Discord token.
-        $delivery->fill(['status' => $canRetry ? 'retrying' : 'failed', 'error' => mb_substr((string) DiscordMessage::redact((string) $error), 0, 500)])->save();
+        // Transport errors can echo the request URL; never store a chat token.
+        $delivery->fill(['status' => $canRetry ? 'retrying' : 'failed', 'error' => mb_substr((string) ChatChannel::redact((string) $error), 0, 500)])->save();
 
         if ($canRetry) {
             $this->release($this->backoff[$this->attempts() - 1] ?? 21600);
@@ -108,13 +110,18 @@ class DeliverWebhook implements ShouldQueue
     }
 
     /**
-     * Discord expects its own message format and cannot verify signatures;
-     * the token in the URL is the credential.
+     * Chat channels expect their own message format and cannot verify
+     * signatures; the token in the address is the credential.
      */
-    private function postToDiscord(SafeHttpClient $http, WebhookEndpoint $endpoint, WebhookDelivery $delivery): HttpResult
+    private function postToChat(SafeHttpClient $http, WebhookEndpoint $endpoint, WebhookDelivery $delivery): HttpResult
     {
         // In the language of whoever set the endpoint up (the channel has no reader of its own).
-        $message = Locale::using(Locale::forEndpoint($endpoint), fn () => DiscordMessage::fromPayload($delivery->payload));
+        $message = Locale::using(Locale::forEndpoint($endpoint), fn () => match ($endpoint->type) {
+            WebhookEndpoint::TYPE_SLACK => ChatMessage::slack($delivery->payload),
+            WebhookEndpoint::TYPE_TEAMS => ChatMessage::teams($delivery->payload),
+            WebhookEndpoint::TYPE_TELEGRAM => ChatMessage::telegram($delivery->payload, (string) $endpoint->target),
+            default => DiscordMessage::fromPayload($delivery->payload),
+        });
         $body = json_encode($message, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         return $http->post($endpoint->deliveryUrl(), $body, [
