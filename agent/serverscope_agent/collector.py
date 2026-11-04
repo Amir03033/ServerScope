@@ -5,7 +5,7 @@ import time
 
 import psutil
 
-AGENT_VERSION = "0.3.1"
+AGENT_VERSION = "0.4.0"
 
 
 def agent_checksum() -> str:
