@@ -206,6 +206,10 @@ return [
     'pulse' => [
         'title' => 'Hartslag',
         'text' => 'Eén live lijn per server: het tempo volgt de CPU, de breedte van de slag de traagste website. Faalt er iets op de server, dan slaat de lijn op hol; een offline server geeft geen signaal.',
+        'jobs_text' => 'Geplande taken krijgen een eigen lijn: rustig zolang ze op tijd melden, op hol als er een te laat is of mislukt.',
+        'last_run' => 'Laatste run',
+        'schedule' => 'Schema',
+        'duration' => 'Duur',
         'cpu' => 'CPU',
         'response' => 'Traagste site',
         'rate' => 'Tempo',
@@ -213,6 +217,7 @@ return [
         'skyline_link' => 'Bekijk ze allemaal in de skyline.',
         'js' => [
             'bpm' => ':bpm slagen/min',
+            'job' => ['steady' => 'Op tijd', 'chaos' => 'Te laat of mislukt', 'unknown' => 'Wacht op eerste melding', 'rest' => 'Gepauzeerd'],
             'rhythm' => [
                 'steady' => 'Regelmatig',
                 'irregular' => 'Onregelmatig',

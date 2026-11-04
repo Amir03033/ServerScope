@@ -1120,13 +1120,77 @@ document.querySelectorAll('[data-tfa]').forEach((form) => {
         });
         const done = digits.length === 6;
         form.classList.toggle('is-complete', done);
-        shield?.classList.toggle('is-complete', done);
+        if (digits.length && form.classList.contains('is-error')) setState('');
         if (done && !sent && !form.querySelector('#recovery_code')?.value) {
             sent = true;
-            setTimeout(() => form.requestSubmit(), 350);
+            setTimeout(() => form.requestSubmit(), 250);
         }
         if (!done) sent = false;
     };
+
+    // checking → success (green, then on to the next page) or error (red, shake, try again). No colour before the server answers.
+    const setState = (state) => {
+        for (const el of [form, shield]) {
+            el?.classList.remove('is-checking', 'is-success', 'is-error');
+            if (state) el?.classList.add(`is-${state}`);
+        }
+    };
+    const showError = (message) => {
+        let alert = document.querySelector('[data-tfa-alert]') || document.querySelector('.ss-auth-panel .ss-alert-error');
+        if (!alert) {
+            alert = document.createElement('div');
+            alert.className = 'ss-alert ss-alert-error mt-5';
+            alert.setAttribute('role', 'alert');
+            alert.innerHTML = '<svg class="ico"><use href="#i-alert"/></svg><div></div>';
+            form.before(alert);
+        }
+        alert.dataset.tfaAlert = '';
+        alert.querySelector('div').textContent = message;
+    };
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const button = form.querySelector('.ss-auth-submit');
+        setState('checking');
+        const started = performance.now();
+        let response;
+        try {
+            response = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { Accept: 'text/html' } });
+        } catch {
+            form.submit();
+            return;
+        }
+        // Let the check be seen: at least a short moment of "checking".
+        await wait(Math.max(0, 650 - (performance.now() - started)));
+        const path = new URL(response.url).pathname;
+
+        if (response.redirected && !path.startsWith('/two-factor-challenge')) {
+            if (path === '/login') { window.location.href = response.url; return; }
+            setState('success');
+            await wait(700);
+            const ghost = document.querySelector('[data-auth-ghost-screen]');
+            if (ghost) { ghost.hidden = false; requestAnimationFrame(() => ghost.classList.add('is-on')); }
+            window.location.href = response.url;
+            return;
+        }
+
+        const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const message = page.querySelector('.ss-alert-error div')?.textContent?.trim();
+        const fresh = page.querySelector('input[name="_token"]')?.value;
+        if (fresh) form.querySelector('input[name="_token"]').value = fresh;
+        setState('error');
+        showError(message || form.dataset.invalid);
+        boxes.classList.add('is-error');
+        boxes.addEventListener('animationend', () => boxes.classList.remove('is-error'), { once: true });
+        button?.classList.remove('is-loading');
+        button?.removeAttribute('aria-busy');
+        await wait(900);
+        input.value = '';
+        sent = false;
+        input.focus();
+        render();
+    });
     ['input', 'focus', 'blur', 'keyup', 'click'].forEach((e) => input.addEventListener(e, render));
 
     if (form.hasAttribute('data-tfa-error')) {

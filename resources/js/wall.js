@@ -1,8 +1,9 @@
 // Wall screen: a full-screen show for a TV. The director (wall/director.js)
-// tours the skyline, the globe, the heartbeat and a summary, and cuts to an
+// tours an overview, the servers, the skyline, the websites, the heartbeat,
+// jobs and deploys, the globe and the incidents, and cuts to an
 // incident as soon as one opens: a large alert and the camera on the tower
-// of the server it concerns. Data: the NEXUS topology and the globe data,
-// polled every 20 and 60 seconds. Also used as the screensaver (?screensaver=1):
+// of the server it concerns. Data: the NEXUS topology, the wall data and the
+// globe data, polled every 20, 30 and 60 seconds. Also used as the screensaver (?screensaver=1):
 // any key or mouse movement then returns to the page you came from.
 
 import { numberLocale } from './i18n';
@@ -12,11 +13,14 @@ import { translator } from './nexus/model.js';
 import { createMonitor } from './pulse/monitor.js';
 import { serverVitals } from './pulse/vitals.js';
 import { city } from './skyline/model.js';
-import { direct, incidentsFrom, initialState, shotFor } from './wall/director.js';
+import { activityBoard, incidentBoard, overviewTiles, serversBoard, sitesBoard, sizeMeters } from './wall/boards.js';
+import { DIRECTOR, direct, incidentsFrom, initialState, shotFor } from './wall/director.js';
 
 const GRAPH_MS = 20_000;
 const GLOBE_MS = 60_000;
-const SCENES = ['skyline', 'globe', 'pulse', 'summary'];
+const WALL_MS = 30_000;
+const SCENES = ['summary', 'servers', 'skyline', 'sites', 'pulse', 'activity', 'globe', 'incidents'];
+const WEBGL_SCENES = ['skyline', 'globe'];
 
 function boot() {
     const root = document.querySelector('[data-wall]');
@@ -38,6 +42,7 @@ function boot() {
 
     let graph = config.initial.graph;
     let globeData = config.initial.globe;
+    let wallData = config.initial.wall;
     let vitals = serverVitals(graph);
     let incidents = incidentsFrom(graph, vitals);
     let state = initialState(performance.now(), SCENES);
@@ -56,9 +61,22 @@ function boot() {
         }
     })();
 
-    // Without WebGL the 3D scenes are left out of the tour.
-    const scenes = webgl ? SCENES : ['pulse', 'summary'];
-    state.scenes = scenes;
+    // Without WebGL the 3D scenes are left out; a board with nothing on it (no websites, no jobs or deploys) too.
+    let scenes = SCENES;
+    const pickScenes = () => {
+        const next = SCENES.filter((s) => (webgl || !WEBGL_SCENES.includes(s))
+            && (s !== 'sites' || (wallData?.sites ?? []).length > 0)
+            && (s !== 'servers' || (wallData?.servers ?? []).length > 0)
+            && (s !== 'activity' || (wallData?.jobs ?? []).length + (wallData?.deploys ?? []).length > 0));
+
+        if (next.join() === scenes.join() && state.scenes === scenes) return;
+
+        const current = state.scenes?.[state.index];
+        scenes = next;
+        state.scenes = scenes;
+        state.index = Math.max(0, scenes.indexOf(current));
+    };
+    pickScenes();
 
     // ---------- scenes ----------
     // One build per scene, also when the director asks again while it loads.
@@ -122,21 +140,24 @@ function boot() {
     }
 
     function renderSummary() {
-        const servers = vitals.length;
-        const online = vitals.filter((v) => !['flat', 'unknown'].includes(v.rhythm)).length;
-        const sites = (graph.nodes ?? []).filter((n) => n.type === 'domain');
-        const reachable = sites.filter((n) => n.health === 'ok').length;
-        const times = sites.map((n) => n.details?.response_ms).filter((ms) => typeof ms === 'number');
-        const average = times.length ? times.reduce((a, b) => a + b, 0) / times.length : null;
-        const tile = (value, label, tone) => h('div', { class: `ss-wall-tile is-${tone}` }, h('div', { class: 'ss-wall-tile-value' }, value), h('div', { class: 'ss-wall-tile-label' }, label));
-
         clear($('tiles'));
-        append($('tiles'), [
-            tile(`${online}/${servers}`, t('tiles.servers'), online === servers ? 'ok' : 'bad'),
-            tile(`${reachable}/${sites.length}`, t('tiles.sites'), reachable === sites.length ? 'ok' : 'bad'),
-            tile(String(incidents.length), t('tiles.incidents'), incidents.length ? 'bad' : 'ok'),
-            tile(average === null ? '—' : `${number.format(average)} ms`, t('tiles.response'), 'info'),
-        ]);
+        append($('tiles'), overviewTiles({ vitals, graph, incidents, data: wallData }, t, number));
+    }
+
+    const severityLabel = (s) => (t(`severity.${s}`) === `severity.${s}` ? t('severity.other') : t(`severity.${s}`));
+
+    function renderBoards() {
+        const fill = (name, children) => {
+            const el = $(name);
+            clear(el);
+            append(el, children);
+            sizeMeters(el);
+        };
+
+        fill('servers', serversBoard(wallData, t, number));
+        fill('sites', sitesBoard(wallData, t, number));
+        fill('activity', activityBoard(wallData, t));
+        fill('incident-board', incidentBoard(wallData, t, severityLabel));
     }
 
     function renderChrome() {
@@ -221,7 +242,7 @@ function boot() {
     let last = null;
 
     function frame(now) {
-        const total = state.mode === 'tour' ? 25_000 : 12_000;
+        const total = state.mode === 'tour' ? DIRECTOR.cycleMs : DIRECTOR.incidentShotMs;
         const bar = root.querySelector('.ss-wall-tabs .is-active i');
         if (bar) bar.style.transform = `scaleX(${Math.min(1, (now - cycleStart) / total)})`;
         const dt = last === null ? 0 : Math.min(2, (now - last) / 1000);
@@ -237,8 +258,10 @@ function boot() {
         vitals = serverVitals(graph);
         incidents = incidentsFrom(graph, vitals);
         skyline?.update(city(vitals));
+        pickScenes();
         renderPulse();
         renderSummary();
+        renderBoards();
         renderChrome();
         step();
     }
@@ -257,6 +280,15 @@ function boot() {
             // Keep showing the last state.
         }
     }, GRAPH_MS);
+
+    setInterval(async () => {
+        try {
+            wallData = (await load(config.urls.wall)) ?? wallData;
+            apply();
+        } catch {
+            // Keep showing the last state.
+        }
+    }, WALL_MS);
 
     setInterval(async () => {
         try {
@@ -308,19 +340,34 @@ function boot() {
     keepAwake();
     document.addEventListener('visibilitychange', () => { if (!document.hidden && !lock) keepAwake(); });
 
-    // Screensaver: back to where you were on the first key or real mouse movement.
+    // Screensaver: back to where you were, but only on a real person. Browsers
+    // also send "mouse moves" by themselves (when a scene swaps under a still
+    // cursor, when the display wakes, when the window regains focus); those have
+    // no movement, or come right after waking. So: a key (not a lone modifier),
+    // a click, or a mouse that really travels 60 px within a second, and never
+    // in the first seconds after loading or after the screen comes back.
     if (screensaver) {
         const back = params.get('return') ?? '';
         const target = back.startsWith('/') && !back.startsWith('//') ? back : config.urls.exit;
-        let start = null;
+        const MODIFIERS = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Fn', 'AudioVolumeUp', 'AudioVolumeDown', 'AudioVolumeMute', 'MediaPlayPause'];
+        let quietUntil = performance.now() + 3000;
+        let travel = [];
+        const settle = () => { quietUntil = performance.now() + 2500; travel = []; };
+        const ready = (e) => e.isTrusted && performance.now() > quietUntil;
         const leave = () => { location.href = target; };
 
-        window.addEventListener('keydown', leave, { once: true });
-        window.addEventListener('pointerdown', leave, { once: true });
+        window.addEventListener('keydown', (e) => { if (ready(e) && !MODIFIERS.includes(e.key)) leave(); });
+        window.addEventListener('pointerdown', (e) => { if (ready(e)) leave(); });
         window.addEventListener('pointermove', (e) => {
-            start ??= { x: e.clientX, y: e.clientY };
-            if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 40) leave();
+            if (!ready(e) || (e.movementX === 0 && e.movementY === 0)) return;
+            const now = performance.now();
+            travel = travel.filter((p) => now - p.at < 1000);
+            travel.push({ at: now, d: Math.hypot(e.movementX, e.movementY) });
+            if (travel.reduce((sum, p) => sum + p.d, 0) > 60) leave();
         });
+        document.addEventListener('visibilitychange', settle);
+        window.addEventListener('focus', settle);
+        document.addEventListener('fullscreenchange', settle);
         $('exit').href = target;
     }
 

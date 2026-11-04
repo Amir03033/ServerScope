@@ -1,7 +1,8 @@
 // The wall screen's director. Pure functions (tested with Node): what to
 // show now, given the active incidents and the time.
 //
-// - tour: calmly through the scenes (skyline, globe, heartbeat, summary),
+// - tour: through the scenes (overview, servers, skyline, websites, heartbeat,
+//   jobs and deploys, globe, incidents),
 //   one every cycle;
 // - incident: as soon as an incident appears that was not seen before,
 //   cut to it for a minute: a large alert, the camera on the tower of the
@@ -13,8 +14,8 @@
 //   the tour continues.
 
 export const DIRECTOR = {
-    cycleMs: 25_000,
-    incidentShotMs: 12_000,
+    cycleMs: 12_000,
+    incidentShotMs: 10_000,
     cutMs: 60_000,
     resolvedMs: 8_000,
 };

@@ -14,7 +14,7 @@
 
     @include('auth._messages')
 
-    <form method="POST" action="{{ route('two-factor.challenge.store') }}" class="ss-auth-form" data-auth-form data-auth-ghost data-tfa @if ($errors->any()) data-tfa-error @endif>
+    <form method="POST" action="{{ route('two-factor.challenge.store') }}" class="ss-auth-form" data-auth-form data-tfa data-invalid="{{ __('auth.messages.two_factor_invalid') }}" @if ($errors->any()) data-tfa-error @endif>
         @csrf
         <div class="ss-auth-field">
             <label class="ss-label" for="code">{{ __('auth.two_factor.code') }}</label>
