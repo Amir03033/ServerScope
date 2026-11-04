@@ -36,7 +36,8 @@ class AuthenticatedSessionController extends Controller
 
         $user = \App\Models\User::query()->where('email', $email)->first();
 
-        if ($user === null || ! Auth::getProvider()->validateCredentials($user, ['password' => $credentials['password']])) {
+        // The demo user only exists behind /demo and has no password of its own.
+        if ($user === null || $user->is_demo || ! Auth::getProvider()->validateCredentials($user, ['password' => $credentials['password']])) {
             RateLimiter::hit($key, 60);
 
             throw ValidationException::withMessages([

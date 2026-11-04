@@ -55,6 +55,11 @@ class WebhookDispatcher
     /** Only the endpoints of the team the event belongs to. */
     private function dispatch(int $teamId, string $event, array $data, ?Incident $incident = null): void
     {
+        // Demo teams never send anything out.
+        if (\App\Support\Demo::isDemoTeam($teamId)) {
+            return;
+        }
+
         WebhookEndpoint::query()->withoutGlobalScopes()->where('team_id', $teamId)->where('is_active', true)->get()
             ->filter(fn (WebhookEndpoint $endpoint) => $endpoint->subscribedTo($event))
             ->filter(fn (WebhookEndpoint $endpoint) => $incident === null || $endpoint->wantsSeverity($incident->severity))

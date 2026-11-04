@@ -49,6 +49,13 @@ class DeliverWebhook implements ShouldQueue
 
         $endpoint = $delivery->endpoint;
 
+        // A demo team's endpoints are examples: they never send anything.
+        if (\App\Support\Demo::isDemoTeam($endpoint->team_id)) {
+            $delivery->forceFill(['status' => 'failed', 'error' => 'Demo: niet verzonden.'])->save();
+
+            return;
+        }
+
         if (! $endpoint->is_active && $delivery->event !== 'test') {
             $delivery->forceFill(['status' => 'failed', 'error' => 'Endpoint is uitgeschakeld.'])->save();
 

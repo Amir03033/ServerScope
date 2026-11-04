@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Interface language (users.locale, session, browser on public status pages).
         $middleware->web(append: \App\Http\Middleware\SetLocale::class);
 
+        // The public demo is read-only (SERVERSCOPE_DEMO_ENABLED).
+        $middleware->web(append: \App\Http\Middleware\DemoMode::class);
+
         // The tenant must be known before route model binding, so that IDs
         // of another team resolve to 404.
         $middleware->alias(['tenant' => \App\Http\Middleware\ResolveTenant::class]);

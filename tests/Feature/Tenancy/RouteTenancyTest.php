@@ -65,6 +65,10 @@ class RouteTenancyTest extends TestCase
         // Ping URL of a scheduled job: the 32-character token is the credential;
         // it only records a check-in for that job's own team (HeartbeatsTest).
         'GET|POST|HEAD api/ping/{token}/{action?}',
+        // Public demo: signs in as the read-only demo user (404 unless
+        // SERVERSCOPE_DEMO_ENABLED) and signs that user out again (DemoTest).
+        'GET|HEAD demo',
+        'GET|HEAD demo/leave',
         // Remote probe (Global Pulse Lite): HMAC-signed by the platform's
         // probe, which serves all teams like the main monitor; every query
         // filters on the probe's own jobs (GlobalPulseTest).

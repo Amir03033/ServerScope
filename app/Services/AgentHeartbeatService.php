@@ -34,7 +34,11 @@ class AgentHeartbeatService
             'resolved' => 0,
         ];
 
+        // Demo servers are driven by serverscope:demo:tick, never judged here.
+        $demo = \App\Support\Demo::teamIds();
+
         $result['marked_offline'] = Server::query()
+            ->whereNotIn('team_id', $demo)
             ->whereNotNull('last_seen_at')
             ->where('last_seen_at', '<=', $now->copy()->subMinutes(self::OFFLINE_AFTER_MINUTES))
             ->where('status', '!=', 'offline')
@@ -59,6 +63,7 @@ class AgentHeartbeatService
         $rules = $rules->groupBy('team_id');
 
         Server::query()
+            ->whereNotIn('team_id', $demo)
             ->whereNotNull('last_seen_at')
             ->select(['id', 'team_id'])
             ->orderBy('id')

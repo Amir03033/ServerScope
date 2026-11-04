@@ -49,7 +49,8 @@ class PlanLimits
 
     public static function isExempt(?Team $team): bool
     {
-        return (bool) $team?->is_default;
+        // The operator's own team, and the demo (which shows everything and can change nothing).
+        return (bool) ($team?->is_default || $team?->is_demo);
     }
 
     /** @return int|null null = unlimited */

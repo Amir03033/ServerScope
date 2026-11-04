@@ -122,8 +122,10 @@ class SystemHealth
     private function overdue(): array
     {
         $cutoff = now()->subMinutes(self::OVERDUE_MINUTES);
-        $domains = Domain::query()->where('is_active', true)->where('http_enabled', true)->where('http_next_check_at', '<', $cutoff)->count();
-        $pages = MonitoredPage::query()->monitored()->whereHas('domain', fn ($q) => $q->where('is_active', true))->where('next_check_at', '<', $cutoff)->count();
+        // Demo websites are never checked for real, so they are never overdue.
+        $demo = \App\Support\Demo::teamIds();
+        $domains = Domain::query()->whereNotIn('team_id', $demo)->where('is_active', true)->where('http_enabled', true)->where('http_next_check_at', '<', $cutoff)->count();
+        $pages = MonitoredPage::query()->whereNotIn('team_id', $demo)->monitored()->whereHas('domain', fn ($q) => $q->where('is_active', true))->where('next_check_at', '<', $cutoff)->count();
         $total = $domains + $pages;
 
         return [
@@ -138,7 +140,7 @@ class SystemHealth
     {
         $since = now()->subDay();
         $mailFailed = NotificationLog::query()->where('status', 'failed')->where('created_at', '>=', $since)->count();
-        $webhooksFailed = WebhookDelivery::query()->where('status', 'failed')->where('created_at', '>=', $since)->count();
+        $webhooksFailed = WebhookDelivery::query()->where('status', 'failed')->where('created_at', '>=', $since)->whereNotIn('webhook_endpoint_id', \App\Models\WebhookEndpoint::query()->withoutGlobalScopes()->whereIn('team_id', \App\Support\Demo::teamIds())->select('id'))->count();
 
         return [
             'key' => 'deliveries',

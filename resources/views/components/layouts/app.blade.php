@@ -8,6 +8,8 @@
     // Rights come from the role in the current team, never from users.is_admin.
     $isAdmin = (bool) $user?->can('admin');
     $isPlatform = (bool) $user?->can('platform');
+    // The public demo: read-only, without the pages about money, people and the platform.
+    $isDemo = \App\Support\Demo::isDemoUser($user);
     $teams = $user ? $user->teams()->orderBy('name')->get(['teams.id', 'teams.name']) : collect();
     $locale = app()->getLocale();
 
@@ -52,7 +54,8 @@
             ['route' => 'reports.index', 'match' => 'reports.*', 'icon' => 'i-bars', 'label' => 'reports'],
         ],
         // Team admins see the admin pages, platform admins the platform pages.
-        'admin' => array_values(array_filter($adminItems, fn ($item) => ($isAdmin && ($item['admin'] ?? false)) || ($isPlatform && ($item['platform'] ?? false)))),
+        'admin' => array_values(array_filter($adminItems, fn ($item) => (($isAdmin && ($item['admin'] ?? false)) || ($isPlatform && ($item['platform'] ?? false)))
+            && ! ($isDemo && \Illuminate\Support\Str::is(\App\Support\Demo::BLOCKED_ROUTES, $item['route'])))),
         'account' => [
             ['route' => 'notifications.index', 'match' => 'notifications.*', 'icon' => 'i-message', 'label' => 'notifications', 'count' => $sidebarUnreadNotifications ?? 0, 'countClass' => 'info'],
             ['route' => 'profile.edit', 'match' => ['profile.*', 'api-tokens.*'], 'icon' => 'i-user', 'label' => 'profile'],
@@ -68,7 +71,7 @@
     $initials = collect(preg_split('/\s+/', trim((string) $user?->name)))->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('') ?: 'S';
 @endphp
 <!DOCTYPE html>
-<html lang="{{ $locale }}">
+<html lang="{{ $locale }}"@if ($isDemo) data-demo @endif>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -76,6 +79,7 @@
     <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0a0a0b" media="(prefers-color-scheme: dark)">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @if ($isDemo)<meta name="robots" content="noindex, nofollow">@endif
     <title>{{ $title ? $title.' — ServerScope' : 'ServerScope' }}</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml" data-live-icon>
     {{-- Installable app (manifest, service worker in resources/js/install.js). --}}
@@ -94,6 +98,16 @@
 </head>
 <body>
 @include('partials.icons')
+@if ($isDemo)
+    {{-- The public demo: always visible, with a way out. --}}
+    <div class="ss-demo-bar" role="region" aria-label="{{ __('demo.label') }}" data-demo-message="{{ __('demo.unavailable') }}">
+        <p class="m-0"><svg class="ico" aria-hidden="true"><use href="#i-eye-off"/></svg> {{ __('demo.bar') }}</p>
+        <div class="ss-demo-bar-actions">
+            <a class="ss-btn ss-btn-primary ss-btn-sm" href="{{ route('demo.leave', ['to' => 'register']) }}">{{ __('demo.register') }}</a>
+            <a class="ss-btn ss-btn-ghost ss-btn-sm" href="{{ route('demo.leave') }}">{{ __('demo.leave') }}</a>
+        </div>
+    </div>
+@endif
 
 <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:text-on-accent">{{ __('nav.skip') }}</a>
 

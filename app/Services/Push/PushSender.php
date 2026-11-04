@@ -23,7 +23,7 @@ class PushSender
 
     public function willSend(User $user): bool
     {
-        return self::enabled() && $user->pushSubscriptions()->exists();
+        return self::enabled() && ! $user->is_demo && $user->pushSubscriptions()->exists();
     }
 
     public function send(User $user, Notification $notification, ?string $notificationId): void

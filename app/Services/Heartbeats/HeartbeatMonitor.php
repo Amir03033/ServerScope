@@ -86,6 +86,8 @@ class HeartbeatMonitor
         $late = 0;
 
         Heartbeat::query()->withoutGlobalScopes()
+            // Demo jobs are driven by serverscope:demo:tick, never judged here.
+            ->whereNotIn('team_id', \App\Support\Demo::teamIds())
             ->whereIn('status', ['up', 'down'])
             ->whereNotNull('next_due_at')
             ->where('next_due_at', '<', now())

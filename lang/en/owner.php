@@ -27,6 +27,8 @@ return [
         'invoices_issue' => ['title' => 'Issue draft invoices', 'when' => 'After you filled in SERVERSCOPE_COMPANY_* in .env. Runs daily by itself.'],
         'billing_grace' => ['title' => 'Apply failed payments and cancellations', 'when' => 'Returns teams to Free when the grace period or paid period is over. Runs daily by itself.'],
         'check_agents' => ['title' => 'Check silent agents', 'when' => 'Debugging: mark offline servers right now.'],
+        'demo_seed' => ['title' => 'Build the public demo', 'when' => 'Once after turning SERVERSCOPE_DEMO_ENABLED on; it also runs every night at 04:20.'],
+        'demo_tick' => ['title' => 'Move the demo one minute on', 'when' => 'Debugging only: the scheduler runs it every minute while the demo is on.'],
         'check_heartbeats' => ['title' => 'Check scheduled jobs', 'when' => 'Debugging: open incidents for late jobs right now.'],
         'dispatch_domains' => ['title' => 'Queue domain checks', 'when' => 'Debugging: start due HTTP/TLS/DNS checks now.'],
         'dispatch_pages' => ['title' => 'Queue website page checks', 'when' => 'Debugging: start due page checks now.'],

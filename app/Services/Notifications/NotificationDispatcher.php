@@ -9,6 +9,7 @@ use App\Models\MonitoredPage;
 use App\Models\PageChange;
 use App\Models\NotificationLog;
 use App\Services\Push\PushSender;
+use App\Support\Demo;
 use App\Models\User;
 use App\Notifications\DnsChangeNotification;
 use App\Notifications\IncidentNotification;
@@ -40,6 +41,11 @@ class NotificationDispatcher
 {
     public function incident(Incident $incident, string $kind): void
     {
+        // Demo teams have sample data only: nothing is ever sent for them.
+        if (Demo::isDemoTeam($incident->team_id)) {
+            return;
+        }
+
         if ($reason = $this->suppressionReason($incident, $kind)) {
             $this->logSuppressed($incident, $kind, $reason);
 
@@ -93,6 +99,10 @@ class NotificationDispatcher
      */
     public function dnsChange(Domain $domain, array $changes): void
     {
+        if (Demo::isDemoTeam($domain->team_id)) {
+            return;
+        }
+
         // One notification per domain per cooldown; the history keeps all.
         $key = "notify:dns:{$domain->id}";
 
@@ -116,6 +126,10 @@ class NotificationDispatcher
     /** A significant content change of a page that opted in to notifications. */
     public function pageChange(MonitoredPage $page, PageChange $change): void
     {
+        if (Demo::isDemoTeam($page->team_id)) {
+            return;
+        }
+
         $key = "notify:page-change:{$page->id}";
 
         if (! Cache::add($key, true, now()->addMinutes((int) config('serverscope.notifications.dns_cooldown_minutes', 30)))) {

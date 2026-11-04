@@ -366,6 +366,23 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Public demo
+    |--------------------------------------------------------------------------
+    |
+    | GET /demo signs a visitor in as the read-only demo user of a demo team
+    | with sample data (serverscope:demo:seed). Off unless enabled; nothing
+    | ever leaves the server for a demo team.
+    |
+    */
+
+    'demo' => [
+        'enabled' => (bool) env('SERVERSCOPE_DEMO_ENABLED', false),
+        // Demo measurements and checks older than this are removed every night.
+        'retain_days' => (int) env('SERVERSCOPE_DEMO_RETAIN_DAYS', 7),
+    ],
+
     'retention' => [
         'metric_samples_days' => env('SERVERSCOPE_RETAIN_METRICS_DAYS'),
         'domain_checks_days' => env('SERVERSCOPE_RETAIN_DOMAIN_CHECKS_DAYS'),

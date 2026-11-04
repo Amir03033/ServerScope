@@ -954,3 +954,68 @@ document.querySelectorAll('[data-action-items]').forEach((editor) => {
 });
 
 document.querySelectorAll('[data-print]').forEach((button) => button.addEventListener('click', () => window.print()));
+
+/* ------------------------------------------------------------------ */
+/* Demo: read only. Everything stays visible; changing is explained.   */
+/* The server refuses every change anyway (App\Http\Middleware\DemoMode). */
+/* ------------------------------------------------------------------ */
+
+if (document.documentElement.hasAttribute('data-demo')) {
+    const message = document.querySelector('[data-demo-message]')?.dataset.demoMessage || 'Not available in the demo.';
+    const allowedPaths = ['/logout', '/locale'];
+    const allowed = (url) => allowedPaths.includes(new URL(url, location.href).pathname);
+    const writes = (form) => (form.getAttribute('method') || 'get').toLowerCase() !== 'get' && !allowed(form.action);
+
+    const toast = () => {
+        document.querySelector('.ss-toast.is-demo')?.remove();
+        const note = document.createElement('div');
+        note.className = 'ss-toast is-demo';
+        note.setAttribute('role', 'status');
+        note.textContent = message;
+        document.body.append(note);
+        setTimeout(() => note.classList.add('is-leaving'), 2600);
+        setTimeout(() => note.remove(), 3000);
+    };
+
+    const mark = (root = document) => {
+        [...(root.matches?.('form') ? [root] : []), ...root.querySelectorAll('form')].forEach((form) => {
+            if (!writes(form)) return;
+            form.querySelectorAll('button[type="submit"], button:not([type]), input[type="submit"]').forEach((button) => {
+                button.setAttribute('aria-disabled', 'true');
+                button.classList.add('is-demo-disabled');
+                button.title = message;
+            });
+        });
+    };
+
+    // Before anything else (confirm dialogs, loading states): no change leaves the page.
+    document.addEventListener('submit', (event) => {
+        if (!writes(event.target)) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        toast();
+    }, true);
+
+    // Script requests that would change something answer like the server would.
+    const fetchOriginal = window.fetch.bind(window);
+    window.fetch = (input, init = {}) => {
+        const method = (init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
+        const url = input instanceof Request ? input.url : String(input);
+
+        if (['GET', 'HEAD', 'OPTIONS'].includes(method) || allowed(url)) return fetchOriginal(input, init);
+
+        toast();
+
+        return Promise.resolve(new Response(JSON.stringify({ message }), { status: 403, headers: { 'Content-Type': 'application/json' } }));
+    };
+
+    // The fixed bar's real height (it wraps on phones) moves the page down by exactly that much.
+    const bar = document.querySelector('.ss-demo-bar');
+    if (bar && 'ResizeObserver' in window) {
+        new ResizeObserver(() => document.documentElement.style.setProperty('--ss-demo-h', `${bar.offsetHeight}px`)).observe(bar);
+    }
+
+    mark();
+    // Forms that appear later (live lists, sheets) are marked too.
+    new MutationObserver((changes) => changes.forEach((c) => c.addedNodes.forEach((n) => n.nodeType === 1 && mark(n)))).observe(document.body, { childList: true, subtree: true });
+}
