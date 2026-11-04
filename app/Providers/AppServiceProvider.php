@@ -70,6 +70,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Safety net for the demo: nothing is ever delivered to a demo user
+        // (mail, database, push), whatever code path tries it.
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Notifications\Events\NotificationSending::class,
+            fn (\Illuminate\Notifications\Events\NotificationSending $event) => ! ($event->notifiable->is_demo ?? false));
+
         // Verification mail texts come from the lang files, in the language of the user.
         \Illuminate\Auth\Notifications\VerifyEmail::toMailUsing(function (object $notifiable, string $url) {
             $locale = $notifiable->preferredLocale();

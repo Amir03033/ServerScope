@@ -161,7 +161,9 @@
     <div class="ss-widgets-bar" data-widgets-bar>
         <button type="button" class="ss-btn ss-btn-ghost ss-btn-sm" data-widgets-edit aria-pressed="false" hidden><svg class="ico" aria-hidden="true"><use href="#i-sliders"/></svg> {{ __('widgets.edit') }}</button>
     </div>
-    <div class="ss-widgets" data-widgets data-layout-url="{{ route('dashboard.layout') }}" data-layout='@json($dashboardLayout)' data-texts='@json($widgetTexts)' data-presets='@json($widgetPresets)'>
+    {{-- The demo keeps the arrangement in the browser only: the layouts it needs come along. --}}
+    <div class="ss-widgets" data-widgets data-layout-url="{{ route('dashboard.layout') }}" data-layout='@json($dashboardLayout)' data-texts='@json($widgetTexts)' data-presets='@json($widgetPresets)'
+        @if (auth()->user()?->is_demo) data-local-layouts='@json(['standard' => \App\Support\DashboardWidgets::normalize(null), 'presets' => collect(\App\Support\DashboardWidgets::PRESETS)->keys()->mapWithKeys(fn ($name) => [$name => \App\Support\DashboardWidgets::preset($name)])])' @endif>
         @foreach ($widgets as $widgetId => $widget)
             @continue(in_array($widgetId, $missionWidgets, true) && ! $mission)
             <div class="ss-widget" data-widget="{{ $widgetId }}" data-size="{{ $widget['size'] }}" data-default-size="{{ \App\Support\DashboardWidgets::WIDGETS[$widgetId] }}" data-title="{{ $widgetTitles[$widgetId] ?? $widgetId }}" @if (in_array($widgetId, ['health', 'tiles'], true)) data-focus-keep @endif @if ($widget['hidden']) hidden @endif>

@@ -21,7 +21,10 @@ class LocaleController extends Controller
         ]);
 
         $request->session()->put(Locale::SESSION_KEY, $validated['locale']);
-        $request->user()?->forceFill(['locale' => $validated['locale']])->save();
+        // The shared demo user keeps every visitor's choice in their own session only.
+        if (! $request->user()?->is_demo) {
+            $request->user()?->forceFill(['locale' => $validated['locale']])->save();
+        }
 
         return redirect()->to($this->safePrevious($request));
     }

@@ -57,7 +57,8 @@ TXT;
     /** AI analysis is a Pro and Premium feature (the operator's default team is exempt). */
     public static function allowedFor(int $teamId): bool
     {
-        return PlanLimits::allows('ai_analysis', Team::query()->find($teamId));
+        // The demo shows a stored example analysis; it never calls the AI provider.
+        return ! \App\Support\Demo::isDemoTeam($teamId) && PlanLimits::allows('ai_analysis', Team::query()->find($teamId));
     }
 
     /**

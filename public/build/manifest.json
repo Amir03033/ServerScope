@@ -39,7 +39,7 @@
     "name": "vitals"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BXZmCZQo.css",
+    "file": "assets/app-B-jLGsaE.css",
     "name": "app",
     "names": [
       "app.css"
@@ -65,7 +65,7 @@
     "src": "resources/fonts/jetbrains-mono-latin-wght.woff2"
   },
   "resources/js/app.js": {
-    "file": "assets/app-BRPUn4An.js",
+    "file": "assets/app-DDyBzzn2.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

@@ -24,7 +24,7 @@
 @endphp
 <article id="ai-analysis" class="ss-ai-card is-ai" data-testid="{{ $testid ?? 'investigation-ai' }}" data-ai-status="{{ $aiStatus }}">
     <div class="ss-ai-card-head">
-        <p class="ss-ai-kicker"><svg class="ico" aria-hidden="true"><use href="#i-sparkles"/></svg> {{ __('investigations.rca.ai') }}</p>
+        <p class="ss-ai-kicker"><svg class="ico" aria-hidden="true"><use href="#i-sparkles"/></svg> {{ __('investigations.rca.ai') }}@if ($a?->provider === 'demo') <span class="ss-badge ss-badge-accent">{{ __('demo.example_ai') }}</span>@endif</p>
         @if ($canRun && $a !== null)
             <form method="POST" action="{{ route('incidents.analysis', $incident) }}">@csrf<button class="ss-btn ss-btn-ghost ss-btn-sm" type="submit">{{ __('ai_analysis.rerun') }}</button></form>
         @endif

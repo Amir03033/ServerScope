@@ -27,6 +27,8 @@ class DispatchDomainChecks extends Command
             $column = "{$type}_next_check_at";
 
             $domains = Domain::query()
+                // Demo websites are never checked for real (no outgoing requests).
+                ->whereNotIn('team_id', \App\Support\Demo::teamIds())
                 ->monitored()
                 ->where("{$type}_enabled", true)
                 ->when($type === 'ssl', fn ($q) => $q->where('scheme', 'https'))

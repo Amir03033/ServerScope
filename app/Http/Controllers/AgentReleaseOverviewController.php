@@ -18,7 +18,8 @@ class AgentReleaseOverviewController extends Controller
     {
         Gate::authorize('platform');
 
-        $servers = Server::query()->withoutGlobalScopes()->whereNull('deleted_at')->get(['id', 'agent_version', 'updater_state', 'updater_last_seen_at']);
+        // Demo servers are sample data and do not count in platform figures.
+        $servers = Server::query()->withoutGlobalScopes()->whereNull('deleted_at')->whereNotIn('team_id', \App\Support\Demo::teamIds())->get(['id', 'agent_version', 'updater_state', 'updater_last_seen_at']);
 
         $versions = $servers->groupBy(fn (Server $server) => $server->agent_version ?? 'onbekend')
             ->map(fn ($group, $version) => [

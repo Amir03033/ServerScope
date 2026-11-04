@@ -21,8 +21,20 @@ function boot() {
     const byId = (id) => grid.querySelector(`:scope > [data-widget="${id}"]`);
     let editor = null;
     let snapshot = null;
+    // The demo: the arrangement lives in this browser only (localStorage), never on the server.
+    const local = grid.dataset.localLayouts ? JSON.parse(grid.dataset.localLayouts) : null;
+    const LOCAL_KEY = 'ss-demo-dashboard-layout';
 
     editButton.hidden = false;
+
+    if (local) {
+        try {
+            const saved = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
+            if (saved?.order) requestAnimationFrame(() => apply(saved));
+        } catch {
+            // Nothing saved in this browser.
+        }
+    }
 
     // ---------- layout <-> page ----------
     function current() {
@@ -237,6 +249,17 @@ function boot() {
     }
 
     async function save(body, method = 'PUT') {
+        if (local) {
+            const layout = method === 'DELETE' ? local.standard : body?.preset ? local.presets[body.preset] : body;
+            try {
+                if (method === 'DELETE') localStorage.removeItem(LOCAL_KEY); else localStorage.setItem(LOCAL_KEY, JSON.stringify(layout));
+            } catch {
+                // Private mode: the arrangement just lasts until the page reloads.
+            }
+
+            return layout;
+        }
+
         const response = await fetch(grid.dataset.layoutUrl, {
             method,
             headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },

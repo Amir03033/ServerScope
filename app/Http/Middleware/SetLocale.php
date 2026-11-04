@@ -20,7 +20,10 @@ class SetLocale
 
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = $request->user()?->locale
+        // The shared demo user: each visitor's own choice (session) comes first.
+        $session = $request->hasSession() ? $request->session()->get(Locale::SESSION_KEY) : null;
+        $locale = ($request->user()?->is_demo ? $session : null)
+            ?? $request->user()?->locale
             ?? ($request->hasSession() ? $request->session()->get(Locale::SESSION_KEY) : null)
             ?? ($request->routeIs(...self::BROWSER_LANGUAGE_ROUTES) ? Locale::fromBrowser($request) : null)
             ?? config('app.locale');

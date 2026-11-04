@@ -61,6 +61,17 @@ if (config('serverscope.scheduler_queue_worker')) {
         ->withoutOverlapping(5);
 }
 
+// Public demo (SERVERSCOPE_DEMO_ENABLED): sample data that keeps moving, rebuilt every night.
+Schedule::command('serverscope:demo:tick')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->when(fn () => \App\Support\Demo::enabled());
+
+Schedule::command('serverscope:demo:seed')
+    ->dailyAt('04:20')
+    ->withoutOverlapping(30)
+    ->when(fn () => \App\Support\Demo::enabled());
+
 Schedule::command('serverscope:billing:expire-grace')->daily();
 
 Schedule::command('serverscope:invoices:issue')->daily();

@@ -3140,3 +3140,23 @@
     .ss-channel[data-channel="telegram"] .ss-channel-mark { background: #229ed9; }
     .ss-channel[data-channel="discord"] .ss-channel-mark { background: #5865f2; }
 }
+
+@layer components {
+    /* The public demo: a fixed bar on top, changing buttons visibly unavailable. */
+    /* The bar is fixed; the page, the sticky top bar and the sidebar move down by its height (--ss-demo-h, set by app.js). */
+    [data-demo] { --ss-demo-h: 2.75rem; }
+    [data-demo] body { padding-top: var(--ss-demo-h); }
+    [data-demo] .ss-topbar { top: var(--ss-demo-h); }
+    [data-demo] .ss-sidebar { top: var(--ss-demo-h); height: calc(100dvh - var(--ss-demo-h)); }
+    @media (min-width: 1024px) { [data-demo] .ss-sidebar, [data-demo] .ss-sidebar[data-open], [data-demo] .ss-sidebar:target { top: var(--ss-demo-h); height: calc(100vh - var(--ss-demo-h)); } }
+    .ss-demo-bar {
+        position: fixed; top: 0; right: 0; left: 0; z-index: 60; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1rem;
+        padding: .5rem 1rem; border-bottom: 1px solid var(--ss-accent-line); background: var(--ss-accent-soft); color: var(--ss-text); font-size: .8125rem; font-weight: 550;
+    }
+    .ss-demo-bar p { display: inline-flex; align-items: center; gap: .5rem; }
+    .ss-demo-bar .ico { width: 1rem; height: 1rem; color: var(--ss-accent); }
+    .ss-demo-bar-actions { display: flex; gap: .375rem; }
+    .is-demo-disabled { opacity: .55; cursor: not-allowed; }
+    .is-demo-disabled:hover { transform: none; }
+    @media (max-width: 639px) { .ss-demo-bar { justify-content: space-between; text-align: left; } .ss-demo-bar p { flex: 1 1 100%; } }
+}

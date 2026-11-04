@@ -411,3 +411,65 @@ Each person turns push on per device under Profile → Notifications. Push
 follows the same recipients and preferences as e-mail and in-app. On an
 iPhone, push works only after adding ServerScope to the home screen
 (iOS 16.4 or later). Requires HTTPS.
+
+## 13. Public read-only demo
+
+`GET /demo` signs a visitor in, without a password, as the demo user of a
+demo team with sample data, in the visitor's language (English or Dutch).
+Off by default: with the flag off, `/demo` answers 404.
+
+**What the demo is (and is not)**
+
+- **Read only.** For a demo user every request that changes something is
+  refused (`App\Http\Middleware\DemoMode`): every POST, PUT, PATCH and DELETE,
+  including Livewire and script calls, apart from signing out and the
+  language switch. Buttons stay visible but are disabled, with an
+  explanation. The dashboard arrangement, theme and language of a visitor
+  stay in their browser or session only.
+- **No sensitive pages.** Plan and billing, users and invitations, system
+  status, platform pages, API tokens and server enrolment (connection tokens
+  and `install.sh`) are not shown.
+- **Nothing leaves the server for a demo team.** There are no real HTTP,
+  SSL, DNS or registration checks, no page discovery, and no agent or
+  scheduled-job judging. No e-mail, push, webhook or chat message is sent,
+  and the AI provider is never called: the demo shows a stored example
+  analysis, labelled as such.
+- **Separate from real data.** Demo teams (`teams.is_demo`) are invisible to
+  real teams and do not count in platform figures. The demo user
+  (`users.is_demo`) cannot sign in through `/login`.
+- **Not indexed.** Demo pages send `X-Robots-Tag: noindex, nofollow` and a
+  robots meta tag.
+
+**Environment**
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `SERVERSCOPE_DEMO_ENABLED` | `false` | Turns `/demo` and the demo scheduler tasks on |
+| `SERVERSCOPE_DEMO_RETAIN_DAYS` | `7` | Demo measurements and checks older than this are removed hourly |
+
+**Turning it on**
+
+```bash
+php artisan migrate --force            # adds teams.is_demo and users.is_demo
+# put SERVERSCOPE_DEMO_ENABLED=true in .env, then:
+php artisan optimize
+php artisan serverscope:demo:seed      # builds the demo teams (en and nl); safe to repeat
+```
+
+Then open `https://<your ServerScope>/demo`.
+
+**Scheduler** (only while the demo is on; nothing extra in cron):
+
+- `serverscope:demo:tick`, every minute: new sample measurements for the
+  online demo servers following their pattern, passed website and page
+  checks, and the scheduler job's check-in. Lists, charts and the heartbeat
+  keep moving.
+- `serverscope:demo:seed`, daily at 04:20: rebuilds the demo with incidents,
+  deploys, logs, DNS changes and check history relative to now. The team and
+  user ids stay the same, so visitors are not signed out.
+
+`serverscope:demo:seed --locale=nl` rebuilds one language only.
+
+**Turning it off:** set `SERVERSCOPE_DEMO_ENABLED=false` and run
+`php artisan optimize`. `/demo` then answers 404 and the demo scheduler
+tasks stop. The demo teams stay in the database, invisible to everyone.

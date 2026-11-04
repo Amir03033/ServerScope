@@ -28,6 +28,8 @@ class DispatchPageChecks extends Command
         $dispatched = 0;
 
         $pages = MonitoredPage::query()
+            // Demo pages are never checked for real (no outgoing requests).
+            ->whereNotIn('team_id', \App\Support\Demo::teamIds())
             ->monitored()
             ->whereHas('domain', fn ($q) => $q->where('is_active', true))
             ->where(fn ($q) => $q->whereNull('next_check_at')->orWhere('next_check_at', '<=', $now))

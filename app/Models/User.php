@@ -34,6 +34,7 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_demo' => 'boolean',
             'is_platform_admin' => 'boolean',
             'current_team_id' => 'integer',
             'notify_email' => 'boolean',

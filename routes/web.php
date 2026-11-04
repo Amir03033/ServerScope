@@ -72,6 +72,10 @@ Route::middleware('guest')->group(function () {
 // Language switch for visitors and signed-in users (public; only en/nl).
 Route::post('/locale', [\App\Http\Controllers\LocaleController::class, 'update'])->middleware('throttle:30,1')->name('locale.update');
 
+// Public read-only demo (SERVERSCOPE_DEMO_ENABLED; 404 when off).
+Route::get('/demo', [\App\Http\Controllers\DemoController::class, 'enter'])->middleware('throttle:20,1')->name('demo.enter');
+Route::get('/demo/leave', [\App\Http\Controllers\DemoController::class, 'leave'])->middleware('throttle:30,1')->name('demo.leave');
+
 Route::get('/agent/ping', function (Request $request) {
     $server = $request->attributes->get('agentServer');
 
