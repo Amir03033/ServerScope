@@ -1092,3 +1092,80 @@ document.querySelectorAll('[data-hb-template]').forEach((button) => {
         form.querySelectorAll('[data-hb-template]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
     });
 });
+
+/* Two-factor: six boxes drawn over the one real field (paste and autofill keep working), a 30-second code ring. */
+document.querySelectorAll('[data-tfa]').forEach((form) => {
+    const input = form.querySelector('[data-tfa-code]');
+    const field = input.parentElement;
+    const boxes = document.createElement('div');
+    boxes.className = 'ss-otp';
+    boxes.setAttribute('aria-hidden', 'true');
+    boxes.innerHTML = '<span></span>'.repeat(6);
+    const wrap = document.createElement('div');
+    wrap.className = 'ss-otp-wrap';
+    input.before(wrap);
+    wrap.append(input, boxes);
+    field.classList.add('has-otp');
+    input.setAttribute('maxlength', '6');
+    const shield = document.querySelector('.ss-tfa-shield');
+    let sent = false;
+
+    const render = () => {
+        const digits = input.value.replace(/\D/g, '').slice(0, 6);
+        if (input.value !== digits) input.value = digits;
+        [...boxes.children].forEach((box, i) => {
+            box.textContent = digits[i] || '';
+            box.classList.toggle('is-filled', i < digits.length);
+            box.classList.toggle('is-active', document.activeElement === input && i === Math.min(digits.length, 5));
+        });
+        const done = digits.length === 6;
+        form.classList.toggle('is-complete', done);
+        shield?.classList.toggle('is-complete', done);
+        if (done && !sent && !form.querySelector('#recovery_code')?.value) {
+            sent = true;
+            setTimeout(() => form.requestSubmit(), 350);
+        }
+        if (!done) sent = false;
+    };
+    ['input', 'focus', 'blur', 'keyup', 'click'].forEach((e) => input.addEventListener(e, render));
+
+    if (form.hasAttribute('data-tfa-error')) {
+        input.value = '';
+        boxes.classList.add('is-error');
+        boxes.addEventListener('animationend', () => boxes.classList.remove('is-error'), { once: true });
+    }
+    render();
+
+    const timer = form.querySelector('[data-tfa-timer]');
+    if (timer) {
+        timer.hidden = false;
+        const label = timer.querySelector('span');
+        const ring = timer.querySelector('.run');
+        const tick = () => {
+            const left = 30 - (Math.floor(Date.now() / 1000) % 30);
+            label.textContent = timer.dataset.label.replace('__S__', left);
+            ring.style.strokeDashoffset = String(50.27 * (1 - left / 30));
+            timer.classList.toggle('is-low', left <= 5);
+        };
+        tick();
+        setInterval(tick, 1000);
+    }
+});
+
+/* After signing in: show an outline of the app while the next page loads. */
+document.querySelectorAll('form[data-auth-ghost]').forEach((form) => {
+    form.addEventListener('submit', () => {
+        const ghost = document.querySelector('[data-auth-ghost-screen]');
+        if (!ghost) return;
+        form._ghostTimer = setTimeout(() => {
+            ghost.hidden = false;
+            requestAnimationFrame(() => ghost.classList.add('is-on'));
+        }, 300);
+    });
+});
+window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    // Back from the next page: the form is usable again.
+    document.querySelectorAll('[data-auth-ghost-screen]').forEach((g) => { g.classList.remove('is-on'); g.hidden = true; });
+    document.querySelectorAll('.ss-auth-submit.is-loading').forEach((b) => { b.classList.remove('is-loading'); b.removeAttribute('aria-busy'); });
+});

@@ -87,6 +87,22 @@
     </div>
 </div>
 
+{{-- While the next page loads after signing in: a calm outline of the app instead of a frozen form. --}}
+<div class="ss-ghost" data-auth-ghost-screen hidden aria-hidden="true">
+    <div class="ss-ghost-side">
+        <span class="ss-ghost-logo"><x-live-logo class="h-6 w-6" /></span>
+        @for ($i = 0; $i < 7; $i++)<i class="ss-ghost-line"></i>@endfor
+    </div>
+    <div class="ss-ghost-main">
+        <i class="ss-ghost-line is-title"></i>
+        <i class="ss-ghost-line is-sub"></i>
+        <div class="ss-ghost-hero"><i class="ss-ghost-ring"></i><span><i class="ss-ghost-line"></i><i class="ss-ghost-line is-sub"></i></span></div>
+        <div class="ss-ghost-grid">@for ($i = 0; $i < 4; $i++)<i class="ss-ghost-card"></i>@endfor</div>
+        <div class="ss-ghost-grid is-wide"><i class="ss-ghost-card is-tall"></i><i class="ss-ghost-card is-tall"></i></div>
+    </div>
+    <p class="ss-ghost-text"><x-live-logo class="h-4 w-4" /> {{ __('auth.ghost') }}</p>
+</div>
+
 @include('partials.i18n')
 </body>
 </html>

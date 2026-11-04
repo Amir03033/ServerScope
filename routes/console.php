@@ -14,6 +14,11 @@ Schedule::call(fn () => \App\Services\SystemHealth::beat())
     ->everyMinute()
     ->name('serverscope:heartbeat');
 
+// Optional self-checks of the database, queue worker and cache (SERVERSCOPE_*_PING_URL in .env).
+Schedule::call(fn () => \App\Services\SelfPings\SelfPings::run())
+    ->everyMinute()
+    ->name('serverscope:self-pings');
+
 Schedule::command('serverscope:check-agents')
     ->everyMinute()
     ->withoutOverlapping(5);
