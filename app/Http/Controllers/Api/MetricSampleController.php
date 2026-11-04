@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\MetricSample;
 use App\Services\AlertDetectionService;
+use App\Services\Deployments\DeployWatcher;
 use App\Services\ServiceMonitor;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
@@ -26,6 +27,7 @@ class MetricSampleController extends Controller
         Request $request,
         AlertDetectionService $alertDetectionService,
         ServiceMonitor $serviceMonitor,
+        DeployWatcher $deployWatcher,
     ): JsonResponse {
         $server = $request->attributes->get('agentServer');
 
@@ -79,6 +81,12 @@ class MetricSampleController extends Controller
             'services.*.name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9@._:-]+$/', 'distinct'],
             'services.*.state' => ['required', 'string', Rule::in(['running', 'starting', 'stopped', 'failed', 'not_found', 'unknown'])],
             'services.*.detail' => ['nullable', 'string', 'max:100'],
+            // Git checkouts the agent watches (SERVERSCOPE_DEPLOY_PATHS); newer agents only.
+            'deploys' => ['nullable', 'array', 'max:'.DeployWatcher::MAX_WATCHES],
+            'deploys.*.name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9._-]+$/', 'distinct'],
+            'deploys.*.branch' => ['nullable', 'string', 'max:255'],
+            'deploys.*.commit_sha' => ['nullable', 'string', 'regex:/^[0-9a-fA-F]{7,64}$/'],
+            'deploys.*.error' => ['nullable', 'string', Rule::in(['not_found', 'unreadable', 'not_git'])],
         ]);
 
         foreach ([
@@ -114,8 +122,9 @@ class MetricSampleController extends Controller
 
         $sampleData = $validated;
         $services = $validated['services'] ?? null;
+        $deploys = $validated['deploys'] ?? null;
 
-        unset($sampleData['collected_at'], $sampleData['services'], $sampleData['agent_checksum'], $sampleData['cpu_count']);
+        unset($sampleData['collected_at'], $sampleData['services'], $sampleData['deploys'], $sampleData['agent_checksum'], $sampleData['cpu_count']);
 
         try {
             $sample = DB::transaction(function () use (
@@ -176,6 +185,15 @@ class MetricSampleController extends Controller
             }
 
             throw $exception;
+        }
+
+        // A new commit in a watched checkout is a deployment. Never lets the sample fail.
+        if ($deploys !== null) {
+            try {
+                $deployWatcher->observe($server, $deploys, now());
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
         }
 
         return response()->json([

@@ -85,6 +85,11 @@ class Incident extends Model
         return $this->hasOne(IncidentLearning::class);
     }
 
+    public function postmortem(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Postmortem::class);
+    }
+
     public function events(): HasMany
     {
         return $this->hasMany(IncidentEvent::class)->orderBy('created_at')->orderBy('id');

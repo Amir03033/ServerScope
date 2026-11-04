@@ -27,6 +27,7 @@ return [
         'globe' => 'Globe',
         'dependencies' => 'Dependencies',
         'deployments' => 'Deployments',
+        'logs' => 'Logs',
         'incidents' => 'Incidents',
         'alerts' => 'Alerts',
         'reports' => 'Reports',

@@ -202,6 +202,47 @@ a process with the same name. ServerScope opens an incident after the
 configured number of failed reports; a stopped service is reported
 separately from an unreachable server or a silent agent.
 
+## Deploy detection (next agent release)
+
+```
+SERVERSCOPE_DEPLOY_PATHS=shop=/var/www/shop,api=/srv/api
+```
+
+Every interval the agent reads which branch and commit each folder is on
+(`.git/HEAD`, the ref it points to, `packed-refs`; worktrees supported).
+It runs no git command and writes nothing. ServerScope records a new
+commit as a deployment of that application on this server, at the moment
+it was seen; the first look only sets the starting point. Give the
+`serverscope` user read access, for example:
+
+```sh
+sudo setfacl -m u:serverscope:x /var/www /var/www/shop
+sudo setfacl -R -m u:serverscope:rX /var/www/shop/.git
+```
+
+A folder that is missing or unreadable is shown as such on
+**Deployments → Automatic deployments**. Connect GitHub there to add the
+commit or pull request title, author and link.
+
+## Log following (next agent release)
+
+```
+SERVERSCOPE_LOG_FILES=nginx=/var/log/nginx/error.log,app=/var/www/shop/storage/logs/laravel.log
+```
+
+Like `tail -f`: each file is read from its end when the agent starts, then
+only new lines (rotation and truncation are handled). Only errors and
+warnings are sent (Laravel, nginx, Apache and PHP-FPM formats; other files
+by words such as "error" or "fatal"), with stack traces attached.
+Passwords, tokens, keys and e-mail addresses are removed before sending
+and once more by ServerScope. At most 200 lines per interval are sent; the
+overflow is only counted. Lines that could not be sent are retried the
+next interval. nginx logs usually belong to the `adm` group
+(`sudo usermod -aG adm serverscope`); give read access to app logs with
+`setfacl`. Lines are kept 14 days (`SERVERSCOPE_RETAIN_LOG_ENTRIES_DAYS`).
+
+The Bash agent does not support deploy detection or log following.
+
 ## Integrity
 
 Each sample includes a SHA-256 checksum of the agent's own source files.

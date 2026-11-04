@@ -2,6 +2,8 @@ import os
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
+from serverscope_agent.deploys import parse_deploy_paths
+from serverscope_agent.logs import parse_log_files
 from serverscope_agent.services import parse_services
 
 
@@ -11,6 +13,8 @@ class AgentConfig:
     token: str
     interval_seconds: int = 60
     services: tuple = ()
+    deploy_paths: tuple = ()
+    log_files: tuple = ()
 
 
 def load_config() -> AgentConfig:
@@ -55,4 +59,6 @@ def load_config() -> AgentConfig:
         token=token,
         interval_seconds=interval_seconds,
         services=tuple(parse_services(os.environ.get("SERVERSCOPE_SERVICES", ""))),
+        deploy_paths=tuple(parse_deploy_paths(os.environ.get("SERVERSCOPE_DEPLOY_PATHS", ""))),
+        log_files=tuple(parse_log_files(os.environ.get("SERVERSCOPE_LOG_FILES", ""))),
     )

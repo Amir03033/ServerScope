@@ -16,7 +16,7 @@ class Deployment extends Model
 {
     use BelongsToTeam;
 
-    protected $fillable = ['application', 'environment', 'version', 'commit_sha', 'deployed_at', 'source', 'actor', 'url', 'external_id'];
+    protected $fillable = ['application', 'environment', 'version', 'title', 'commit_sha', 'deployed_at', 'source', 'actor', 'url', 'external_id'];
 
     protected function casts(): array
     {

@@ -66,6 +66,8 @@ class AgentDownloadTest extends TestCase
             'serverscope_agent/client.py',
             'serverscope_agent/collector.py',
             'serverscope_agent/config.py',
+            'serverscope_agent/deploys.py',
+            'serverscope_agent/logs.py',
             'serverscope_agent/services.py',
         ], $entries);
     }

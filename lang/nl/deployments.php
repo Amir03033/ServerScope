@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Deployments',
-    'subtitle' => 'Via de API vastgelegde deployments, met een vergelijking voor en na op de bewaakte onderdelen die ze raken.',
+    'subtitle' => 'Elke deployment op je servers, automatisch gezien of gemeld door CI, met een voor/na-vergelijking van wat erdoor geraakt wordt.',
     'show_title' => 'Deployment :label',
     'application' => 'Applicatie',
     'environment' => 'Omgeving',
@@ -13,7 +13,10 @@ return [
     'all' => 'Alle',
     'filter' => 'Filteren',
     'empty_title' => 'Nog geen deployments vastgelegd',
-    'empty_text' => 'Leg deployments vast vanuit je CI met POST /api/v1/deployments (zie de API-documentatie).',
+    'empty_text' => 'Laat de agent de git-map van je app volgen, of koppel GitHub: deployments verschijnen hier dan vanzelf.',
+    'sources_button' => 'Automatische deploys',
+    'change' => 'Wijziging',
+    'sources' => ['agent' => 'Agent', 'github' => 'GitHub', 'api' => 'API'],
     'col_deployment' => 'Deployment',
     'col_commit' => 'Commit',
     'col_resources' => 'Gekoppelde onderdelen',

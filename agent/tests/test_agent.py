@@ -92,3 +92,17 @@ def test_run_forever_logs_the_safe_reason(caplog):
             run_forever(object(), interval_seconds=10)
 
     assert "Metrics submission failed: HTTP 401, token rejected" in caplog.text
+
+
+def test_run_once_adds_deploys_only_when_configured(tmp_path):
+    from unittest.mock import MagicMock
+
+    client = MagicMock()
+    client.send_metrics.return_value = {}
+
+    with patch("serverscope_agent.agent.collect_metrics", return_value={"cpu_percent": 1}):
+        run_once(client)
+        assert "deploys" not in client.send_metrics.call_args.args[0]
+
+        run_once(client, (), (("shop", str(tmp_path / "missing")),))
+        assert client.send_metrics.call_args.args[0]["deploys"] == [{"name": "shop", "error": "not_found"}]

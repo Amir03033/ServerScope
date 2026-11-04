@@ -59,9 +59,10 @@
                 <div class="ss-panel-head"><div><h2 id="details-title" class="ss-panel-title">{{ __('deployments.details') }}</h2></div></div>
                 <dl class="ss-dl">
                     <dt>{{ __('deployments.application') }}</dt><dd>{{ $deployment->application }}</dd>
+                    @if ($deployment->title)<dt>{{ __('deployments.change') }}</dt><dd class="[overflow-wrap:anywhere]">{{ $deployment->title }}</dd>@endif
                     <dt>{{ __('deployments.version') }}</dt><dd>{{ $deployment->version ?? '—' }}</dd>
                     <dt>{{ __('deployments.col_commit') }}</dt><dd class="font-mono text-xs [overflow-wrap:anywhere]">{{ $deployment->commit_sha ?? '—' }}</dd>
-                    <dt>{{ __('deployments.source') }}</dt><dd>{{ $deployment->source ?? '—' }}@if ($deployment->actor) · {{ $deployment->actor }}@endif</dd>
+                    <dt>{{ __('deployments.source') }}</dt><dd>{{ $deployment->source ? (Lang::has('deployments.sources.'.$deployment->source) ? __('deployments.sources.'.$deployment->source) : $deployment->source) : '—' }}@if ($deployment->actor) · {{ $deployment->actor }}@endif</dd>
                     @if ($deployment->url)<dt>{{ __('deployments.link') }}</dt><dd class="[overflow-wrap:anywhere]"><a href="{{ $deployment->url }}" rel="noopener noreferrer" target="_blank">{{ \Illuminate\Support\Str::limit($deployment->url, 60) }}</a></dd>@endif
                 </dl>
             </section>

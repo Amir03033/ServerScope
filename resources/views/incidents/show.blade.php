@@ -38,6 +38,7 @@
     <x-slot:actions>
         <a href="{{ route('incidents.index') }}" class="ss-btn ss-btn-ghost"><svg class="ico"><use href="#i-arrow-left"/></svg> {{ __('incidents.overview') }}</a>
         <a href="{{ route('incidents.time-machine', $incident) }}" class="ss-btn ss-btn-secondary"><svg class="ico"><use href="#i-history"/></svg> {{ __('time_machine.open') }}</a>
+        <a href="{{ route('incidents.postmortem', $incident) }}" class="ss-btn ss-btn-secondary"><svg class="ico"><use href="#i-file"/></svg> {{ __('postmortems.open') }}</a>
     </x-slot:actions>
 
     {{-- Status bar with the actions that are possible now (directly under it on mobile). --}}
@@ -111,6 +112,10 @@
             </section>
 
             @include('incidents._root_cause')
+
+            @if ($logs !== null)
+                @include('incidents._logs')
+            @endif
 
             @include('incidents._memory')
 

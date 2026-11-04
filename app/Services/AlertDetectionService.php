@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Alert;
 use App\Models\AlertRule;
+use App\Models\LogEntry;
 use App\Models\MetricSample;
 use App\Models\Server;
 use Illuminate\Support\Carbon;
@@ -57,6 +58,10 @@ class AlertDetectionService
 
             'disk_percent' => $this->diskPercentages($sample),
 
+            AlertRule::METRIC_LOG_ERRORS => [
+                AlertRule::METRIC_LOG_ERRORS => $this->logErrors($sample),
+            ],
+
             // A sample is a heartbeat: the agent is not silent now.
             AlertRule::METRIC_AGENT_OFFLINE => [
                 AlertRule::METRIC_AGENT_OFFLINE => 0.0,
@@ -64,6 +69,17 @@ class AlertDetectionService
 
             default => [],
         };
+    }
+
+    /** Error lines in the 5 minutes up to the sample (a spike, not a total). */
+    private function logErrors(MetricSample $sample): float
+    {
+        return (float) LogEntry::query()->withoutGlobalScopes()
+            ->where('server_id', $sample->server_id)
+            ->whereIn('level', LogEntry::ERROR_LEVELS)
+            ->where('occurred_at', '>', $sample->collected_at->copy()->subMinutes(5))
+            ->where('occurred_at', '<=', $sample->collected_at)
+            ->count();
     }
 
     private function memoryPercent(MetricSample $sample): ?float
@@ -307,6 +323,10 @@ class AlertDetectionService
 
         if ($metric === 'memory_percent') {
             return $this->memoryPercent($sample);
+        }
+
+        if ($metric === AlertRule::METRIC_LOG_ERRORS) {
+            return $this->logErrors($sample);
         }
 
         if ($metric === 'disk_percent' && $dimension !== null) {

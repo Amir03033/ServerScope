@@ -40,7 +40,8 @@
                 ['route' => 'nexus.wall', 'match' => 'nexus.wall', 'icon' => 'i-tv', 'label' => 'wall', 'sub' => true],
             ]],
             ['route' => 'dependencies.index', 'match' => 'dependencies.*', 'icon' => 'i-link', 'label' => 'dependencies'],
-            ['route' => 'deployments.index', 'match' => 'deployments.*', 'icon' => 'i-flag', 'label' => 'deployments'],
+            ['route' => 'deployments.index', 'match' => ['deployments.*', 'deploy-sources.*'], 'icon' => 'i-flag', 'label' => 'deployments'],
+            ['route' => 'logs.index', 'match' => 'logs.*', 'icon' => 'i-logs', 'label' => 'logs'],
         ],
         'incidents' => [
             ['route' => 'incidents.index', 'match' => 'incidents.*', 'icon' => 'i-siren', 'label' => 'incidents', 'count' => $sidebarOpenIncidents ?? 0],

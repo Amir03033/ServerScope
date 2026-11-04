@@ -91,6 +91,7 @@ return [
         'memory_percent' => 'RAM usage',
         'disk_percent' => 'Disk usage',
         'agent_offline' => 'Agent offline',
+        'log_errors' => 'Log errors per 5 min',
     ],
     'domain_status' => [
         'healthy' => 'Healthy',

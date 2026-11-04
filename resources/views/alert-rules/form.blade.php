@@ -56,7 +56,7 @@
 
         <div>
             <label class="ss-label" for="threshold">{{ __('alert_rules.form.threshold') }}</label>
-            <input id="threshold" class="ss-input mt-1.5" name="threshold" type="number" min="0" max="1440" step="0.01" required value="{{ $threshold }}" {{ $field('threshold') }}>
+            <input id="threshold" class="ss-input mt-1.5" name="threshold" type="number" min="0" max="100000" step="0.01" required value="{{ $threshold }}" {{ $field('threshold') }}>
             <p class="ss-help">{{ __('alert_rules.form.threshold_help') }}</p>
             @error('threshold')<p id="threshold-error" class="ss-error">{{ $message }}</p>@enderror
         </div>

@@ -2,7 +2,7 @@
 
 return [
     'title' => 'Deployments',
-    'subtitle' => 'Deployments recorded through the API, with a before/after comparison of the monitored resources they affect.',
+    'subtitle' => 'Every deployment on your servers, detected automatically or reported by CI, with a before/after comparison of what it affects.',
     'show_title' => 'Deployment :label',
     'application' => 'Application',
     'environment' => 'Environment',
@@ -13,7 +13,10 @@ return [
     'all' => 'All',
     'filter' => 'Filter',
     'empty_title' => 'No deployments recorded yet',
-    'empty_text' => 'Record deployments from your CI with POST /api/v1/deployments (see the API documentation).',
+    'empty_text' => 'Let the agent watch your app\'s git folder, or connect GitHub: deployments then appear here by themselves.',
+    'sources_button' => 'Automatic deployments',
+    'change' => 'Change',
+    'sources' => ['agent' => 'Agent', 'github' => 'GitHub', 'api' => 'API'],
     'col_deployment' => 'Deployment',
     'col_commit' => 'Commit',
     'col_resources' => 'Linked resources',

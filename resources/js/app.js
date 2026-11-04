@@ -872,3 +872,77 @@ if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-mot
         reveal.observe(element);
     });
 }
+
+/* ------------------------------------------------------------------ */
+/* Copy a fixed text (data-copy-text), e.g. a webhook URL in a menu.   */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('[data-copy-text]').forEach((button) => {
+    button.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(button.dataset.copyText);
+            const label = button.lastChild;
+            const before = label.textContent;
+            label.textContent = t('copied');
+            setTimeout(() => { label.textContent = before; }, 1600);
+        } catch {
+            window.prompt('', button.dataset.copyText);
+        }
+    });
+});
+
+/* ------------------------------------------------------------------ */
+/* Connect GitHub: the application name follows the repository name    */
+/* until edited; the branch only matters for "every push".             */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('#github-connect form').forEach((form) => {
+    const repository = form.querySelector('#repository');
+    const application = form.querySelector('[data-github-application]');
+    const branch = form.querySelector('[data-github-branch]');
+    const modes = [...form.querySelectorAll('[data-github-mode]')];
+    let touched = application.value !== '';
+
+    application.addEventListener('input', () => { touched = application.value !== ''; });
+    repository.addEventListener('input', () => {
+        if (!touched) application.value = (repository.value.split('/')[1] || '').replace(/[^A-Za-z0-9._-]/g, '');
+    });
+
+    const sync = () => { branch.hidden = !modes.some((mode) => mode.checked && mode.value === 'push'); };
+    modes.forEach((mode) => mode.addEventListener('change', sync));
+    sync();
+});
+
+/* ------------------------------------------------------------------ */
+/* Postmortem: growing text fields, action item rows, print.           */
+/* ------------------------------------------------------------------ */
+
+document.querySelectorAll('textarea[data-autosize]').forEach((field) => {
+    const fit = () => {
+        field.style.height = 'auto';
+        field.style.height = `${field.scrollHeight + 2}px`;
+    };
+    field.addEventListener('input', fit);
+    fit();
+});
+
+document.querySelectorAll('[data-action-items]').forEach((editor) => {
+    const template = editor.querySelector('[data-action-template]');
+    const add = editor.querySelector('[data-action-add]');
+    let next = editor.querySelectorAll('.ss-doc-action-row:not(.ss-doc-action-headrow)').length;
+
+    add.addEventListener('click', () => {
+        const row = template.content.firstElementChild.cloneNode(true);
+        row.querySelectorAll('[name]').forEach((input) => { input.name = input.name.replace('__INDEX__', String(next)); });
+        next += 1;
+        add.before(row);
+        row.querySelector('input[type="text"], input:not([type])')?.focus();
+    });
+
+    editor.addEventListener('click', (event) => {
+        const remove = event.target.closest('[data-action-remove]');
+        if (remove) remove.closest('.ss-doc-action-row').remove();
+    });
+});
+
+document.querySelectorAll('[data-print]').forEach((button) => button.addEventListener('click', () => window.print()));

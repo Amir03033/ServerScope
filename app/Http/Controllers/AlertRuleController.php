@@ -28,8 +28,15 @@ class AlertRuleController extends Controller
     {
         $this->authorizeAdmin();
 
+        $rule = new AlertRule();
+
+        // "Spike alert" from the Logs page: a sensible starting point.
+        if (request()->query('metric') === AlertRule::METRIC_LOG_ERRORS) {
+            $rule->fill(['name' => __('logs.spike_rule_name'), 'metric' => AlertRule::METRIC_LOG_ERRORS, 'threshold' => 20, 'operator' => '>=', 'duration_minutes' => 2, 'severity' => 'warning']);
+        }
+
         return view('alert-rules.create', [
-            'rule' => new AlertRule(),
+            'rule' => $rule,
         ]);
     }
 
@@ -139,9 +146,12 @@ class AlertRuleController extends Controller
             ],
             // Percentages for resource metrics; minutes without a
             // heartbeat for agent_offline.
-            'threshold' => $isAgentOffline
-                ? ['required', 'integer', 'between:2,1440']
-                : ['required', 'numeric', 'between:0,100'],
+            'threshold' => match (true) {
+                $isAgentOffline => ['required', 'integer', 'between:2,1440'],
+                // Error lines per 5 minutes.
+                $request->input('metric') === AlertRule::METRIC_LOG_ERRORS => ['required', 'integer', 'between:1,100000'],
+                default => ['required', 'numeric', 'between:0,100'],
+            },
             'operator' => [
                 'required',
                 Rule::in(['>=', '>', '<=', '<']),
