@@ -11,6 +11,7 @@ return [
         'off' => 'Uit op dit apparaat. Zet het aan om incidenten als melding op je telefoon of computer te krijgen.',
         'blocked' => 'Geblokkeerd in de instellingen van deze browser. Sta meldingen voor deze site toe om push aan te zetten.',
         'unsupported' => 'Deze browser kan geen pushmeldingen ontvangen. Op een iPhone: zet ServerScope eerst op je beginscherm (Deel → Zet op beginscherm).',
+        'worker_failed' => 'De app kon zijn achtergrondproces niet starten, dus push kan niet aan. Herlaad de pagina; blijft dit zo, dan kan een beheerder controleren of /sw.js en /app-icons/ laden.',
         'turn_on' => 'Aanzetten',
         'turn_off' => 'Uitzetten',
         'working' => 'Even geduld…',

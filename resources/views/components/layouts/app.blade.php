@@ -80,7 +80,7 @@
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml" data-live-icon>
     {{-- Installable app (manifest, service worker in resources/js/install.js). --}}
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-    <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('app-icons/apple-touch-icon.png') }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
