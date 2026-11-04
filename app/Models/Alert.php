@@ -62,4 +62,34 @@ class Alert extends Model
     {
         return $this->status === 'active';
     }
+
+    /**
+     * Ends the active alerts of servers that were removed (soft deleted):
+     * nothing evaluates a removed server any more, so they would stay
+     * active for ever and could not be cleared. One server, or all of them.
+     *
+     * @return int the number of alerts ended
+     */
+    public static function endForRemovedServers(?int $serverId = null): int
+    {
+        $removed = Server::query()->withoutGlobalScopes()->whereNotNull('deleted_at')->select('id');
+        $ended = 0;
+
+        static::query()->withoutGlobalScopes()->where('status', 'active')
+            ->when($serverId !== null, fn ($q) => $q->where('server_id', $serverId), fn ($q) => $q->whereIn('server_id', $removed))
+            ->get()
+            ->each(function (self $alert) use (&$ended): void {
+                // Through the model, so AlertObserver closes the incident as well.
+                $alert->update(['status' => 'resolved', 'resolved_at' => now()]);
+                $ended++;
+            });
+
+        return $ended;
+    }
+
+    /** Whether the alert's server was removed (or no longer exists). */
+    public function serverRemoved(): bool
+    {
+        return ! Server::query()->withoutGlobalScopes()->whereKey($this->server_id)->whereNull('deleted_at')->exists();
+    }
 }
