@@ -32,6 +32,21 @@ class Heartbeat extends Model
 
     public const MAX_PER_TEAM = 200;
 
+    /**
+     * Ready-made starting points on the "add" form: the jobs most servers have.
+     * Names and texts live in lang/{locale}/heartbeats.php under templates.
+     *
+     * @var array<string, array{icon: string, schedule_type: string, period_minutes?: int, cron_expression?: string, grace_minutes: int, severity: string}>
+     */
+    public const TEMPLATES = [
+        'db_backup' => ['icon' => 'i-disk', 'schedule_type' => self::SCHEDULE_CRON, 'cron_expression' => '0 3 * * *', 'grace_minutes' => 60, 'severity' => 'high'],
+        'db_check' => ['icon' => 'i-pulse', 'schedule_type' => self::SCHEDULE_INTERVAL, 'period_minutes' => 5, 'grace_minutes' => 5, 'severity' => 'critical'],
+        'scheduler' => ['icon' => 'i-clock', 'schedule_type' => self::SCHEDULE_INTERVAL, 'period_minutes' => 1, 'grace_minutes' => 3, 'severity' => 'critical'],
+        'queue' => ['icon' => 'i-list', 'schedule_type' => self::SCHEDULE_INTERVAL, 'period_minutes' => 5, 'grace_minutes' => 5, 'severity' => 'high'],
+        'certificates' => ['icon' => 'i-shield', 'schedule_type' => self::SCHEDULE_CRON, 'cron_expression' => '0 4 * * *', 'grace_minutes' => 120, 'severity' => 'warning'],
+        'cleanup' => ['icon' => 'i-trash', 'schedule_type' => self::SCHEDULE_CRON, 'cron_expression' => '30 2 * * 0', 'grace_minutes' => 120, 'severity' => 'warning'],
+    ];
+
     protected $fillable = ['server_id', 'name', 'schedule_type', 'period_minutes', 'cron_expression', 'timezone', 'grace_minutes', 'severity'];
 
     protected $hidden = ['token'];

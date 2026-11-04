@@ -49,6 +49,7 @@ return [
         'domain_text' => 'Monitor availability, certificate and DNS.',
         'notifications' => 'Set up notifications',
         'notifications_text' => 'Choose how you stay informed.',
+        'after' => 'As soon as the first server reports or the first website is checked, this page becomes your live dashboard.',
     ],
 
     'overview' => [

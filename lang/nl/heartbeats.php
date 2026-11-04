@@ -46,6 +46,19 @@ return [
         'step3' => 'Klaar: je krijgt een melding zodra hij niet op tijd is.',
     ],
 
+    'templates' => [
+        'title' => 'Snel beginnen',
+        'text' => 'Kies een veelgebruikte taak; het formulier vult zich in en je kunt alles nog aanpassen.',
+        'items' => [
+            'db_backup' => ['name' => 'Databasebackup', 'text' => 'Elke nacht om 03:00'],
+            'db_check' => ['name' => 'Database bereikbaar', 'text' => 'Elke 5 minuten een check'],
+            'scheduler' => ['name' => 'Laravel-planner', 'text' => 'Elke minuut'],
+            'queue' => ['name' => 'Queue-worker', 'text' => 'Elke 5 minuten'],
+            'certificates' => ['name' => 'Certificaten vernieuwen', 'text' => 'Elke dag (certbot)'],
+            'cleanup' => ['name' => 'Logs opruimen', 'text' => 'Elke zondagnacht'],
+        ],
+    ],
+
     'form' => [
         'title_create' => 'Geplande taak toevoegen',
         'title_edit' => 'Taak bewerken',
@@ -81,6 +94,8 @@ return [
             'cron_text' => 'Meldt alleen als het commando slaagt (&&).',
             'full' => 'Start, resultaat en uitvoer',
             'full_text' => 'Meet de duur, meldt de exitcode en stuurt de laatste regels uitvoer mee.',
+            'database' => 'Database',
+            'database_text' => 'Kies de regel die bij deze taak past: elke 5 minuten checken of de database antwoordt, of melden na de nachtelijke backup. Eén taak per regel.',
             'fail' => 'Een fout melden',
             'fail_text' => 'Vanuit je eigen script of code; opent direct een incident.',
             'laravel' => 'Laravel-planner',

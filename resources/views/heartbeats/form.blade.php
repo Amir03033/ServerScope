@@ -18,6 +18,22 @@
         @if ($editing) @method('PUT') @endif
 
         <div class="grid gap-5">
+            @unless ($editing)
+                {{-- One click fills in the form for the jobs most servers have; everything stays editable. --}}
+                <fieldset class="ss-hb-templates">
+                    <legend class="ss-label">{{ __('heartbeats.templates.title') }}</legend>
+                    <p class="ss-help !mt-0.5">{{ __('heartbeats.templates.text') }}</p>
+                    <div class="ss-hb-template-list">
+                        @foreach (Heartbeat::TEMPLATES as $key => $template)
+                            <button type="button" class="ss-hb-template" aria-pressed="false" data-hb-template='@json([...$template, 'name' => __("heartbeats.templates.items.{$key}.name")])'>
+                                <span class="ss-hb-template-icon"><svg class="ico" aria-hidden="true"><use href="#{{ $template['icon'] }}"/></svg></span>
+                                <span class="min-w-0"><strong>{{ __("heartbeats.templates.items.{$key}.name") }}</strong><small>{{ __("heartbeats.templates.items.{$key}.text") }}</small></span>
+                            </button>
+                        @endforeach
+                    </div>
+                </fieldset>
+            @endunless
+
             <div class="grid gap-5 sm:grid-cols-2">
                 <div>
                     <label class="ss-label" for="name">{{ __('heartbeats.form.name') }}</label>

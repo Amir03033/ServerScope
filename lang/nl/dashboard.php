@@ -49,6 +49,7 @@ return [
         'domain_text' => 'Bewaak bereikbaarheid, certificaat en DNS.',
         'notifications' => 'Meldingen instellen',
         'notifications_text' => 'Kies hoe je op de hoogte blijft.',
+        'after' => 'Zodra de eerste server meldt of de eerste website is gecontroleerd, wordt deze pagina je live dashboard.',
     ],
 
     'overview' => [

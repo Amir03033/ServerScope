@@ -20,6 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // The public demo is read-only (SERVERSCOPE_DEMO_ENABLED).
         $middleware->web(append: \App\Http\Middleware\DemoMode::class);
 
+        // A demo visitor whose session ended (idle, or a rebuild) goes back into the demo, to the
+        // page they asked for, instead of the login page.
+        $middleware->redirectGuestsTo(fn (\Illuminate\Http\Request $request) => \App\Support\Demo::enabled() && $request->cookie(\App\Support\Demo::COOKIE)
+            ? route('demo.enter', ['next' => '/'.ltrim($request->path(), '/')])
+            : route('login'));
+
         // The tenant must be known before route model binding, so that IDs
         // of another team resolve to 404.
         $middleware->alias(['tenant' => \App\Http\Middleware\ResolveTenant::class]);

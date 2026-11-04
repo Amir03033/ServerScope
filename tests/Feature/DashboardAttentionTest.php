@@ -103,6 +103,8 @@ class DashboardAttentionTest extends TestCase
     public function test_all_good_when_nothing_needs_attention(): void
     {
         $user = User::factory()->create();
+        // Something to watch, so the widgets show (an empty account gets the welcome instead).
+        \App\Models\Domain::forceCreate(['team_id' => $user->current_team_id, 'name' => 'example.com']);
 
         $this->actingAs($user)->get(route('dashboard'))->assertOk()
             ->assertSee('Alles in orde')
@@ -113,6 +115,7 @@ class DashboardAttentionTest extends TestCase
     {
         $user = User::factory()->create(['locale' => 'en']);
         app()->setLocale('en');
+        \App\Models\Domain::forceCreate(['team_id' => $user->current_team_id, 'name' => 'example.com']);
 
         $this->actingAs($user)->get(route('dashboard'))->assertOk()
             ->assertSee(['Needs attention', 'All good', 'Get started', 'Active incidents', 'Expiring soon', 'Recent DNS changes', 'Server performance', 'All servers', 'Recent measurements'])

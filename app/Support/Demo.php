@@ -18,6 +18,9 @@ class Demo
 {
     public const LOCALES = ['en', 'nl'];
 
+    /** Remembers (for a day) that this browser is viewing the demo, so a lost session re-enters it. */
+    public const COOKIE = 'ss_demo';
+
     /** Pages a demo visitor cannot open: money, people, platform and secrets. */
     public const BLOCKED_ROUTES = [
         'billing.*', 'users.*', 'system-health', 'platform.*',

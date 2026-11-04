@@ -158,6 +158,10 @@
         $widgetPresets = array_keys(\App\Support\DashboardWidgets::PRESETS);
         $missionWidgets = ['health', 'tiles', 'timeline'];
     @endphp
+    {{-- A brand-new account has nothing to show yet: a calm start instead of fourteen empty widgets. --}}
+    @if ($servers->isEmpty() && ! \App\Models\Domain::query()->exists())
+        @include('dashboard._welcome')
+    @else
     <div class="ss-widgets-bar" data-widgets-bar>
         <button type="button" class="ss-btn ss-btn-ghost ss-btn-sm" data-widgets-edit aria-pressed="false" hidden><svg class="ico" aria-hidden="true"><use href="#i-sliders"/></svg> {{ __('widgets.edit') }}</button>
     </div>
@@ -171,6 +175,7 @@
             </div>
         @endforeach
     </div>
+    @endif
 
     <script type="application/json" id="chart-data">@json($chartData)</script>
 </x-layouts.app>
