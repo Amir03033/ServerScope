@@ -7,6 +7,8 @@ use App\Monitoring\Net\BlockedTargetException;
 use App\Monitoring\Net\IpPolicy;
 use App\Monitoring\Net\SafeHttpClient;
 use App\Monitoring\Net\TargetGuard;
+use GuzzleHttp\Exception\ConnectTimeoutException;
+use GuzzleHttp\Psr7\Request as GuzzleRequest;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
@@ -252,6 +254,16 @@ class SafeHttpClientTest extends TestCase
             $this->assertSame($expected, $result->error, $message);
             $this->assertNotEmpty($result->errorMessage);
         }
+    }
+
+    public function test_guzzle_timeout_exceptions_are_classified_without_handler_context(): void
+    {
+        // Guzzle 8 dropped getHandlerContext(); a connect timeout used to crash the check job.
+        Http::fake(fn () => throw new ConnectionException('Connection timed out', 0, new ConnectTimeoutException(
+            'cURL error 28: Connection timed out after 5001 milliseconds', new GuzzleRequest('GET', 'https://example.com/'),
+        )));
+
+        $this->assertSame('timeout', $this->client()->get('https://example.com/')->error);
     }
 
     public function test_requests_per_target_ip_are_rate_limited(): void

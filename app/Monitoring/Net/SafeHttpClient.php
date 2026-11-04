@@ -201,7 +201,9 @@ class SafeHttpClient
         $errno = null;
 
         while ($previous !== null) {
-            if ($previous instanceof RequestException || $previous instanceof ConnectException) {
+            // Guzzle 7 keeps curl's errno in the handler context; Guzzle 8 dropped it
+            // (the "cURL error N" message below still carries it).
+            if (($previous instanceof RequestException || $previous instanceof ConnectException) && method_exists($previous, 'getHandlerContext')) {
                 $errno = $previous->getHandlerContext()['errno'] ?? $errno;
             }
 
