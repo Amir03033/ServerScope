@@ -919,11 +919,19 @@ document.querySelectorAll('#github-connect form').forEach((form) => {
 
 document.querySelectorAll('textarea[data-autosize]').forEach((field) => {
     const fit = () => {
+        // A field in a closed sheet has no height yet; it is fitted when the sheet opens.
+        if (!field.offsetParent) return;
         field.style.height = 'auto';
         field.style.height = `${field.scrollHeight + 2}px`;
     };
     field.addEventListener('input', fit);
+    field.closest('[popover]')?.addEventListener('toggle', fit);
     fit();
+});
+
+/* Filter selects that apply as soon as they change (the button stays for keyboards without JS). */
+document.querySelectorAll('select[data-autosubmit]').forEach((select) => {
+    select.addEventListener('change', () => select.form?.requestSubmit());
 });
 
 document.querySelectorAll('[data-action-items]').forEach((editor) => {

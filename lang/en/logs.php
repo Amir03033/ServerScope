@@ -22,6 +22,8 @@ return [
     'activity' => 'Activity',
     'legend' => ['errors' => 'Errors', 'warnings' => 'Warnings'],
     'bar' => ':time: :errors errors, :warnings warnings',
+    'chart_label' => 'Activity: :errors errors and :warnings warnings',
+    'columns' => ['problem' => 'Problem', 'trend' => 'Trend :period', 'events' => 'Events', 'last' => 'Last seen'],
     'filters' => [
         'search' => 'Search',
         'search_placeholder' => 'Message or source',

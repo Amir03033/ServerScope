@@ -180,6 +180,18 @@ return [
         'severity_change' => 'Change',
         'previous_title' => 'Previous incidents',
         'previous_text' => 'For :subject.',
+        'details_title' => 'Details',
+        'signals_title' => 'Signals',
+        'facts' => [
+            'duration' => 'Duration',
+            'ongoing' => 'ongoing',
+            'detect' => 'Time to detect',
+            'acknowledge' => 'Time to acknowledge',
+            'occurrences' => 'Occurrences',
+            'last' => 'last :time',
+            'recurrence' => 'Last 30 days',
+            'recurrence_caption' => ':total× in total',
+        ],
     ],
 
     'flash' => [
