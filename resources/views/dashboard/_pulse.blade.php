@@ -35,15 +35,14 @@
                     @php $rhythm = ['up' => 'steady', 'down' => 'chaos', 'paused' => 'rest'][$job->status] ?? 'unknown'; @endphp
                     <li class="ss-pulse-row is-job" data-pulse-row="heartbeat:{{ $job->id }}" data-rhythm="{{ $rhythm }}" data-job>
                         <div class="min-w-0">
-                            <a class="block truncate font-semibold text-fg no-underline hover:underline" href="{{ route('heartbeats.show', $job) }}"><svg class="ico ss-pulse-job-ico" aria-hidden="true"><use href="#i-clock"/></svg>{{ $job->name }}</a>
+                            <a class="ss-pulse-job-name font-semibold text-fg no-underline hover:underline" href="{{ route('heartbeats.show', $job) }}" title="{{ $job->name }}"><svg class="ico ss-pulse-job-ico" aria-hidden="true"><use href="#i-clock"/></svg>{{ $job->name }}</a>
                             <span class="ss-pulse-state" data-pulse-state>{{ __('dashboard.pulse.js.job.'.$rhythm) }}</span>
                             <span class="ss-pulse-reason" data-pulse-reason>{{ $job->server?->name }}</span>
                         </div>
                         <canvas class="ss-pulse-canvas" data-pulse-canvas aria-hidden="true"></canvas>
                         <dl class="ss-pulse-numbers">
-                            <div><dt>{{ __('dashboard.pulse.last_run') }}</dt><dd>{{ $job->last_ping_at ? \App\Support\Time::relative($job->last_ping_at) : '—' }}</dd></div>
+                            <div><dt>{{ __('dashboard.pulse.last_run') }}</dt><dd>{{ $job->last_ping_at ? $job->last_ping_at->locale(app()->getLocale())->shortRelativeDiffForHumans() : '—' }}</dd></div>
                             <div><dt>{{ __('dashboard.pulse.schedule') }}</dt><dd>{{ $job->schedule_type === \App\Models\Heartbeat::SCHEDULE_CRON ? $job->cron_expression : mb_strtolower(\App\Models\Heartbeat::periodLabel((int) $job->period_minutes)) }}</dd></div>
-                            <div><dt>{{ __('dashboard.pulse.duration') }}</dt><dd>{{ $job->last_duration_ms === null ? '—' : ($job->last_duration_ms < 1000 ? $job->last_duration_ms.' ms' : round($job->last_duration_ms / 1000, 1).' s') }}</dd></div>
                         </dl>
                     </li>
                 @endforeach

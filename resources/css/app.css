@@ -3505,7 +3505,11 @@
 
 @layer components {
     .ss-pulse-job-ico { display: inline; width: .8125rem; height: .8125rem; margin: -.125rem .375rem 0 0; color: var(--ss-muted); vertical-align: middle; }
-    .ss-pulse-row.is-job .ss-pulse-numbers dd { font-size: .75rem; white-space: nowrap; }
+    /* Job rows: two figures (last run, schedule) that fit their text, a name on up to two lines. */
+    .ss-pulse-row.is-job .ss-pulse-numbers { grid-template-columns: repeat(2, minmax(4.5rem, auto)); column-gap: 1rem; }
+    .ss-pulse-list.is-compact .ss-pulse-row.is-job .ss-pulse-numbers { grid-template-columns: repeat(2, minmax(3.75rem, auto)); }
+    .ss-pulse-row.is-job .ss-pulse-numbers dd { overflow: hidden; max-width: 9rem; text-overflow: ellipsis; white-space: nowrap; }
+    .ss-pulse-job-name { display: -webkit-box; overflow: hidden; line-height: 1.25; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 }
 
 /* ------------------------------------------------------------------ */

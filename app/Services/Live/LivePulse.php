@@ -29,7 +29,8 @@ class LivePulse
         $active = (clone $incidents)->count();
         $critical = (clone $incidents)->where('severity', 'critical')->count();
         $offline = count(array_filter($servers, fn (array $n) => $n['health'] === 'critical'));
-        $warning = array_filter($nodes, fn (array $n) => in_array($n['health'], ['warning', 'critical'], true));
+        // Only what the dashboard shows as a problem colours the tab icon: servers and websites (not every page or service behind them).
+        $warning = array_filter($nodes, fn (array $n) => in_array($n['type'], ['server', 'domain'], true) && in_array($n['health'], ['warning', 'critical'], true));
 
         $cpus = array_values(array_filter(array_map(fn (array $n) => $n['health'] === 'ok' ? ($n['details']['metrics']['cpu_percent'] ?? null) : null, $servers), 'is_numeric'));
         $cpu = $cpus === [] ? null : array_sum($cpus) / count($cpus);
