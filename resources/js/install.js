@@ -18,7 +18,7 @@ function device() {
     return `${browser} · ${os}`;
 }
 
-async function setupPush(registration) {
+async function setupPush(registration, workerFailed = false) {
     const box = document.querySelector('[data-push]');
 
     if (!box) return;
@@ -32,14 +32,25 @@ async function setupPush(registration) {
     if (!key) return; // not configured on the server; the page says so
 
     if (!registration || !('PushManager' in window) || !('Notification' in window)) {
-        text.textContent = texts.unsupported;
+        // A browser that can do push but whose worker did not start says so, instead of "add to home screen".
+        text.textContent = workerFailed && 'PushManager' in window ? texts.worker_failed : texts.unsupported;
         box.dataset.pushState = 'unsupported';
 
         return;
     }
 
     async function render() {
-        const subscription = await registration.pushManager.getSubscription();
+        let subscription = null;
+
+        try {
+            subscription = await registration.pushManager.getSubscription();
+        } catch {
+            text.textContent = texts.failed;
+            box.dataset.pushState = 'failed';
+
+            return;
+        }
+
         const state = Notification.permission === 'denied' ? 'blocked' : subscription ? 'on' : 'off';
         box.dataset.pushState = state;
         text.textContent = texts[state];
@@ -88,17 +99,24 @@ async function setupPush(registration) {
 
 async function boot() {
     let registration = null;
+    let workerFailed = false;
 
     if ('serviceWorker' in navigator && window.isSecureContext) {
         try {
-            registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-            await navigator.serviceWorker.ready;
+            await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+            // ready never settles when the worker fails to install: give up after a while
+            // instead of leaving the push switch on "Checking…" for ever.
+            registration = await Promise.race([
+                navigator.serviceWorker.ready,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+            ]);
         } catch {
             registration = null;
+            workerFailed = true;
         }
     }
 
-    setupPush(registration);
+    setupPush(registration, workerFailed);
 }
 
 if (document.readyState === 'loading') {

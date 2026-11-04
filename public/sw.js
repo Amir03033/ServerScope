@@ -4,11 +4,17 @@
  * and receives push notifications. It never caches pages or data: monitoring
  * must always be live, and pages are personal.
  */
-const VERSION = 'ss-v1';
+const VERSION = 'ss-v2';
 const OFFLINE = '/offline.html';
+// Not /icons/: many Apache servers map that path to their own icon folder.
+const ICON = '/app-icons/icon-192.png';
 
+// A file that cannot be cached must not stop the worker from installing
+// (push and the app depend on it); each one is tried on its own.
 self.addEventListener('install', (event) => {
-    event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll([OFFLINE, '/icons/icon-192.png'])).then(() => self.skipWaiting()));
+    event.waitUntil(caches.open(VERSION)
+        .then((cache) => Promise.allSettled([OFFLINE, ICON].map((path) => cache.add(path))))
+        .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
@@ -32,7 +38,7 @@ self.addEventListener('fetch', (event) => {
     }
 
     // Built assets have a hash in their name: cache first, they never change.
-    if (url.pathname.startsWith('/build/assets/') || url.pathname.startsWith('/icons/')) {
+    if (url.pathname.startsWith('/build/assets/') || url.pathname.startsWith('/app-icons/')) {
         event.respondWith(caches.open(VERSION).then(async (cache) => {
             const hit = await cache.match(request);
 
@@ -55,8 +61,8 @@ self.addEventListener('push', (event) => {
 
     event.waitUntil(self.registration.showNotification(data.title || 'ServerScope', {
         body: data.body || '',
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
+        icon: ICON,
+        badge: ICON,
         tag: data.tag || undefined,
         renotify: Boolean(data.tag),
         data: { url: data.url || '/dashboard' },
