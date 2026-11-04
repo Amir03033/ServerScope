@@ -1,6 +1,8 @@
-{{-- Heartbeat: one live line per server (rate: CPU, width: slowest website).
+{{-- Heartbeat: one live line per server (rate: CPU, width: slowest website),
+     then one per scheduled job (calm while it checks in on time, haywire when late or failed).
      Compact inside mission control, right under the last 24 hours. --}}
-@if ($servers->isNotEmpty() && Route::has('nexus.graph'))
+@php $pulseJobs ??= collect(); @endphp
+@if (($servers->isNotEmpty() || $pulseJobs->isNotEmpty()) && Route::has('nexus.graph'))
         <section class="{{ $compact ? 'ss-panel ss-pulse-compact' : 'ss-panel mb-6' }}" data-pulse data-focus-hide aria-labelledby="pulse-title">
             <script type="application/json" id="pulse-config">@json(['urls' => ['graph' => route('nexus.graph')], 'texts' => __('dashboard.pulse.js')])</script>
             @if ($compact)
@@ -9,7 +11,7 @@
             <div class="ss-panel-head">
                 <div>
                     <h2 id="pulse-title" class="ss-panel-title flex items-center gap-2"><svg class="ico text-accent"><use href="#i-pulse"/></svg>{{ __('dashboard.pulse.title') }}</h2>
-                    <p class="ss-panel-sub">{{ __('dashboard.pulse.text') }}</p>
+                    <p class="ss-panel-sub">{{ __('dashboard.pulse.text') }}@if ($pulseJobs->isNotEmpty()) {{ __('dashboard.pulse.jobs_text') }}@endif</p>
                 </div>
             </div>
             @endif
@@ -26,6 +28,22 @@
                             <div><dt>{{ __('dashboard.pulse.cpu') }}</dt><dd data-pulse-cpu>—</dd></div>
                             <div><dt>{{ __('dashboard.pulse.response') }}</dt><dd data-pulse-ms>—</dd></div>
                             <div><dt>{{ __('dashboard.pulse.rate') }}</dt><dd data-pulse-bpm>—</dd></div>
+                        </dl>
+                    </li>
+                @endforeach
+                @foreach ($pulseJobs as $job)
+                    @php $rhythm = ['up' => 'steady', 'down' => 'chaos', 'paused' => 'rest'][$job->status] ?? 'unknown'; @endphp
+                    <li class="ss-pulse-row is-job" data-pulse-row="heartbeat:{{ $job->id }}" data-rhythm="{{ $rhythm }}" data-job>
+                        <div class="min-w-0">
+                            <a class="block truncate font-semibold text-fg no-underline hover:underline" href="{{ route('heartbeats.show', $job) }}"><svg class="ico ss-pulse-job-ico" aria-hidden="true"><use href="#i-clock"/></svg>{{ $job->name }}</a>
+                            <span class="ss-pulse-state" data-pulse-state>{{ __('dashboard.pulse.js.job.'.$rhythm) }}</span>
+                            <span class="ss-pulse-reason" data-pulse-reason>{{ $job->server?->name }}</span>
+                        </div>
+                        <canvas class="ss-pulse-canvas" data-pulse-canvas aria-hidden="true"></canvas>
+                        <dl class="ss-pulse-numbers">
+                            <div><dt>{{ __('dashboard.pulse.last_run') }}</dt><dd>{{ $job->last_ping_at ? \App\Support\Time::relative($job->last_ping_at) : '—' }}</dd></div>
+                            <div><dt>{{ __('dashboard.pulse.schedule') }}</dt><dd>{{ $job->schedule_type === \App\Models\Heartbeat::SCHEDULE_CRON ? $job->cron_expression : mb_strtolower(\App\Models\Heartbeat::periodLabel((int) $job->period_minutes)) }}</dd></div>
+                            <div><dt>{{ __('dashboard.pulse.duration') }}</dt><dd>{{ $job->last_duration_ms === null ? '—' : ($job->last_duration_ms < 1000 ? $job->last_duration_ms.' ms' : round($job->last_duration_ms / 1000, 1).' s') }}</dd></div>
                         </dl>
                     </li>
                 @endforeach

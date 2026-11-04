@@ -219,4 +219,23 @@ class NexusPageTest extends TestCase
         auth()->logout();
         $this->get(route('nexus.wall'))->assertRedirect(route('login'));
     }
+
+    public function test_the_wall_data_holds_the_teams_own_servers_sites_jobs_and_incidents(): void
+    {
+        \App\Tenancy\Tenant::run($this->a['team'], fn () => \App\Models\Heartbeat::query()->forceCreate(['team_id' => $this->a['team']->id, 'name' => 'Alpha backup', 'token' => str_repeat('a', 32), 'status' => 'up', 'schedule_type' => 'interval', 'period_minutes' => 60, 'grace_minutes' => 5, 'severity' => 'high', 'timezone' => 'UTC']));
+        \App\Tenancy\Tenant::run($this->b['team'], fn () => \App\Models\Heartbeat::query()->forceCreate(['team_id' => $this->b['team']->id, 'name' => 'Bravo backup', 'token' => str_repeat('b', 32), 'status' => 'down', 'schedule_type' => 'interval', 'period_minutes' => 60, 'grace_minutes' => 5, 'severity' => 'high', 'timezone' => 'UTC']));
+
+        $data = $this->actingAs($this->a['member'])->getJson(route('nexus.wall.data'))->assertOk()
+            ->assertJsonStructure(['data' => ['servers' => [['key', 'name', 'status', 'cpu', 'memory', 'disk']], 'sites', 'jobs', 'incidents' => ['open', 'recent', 'opened_24h', 'resolved_24h', 'mttr_minutes'], 'deploys', 'logs' => ['errors_1h', 'warnings_1h', 'top']]])
+            ->json('data');
+
+        $this->assertSame(['Alpha backup'], array_column($data['jobs'], 'name'));
+        $this->assertStringNotContainsString('bravo', strtolower(json_encode($data)));
+
+        // The dashboard heartbeat block gives the job its own line.
+        $this->get(route('dashboard'))->assertSee('data-pulse-row="heartbeat:', false)->assertSee('Alpha backup');
+
+        auth()->logout();
+        $this->getJson(route('nexus.wall.data'))->assertUnauthorized();
+    }
 }

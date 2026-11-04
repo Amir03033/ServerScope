@@ -3,13 +3,14 @@
         'urls' => [
             'graph' => route('nexus.graph'),
             'globe' => route('nexus.globe.data'),
+            'wall' => route('nexus.wall.data'),
             'exit' => route('dashboard'),
         ],
         'texts' => __('wall.js'),
         'skyline' => __('skyline.js'),
         'globeTexts' => __('globe.js'),
         'pulse' => __('dashboard.pulse.js'),
-        'initial' => ['graph' => $topology, 'globe' => $globe],
+        'initial' => ['graph' => $topology, 'globe' => $globe, 'wall' => $wall],
     ];
 @endphp
 <!DOCTYPE html>
@@ -62,6 +63,10 @@
         <section class="ss-wall-layer" data-wall-layer="globe" aria-label="{{ __('globe.title') }}" hidden><div class="ss-wall-canvas ss-globe-stage" data-wall-globe></div></section>
         <section class="ss-wall-layer" data-wall-layer="pulse" aria-label="{{ __('dashboard.pulse.title') }}" hidden><ul class="ss-pulse-list ss-wall-pulse" role="list" data-wall-pulse></ul></section>
         <section class="ss-wall-layer" data-wall-layer="summary" aria-label="{{ __('wall.summary') }}" hidden><div class="ss-wall-tiles" data-wall-tiles></div></section>
+        <section class="ss-wall-layer ss-wall-board" data-wall-layer="servers" aria-label="{{ __('wall.js.scenes.servers') }}" hidden><div class="ss-wall-cards" data-wall-servers></div></section>
+        <section class="ss-wall-layer ss-wall-board" data-wall-layer="sites" aria-label="{{ __('wall.js.scenes.sites') }}" hidden><div class="ss-wall-sites" data-wall-sites></div></section>
+        <section class="ss-wall-layer ss-wall-board" data-wall-layer="activity" aria-label="{{ __('wall.js.scenes.activity') }}" hidden><div class="ss-wall-columns" data-wall-activity></div></section>
+        <section class="ss-wall-layer ss-wall-board" data-wall-layer="incidents" aria-label="{{ __('wall.js.scenes.incidents') }}" hidden><div class="ss-wall-columns" data-wall-incident-board></div></section>
 
         <aside class="ss-wall-alert" data-wall-alert role="alert" hidden>
             <div class="ss-wall-alert-kicker" data-wall-alert-kicker></div>

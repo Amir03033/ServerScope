@@ -6,6 +6,7 @@ use App\Models\Team;
 use App\Services\Nexus\GlobeData;
 use App\Services\Nexus\TimelapseData;
 use App\Services\Nexus\TopologyBuilder;
+use App\Services\Wall\WallData;
 use App\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,15 +33,22 @@ class NexusController extends Controller
      * Wall screen: a full-screen show of skyline, globe and heartbeat for a
      * TV, that cuts to an incident as soon as one opens. Also the screensaver.
      */
-    public function wall(TopologyBuilder $topology, GlobeData $globe): View
+    public function wall(TopologyBuilder $topology, GlobeData $globe, WallData $wall): View
     {
         $teamId = $this->teamId();
 
         return view('nexus.wall', [
             'topology' => $topology->forTeam($teamId),
             'globe' => $globe->forTeam($teamId),
+            'wall' => $wall->forTeam($teamId),
             'team' => Team::query()->find($teamId)?->name,
         ]);
+    }
+
+    /** The wall screen's own data (servers, sites, jobs, incidents, deploys, logs), polled every 30 seconds. */
+    public function wallData(WallData $wall): JsonResponse
+    {
+        return response()->json(['data' => $wall->forTeam($this->teamId())])->setPrivate();
     }
 
     /** Time travel: a film of the last 24 hours or 7 days over the skyline. */

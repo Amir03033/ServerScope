@@ -46,7 +46,12 @@ function boot() {
             bpm: row.querySelector('[data-pulse-bpm]'),
         });
         observer ? observer.observe(row) : visible.add(key);
+
+        // A scheduled job: a calm resting beat while on time, from the state the page was drawn with.
+        if (row.hasAttribute('data-job')) rows.get(key).monitor.set({ rhythm: row.dataset.rhythm, bpm: 54, width: 1 });
     }
+
+    const JOB_RHYTHM = { ok: 'steady', critical: 'chaos', paused: 'rest', unknown: 'unknown' };
 
     function apply(graph) {
         for (const v of serverVitals(graph)) {
@@ -61,6 +66,18 @@ function boot() {
             row.cpu.textContent = v.cpu === null ? '—' : `${number.format(v.cpu)}%`;
             row.ms.textContent = v.responseMs === null ? '—' : `${number.format(v.responseMs)} ms`;
             row.bpm.textContent = ['steady', 'irregular'].includes(v.rhythm) ? t('bpm', { bpm: v.bpm }) : '—';
+        }
+
+        // Jobs that run on a server are in the topology too: follow their state live.
+        for (const node of graph?.nodes ?? []) {
+            const row = node.details?.kind === 'scheduled_job' ? rows.get(node.key) : null;
+
+            if (!row) continue;
+
+            const rhythm = JOB_RHYTHM[node.health] ?? 'unknown';
+            row.monitor.set({ rhythm, bpm: 54, width: 1 });
+            row.row.dataset.rhythm = rhythm;
+            row.state.textContent = t(`job.${rhythm}`);
         }
     }
 

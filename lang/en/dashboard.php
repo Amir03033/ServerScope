@@ -206,6 +206,10 @@ return [
     'pulse' => [
         'title' => 'Heartbeat',
         'text' => 'One live line per server: the rate follows its CPU, the width of the beat its slowest website. When something on the server fails, the line goes haywire; an offline server has no signal.',
+        'jobs_text' => 'Scheduled jobs get their own line: calm while they check in on time, haywire when one is late or fails.',
+        'last_run' => 'Last run',
+        'schedule' => 'Schedule',
+        'duration' => 'Duration',
         'cpu' => 'CPU',
         'response' => 'Slowest site',
         'rate' => 'Rate',
@@ -213,6 +217,7 @@ return [
         'skyline_link' => 'See all of them in the skyline.',
         'js' => [
             'bpm' => ':bpm bpm',
+            'job' => ['steady' => 'On time', 'chaos' => 'Late or failed', 'unknown' => 'Waiting for first check-in', 'rest' => 'Paused'],
             'rhythm' => [
                 'steady' => 'Steady',
                 'irregular' => 'Irregular',

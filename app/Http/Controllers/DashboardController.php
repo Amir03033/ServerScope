@@ -257,6 +257,10 @@ class DashboardController extends Controller
             // Mission control on top: one score and what it is made of (read-only).
             'mission' => \App\Tenancy\Tenant::check() ? app(\App\Services\Live\MissionControl::class)->forTeam((int) \App\Tenancy\Tenant::id()) : null,
             'servers' => $servers,
+            // Scheduled jobs get their own line in the heartbeat block, under the servers.
+            'pulseJobs' => \App\Models\Heartbeat::query()->with('server:id,name')
+                ->orderByRaw("case status when 'down' then 0 when 'up' then 1 when 'new' then 2 else 3 end")->orderBy('name')
+                ->limit(8)->get(['id', 'name', 'status', 'server_id', 'schedule_type', 'period_minutes', 'cron_expression', 'timezone', 'last_ping_at', 'last_duration_ms']),
             'serverCount' => $servers->count(),
             'onlineCount' => $servers->where('display_status', 'online')->count(),
             'offlineCount' => $servers->where('display_status', 'offline')->count(),
