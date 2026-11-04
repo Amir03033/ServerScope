@@ -14,7 +14,7 @@
     @if ($logs['issues']->isEmpty())
         <p class="m-0 text-sm text-muted">{{ __('logs.incident.empty') }}</p>
     @else
-        <ul class="ss-issues" role="list">
+        <ul class="ss-issues is-compact" role="list">
             @foreach ($logs['issues'] as $issue)
                 <li>
                     <a class="ss-issue" data-level="{{ $issue['level'] }}" href="{{ route('logs.index', ['incident' => $incident->id, 'view' => 'stream', 'fingerprint' => $issue['fingerprint']]) }}">
@@ -22,13 +22,12 @@
                             <span class="ss-issue-message">{{ $issue['entry']->message }}</span>
                             <span class="ss-issue-meta">
                                 <span class="ss-loglevel" data-level="{{ $issue['level'] }}">{{ __('logs.levels.'.$issue['level']) }}</span>
-                                <span class="ss-chip">{{ $issue['entry']->source }}</span>
+                                <span class="ss-issue-source">{{ $issue['entry']->source }}</span>
                                 <span>{{ $issue['entry']->server?->name }}</span>
-                                <span aria-hidden="true">·</span>
                                 <span>{{ __('logs.issue.first', ['time' => Time::format($issue['first'], 'H:i')]) }}</span>
                             </span>
                         </span>
-                        <span class="ss-issue-side"><span class="ss-issue-count">{{ __('logs.issue.times', ['count' => $issue['count']]) }}</span></span>
+                        <span class="ss-issue-count">{{ __('logs.issue.times', ['count' => $issue['count']]) }}</span>
                     </a>
                 </li>
             @endforeach

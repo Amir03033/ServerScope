@@ -22,6 +22,8 @@ return [
     'activity' => 'Activiteit',
     'legend' => ['errors' => 'Fouten', 'warnings' => 'Waarschuwingen'],
     'bar' => ':time: :errors fouten, :warnings waarschuwingen',
+    'chart_label' => 'Activiteit: :errors fouten en :warnings waarschuwingen',
+    'columns' => ['problem' => 'Probleem', 'trend' => 'Verloop :period', 'events' => 'Keer', 'last' => 'Laatst gezien'],
     'filters' => [
         'search' => 'Zoeken',
         'search_placeholder' => 'Bericht of bron',

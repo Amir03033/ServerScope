@@ -180,6 +180,18 @@ return [
         'severity_change' => 'Wijzigen',
         'previous_title' => 'Eerdere incidenten',
         'previous_text' => 'Voor :subject.',
+        'details_title' => 'Details',
+        'signals_title' => 'Signalen',
+        'facts' => [
+            'duration' => 'Duur',
+            'ongoing' => 'loopt nog',
+            'detect' => 'Tijd tot detectie',
+            'acknowledge' => 'Tijd tot bevestiging',
+            'occurrences' => 'Keer gezien',
+            'last' => 'laatst :time',
+            'recurrence' => 'Laatste 30 dagen',
+            'recurrence_caption' => ':total× in totaal',
+        ],
     ],
 
     'flash' => [
