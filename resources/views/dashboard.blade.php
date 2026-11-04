@@ -170,7 +170,7 @@
         @if (auth()->user()?->is_demo) data-local-layouts='@json(['standard' => \App\Support\DashboardWidgets::normalize(null), 'presets' => collect(\App\Support\DashboardWidgets::PRESETS)->keys()->mapWithKeys(fn ($name) => [$name => \App\Support\DashboardWidgets::preset($name)])])' @endif>
         @foreach ($widgets as $widgetId => $widget)
             @continue(in_array($widgetId, $missionWidgets, true) && ! $mission)
-            <div class="ss-widget" data-widget="{{ $widgetId }}" data-size="{{ $widget['size'] }}" data-default-size="{{ \App\Support\DashboardWidgets::WIDGETS[$widgetId] }}" data-title="{{ $widgetTitles[$widgetId] ?? $widgetId }}" @if (in_array($widgetId, ['health', 'tiles'], true)) data-focus-keep @endif @if ($widget['hidden']) hidden @endif>
+            <div class="ss-widget" data-widget="{{ $widgetId }}" data-size="{{ $widget['size'] }}" data-default-size="{{ \App\Support\DashboardWidgets::WIDGETS[$widgetId] }}" data-title="{{ $widgetTitles[$widgetId] ?? $widgetId }}" @if (in_array($widgetId, ['health', 'tiles', 'pulse'], true)) data-focus-keep @endif @if ($widget['hidden']) hidden @endif>
                 @include('dashboard.widgets.'.$widgetId)
             </div>
         @endforeach

@@ -19,7 +19,7 @@ function icon(state, count, bright) {
 
 function boot() {
     const url = document.querySelector('meta[name="ss-live"]')?.content;
-    const link = document.querySelector('link[data-live-icon]');
+    let link = document.querySelector('link[data-live-icon]');
 
     if (!url || !link) return;
 
@@ -76,7 +76,13 @@ function boot() {
     }
 
     function render(bright = false) {
-        if (pulse) link.href = icon(pulse.state, pulse.incidents, bright);
+        if (pulse) {
+            // A new <link> instead of a new href: Safari only redraws the tab icon for a fresh element.
+            const next = link.cloneNode();
+            next.href = icon(pulse.state, pulse.incidents, bright);
+            link.replaceWith(next);
+            link = next;
+        }
     }
 
     // In a visible tab the icon beats (a brief bright frame per beat); hidden tabs keep a still icon.
