@@ -24,6 +24,8 @@
     'peek.failed' => __('peek.failed'),
     'peek.panel' => __('peek.panel'),
     'peek.hint' => __('peek.hint'),
+    'peek.more' => __('peek.more'),
+    'peek.card_hint' => __('peek.card_hint'),
     ];
 @endphp
 <script type="application/json" id="ss-i18n">@json($ssI18n)</script>

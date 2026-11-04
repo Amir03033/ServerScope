@@ -490,6 +490,7 @@ class TopologyBuilderTest extends TestCase
         $large = $count();
 
         $this->assertSame($small, $large);
-        $this->assertLessThanOrEqual(9, $large);
+        // One query per kind of row (scheduled jobs are the tenth), never per row.
+        $this->assertLessThanOrEqual(10, $large);
     }
 }

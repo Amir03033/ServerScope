@@ -153,6 +153,40 @@ class HeartbeatsTest extends TestCase
         $this->assertSame(['new', null], [$paused->fresh()->status, $paused->fresh()->next_due_at]);
     }
 
+    public function test_jobs_appear_in_nexus_next_to_their_server_and_carry_their_incident(): void
+    {
+        $heartbeat = $this->job();
+        $this->job(['name' => 'Without server', 'server_id' => null]);
+        $this->get($heartbeat->pingUrl('fail'))->assertOk();
+        \App\Services\Nexus\TopologyBuilder::forget($this->a['team']->id);
+
+        $nodes = collect(app(\App\Services\Nexus\TopologyBuilder::class)->build($this->a['team']->id)['nodes'])->keyBy('key');
+        $node = $nodes["heartbeat:{$heartbeat->id}"];
+
+        $this->assertSame(['service', 'server:'.$this->a['server']->id, 'job_down', 'critical', route('heartbeats.show', $heartbeat), 'scheduled_job'], [$node['type'], $node['parent'], $node['status'], $node['health'], $node['url'], $node['details']['kind']]);
+        $this->assertSame(1, $node['incidents']['active']);
+        $this->assertCount(1, $nodes->filter(fn ($n) => str_starts_with($n['key'], 'heartbeat:')), 'a job without a server is not on the map');
+        $this->assertSame([], collect(app(\App\Services\Nexus\TopologyBuilder::class)->build($this->b['team']->id)['nodes'])->filter(fn ($n) => str_starts_with($n['key'], 'heartbeat:'))->all());
+    }
+
+    public function test_hover_cards_show_the_job_and_what_matters_on_its_server(): void
+    {
+        $heartbeat = $this->job();
+        $this->get($heartbeat->pingUrl())->assertOk();
+        $this->get($heartbeat->pingUrl('2'))->assertOk();
+
+        $job = $this->actingAs($this->a['member'])->getJson(route('peek.heartbeat', $heartbeat))->assertOk()->json('data');
+        $this->assertSame(['heartbeat', 'Nightly backup', ['success', 'fail']], [$job['type'], $job['title'], $job['runs']['kinds']]);
+        $this->assertStringContainsString('2', $job['highlights'][0]['text']);
+        $this->assertStringContainsString('Nightly backup', $job['sections'][0]['items'][0]['label'], 'its open incident');
+
+        $server = $this->getJson(route('peek.server', $this->a['server']))->assertOk()->json('data');
+        $this->assertContains('Nightly backup', array_column(collect($server['sections'])->firstWhere('title', __('peek.jobs'))['items'], 'label'));
+        $this->assertNotEmpty(collect($server['highlights'])->filter(fn ($h) => $h['tone'] === 'bad')->all());
+
+        $this->actingAs($this->b['member'])->getJson(route('peek.heartbeat', $heartbeat))->assertNotFound();
+    }
+
     public function test_a_cron_schedule_is_expected_at_its_next_run_in_its_time_zone(): void
     {
         $heartbeat = $this->job(['schedule_type' => 'cron', 'cron_expression' => '0 3 * * *', 'period_minutes' => null, 'timezone' => 'Europe/Amsterdam']);

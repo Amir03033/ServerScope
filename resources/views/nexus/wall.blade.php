@@ -35,7 +35,7 @@
 
     <header class="ss-wall-top">
         <div class="ss-wall-brand">
-            <svg class="ico ss-live-logo h-7 w-7 text-accent [stroke-width:2]" aria-hidden="true"><use class="base" href="#i-pulse"/><use class="beat" href="#i-pulse"/></svg>
+            <x-live-logo class="h-7 w-7" />
             <div class="min-w-0">
                 <div class="ss-wall-product">ServerScope</div>
                 <div class="ss-wall-team">{{ $team ?? 'ServerScope' }}</div>

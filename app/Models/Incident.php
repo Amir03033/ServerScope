@@ -194,6 +194,7 @@ class Incident extends Model
             $subject instanceof Server => $subject->name,
             $subject instanceof Domain => $subject->displayName(),
             $subject !== null && method_exists($subject, 'displayName') => $subject->displayName(),
+            $subject instanceof Heartbeat => $subject->name,
             default => '—',
         };
     }

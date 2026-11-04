@@ -11,6 +11,7 @@ const PATTERNS = [
     [/^\/servers\/(\d+)$/, 'server'],
     [/^\/domains\/(\d+)$/, 'domain'],
     [/^\/incidents\/(\d+)$/, 'incident'],
+    [/^\/heartbeats\/(\d+)$/, 'heartbeat'],
 ];
 const HOVER_DELAY = 450;
 const CACHE_MS = 20_000;
@@ -80,6 +81,46 @@ function spark(values, max) {
     return svg;
 }
 
+/** The last runs of a scheduled job as a strip of blocks (green: succeeded, red: failed). */
+function runs(kinds) {
+    const strip = el('div', 'ss-peek-runs');
+    strip.setAttribute('aria-hidden', 'true');
+    for (const kind of kinds) {
+        const block = el('i');
+        block.dataset.kind = kind;
+        strip.append(block);
+    }
+
+    return strip;
+}
+
+function highlights(items) {
+    const list = el('ul', 'ss-peek-highlights');
+    for (const item of items) list.append(el('li', item.tone ? `is-${item.tone}` : '', item.text));
+
+    return list;
+}
+
+function section(data, limit = Infinity) {
+    const box = el('section', 'ss-peek-section');
+    box.append(el('h3', 'ss-peek-label', data.title));
+    const list = el('ul', 'ss-peek-list');
+
+    for (const item of data.items.slice(0, limit)) {
+        const li = el('li', item.tone ? `is-${item.tone}` : '');
+        const label = item.url ? el('a', 'ss-peek-link', item.label) : el('span', '', item.label);
+        if (item.url) label.href = item.url;
+        li.append(el('span', 'ss-peek-dot'), label);
+        if (item.meta) li.append(el('span', 'ss-peek-meta', item.meta));
+        list.append(li);
+    }
+
+    box.append(list);
+    if (data.items.length > limit) box.append(el('p', 'ss-peek-more', t('peek.more')?.replace(':count', data.items.length - limit) ?? `+${data.items.length - limit}`));
+
+    return box;
+}
+
 export function render(data, { compact = false } = {}) {
     const frag = document.createDocumentFragment();
     const head = el('div', 'ss-peek-head');
@@ -89,7 +130,7 @@ export function render(data, { compact = false } = {}) {
     frag.append(head);
 
     const stats = el('dl', 'ss-peek-stats');
-    for (const s of compact ? data.stats.slice(0, 3) : data.stats) {
+    for (const s of data.stats) {
         const box = el('div', s.tone ? `is-${s.tone}` : '');
         box.append(el('dt', '', s.label), el('dd', '', s.value));
         stats.append(box);
@@ -102,27 +143,27 @@ export function render(data, { compact = false } = {}) {
         frag.append(wrap);
     }
 
-    if (compact) return frag;
+    if (data.runs?.kinds?.length) {
+        const wrap = el('div', 'ss-peek-chart');
+        wrap.append(el('div', 'ss-peek-label', data.runs.label), runs(data.runs.kinds));
+        frag.append(wrap);
+    }
+
+    // The few facts you would otherwise open the page for.
+    if (data.highlights?.length) frag.append(highlights(compact ? data.highlights.slice(0, 3) : data.highlights));
+
+    if (compact) {
+        if (data.text) frag.append(el('p', 'ss-peek-text is-clamped', data.text));
+        // The card shows the most relevant list too, shortened; the panel has everything.
+        if (data.sections[0]) frag.append(section(data.sections[0], 3));
+        frag.append(el('p', 'ss-peek-card-hint', t('peek.card_hint')));
+
+        return frag;
+    }
 
     if (data.text) frag.append(el('p', 'ss-peek-text', data.text));
 
-    for (const section of data.sections) {
-        const box = el('section', 'ss-peek-section');
-        box.append(el('h3', 'ss-peek-label', section.title));
-        const list = el('ul', 'ss-peek-list');
-
-        for (const item of section.items) {
-            const li = el('li', item.tone ? `is-${item.tone}` : '');
-            const label = item.url ? el('a', 'ss-peek-link', item.label) : el('span', '', item.label);
-            if (item.url) label.href = item.url;
-            li.append(el('span', 'ss-peek-dot'), label);
-            if (item.meta) li.append(el('span', 'ss-peek-meta', item.meta));
-            list.append(li);
-        }
-
-        box.append(list);
-        frag.append(box);
-    }
+    for (const s of data.sections) frag.append(section(s));
 
     return frag;
 }
