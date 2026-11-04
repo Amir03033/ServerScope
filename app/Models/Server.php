@@ -64,6 +64,13 @@ class Server extends Model
         // resource: remove them when the resource is permanently deleted.
         // A soft delete keeps them, so a restore brings them back.
         static::forceDeleted(fn (self $resource) => Favorite::forgetResource($resource));
+
+        // A removed server is no longer evaluated: end its active alerts (and their incidents).
+        static::deleted(function (self $server): void {
+            if (! $server->isForceDeleting()) {
+                Alert::endForRemovedServers($server->id);
+            }
+        });
     }
 
     protected function casts(): array

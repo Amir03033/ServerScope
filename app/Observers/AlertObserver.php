@@ -65,13 +65,17 @@ class AlertObserver
             return;
         }
 
-        $message = match ($alert->status) {
-            'resolved' => 'De alert is hersteld: waarde '.number_format($alert->observed_value, 1, ',', '.').AlertRule::metricUnit($alert->metric).'.',
-            'disabled' => 'De alertregel is uitgeschakeld.',
+        // A removed server is a configuration change, not a recovery: no "back online" message.
+        $removed = $alert->status === 'resolved' && $alert->serverRemoved();
+
+        $message = match (true) {
+            $removed => 'De server is verwijderd; de alert is beëindigd.',
+            $alert->status === 'resolved' => 'De alert is hersteld: waarde '.number_format($alert->observed_value, 1, ',', '.').AlertRule::metricUnit($alert->metric).'.',
+            $alert->status === 'disabled' => 'De alertregel is uitgeschakeld.',
             default => 'De alert is beëindigd.',
         };
 
-        // Disabling a rule is a configuration change, not a recovery.
-        $this->incidents->recover(self::fingerprint($alert), $message, notify: $alert->status !== 'disabled');
+        // Disabling a rule or removing a server is a configuration change, not a recovery.
+        $this->incidents->recover(self::fingerprint($alert), $message, notify: $alert->status !== 'disabled' && ! $removed);
     }
 }

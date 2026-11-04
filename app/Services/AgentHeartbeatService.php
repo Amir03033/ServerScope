@@ -43,6 +43,9 @@ class AgentHeartbeatService
                 'updated_at' => $now,
             ]);
 
+        // Alerts of servers removed earlier (before removing ended them) are closed here.
+        Alert::endForRemovedServers();
+
         $rules = AlertRule::query()
             ->where('is_enabled', true)
             ->where('metric', AlertRule::METRIC_AGENT_OFFLINE)
