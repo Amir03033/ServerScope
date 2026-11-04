@@ -7,14 +7,43 @@
 const POLL_MS = 30_000;
 const COLORS = { ok: '#3ee07a', warning: '#f5a524', critical: '#ff4d4f', unknown: '#6b8cff' };
 
+// Drawn on a canvas and handed over as PNG: Safari does not reliably show SVG tab icons.
 function icon(state, count, bright) {
     const color = COLORS[state] ?? COLORS.unknown;
-    const badge = count > 0
-        ? `<circle cx="25" cy="7" r="7" fill="#ff4d4f" stroke="#0f172a" stroke-width="1.5"/><text x="25" y="10.4" font-family="Arial,sans-serif" font-size="${count > 9 ? 7.5 : 9.5}" font-weight="700" fill="#fff" text-anchor="middle">${count > 9 ? '9+' : count}</text>`
-        : '';
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0f172a"/><path d="M4 16h5l3.5-9 6 18 3.5-9h6" fill="none" stroke="${color}" stroke-width="${bright ? 3.4 : 2.6}" stroke-linecap="round" stroke-linejoin="round" opacity="${bright ? 1 : 0.8}"/>${badge}</svg>`;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 64;
+    const ctx = canvas.getContext('2d');
 
-    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    if (!ctx) return null;
+
+    ctx.scale(2, 2);
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(0, 0, 32, 32, 8) : ctx.rect(0, 0, 32, 32);
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = bright ? 1 : 0.85;
+    ctx.lineWidth = bright ? 3.4 : 2.8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke(new Path2D('M4 16h5l3.5-9 6 18 3.5-9h6'));
+    ctx.globalAlpha = 1;
+
+    if (count > 0) {
+        ctx.fillStyle = '#ff4d4f';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(25, 7, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = `700 ${count > 9 ? 7.5 : 9.5}px Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(count > 9 ? '9+' : String(count), 25, 10.4);
+    }
+
+    return canvas.toDataURL('image/png');
 }
 
 function boot() {
@@ -78,8 +107,11 @@ function boot() {
     function render(bright = false) {
         if (pulse) {
             // A new <link> instead of a new href: Safari only redraws the tab icon for a fresh element.
+            const href = icon(pulse.state, pulse.incidents, bright);
+            if (!href) return;
             const next = link.cloneNode();
-            next.href = icon(pulse.state, pulse.incidents, bright);
+            next.type = 'image/png';
+            next.href = href;
             link.replaceWith(next);
             link = next;
         }

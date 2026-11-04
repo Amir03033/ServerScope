@@ -81,7 +81,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @if ($isDemo)<meta name="robots" content="noindex, nofollow">@endif
     <title>{{ $title ? $title.' — ServerScope' : 'ServerScope' }}</title>
-    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml" data-live-icon>
+    <link rel="icon" href="{{ asset('app-icons/icon-192.png') }}" type="image/png" data-live-icon>
     {{-- Installable app (manifest, service worker in resources/js/install.js). --}}
     <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
     <link rel="apple-touch-icon" href="{{ asset('app-icons/apple-touch-icon.png') }}">
