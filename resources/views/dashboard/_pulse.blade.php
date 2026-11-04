@@ -35,7 +35,7 @@
                     @php $rhythm = ['up' => 'steady', 'down' => 'chaos', 'paused' => 'rest'][$job->status] ?? 'unknown'; @endphp
                     <li class="ss-pulse-row is-job" data-pulse-row="heartbeat:{{ $job->id }}" data-rhythm="{{ $rhythm }}" data-job>
                         <div class="min-w-0">
-                            <a class="ss-pulse-job-name font-semibold text-fg no-underline hover:underline" href="{{ route('heartbeats.show', $job) }}" title="{{ $job->name }}"><svg class="ico ss-pulse-job-ico" aria-hidden="true"><use href="#i-clock"/></svg>{{ $job->name }}</a>
+                            <a class="ss-pulse-job-name font-semibold text-fg no-underline hover:underline" href="{{ route('heartbeats.show', $job) }}" title="{{ $job->name }}"><svg class="ico ss-pulse-job-ico" aria-hidden="true"><use href="#i-clock"/></svg><span>{{ $job->name }}</span></a>
                             <span class="ss-pulse-state" data-pulse-state>{{ __('dashboard.pulse.js.job.'.$rhythm) }}</span>
                             <span class="ss-pulse-reason" data-pulse-reason>{{ $job->server?->name }}</span>
                         </div>

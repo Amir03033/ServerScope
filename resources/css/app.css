@@ -3505,11 +3505,15 @@
 
 @layer components {
     .ss-pulse-job-ico { display: inline; width: .8125rem; height: .8125rem; margin: -.125rem .375rem 0 0; color: var(--ss-muted); vertical-align: middle; }
-    /* Job rows: two figures (last run, schedule) that fit their text, a name on up to two lines. */
-    .ss-pulse-row.is-job .ss-pulse-numbers { grid-template-columns: repeat(2, minmax(4.5rem, auto)); column-gap: 1rem; }
-    .ss-pulse-list.is-compact .ss-pulse-row.is-job .ss-pulse-numbers { grid-template-columns: repeat(2, minmax(3.75rem, auto)); }
-    .ss-pulse-row.is-job .ss-pulse-numbers dd { overflow: hidden; max-width: 9rem; text-overflow: ellipsis; white-space: nowrap; }
-    .ss-pulse-job-name { display: -webkit-box; overflow: hidden; line-height: 1.25; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+    /* Job rows: name on one line with the state under it; two figures as wide as the server's three. */
+    .ss-pulse-row.is-job > div:first-child { display: grid !important; grid-template-columns: minmax(0, 1fr) !important; gap: .125rem; justify-items: start; }
+    .ss-pulse-row.is-job > div:first-child > a { max-width: 100%; }
+    .ss-pulse-job-name { display: flex; align-items: center; gap: .375rem; min-width: 0; overflow: hidden; white-space: nowrap; }
+    .ss-pulse-job-name .ss-pulse-job-ico { flex: none; margin: 0; }
+    .ss-pulse-job-name span { overflow: hidden; text-overflow: ellipsis; }
+    .ss-pulse-row.is-job .ss-pulse-numbers { grid-template-columns: 5.5rem 8.25rem; }
+    .ss-pulse-list.is-compact .ss-pulse-row.is-job .ss-pulse-numbers { grid-template-columns: 4.5rem 7.25rem; }
+    .ss-pulse-row.is-job .ss-pulse-numbers dd { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 /* ------------------------------------------------------------------ */
