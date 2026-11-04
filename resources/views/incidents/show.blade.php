@@ -21,7 +21,8 @@
         'correlated', 'child_added', 'detached', 'resource_affected', 'comment' => 'is-info',
         default => null,
     };
-    $typeLabel = fn (?string $type) => Label::of('resource_type', $type, ResourceCatalog::TYPES);
+    // A scheduled job is a subject of incidents, not a resource in dependencies.
+    $typeLabel = fn (?string $type) => $type === 'heartbeat' ? __('labels.incident_source.heartbeat') : Label::of('resource_type', $type, ResourceCatalog::TYPES);
     $impactFailure = fn (?string $type) => Lang::has('incidents.show.impact_failure.'.$type)
         ? __('incidents.show.impact_failure.'.$type)
         : (array_key_exists($type, MonitoredPage::FAILURE_LABELS) ? Label::of('page_failure', $type, MonitoredPage::FAILURE_LABELS) : str_replace('_', ' ', $type));
@@ -60,7 +61,7 @@
                 <x-status :status="$incident->status" />
                 @if ($subject)
                     <span class="ss-inc-subject">
-                        <svg class="ico" aria-hidden="true"><use href="#{{ $subject instanceof \App\Models\Server ? 'i-server' : 'i-globe' }}"/></svg>
+                        <svg class="ico" aria-hidden="true"><use href="#{{ match ($incident->subject_type) { 'server', 'service' => 'i-server', 'heartbeat' => 'i-clock', default => 'i-globe' } }}"/></svg>
                         @if ($subjectUrl)<a href="{{ $subjectUrl }}">{{ ResourceCatalog::name($subject) }}</a>@else{{ ResourceCatalog::name($subject) }}@endif
                         <span class="text-subtle">{{ mb_strtolower($typeLabel($incident->subject_type)) }}</span>
                     </span>

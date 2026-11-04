@@ -27,6 +27,7 @@ return [
         'invoices_issue' => ['title' => 'Conceptfacturen uitgeven', 'when' => 'Nadat je SERVERSCOPE_COMPANY_* in .env hebt ingevuld. Draait dagelijks vanzelf.'],
         'billing_grace' => ['title' => 'Mislukte betalingen en opzeggingen verwerken', 'when' => 'Zet teams terug naar Free als de coulance- of betaalperiode voorbij is. Draait dagelijks vanzelf.'],
         'check_agents' => ['title' => 'Stille agents controleren', 'when' => 'Foutzoeken: zet offline servers nu op offline.'],
+        'check_heartbeats' => ['title' => 'Geplande taken controleren', 'when' => 'Foutzoeken: open nu incidenten voor taken die te laat zijn.'],
         'dispatch_domains' => ['title' => 'Domeincontroles starten', 'when' => 'Foutzoeken: start openstaande HTTP/TLS/DNS-controles nu.'],
         'dispatch_pages' => ['title' => 'Paginacontroles starten', 'when' => 'Foutzoeken: start openstaande paginacontroles nu.'],
         'rollup' => ['title' => 'Metingen samenvatten per uur en dag', 'when' => 'Foutzoeken: draait normaal elk uur om :12; herhalen kan geen kwaad.'],

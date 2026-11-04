@@ -6,6 +6,7 @@ use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
 use App\Monitoring\Net\BlockedTargetException;
 use App\Monitoring\Net\TargetGuard;
+use App\Services\Notifications\ChatChannel;
 use App\Services\Notifications\DiscordMessage;
 use App\Services\Notifications\WebhookDispatcher;
 use App\Support\Audit;
@@ -32,7 +33,7 @@ class WebhookController extends Controller
     {
         Gate::authorize('admin');
 
-        $type = request()->query('type') === WebhookEndpoint::TYPE_DISCORD ? WebhookEndpoint::TYPE_DISCORD : WebhookEndpoint::TYPE_GENERIC;
+        $type = $this->type(request()->query('type'));
 
         return view('webhooks.form', ['endpoint' => new WebhookEndpoint(['type' => $type, 'events' => array_keys(WebhookEndpoint::EVENTS), 'is_active' => true])]);
     }
@@ -45,15 +46,15 @@ class WebhookController extends Controller
             return back()->with('error', __('plans.feature.webhooks'));
         }
 
-        $type = $request->input('type') === WebhookEndpoint::TYPE_DISCORD ? WebhookEndpoint::TYPE_DISCORD : WebhookEndpoint::TYPE_GENERIC;
+        $type = $this->type($request->input('type'));
         $data = $this->validated($request, $guard, $type, null);
 
-        if ($type === WebhookEndpoint::TYPE_DISCORD) {
-            // The Discord URL is the credential: keep it encrypted, show a mask.
+        if (in_array($type, WebhookEndpoint::CHAT_TYPES, true)) {
+            // The chat address is the credential: keep it encrypted, show a mask.
             $endpoint = WebhookEndpoint::query()->create([...$data, 'type' => $type, 'created_by' => $request->user()->id]);
-            Audit::log('webhook.created', "Discord-webhook '{$endpoint->name}' aangemaakt", $endpoint, ['type' => $type, 'url_host' => parse_url($endpoint->url, PHP_URL_HOST)]);
+            Audit::log('webhook.created', WebhookEndpoint::TYPES[$type]."-koppeling '{$endpoint->name}' aangemaakt", $endpoint, ['type' => $type]);
 
-            return redirect()->route('webhooks.show', $endpoint)->with('success', __('webhooks.flash.discord_created'));
+            return redirect()->route('webhooks.show', $endpoint)->with('success', __('webhooks.flash.chat_created', ['channel' => WebhookEndpoint::TYPES[$type]]));
         }
 
         $secret = WebhookEndpoint::generateSecret();
@@ -87,14 +88,14 @@ class WebhookController extends Controller
 
         // The type is fixed after creation.
         $webhook->fill($this->validated($request, $guard, $webhook->type, $webhook));
-        $urlReplaced = $webhook->isDiscord() && $webhook->isDirty('secret');
+        $urlReplaced = $webhook->isChat() && $webhook->isDirty(['secret', 'target']);
 
         if (($webhook->isDirty('is_active') && $webhook->is_active) || $urlReplaced) {
             $webhook->consecutive_failures = 0;
         }
 
         $webhook->save();
-        Audit::log($urlReplaced ? 'webhook.secret_rotated' : 'webhook.updated', $urlReplaced ? "Discord-URL van webhook '{$webhook->name}' vervangen" : "Webhook '{$webhook->name}' bijgewerkt", $webhook);
+        Audit::log($urlReplaced ? 'webhook.secret_rotated' : 'webhook.updated', $urlReplaced ? "Adres van chatkoppeling '{$webhook->name}' vervangen" : "Webhook '{$webhook->name}' bijgewerkt", $webhook);
 
         return redirect()->route('webhooks.show', $webhook)->with('success', __('webhooks.flash.saved'));
     }
@@ -113,8 +114,8 @@ class WebhookController extends Controller
     {
         Gate::authorize('admin');
 
-        // A Discord URL is replaced through the edit form, not generated here.
-        abort_if($webhook->isDiscord(), 404);
+        // A chat address is replaced through the edit form, not generated here.
+        abort_if($webhook->isChat(), 404);
 
         $secret = WebhookEndpoint::generateSecret();
         $webhook->forceFill(['secret' => $secret])->save();
@@ -149,14 +150,22 @@ class WebhookController extends Controller
         return back()->with('success', __('webhooks.flash.redelivered'));
     }
 
+    private function type(mixed $value): string
+    {
+        return is_string($value) && array_key_exists($value, WebhookEndpoint::TYPES) ? $value : WebhookEndpoint::TYPE_GENERIC;
+    }
+
     private function validated(Request $request, TargetGuard $guard, string $type, ?WebhookEndpoint $existing): array
     {
-        $discord = $type === WebhookEndpoint::TYPE_DISCORD;
+        $chat = in_array($type, WebhookEndpoint::CHAT_TYPES, true);
+        $telegram = $type === WebhookEndpoint::TYPE_TELEGRAM;
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            // Editing a Discord webhook: an empty URL keeps the stored one.
-            'url' => [$discord && $existing ? 'nullable' : 'required', 'string', 'max:2048', 'url:https,http'],
+            // Editing a chat channel: an empty address keeps the stored one.
+            'url' => [$telegram || ($chat && $existing) ? 'nullable' : 'required', 'string', 'max:2048', 'url:https,http'],
+            'token' => [$telegram && ! $existing ? 'required' : 'nullable', 'string', 'max:100'],
+            'target' => [$telegram ? 'required' : 'nullable', 'string', 'max:40'],
             'events' => ['required', 'array', 'min:1'],
             'events.*' => [Rule::in(array_keys(WebhookEndpoint::EVENTS))],
             'min_severity' => ['nullable', Rule::in(array_keys(WebhookEndpoint::SEVERITIES))],
@@ -167,7 +176,26 @@ class WebhookController extends Controller
         $data['events'] = array_values(array_unique($data['events']));
         $data['min_severity'] = $data['min_severity'] ?? null;
 
-        if ($discord) {
+        if ($telegram) {
+            $token = trim((string) ($data['token'] ?? ''));
+            $chatId = trim((string) $data['target']);
+            unset($data['url'], $data['token']);
+
+            // The message never repeats the submitted token.
+            if ($token !== '' && ! ChatChannel::isValidTelegramToken($token)) {
+                throw ValidationException::withMessages(['token' => __('webhooks.flash.telegram_token')]);
+            }
+
+            if (! ChatChannel::isValidTelegramChat($chatId)) {
+                throw ValidationException::withMessages(['target' => __('webhooks.flash.telegram_chat')]);
+            }
+
+            return [...$data, 'target' => $chatId, 'url' => ChatChannel::mask($type, '', $chatId), ...($token !== '' ? ['secret' => $token] : [])];
+        }
+
+        unset($data['token'], $data['target']);
+
+        if ($chat) {
             $url = DiscordMessage::normalizeUrl((string) ($data['url'] ?? ''));
             unset($data['url']);
 
@@ -175,15 +203,15 @@ class WebhookController extends Controller
                 return $data;
             }
 
-            // Only real Discord webhook endpoints; the message never
+            // Only the channel's own webhook addresses; the message never
             // repeats the submitted value.
-            if (! DiscordMessage::isValidUrl($url)) {
-                throw ValidationException::withMessages(['url' => __('webhooks.flash.discord_url')]);
+            if (! ChatChannel::isValidUrl($type, $url)) {
+                throw ValidationException::withMessages(['url' => __('webhooks.flash.'.$type.'_url')]);
             }
 
             $this->guard($guard, $url);
 
-            return [...$data, 'secret' => $url, 'url' => DiscordMessage::mask($url)];
+            return [...$data, 'secret' => $url, 'url' => ChatChannel::mask($type, $url)];
         }
 
         if (str_starts_with(strtolower($data['url']), 'http://') && ! config('serverscope.webhooks.allow_http')) {
@@ -204,7 +232,7 @@ class WebhookController extends Controller
         try {
             $guard->resolve($url);
         } catch (BlockedTargetException $exception) {
-            throw ValidationException::withMessages(['url' => __('webhooks.flash.not_allowed', ['reason' => DiscordMessage::redact($exception->getMessage())])]);
+            throw ValidationException::withMessages(['url' => __('webhooks.flash.not_allowed', ['reason' => ChatChannel::redact($exception->getMessage())])]);
         }
     }
 }

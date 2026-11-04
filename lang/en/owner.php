@@ -27,6 +27,7 @@ return [
         'invoices_issue' => ['title' => 'Issue draft invoices', 'when' => 'After you filled in SERVERSCOPE_COMPANY_* in .env. Runs daily by itself.'],
         'billing_grace' => ['title' => 'Apply failed payments and cancellations', 'when' => 'Returns teams to Free when the grace period or paid period is over. Runs daily by itself.'],
         'check_agents' => ['title' => 'Check silent agents', 'when' => 'Debugging: mark offline servers right now.'],
+        'check_heartbeats' => ['title' => 'Check scheduled jobs', 'when' => 'Debugging: open incidents for late jobs right now.'],
         'dispatch_domains' => ['title' => 'Queue domain checks', 'when' => 'Debugging: start due HTTP/TLS/DNS checks now.'],
         'dispatch_pages' => ['title' => 'Queue website page checks', 'when' => 'Debugging: start due page checks now.'],
         'rollup' => ['title' => 'Aggregate metric rollups', 'when' => 'Debugging: normally hourly at :12; safe to repeat.'],

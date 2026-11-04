@@ -52,7 +52,7 @@ class AdminPagesTest extends TestCase
         $this->actingAs($user)->get(route('system-health'))->assertOk()->assertSee(['Checks on time', 'Notifications and webhooks'])->assertDontSee(['Controles op tijd', 'Wachtrij']);
         $this->actingAs($user)->get(route('platform.agent-releases'))->assertOk()->assertSee('Servers per version')->assertDontSee('Servers per versie');
         $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee(['Mark all as read', 'Delivery history'])->assertDontSee('Verzendgeschiedenis');
-        $this->actingAs($user)->get(route('webhooks.index'))->assertOk()->assertSee(['Connect Discord', 'Add webhook'])->assertDontSee('Discord koppelen');
+        $this->actingAs($user)->get(route('webhooks.index'))->assertOk()->assertSee(['Connect chat', 'Add webhook'])->assertDontSee('Chat koppelen');
         $this->actingAs($user)->get(route('webhooks.show', $webhook))->assertOk()->assertSee(['Test delivery', 'Rotate secret', 'Generic (signed JSON)'])->assertDontSee('Geheim vernieuwen');
         $this->actingAs($user)->get(route('webhooks.edit', $webhook))->assertOk()->assertSee(['Minimum severity (incidents)', 'High and higher', 'Incident escalated (threshold/severity/not acknowledged)'])->assertDontSee(['Hoog en hoger', 'Incident geëscaleerd']);
         $this->actingAs($user)->get(route('profile.edit'))->assertOk()->assertSee(['Change password', 'Two-factor authentication', 'Save preferences'])->assertDontSee(['Wachtwoord wijzigen', 'Tweestapsverificatie']);

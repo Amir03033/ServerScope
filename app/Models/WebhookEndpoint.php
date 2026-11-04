@@ -23,14 +23,26 @@ class WebhookEndpoint extends Model
 
     public const TYPE_DISCORD = 'discord';
 
+    public const TYPE_SLACK = 'slack';
+
+    public const TYPE_TEAMS = 'teams';
+
+    public const TYPE_TELEGRAM = 'telegram';
+
     public const TYPES = [
         self::TYPE_GENERIC => 'Algemeen (ondertekende JSON)',
         self::TYPE_DISCORD => 'Discord',
+        self::TYPE_SLACK => 'Slack',
+        self::TYPE_TEAMS => 'Microsoft Teams',
+        self::TYPE_TELEGRAM => 'Telegram',
     ];
+
+    /** Channels read by people: the address is the credential, messages are formatted. */
+    public const CHAT_TYPES = [self::TYPE_SLACK, self::TYPE_TEAMS, self::TYPE_TELEGRAM, self::TYPE_DISCORD];
 
     public const SEVERITIES = [Severity::LOW => 'Laag', Severity::MEDIUM => 'Gemiddeld', Severity::HIGH => 'Hoog', Severity::CRITICAL => 'Kritiek'];
 
-    protected $fillable = ['name', 'type', 'url', 'secret', 'events', 'min_severity', 'is_active', 'created_by'];
+    protected $fillable = ['name', 'type', 'url', 'target', 'secret', 'events', 'min_severity', 'is_active', 'created_by'];
 
     protected $attributes = ['type' => self::TYPE_GENERIC];
 
@@ -61,13 +73,23 @@ class WebhookEndpoint extends Model
         return $this->type === self::TYPE_DISCORD;
     }
 
+    public function isChat(): bool
+    {
+        return in_array($this->type, self::CHAT_TYPES, true);
+    }
+
     /**
-     * The URL requests are sent to. For Discord the real webhook URL
-     * (which contains the token) lives encrypted in `secret`.
+     * The URL requests are sent to. For chat channels the real address
+     * (which contains the token) lives encrypted in `secret`; for Telegram
+     * that is the bot token.
      */
     public function deliveryUrl(): string
     {
-        return $this->isDiscord() ? (string) $this->secret : $this->url;
+        return match (true) {
+            $this->type === self::TYPE_TELEGRAM => \App\Services\Notifications\ChatChannel::telegramUrl((string) $this->secret),
+            $this->isChat() => (string) $this->secret,
+            default => $this->url,
+        };
     }
 
     public function wantsSeverity(?string $severity): bool

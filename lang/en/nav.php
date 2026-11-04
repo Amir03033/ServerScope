@@ -28,6 +28,7 @@ return [
         'dependencies' => 'Dependencies',
         'deployments' => 'Deployments',
         'logs' => 'Logs',
+        'heartbeats' => 'Scheduled jobs',
         'incidents' => 'Incidents',
         'alerts' => 'Alerts',
         'reports' => 'Reports',

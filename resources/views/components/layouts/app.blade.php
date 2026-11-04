@@ -42,6 +42,7 @@
             ['route' => 'dependencies.index', 'match' => 'dependencies.*', 'icon' => 'i-link', 'label' => 'dependencies'],
             ['route' => 'deployments.index', 'match' => ['deployments.*', 'deploy-sources.*'], 'icon' => 'i-flag', 'label' => 'deployments'],
             ['route' => 'logs.index', 'match' => 'logs.*', 'icon' => 'i-logs', 'label' => 'logs'],
+            ['route' => 'heartbeats.index', 'match' => 'heartbeats.*', 'icon' => 'i-clock', 'label' => 'heartbeats'],
         ],
         'incidents' => [
             ['route' => 'incidents.index', 'match' => 'incidents.*', 'icon' => 'i-siren', 'label' => 'incidents', 'count' => $sidebarOpenIncidents ?? 0],

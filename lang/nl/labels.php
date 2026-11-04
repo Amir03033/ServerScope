@@ -138,6 +138,7 @@ return [
         'service' => 'Service',
         'predictive' => 'Voorspelling',
         'anomaly' => 'Afwijking',
+        'heartbeat' => 'Geplande taak',
     ],
     'incident_event' => [
         'opened' => 'Incident geopend',
@@ -176,6 +177,9 @@ return [
     'webhook_type' => [
         'generic' => 'Algemeen (ondertekende JSON)',
         'discord' => 'Discord',
+        'slack' => 'Slack',
+        'teams' => 'Microsoft Teams',
+        'telegram' => 'Telegram',
     ],
     'api_ability' => [
         'read' => 'Lezen',

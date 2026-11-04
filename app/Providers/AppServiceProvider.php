@@ -156,6 +156,7 @@ class AppServiceProvider extends ServiceProvider
             'resource_dependency' => \App\Models\ResourceDependency::class,
             'page' => \App\Models\MonitoredPage::class,
             'service' => \App\Models\ServiceCheck::class,
+            'heartbeat' => \App\Models\Heartbeat::class,
         ]);
 
         View::composer(

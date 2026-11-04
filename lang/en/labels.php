@@ -138,6 +138,7 @@ return [
         'service' => 'Service',
         'predictive' => 'Prediction',
         'anomaly' => 'Anomaly',
+        'heartbeat' => 'Scheduled job',
     ],
     'incident_event' => [
         'opened' => 'Incident opened',
@@ -176,6 +177,9 @@ return [
     'webhook_type' => [
         'generic' => 'Generic (signed JSON)',
         'discord' => 'Discord',
+        'slack' => 'Slack',
+        'teams' => 'Microsoft Teams',
+        'telegram' => 'Telegram',
     ],
     'api_ability' => [
         'read' => 'Read',

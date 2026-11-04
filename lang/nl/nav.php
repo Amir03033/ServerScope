@@ -28,6 +28,7 @@ return [
         'dependencies' => 'Afhankelijkheden',
         'deployments' => 'Deployments',
         'logs' => 'Logs',
+        'heartbeats' => 'Geplande taken',
         'incidents' => 'Incidenten',
         'alerts' => 'Alerts',
         'reports' => 'Rapporten',

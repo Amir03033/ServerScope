@@ -294,6 +294,22 @@ class IncidentController extends Controller
         return redirect()->to(route('incidents.show', $incident).'#ai-analysis')->with('success', __($result->wasRecentlyCreated || $result->status === 'queued' ? 'ai_analysis.queued' : 'ai_analysis.unchanged'));
     }
 
+    /**
+     * "Acknowledge" from a chat message: a link cannot change anything, so
+     * it opens this confirmation; the button posts to transition(). Once
+     * acknowledged (or past that), it goes straight to the incident.
+     */
+    public function acknowledgeForm(Incident $incident): View|RedirectResponse
+    {
+        if (! $incident->canTransitionTo('acknowledged')) {
+            session()->reflash();
+
+            return redirect()->route('incidents.show', $incident);
+        }
+
+        return view('incidents.acknowledge', ['incident' => $incident->loadMissing('subject')]);
+    }
+
     public function transition(Request $request, Incident $incident): RedirectResponse
     {
         $validated = $request->validate([
