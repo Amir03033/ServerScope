@@ -23,7 +23,7 @@
     <meta name="theme-color" content="#05070f">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ __('wall.title') }} — ServerScope</title>
-    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml" data-live-icon>
+    <link rel="icon" href="{{ asset('app-icons/icon-192.png') }}" type="image/png" data-live-icon>
     <meta name="ss-live" content="{{ route('live.pulse') }}">
     @include('partials.vite-assets')
     @vite('resources/js/wall.js')
