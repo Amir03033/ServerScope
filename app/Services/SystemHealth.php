@@ -10,6 +10,7 @@ use App\Models\WebhookDelivery;
 use App\Tenancy\Tenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
@@ -29,6 +30,23 @@ class SystemHealth
     public static function beat(): void
     {
         Cache::forever(self::HEARTBEAT_KEY, now()->toIso8601String());
+        self::checkIn();
+    }
+
+    /**
+     * Calls the configured cron-monitor URL (serverscope.scheduler_ping_url).
+     * Short timeout and never an exception: a monitor that is unreachable
+     * must not hold up or break the scheduler.
+     */
+    public static function checkIn(): void
+    {
+        $url = (string) config('serverscope.scheduler_ping_url');
+
+        if (! str_starts_with($url, 'https://') && ! str_starts_with($url, 'http://')) {
+            return;
+        }
+
+        rescue(fn () => Http::timeout(5)->connectTimeout(3)->get($url), report: false);
     }
 
     /**

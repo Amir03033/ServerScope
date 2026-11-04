@@ -33,6 +33,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Scheduler check-in
+    |--------------------------------------------------------------------------
+    |
+    | A cron-monitor ping URL (for example a ServerScope scheduled job) the
+    | scheduler calls every minute, so a stopped scheduler is noticed. For
+    | hosts where the cron task cannot run curl (Plesk "Run a PHP script").
+    | Kept in .env: the URL is the credential.
+    |
+    */
+
+    'scheduler_ping_url' => env('SERVERSCOPE_SCHEDULER_PING_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Display timezone
     |--------------------------------------------------------------------------
     |
